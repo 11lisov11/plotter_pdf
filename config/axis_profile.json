@@ -1,0 +1,11 @@
+﻿{
+  "axis": {
+    "invert_x": false,
+    "invert_y": false
+  },
+  "meaning": {
+    "x_positive": "right",
+    "y_positive": "down",
+    "notes": "for this machine: X+ = вправо, X- = влево, Y+ = вниз, Y- = вверх"
+  }
+}
