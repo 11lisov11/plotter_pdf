@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from pathlib import Path
 
@@ -38,10 +38,10 @@ class FilePage(QWidget):
         card = QFrame(self)
         card.setObjectName("PageCard")
         layout = QVBoxLayout(card)
-        layout.setContentsMargins(16, 16, 16, 16)
+        layout.setContentsMargins(18, 18, 18, 18)
         layout.setSpacing(12)
 
-        title = QLabel("Файл и запуск рисования", card)
+        title = QLabel("3. Файл и запуск рисования", card)
         title.setObjectName("SectionTitle")
         layout.addWidget(title)
 
@@ -55,55 +55,11 @@ class FilePage(QWidget):
         self.path_edit = QLineEdit(card)
         self.path_edit.setPlaceholderText("Выберите файл для рисования...")
         self.path_edit.textChanged.connect(self._on_path_changed)
-        self.pick_btn = QPushButton("Выбрать файл…", card)
+        self.pick_btn = QPushButton("Выбрать файл...", card)
         self.pick_btn.clicked.connect(self.pick_file_dialog)
         row.addWidget(self.path_edit, 1)
         row.addWidget(self.pick_btn)
         layout.addLayout(row)
-
-        quality_grid = QGridLayout()
-        quality_grid.setHorizontalSpacing(8)
-        quality_grid.setVerticalSpacing(8)
-
-        q_lbl = QLabel("Качество траектории", card)
-        q_lbl.setObjectName("FieldLabel")
-        self.quality_combo = QComboBox(card)
-        self.quality_combo.addItem("Быстро", "fast")
-        self.quality_combo.addItem("Баланс", "normal")
-        self.quality_combo.addItem("Точно", "high")
-        self.quality_combo.currentIndexChanged.connect(self._emit_render_settings_changed)
-        self.quality_combo.currentIndexChanged.connect(self._update_quality_hint)
-
-        quality_grid.addWidget(q_lbl, 0, 0)
-        quality_grid.addWidget(self.quality_combo, 1, 0)
-        layout.addLayout(quality_grid)
-
-        self.quality_hint = QLabel("", card)
-        self.quality_hint.setObjectName("HintLabel")
-        self.quality_hint.setWordWrap(True)
-        layout.addWidget(self.quality_hint)
-
-        self.force_text_to_path_check = QCheckBox("Усилить текст (конвертировать в кривые)", card)
-        self.force_text_to_path_check.toggled.connect(self._emit_render_settings_changed)
-        layout.addWidget(self.force_text_to_path_check)
-
-        self.exact_geometry_check = QCheckBox("Точный режим чертежа (без синтетических дуг)", card)
-        self.exact_geometry_check.toggled.connect(self._emit_render_settings_changed)
-        layout.addWidget(self.exact_geometry_check)
-
-        self.safe_travel_lift_check = QCheckBox(
-            "Безопасный подъём пера между контурами (меньше артефактов)",
-            card,
-        )
-        self.safe_travel_lift_check.toggled.connect(self._emit_render_settings_changed)
-        layout.addWidget(self.safe_travel_lift_check)
-
-        self.strict_one_to_one_check = QCheckBox(
-            "Сохранять 1:1 масштаб (если не помещается — клиппинг)",
-            card,
-        )
-        self.strict_one_to_one_check.toggled.connect(self._emit_render_settings_changed)
-        layout.addWidget(self.strict_one_to_one_check)
 
         action_row = QHBoxLayout()
         action_row.setSpacing(8)
@@ -120,21 +76,84 @@ class FilePage(QWidget):
         action_row.addStretch(1)
         layout.addLayout(action_row)
 
+        self.advanced_toggle_btn = QPushButton("Расширенные параметры подготовки", card)
+        self.advanced_toggle_btn.setObjectName("ToggleButton")
+        self.advanced_toggle_btn.setCheckable(True)
+        self.advanced_toggle_btn.setChecked(False)
+        self.advanced_toggle_btn.toggled.connect(self._set_advanced_visible)
+        layout.addWidget(self.advanced_toggle_btn)
+
+        self.advanced_box = QFrame(card)
+        self.advanced_box.setObjectName("PageSubCard")
+        adv = QVBoxLayout(self.advanced_box)
+        adv.setContentsMargins(12, 12, 12, 12)
+        adv.setSpacing(10)
+
+        quality_grid = QGridLayout()
+        quality_grid.setHorizontalSpacing(8)
+        quality_grid.setVerticalSpacing(8)
+
+        q_lbl = QLabel("Качество траектории", self.advanced_box)
+        q_lbl.setObjectName("FieldLabel")
+        self.quality_combo = QComboBox(self.advanced_box)
+        self.quality_combo.addItem("Быстро", "fast")
+        self.quality_combo.addItem("Баланс", "normal")
+        self.quality_combo.addItem("Точно", "high")
+        self.quality_combo.currentIndexChanged.connect(self._emit_render_settings_changed)
+        self.quality_combo.currentIndexChanged.connect(self._update_quality_hint)
+
+        quality_grid.addWidget(q_lbl, 0, 0)
+        quality_grid.addWidget(self.quality_combo, 1, 0)
+        adv.addLayout(quality_grid)
+
+        self.quality_hint = QLabel("", self.advanced_box)
+        self.quality_hint.setObjectName("HintLabel")
+        self.quality_hint.setWordWrap(True)
+        adv.addWidget(self.quality_hint)
+
+        self.force_text_to_path_check = QCheckBox("Усилить текст (конвертировать в кривые)", self.advanced_box)
+        self.force_text_to_path_check.toggled.connect(self._emit_render_settings_changed)
+        adv.addWidget(self.force_text_to_path_check)
+
+        self.exact_geometry_check = QCheckBox("Точный режим чертежа (без синтетических дуг)", self.advanced_box)
+        self.exact_geometry_check.toggled.connect(self._emit_render_settings_changed)
+        adv.addWidget(self.exact_geometry_check)
+
+        self.safe_travel_lift_check = QCheckBox(
+            "Безопасный подъём пера между контурами (меньше артефактов)",
+            self.advanced_box,
+        )
+        self.safe_travel_lift_check.toggled.connect(self._emit_render_settings_changed)
+        adv.addWidget(self.safe_travel_lift_check)
+
+        self.strict_one_to_one_check = QCheckBox(
+            "Сохранять 1:1 масштаб (если не помещается - клиппинг)",
+            self.advanced_box,
+        )
+        self.strict_one_to_one_check.toggled.connect(self._emit_render_settings_changed)
+        adv.addWidget(self.strict_one_to_one_check)
+
+        layout.addWidget(self.advanced_box)
+
         self.progress = QProgressBar(card)
         self.progress.setRange(0, 100)
         self.progress.setValue(0)
         self.progress.hide()
         layout.addWidget(self.progress)
 
-        self.metrics = QLabel("Статистика: —", card)
+        self.metrics = QLabel("Статистика: -", card)
         self.metrics.setObjectName("HintLabel")
         layout.addWidget(self.metrics)
 
         root.addWidget(card)
         root.addStretch(1)
 
+        self._set_advanced_visible(False)
         self._update_quality_hint()
         self._update_action_buttons()
+
+    def _set_advanced_visible(self, visible: bool) -> None:
+        self.advanced_box.setVisible(bool(visible))
 
     def pick_file_dialog(self) -> None:
         path, _ = QFileDialog.getOpenFileName(
@@ -180,7 +199,7 @@ class FilePage(QWidget):
         if quality == "fast":
             text = "Быстро: меньше команд и выше скорость, но ниже точность мелких деталей."
         elif quality == "high":
-            text = "Точно: максимальная детализация и аккуратные контуры, но дольше по времени."
+            text = "Точно: максимум деталей и аккуратные контуры, но дольше по времени."
         else:
             text = "Баланс: оптимальное соотношение скорости и качества для большинства файлов."
         self.quality_hint.setText(text)

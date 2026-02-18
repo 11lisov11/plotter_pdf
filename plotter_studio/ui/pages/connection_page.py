@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QComboBox, QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
@@ -19,10 +19,10 @@ class ConnectionPage(QWidget):
         card = QFrame(self)
         card.setObjectName("PageCard")
         card_layout = QVBoxLayout(card)
-        card_layout.setContentsMargins(16, 16, 16, 16)
+        card_layout.setContentsMargins(18, 18, 18, 18)
         card_layout.setSpacing(12)
 
-        title = QLabel("Подключение плоттера", card)
+        title = QLabel("1. Подключение плоттера", card)
         title.setObjectName("SectionTitle")
         card_layout.addWidget(title)
 

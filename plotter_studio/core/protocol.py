@@ -45,6 +45,7 @@ def _split_comment(line: str) -> str:
 
 
 _G_RE = re.compile(r"\bG\d+(?:\.\d+)?\b", re.IGNORECASE)
+_M_RE = re.compile(r"\bM\d+(?:\.\d+)?\b", re.IGNORECASE)
 
 
 def _parse_words(body: str) -> dict[str, float]:
@@ -94,6 +95,20 @@ def _arc_points(
     return pts
 
 
+def _pen_down_from_z(cur_z: float, z_up: float, z_down: float) -> bool:
+    """Treat pen as down only when Z is near the down level.
+
+    This avoids false "draw" segments in previews when partial travel-lifts are used.
+    """
+    rng = abs(float(z_down) - float(z_up))
+    if rng <= 1e-9:
+        return True
+    tol = max(0.05, rng * 0.18)
+    if z_down >= z_up:
+        return cur_z >= (z_down - tol)
+    return cur_z <= (z_down + tol)
+
+
 def _gcode_to_polylines(lines: list[str], *, z_up: float, z_down: float) -> list[list[tuple[float, float]]]:
     cur_x = 0.0
     cur_y = 0.0
@@ -106,15 +121,13 @@ def _gcode_to_polylines(lines: list[str], *, z_up: float, z_down: float) -> list
 
     def _update_pen() -> None:
         nonlocal pen_down
-        pen_down = abs(cur_z - z_down) <= abs(cur_z - z_up)
+        pen_down = _pen_down_from_z(cur_z, z_up, z_down)
 
     _update_pen()
 
     for raw in lines:
         body = _split_comment(raw)
         if not body or body.startswith("$"):
-            continue
-        if body[0].upper() == "M":
             continue
 
         motion_g: Optional[int] = None
@@ -139,6 +152,14 @@ def _gcode_to_polylines(lines: list[str], *, z_up: float, z_down: float) -> list
                 motion_g = 2
             elif abs(gval - 3.0) <= 1e-6:
                 motion_g = 3
+
+        # Support spindle-style pen control (M3/M5) in preview parsing.
+        for mtok in _M_RE.findall(body):
+            m = mtok.upper()
+            if m == "M3":
+                pen_down = True
+            elif m == "M5":
+                pen_down = False
 
         words = _parse_words(body)
         if "Z" in words:
@@ -222,6 +243,7 @@ class BackendBridge:
         self._project_root = project_root
         self._backend_path = project_root / "src" / "plotter_pdf_drawer.py"
         self._backend_module = None
+        self._default_baud_cache = "115200"
 
     def _backend(self):
         if self._backend_module is not None:
@@ -260,8 +282,15 @@ class BackendBridge:
         return str(backend.detect_com_port(preferred))
 
     def default_baud(self) -> str:
-        backend = self._backend()
-        return str(backend.DEFAULT_BAUD)
+        # Fast path for app startup: avoid loading heavy backend module
+        # just to read baud value.
+        if self._backend_module is None:
+            return self._default_baud_cache
+        try:
+            self._default_baud_cache = str(self._backend_module.DEFAULT_BAUD)
+        except Exception:
+            pass
+        return self._default_baud_cache
 
     def z_down_sign(self) -> float:
         backend = self._backend()

@@ -8,6 +8,7 @@ import re
 import shutil
 import subprocess
 import sys
+import importlib.util
 import argparse
 import tempfile
 import threading
@@ -4922,31 +4923,62 @@ def word_to_pdf(word_path: Path, pdf_path: Path, logger) -> None:
                 pass
 
 
-def frw_to_pdf(frw_path: Path, pdf_path: Path, logger) -> None:
-    logger("Converting CAD file to PDF ...")
+def _wait_for_nonempty_file(path: Path, timeout_s: float = 15.0, poll_s: float = 0.25, stable_polls: int = 2) -> bool:
+    deadline = time.time() + max(0.1, float(timeout_s))
+    poll = max(0.05, float(poll_s))
+    stable_need = max(1, int(stable_polls))
+    last_size = -1
+    stable = 0
 
-    if frw_path.suffix.lower() not in {".frw", ".cdw"}:
-        raise ValueError(f"Expected CAD file (.frw/.cdw), got: {frw_path}")
+    while time.time() < deadline:
+        try:
+            if path.exists():
+                sz = int(path.stat().st_size)
+                if sz > 0:
+                    if sz == last_size:
+                        stable += 1
+                    else:
+                        stable = 1
+                    last_size = sz
+                    if stable >= stable_need:
+                        return True
+        except Exception:
+            pass
+        time.sleep(poll)
+    return False
 
-    pdf_path.parent.mkdir(parents=True, exist_ok=True)
 
+def _kompas_print_to_pdf(input_path: Path, output_pdf: Path, logger) -> None:
+    import win32com.client
+
+    pythoncom = None
     try:
-        import win32com.client
-    except Exception as exc:
-        raise RuntimeError("pywin32 is required to convert CAD formats. Install with: pip install pywin32") from exc
+        import pythoncom as _pythoncom  # type: ignore
+
+        _pythoncom.CoInitialize()
+        pythoncom = _pythoncom
+    except Exception:
+        pythoncom = None
 
     app = None
     try:
-        try:
-            app = win32com.client.gencache.EnsureDispatch("KOMPAS.Application.7")
-        except Exception:
-            app = win32com.client.gencache.EnsureDispatch("KOMPAS.Application")
+        app = None
+        last_exc: Optional[Exception] = None
+        for progid in ("KOMPAS.Application.7", "KOMPAS.Application"):
+            try:
+                logger(f"KOMPAS dispatch: {progid}")
+                app = win32com.client.gencache.EnsureDispatch(progid)
+                break
+            except Exception as exc:
+                last_exc = exc
+                app = None
+        if app is None:
+            raise RuntimeError(f"KOMPAS COM application is unavailable: {last_exc}")
 
         try:
             app.Visible = False
         except Exception:
             pass
-
         try:
             app.SuppressAlerts = True
         except Exception:
@@ -4957,25 +4989,89 @@ def frw_to_pdf(frw_path: Path, pdf_path: Path, logger) -> None:
         except Exception as exc:
             raise RuntimeError("KOMPAS PrintJob is unavailable.") from exc
 
-        try:
-            print_job.Clear()
-            logger(f"PrintJob.AddSheets: {frw_path}")
-            print_job.AddSheets(str(frw_path), 0, 0)
-            logger(f"PrintJob.Execute: {pdf_path}")
-            result = print_job.Execute(str(pdf_path))
-            logger(f"PrintJob.Execute result: {result!r}")
-        except Exception as exc:
-            raise RuntimeError(f"PrintJob conversion failed: {exc}") from exc
+        for attempt in range(1, 4):
+            try:
+                if output_pdf.exists():
+                    output_pdf.unlink()
+            except Exception:
+                pass
+            try:
+                print_job.Clear()
+            except Exception:
+                pass
 
-        if not pdf_path.exists() or pdf_path.stat().st_size == 0:
-            raise RuntimeError(f"CAD->PDF produced no output: {pdf_path}")
+            logger(f"PrintJob.AddSheets (attempt {attempt}): {input_path}")
+            print_job.AddSheets(str(input_path), 0, 0)
+            logger(f"PrintJob.Execute (attempt {attempt}): {output_pdf}")
+            result = print_job.Execute(str(output_pdf))
+            logger(f"PrintJob.Execute result (attempt {attempt}): {result!r}")
 
+            if _wait_for_nonempty_file(output_pdf, timeout_s=18.0):
+                return
+            time.sleep(0.6)
+
+        raise RuntimeError(f"KOMPAS PrintJob completed without PDF output: {output_pdf}")
     finally:
         if app is not None:
             try:
                 app.Quit()
             except Exception:
                 pass
+        if pythoncom is not None:
+            try:
+                pythoncom.CoUninitialize()
+            except Exception:
+                pass
+
+
+def frw_to_pdf(frw_path: Path, pdf_path: Path, logger) -> None:
+    logger("Converting CAD file to PDF ...")
+
+    if frw_path.suffix.lower() not in {".frw", ".cdw"}:
+        raise ValueError(f"Expected CAD file (.frw/.cdw), got: {frw_path}")
+
+    frw_abs = frw_path.resolve()
+    pdf_abs = pdf_path.resolve()
+    pdf_abs.parent.mkdir(parents=True, exist_ok=True)
+    if not frw_abs.exists():
+        raise RuntimeError(f"CAD file not found: {frw_abs}")
+
+    try:
+        import win32com.client
+    except Exception as exc:
+        raise RuntimeError("pywin32 is required to convert CAD formats. Install with: pip install pywin32") from exc
+
+    primary_error: Optional[Exception] = None
+    try:
+        # KOMPAS can fail on non-ASCII source paths depending on locale/settings.
+        # Copy to a short ASCII temp name first.
+        with tempfile.TemporaryDirectory(dir=str(ensure_local_tmp_root())) as td:
+            work = Path(td)
+            src_local = work / f"source{frw_abs.suffix.lower()}"
+            out_local = work / "export.pdf"
+            shutil.copyfile(str(frw_abs), str(src_local))
+
+            _kompas_print_to_pdf(src_local, out_local, logger)
+            if not _wait_for_nonempty_file(out_local, timeout_s=6.0):
+                raise RuntimeError(f"CAD->PDF produced no output: {out_local}")
+
+            shutil.copyfile(str(out_local), str(pdf_abs))
+            if not _wait_for_nonempty_file(pdf_abs, timeout_s=2.0):
+                raise RuntimeError(f"Failed to finalize CAD PDF output: {pdf_abs}")
+            return
+    except Exception as exc:
+        primary_error = exc
+        logger(f"Warning: primary CAD conversion failed: {exc}")
+
+    # Fallback: if source folder already has an exported PDF with same stem, reuse it.
+    fallback_pdf = frw_abs.with_suffix(".pdf")
+    if fallback_pdf.exists() and _wait_for_nonempty_file(fallback_pdf, timeout_s=0.5):
+        logger(f"Using fallback PDF next to source: {fallback_pdf}")
+        shutil.copyfile(str(fallback_pdf), str(pdf_abs))
+        if _wait_for_nonempty_file(pdf_abs, timeout_s=2.0):
+            return
+
+    raise RuntimeError(f"CAD conversion failed: {primary_error}")
 
 def make_final_with_preamble(prepared_gcode: Path, final_gcode: Path) -> None:
     lines = [
@@ -5217,37 +5313,96 @@ def send_to_grbl(
     sender = ROOT_DIR / "src" / "send_grbl_file.py"
     if not sender.exists():
         raise RuntimeError("send_grbl_file.py not found")
-    cmd = [sys.executable, str(sender), com, baud, str(gcode_file)]
-    if sleep_after:
-        cmd.append("--sleep")
+
+    def _load_sender_module():
+        # In frozen builds, launching sys.executable opens PlotterStudio.exe again.
+        # Import sender module and run it in-process to avoid recursive GUI spawn.
+        module_name = "_plotter_sender_inline"
+        existing = sys.modules.get(module_name)
+        if existing is not None:
+            return existing
+        spec = importlib.util.spec_from_file_location(module_name, str(sender))
+        if spec is None or spec.loader is None:
+            raise RuntimeError("Cannot load send_grbl_file.py")
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[module_name] = module
+        spec.loader.exec_module(module)
+        return module
+
+    def _run_sender_inline() -> Tuple[int, List[str], Optional[float], float]:
+        sender_mod = _load_sender_module()
+        out_lines: List[str] = []
+        sender_plot_time_s: Optional[float] = None
+        started_local = time.perf_counter()
+
+        original_print = getattr(sender_mod, "_safe_print", None)
+        original_enabled = getattr(sender_mod, "_PRINT_ENABLED", True)
+
+        def _forward_print(*args, **kwargs):
+            nonlocal sender_plot_time_s
+            line = " ".join(str(a) for a in args).strip()
+            if not line:
+                return
+            out_lines.append(line)
+            logger(line)
+            if line.startswith("PLOT_TIME_SECONDS="):
+                try:
+                    sender_plot_time_s = float(line.split("=", 1)[1].strip())
+                except Exception:
+                    pass
+
+        try:
+            sender_mod._PRINT_ENABLED = True
+            sender_mod._safe_print = _forward_print
+            argv = ["send_grbl_file.py", com, baud, str(gcode_file)]
+            if sleep_after:
+                argv.append("--sleep")
+            rc = int(sender_mod.main(argv))
+        finally:
+            if original_print is not None:
+                sender_mod._safe_print = original_print
+            sender_mod._PRINT_ENABLED = original_enabled
+
+        elapsed_local = time.perf_counter() - started_local
+        return rc, out_lines, sender_plot_time_s, elapsed_local
+
     logger("Sending to Grbl ...")
-    started = time.perf_counter()
-    proc = subprocess.Popen(
-        cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-    )
-    if proc.stdout is None:
-        raise RuntimeError("Failed to read sender output")
-    out_lines: List[str] = []
-    sender_plot_time_s: Optional[float] = None
-    while True:
-        line = proc.stdout.readline()
-        if not line:
-            break
-        s = line.strip()
-        out_lines.append(s)
-        logger(s)
-        if s.startswith("PLOT_TIME_SECONDS="):
-            try:
-                sender_plot_time_s = float(s.split("=", 1)[1].strip())
-            except Exception:
-                pass
-    rc = proc.wait()
-    elapsed = time.perf_counter() - started
+    use_inline = bool(getattr(sys, "frozen", False)) or os.environ.get("PLOTTER_INLINE_SENDER") == "1"
+
+    if use_inline:
+        rc, out_lines, sender_plot_time_s, elapsed = _run_sender_inline()
+    else:
+        cmd = [sys.executable, str(sender), com, baud, str(gcode_file)]
+        if sleep_after:
+            cmd.append("--sleep")
+        started = time.perf_counter()
+        proc = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+        if proc.stdout is None:
+            raise RuntimeError("Failed to read sender output")
+        out_lines = []
+        sender_plot_time_s = None
+        while True:
+            line = proc.stdout.readline()
+            if not line:
+                break
+            s = line.strip()
+            out_lines.append(s)
+            logger(s)
+            if s.startswith("PLOT_TIME_SECONDS="):
+                try:
+                    sender_plot_time_s = float(s.split("=", 1)[1].strip())
+                except Exception:
+                    pass
+        rc = proc.wait()
+        elapsed = time.perf_counter() - started
+
     if rc == 0:
         return sender_plot_time_s if sender_plot_time_s is not None else max(0.0, elapsed)
 

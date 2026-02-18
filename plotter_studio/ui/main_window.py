@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import QEasingCurve, QPropertyAnimation, Qt, Slot, QUrl
+from PySide6.QtCore import QEasingCurve, QPropertyAnimation, Qt, QUrl, Slot
 from PySide6.QtGui import QCloseEvent, QDesktopServices, QKeySequence, QShortcut, QTextCursor
 from PySide6.QtWidgets import (
     QApplication,
@@ -11,12 +11,14 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QLayout,
     QMainWindow,
     QMessageBox,
     QPlainTextEdit,
     QProgressBar,
     QPushButton,
     QScrollArea,
+    QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
@@ -39,8 +41,8 @@ class MainWindow(QMainWindow):
         self._hide_log_after_anim = False
 
         self.setWindowTitle("Plotter Studio")
-        self.resize(1360, 860)
-        self.setMinimumSize(1180, 760)
+        self.resize(1420, 920)
+        self.setMinimumSize(1260, 800)
 
         self._build_ui()
         self._bind_signals()
@@ -49,19 +51,21 @@ class MainWindow(QMainWindow):
 
     def _build_ui(self) -> None:
         root = QWidget(self)
+        root.setObjectName("AppRoot")
         self.setCentralWidget(root)
+
         main = QVBoxLayout(root)
-        main.setContentsMargins(18, 16, 18, 16)
+        main.setContentsMargins(16, 14, 16, 14)
         main.setSpacing(12)
 
         self.top_bar = QFrame(root)
         self.top_bar.setObjectName("TopBar")
         top = QHBoxLayout(self.top_bar)
-        top.setContentsMargins(18, 14, 18, 14)
+        top.setContentsMargins(18, 12, 18, 12)
         top.setSpacing(10)
 
         title_col = QVBoxLayout()
-        title_col.setSpacing(2)
+        title_col.setSpacing(1)
         self.title_label = QLabel("Plotter Studio", self.top_bar)
         self.title_label.setObjectName("TitleLabel")
         self.subtitle_label = QLabel("Подключение, калибровка, запуск и ручное управление в одном окне", self.top_bar)
@@ -81,7 +85,7 @@ class MainWindow(QMainWindow):
         self.theme_combo.addItem("Авто", "auto")
         self.theme_combo.addItem("Светлая", "light")
         self.theme_combo.addItem("Тёмная", "dark")
-        self.theme_combo.setMinimumWidth(120)
+        self.theme_combo.setMinimumWidth(124)
         top.addWidget(self.theme_combo)
 
         self.stop_btn = QPushButton("Стоп", self.top_bar)
@@ -99,31 +103,35 @@ class MainWindow(QMainWindow):
         self.scroll.setFrameShape(QFrame.NoFrame)
 
         self.content_root = QWidget(self.scroll)
-        content = QVBoxLayout(self.content_root)
+        self.content_root.setObjectName("ContentRoot")
+        self.content_root.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+        content = QHBoxLayout(self.content_root)
         content.setContentsMargins(0, 0, 0, 0)
         content.setSpacing(12)
+        content.setSizeConstraint(QLayout.SetMinimumSize)
+
+        left_col = QVBoxLayout()
+        right_col = QVBoxLayout()
+        left_col.setSpacing(12)
+        right_col.setSpacing(12)
 
         self.connection_page = ConnectionPage(self.content_root)
         self.calibration_page = CalibrationPage(self.content_root)
         self.file_page = FilePage(self.content_root)
         self.manual_page = ManualPage(self.content_root)
 
-        row_top = QHBoxLayout()
-        row_top.setSpacing(12)
-        row_top.addWidget(self.connection_page, 4)
-        row_top.addWidget(self.calibration_page, 6)
-        content.addLayout(row_top)
+        for page in (self.connection_page, self.calibration_page, self.file_page, self.manual_page):
+            page.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
 
-        content.addWidget(self.file_page)
+        left_col.addWidget(self.connection_page)
+        left_col.addWidget(self.calibration_page)
 
-        row_bottom = QHBoxLayout()
-        row_bottom.setSpacing(12)
-        row_bottom.addWidget(self.manual_page, 7)
-        row_bottom.addWidget(self._build_service_card(self.content_root), 3)
-        content.addLayout(row_bottom)
+        right_col.addWidget(self.file_page)
+        right_col.addWidget(self.manual_page)
 
-        content.addStretch(1)
-
+        content.addLayout(left_col, 6)
+        content.addLayout(right_col, 5)
+        content.setAlignment(Qt.AlignTop)
         self.scroll.setWidget(self.content_root)
         main.addWidget(self.scroll, 1)
 
@@ -166,46 +174,21 @@ class MainWindow(QMainWindow):
         sb = QHBoxLayout(self.status_bar_card)
         sb.setContentsMargins(12, 8, 12, 8)
         sb.setSpacing(10)
+
         self.status_text = QLabel("Готово", self.status_bar_card)
         self.status_text.setObjectName("HintLabel")
+
         self.progress_bar = QProgressBar(self.status_bar_card)
         self.progress_bar.setRange(0, 100)
         self.progress_bar.setValue(0)
         self.progress_bar.setFixedWidth(260)
+
         sb.addWidget(self.status_text, 1)
         sb.addWidget(self.progress_bar)
         main.addWidget(self.status_bar_card)
 
         self.toast = ToastWidget(self)
         self._install_shortcuts()
-
-    def _build_service_card(self, parent: QWidget) -> QFrame:
-        card = QFrame(parent)
-        card.setObjectName("PageCard")
-
-        layout = QVBoxLayout(card)
-        layout.setContentsMargins(16, 16, 16, 16)
-        layout.setSpacing(10)
-
-        title = QLabel("Логи и сервис", card)
-        title.setObjectName("SectionTitle")
-        hint = QLabel("Логи скрыты по умолчанию. Откройте панель только при необходимости.", card)
-        hint.setObjectName("HintLabel")
-        hint.setWordWrap(True)
-
-        self.quick_open_logs_btn = QPushButton("Показать лог", card)
-        self.quick_copy_logs_btn = QPushButton("Копировать лог", card)
-        self.quick_clear_logs_btn = QPushButton("Очистить лог", card)
-        self.quick_open_folder_btn = QPushButton("Открыть папку логов", card)
-
-        layout.addWidget(title)
-        layout.addWidget(hint)
-        layout.addWidget(self.quick_open_logs_btn)
-        layout.addWidget(self.quick_copy_logs_btn)
-        layout.addWidget(self.quick_clear_logs_btn)
-        layout.addWidget(self.quick_open_folder_btn)
-        layout.addStretch(1)
-        return card
 
     def _install_shortcuts(self) -> None:
         QShortcut(QKeySequence("Ctrl+O"), self, activated=self.file_page.pick_file_dialog)
@@ -246,15 +229,14 @@ class MainWindow(QMainWindow):
             )
         )
 
-        self.manual_page.pen_down_requested.connect(lambda step, feed: self.controller.pen_step(down=True, step_mm=step, feed=feed))
-        self.manual_page.pen_up_requested.connect(lambda step, feed: self.controller.pen_step(down=False, step_mm=step, feed=feed))
+        self.manual_page.pen_down_requested.connect(
+            lambda step, feed: self.controller.pen_step(down=True, step_mm=step, feed=feed)
+        )
+        self.manual_page.pen_up_requested.connect(
+            lambda step, feed: self.controller.pen_step(down=False, step_mm=step, feed=feed)
+        )
         self.manual_page.release_motors_requested.connect(self._confirm_release_motors)
         self.manual_page.sharpen_requested.connect(self.controller.mark_pencil_sharpened)
-
-        self.quick_open_logs_btn.clicked.connect(self._show_log_drawer)
-        self.quick_copy_logs_btn.clicked.connect(self._copy_logs)
-        self.quick_clear_logs_btn.clicked.connect(self._clear_logs)
-        self.quick_open_folder_btn.clicked.connect(self._open_logs_folder)
 
         self.log_find_btn.clicked.connect(self._find_log_text)
         self.log_copy_btn.clicked.connect(self._copy_logs)
@@ -402,9 +384,6 @@ class MainWindow(QMainWindow):
 
     def _toggle_log_drawer(self) -> None:
         self._set_log_drawer_visible(not self.log_drawer.isVisible())
-
-    def _show_log_drawer(self) -> None:
-        self._set_log_drawer_visible(True)
 
     def _set_log_drawer_visible(self, visible: bool) -> None:
         if visible:

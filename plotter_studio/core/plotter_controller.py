@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Optional
 
-from PySide6.QtCore import QObject, Signal
+from PySide6.QtCore import QObject, QTimer, Signal
 
 from .protocol import BackendBridge, SheetConfig
 from .serial_worker import OperationContext, SerialWorker, WorkerOperation
@@ -44,6 +44,18 @@ class PlotterController(QObject):
         self.connected = False
         self.connected_port = ""
         self._operations: dict[str, OperationMeta] = {}
+        self._settings_dirty = False
+        self._log_buffer: list[str] = []
+
+        self._settings_save_timer = QTimer(self)
+        self._settings_save_timer.setSingleShot(True)
+        self._settings_save_timer.setInterval(250)
+        self._settings_save_timer.timeout.connect(self._flush_settings)
+
+        self._log_flush_timer = QTimer(self)
+        self._log_flush_timer.setSingleShot(True)
+        self._log_flush_timer.setInterval(140)
+        self._log_flush_timer.timeout.connect(self._flush_log_buffer)
 
         self.worker = SerialWorker()
         self.worker.operation_started.connect(self._on_operation_started)
@@ -58,12 +70,24 @@ class PlotterController(QObject):
         self.refresh_pencil_banner()
 
     def shutdown(self) -> None:
+        self._flush_log_buffer()
+        self._flush_settings()
+        self.worker.shutdown()
+        self.worker.wait(1500)
+
+    def _schedule_settings_save(self) -> None:
+        self._settings_dirty = True
+        self._settings_save_timer.start()
+
+    def _flush_settings(self) -> None:
+        if not self._settings_dirty:
+            return
         try:
             self.settings_store.save(self.settings)
         except Exception:
             pass
-        self.worker.shutdown()
-        self.worker.wait(1500)
+        finally:
+            self._settings_dirty = False
 
     def _on_worker_log_line(self, text: str) -> None:
         line = text.rstrip("\n")
@@ -73,10 +97,21 @@ class PlotterController(QObject):
         self._append_log_file_line(line)
 
     def _append_log_file_line(self, line: str) -> None:
+        self._log_buffer.append(line)
+        self._log_flush_timer.start()
+
+    def _flush_log_buffer(self) -> None:
+        if not self._log_buffer:
+            return
         path = log_file_path()
         path.parent.mkdir(parents=True, exist_ok=True)
-        with path.open("a", encoding="utf-8") as fh:
-            fh.write(line + "\n")
+        chunk = "\n".join(self._log_buffer) + "\n"
+        self._log_buffer.clear()
+        try:
+            with path.open("a", encoding="utf-8") as fh:
+                fh.write(chunk)
+        except Exception:
+            pass
 
     def _on_operation_started(self, op_id: str, title: str) -> None:
         meta = self._operations.get(op_id, OperationMeta(op_type="operation"))
@@ -122,6 +157,21 @@ class PlotterController(QObject):
     def _set_connection_state(self, connected: bool, label: str, level: str) -> None:
         self.connection_changed.emit(connected, label, level)
 
+    def _release_idle_motors_in_operation(self, ctx: OperationContext, port: str) -> tuple[bool, str]:
+        ok, tail = self.bridge.manual_commands(
+            port,
+            self.baud,
+            ["$X", "M5", "$1=0", "M18", "M84", "?", "$SLP"],
+            soft_reset_first=False,
+            read_tail=True,
+        )
+        if tail:
+            for line in tail.splitlines():
+                ctx.emit_log(line)
+        if ok and self._is_grbl_tail(tail):
+            return True, "Моторы отпущены"
+        return False, tail or "нет подтверждения отпуска моторов"
+
     def _enqueue(
         self,
         op_type: str,
@@ -163,23 +213,41 @@ class PlotterController(QObject):
     def refresh_ports(self) -> None:
         try:
             ports = self.bridge.list_com_ports()
-            suggested = self.bridge.detect_com_port(self.settings.com_port or None)
-            if suggested and suggested not in ports:
-                ports.insert(0, suggested)
-            if not self.settings.com_port:
-                self.settings.com_port = suggested
-                self.settings_store.save(self.settings)
-            self.ports_changed.emit(ports, self.settings.com_port or suggested)
+            saved = (self.settings.com_port or "").strip()
+            suggested = "COM11"
+
+            selected = ""
+            if self.connected and self.connected_port in ports:
+                selected = self.connected_port
+            elif saved and saved in ports:
+                selected = saved
+            elif "COM11" in ports:
+                selected = "COM11"
+            elif ports:
+                selected = ports[0]
+            elif saved:
+                selected = saved
+            elif suggested:
+                selected = suggested
+
+            if selected and selected not in ports:
+                ports.insert(0, selected)
+
+            if selected and self.settings.com_port != selected:
+                self.settings.com_port = selected
+                self._schedule_settings_save()
+
+            self.ports_changed.emit(ports, selected)
         except Exception as exc:
             self.toast.emit("error", f"Не удалось получить список COM-портов: {exc}")
 
     def set_selected_port(self, com_port: str) -> None:
         self.settings.com_port = (com_port or "").strip()
-        self.settings_store.save(self.settings)
+        self._schedule_settings_save()
 
     def set_tool_mode(self, tool_mode: str) -> None:
         self.settings.tool_mode = "pencil" if tool_mode == "pencil" else "pen"
-        self.settings_store.save(self.settings)
+        self._schedule_settings_save()
         self.bridge.set_tool_mode(self.settings.tool_mode)
         self.refresh_pencil_banner()
 
@@ -253,7 +321,7 @@ class PlotterController(QObject):
             self.settings.a3_pass_index = 1 if int(a3_pass_index) <= 1 else 2
         if last_preview_svg is not None:
             self.settings.last_preview_svg = str(last_preview_svg)
-        self.settings_store.save(self.settings)
+        self._schedule_settings_save()
 
     def sheet_config(self) -> SheetConfig:
         fmt = (self.settings.sheet_format or "a4").strip().lower()
@@ -356,7 +424,13 @@ class PlotterController(QObject):
 
         def handler(ctx: OperationContext) -> tuple[bool, str]:
             ctx.emit_progress(10, "Подготовка калибровки...")
-            return self.bridge.run_calibration(ctx, port, self.baud, sheet, ctx.emit_log)
+            ok, msg = self.bridge.run_calibration(ctx, port, self.baud, sheet, ctx.emit_log)
+            rel_ok, rel_msg = self._release_idle_motors_in_operation(ctx, port)
+            if ok and rel_ok:
+                return True, f"{msg} | {rel_msg}"
+            if not ok:
+                return False, msg
+            return True, msg
 
         self._enqueue("calibration", "Калибровка 4 углов...", handler, com_port=port)
 
@@ -368,7 +442,13 @@ class PlotterController(QObject):
 
         def handler(ctx: OperationContext) -> tuple[bool, str]:
             ctx.emit_progress(10, "Подготовка рамки...")
-            return self.bridge.run_frame(ctx, port, self.baud, sheet, ctx.emit_log)
+            ok, msg = self.bridge.run_frame(ctx, port, self.baud, sheet, ctx.emit_log)
+            rel_ok, rel_msg = self._release_idle_motors_in_operation(ctx, port)
+            if ok and rel_ok:
+                return True, f"{msg} | {rel_msg}"
+            if not ok:
+                return False, msg
+            return True, msg
 
         self._enqueue("frame", "Рисование рамки активной зоны...", handler, com_port=port)
 
@@ -396,7 +476,7 @@ class PlotterController(QObject):
 
         def handler(ctx: OperationContext) -> tuple[bool, str]:
             ctx.emit_progress(10, "Подготовка траектории...")
-            return self.bridge.run_draw(
+            ok, msg = self.bridge.run_draw(
                 ctx=ctx,
                 input_path=file_path,
                 com_port=port,
@@ -411,6 +491,12 @@ class PlotterController(QObject):
                 strict_one_to_one=strict_one_to_one,
                 log=ctx.emit_log,
             )
+            rel_ok, rel_msg = self._release_idle_motors_in_operation(ctx, port)
+            if ok and rel_ok:
+                return True, f"{msg} | {rel_msg}"
+            if not ok:
+                return False, msg
+            return True, msg
 
         self._enqueue("draw", "Отправка задания на рисование...", handler, com_port=port)
 
@@ -469,7 +555,13 @@ class PlotterController(QObject):
 
         def handler(ctx: OperationContext) -> tuple[bool, str]:
             ctx.emit_progress(10, "Подготовка теста износа...")
-            return self.bridge.run_wear_test(ctx, port, self.baud, sheet, ctx.emit_log)
+            ok, msg = self.bridge.run_wear_test(ctx, port, self.baud, sheet, ctx.emit_log)
+            rel_ok, rel_msg = self._release_idle_motors_in_operation(ctx, port)
+            if ok and rel_ok:
+                return True, f"{msg} | {rel_msg}"
+            if not ok:
+                return False, msg
+            return True, msg
 
         self._enqueue("wear_test", "Тест износа карандаша...", handler, com_port=port)
 
