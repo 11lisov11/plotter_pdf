@@ -14,9 +14,12 @@ if errorlevel 1 (
   exit /b 1
 )
 
-echo Drag and drop a PDF/SVG file on this script.
+echo Drag and drop a PDF/SVG/FRW/CDW/DOC/DOCX file on this script.
 echo   draw_pdf_now.bat "C:\path\to\file.pdf"
 echo   draw_pdf_now.bat "C:\path\to\file.svg"
+echo   draw_pdf_now.bat "C:\path\to\file.frw"
+echo   draw_pdf_now.bat "C:\path\to\file.cdw"
+echo   draw_pdf_now.bat "C:\path\to\file.docx"
 
 echo.
 

@@ -1,4 +1,5 @@
-﻿import argparse
+import argparse
+import math
 import re
 from pathlib import Path
 
@@ -19,6 +20,25 @@ def parse_args():
     parser.add_argument("--z-up", type=float, default=0.0, help="Z value for pen up")
     parser.add_argument("--spindle-speed", type=float, default=1000.0, help="S value for M3")
     parser.add_argument("--delay", type=float, default=0.05, help="Seconds for G4 after pen switch")
+    parser.add_argument("--delay-up", type=float, default=None, help="Seconds for G4 after pen up (defaults to --delay)")
+    parser.add_argument("--z-feed-down-approach", type=float, default=700.0, help="Feed for approach before touchdown (mm/min)")
+    parser.add_argument("--z-feed-down-touch", type=float, default=180.0, help="Feed for final pen touchdown (mm/min)")
+    parser.add_argument("--z-feed-up", type=float, default=700.0, help="Feed for main pen lift (mm/min)")
+    parser.add_argument("--z-feed-up-final", type=float, default=220.0, help="Feed for final near-top pen lift segment (mm/min)")
+    parser.add_argument("--z-soft-down-mm", type=float, default=0.8, help="Last mm moved slowly before Z-down")
+    parser.add_argument("--z-soft-up-mm", type=float, default=0.5, help="Last mm moved slowly before Z-up")
+    parser.add_argument(
+        "--z-travel-lift-mm",
+        type=float,
+        default=3.0,
+        help="Inter-path lift distance from Z-down towards Z-up (mm). Full Z-up is still used at job end.",
+    )
+    parser.add_argument("--dynamic-z-enable", action="store_true", help="Adjust Z-down dynamically as draw length accumulates.")
+    parser.add_argument("--dynamic-base-z-down", type=float, default=None, help="Base Z-down without wear compensation.")
+    parser.add_argument("--dynamic-initial-wear-mm", type=float, default=0.0, help="Current estimated wear at job start (mm).")
+    parser.add_argument("--dynamic-wear-mm-per-m", type=float, default=0.01, help="Estimated wear increase per drawn meter.")
+    parser.add_argument("--dynamic-z-comp-per-wear", type=float, default=1.0, help="Extra Z mm per 1 mm estimated wear.")
+    parser.add_argument("--dynamic-z-max-comp-mm", type=float, default=0.8, help="Maximum dynamic Z compensation (mm).")
     return parser.parse_args()
 
 
@@ -52,30 +72,154 @@ def has_axis(tokens, axis):
     return False
 
 
-def touch_pen_down(lines, z_down, delay, z_up, mode, spindle_speed):
+def axis_value(tokens, axis):
+    ax = axis.upper()
+    for token in tokens:
+        up = token.upper()
+        if up.startswith(ax):
+            try:
+                return float(up[1:])
+            except Exception:
+                return None
+    return None
+
+
+def arc_length_xy(x0, y0, x1, y1, i, j, cw):
+    try:
+        cx = x0 + i
+        cy = y0 + j
+        r = math.hypot(x0 - cx, y0 - cy)
+        if r <= 1e-9:
+            return math.hypot(x1 - x0, y1 - y0)
+        if math.hypot(x1 - x0, y1 - y0) <= 1e-9:
+            return 2.0 * math.pi * r
+        a0 = math.atan2(y0 - cy, x0 - cx)
+        a1 = math.atan2(y1 - cy, x1 - cx)
+        if cw:
+            sweep = a0 - a1
+            if sweep <= 0.0:
+                sweep += 2.0 * math.pi
+        else:
+            sweep = a1 - a0
+            if sweep <= 0.0:
+                sweep += 2.0 * math.pi
+        return abs(r * sweep)
+    except Exception:
+        return math.hypot(x1 - x0, y1 - y0)
+
+
+def touch_pen_down(
+    lines,
+    z_down,
+    delay_down,
+    z_up,
+    mode,
+    spindle_speed,
+    delay_up=None,
+    z_feed_down_approach=700.0,
+    z_feed_down_touch=180.0,
+    z_feed_up=700.0,
+    z_feed_up_final=220.0,
+    z_soft_down_mm=0.8,
+    z_soft_up_mm=0.5,
+    z_travel_lift_mm=3.0,
+    dynamic_z_enable=False,
+    dynamic_base_z_down=None,
+    dynamic_initial_wear_mm=0.0,
+    dynamic_wear_mm_per_m=0.01,
+    dynamic_z_comp_per_wear=1.0,
+    dynamic_z_max_comp_mm=0.8,
+):
     out = []
     pen_down = False
+    current_z = float(z_up)
+    current_x = None
+    current_y = None
+    abs_mode = True
+    drawn_length_mm = 0.0
+    if delay_up is None:
+        delay_up = delay_down
+
+    z_feed_down_approach = max(1.0, float(z_feed_down_approach))
+    z_feed_down_touch = max(1.0, float(z_feed_down_touch))
+    z_feed_up = max(1.0, float(z_feed_up))
+    z_feed_up_final = max(1.0, float(z_feed_up_final))
+    z_soft_down_mm = max(0.0, float(z_soft_down_mm))
+    z_soft_up_mm = max(0.0, float(z_soft_up_mm))
+    z_travel_lift_mm = max(0.0, float(z_travel_lift_mm))
+    dynamic_initial_wear_mm = max(0.0, float(dynamic_initial_wear_mm))
+    dynamic_wear_mm_per_m = max(0.0, float(dynamic_wear_mm_per_m))
+    dynamic_z_comp_per_wear = max(0.0, float(dynamic_z_comp_per_wear))
+    dynamic_z_max_comp_mm = max(0.0, float(dynamic_z_max_comp_mm))
+    if dynamic_base_z_down is None:
+        dynamic_base_z_down = float(z_down)
+    else:
+        dynamic_base_z_down = float(dynamic_base_z_down)
+    dynamic_z_enable = bool(dynamic_z_enable and mode == "z")
+
+    def _safe_float(text: str):
+        try:
+            return float(text)
+        except Exception:
+            return None
+
+    def _dynamic_z_down(mm_drawn: float) -> float:
+        if not dynamic_z_enable:
+            return float(z_down)
+        wear_now = dynamic_initial_wear_mm + (max(0.0, mm_drawn) / 1000.0) * dynamic_wear_mm_per_m
+        comp = min(dynamic_z_max_comp_mm, wear_now * dynamic_z_comp_per_wear)
+        return dynamic_base_z_down + comp
+
+    def _approach_target(start_z: float, target_z: float, soft_mm: float):
+        dz = target_z - start_z
+        if soft_mm <= 1e-9 or abs(dz) <= soft_mm + 1e-9:
+            return None
+        return target_z - math.copysign(soft_mm, dz)
+
+    def _emit_z_linear(target_z: float, feed_mm_min: float):
+        nonlocal current_z
+        out.append(f"G1 Z{target_z:.4f} F{feed_mm_min:.1f}")
+        current_z = float(target_z)
+
+    def _travel_lift_target(start_z: float) -> float:
+        # Lift only enough for XY travel to reduce cycle time.
+        # Keep the target clamped between current Z and full-up.
+        if abs(start_z - z_up) <= 1e-9:
+            return float(z_up)
+        if start_z > z_up:
+            return max(float(z_up), float(start_z) - z_travel_lift_mm)
+        return min(float(z_up), float(start_z) + z_travel_lift_mm)
 
     def add_pen_up():
-        nonlocal pen_down
+        nonlocal pen_down, current_z
         if pen_down:
             if mode == "spindle":
                 out.append("M5")
             else:
-                out.append(f"G0 Z{z_up:.4f}")
-            if delay > 0:
-                out.append(f"G4 P{delay:.2f}")
+                start_z = current_z
+                z_target = _travel_lift_target(start_z)
+                z_pre = _approach_target(start_z, z_target, z_soft_up_mm)
+                if z_pre is not None and abs(z_pre - start_z) > 1e-6:
+                    _emit_z_linear(z_pre, z_feed_up)
+                _emit_z_linear(z_target, z_feed_up_final)
+            if delay_up > 0:
+                out.append(f"G4 P{delay_up:.2f}")
             pen_down = False
 
-    def add_pen_down():
-        nonlocal pen_down
+    def add_pen_down(mm_drawn: float):
+        nonlocal pen_down, current_z
         if not pen_down:
             if mode == "spindle":
                 out.append(f"M3 S{spindle_speed:.0f}")
             else:
-                out.append(f"G0 Z{z_down:.4f}")
-            if delay > 0:
-                out.append(f"G4 P{delay:.2f}")
+                z_target = _dynamic_z_down(mm_drawn)
+                start_z = current_z
+                z_pre = _approach_target(start_z, z_target, z_soft_down_mm)
+                if z_pre is not None and abs(z_pre - start_z) > 1e-6:
+                    _emit_z_linear(z_pre, z_feed_down_approach)
+                _emit_z_linear(z_target, z_feed_down_touch)
+            if delay_down > 0:
+                out.append(f"G4 P{delay_down:.2f}")
             pen_down = True
 
     for line in lines:
@@ -96,6 +240,15 @@ def touch_pen_down(lines, z_down, delay, z_up, mode, spindle_speed):
             out.append(raw)
             continue
 
+        if code == "G90":
+            abs_mode = True
+            out.append(raw)
+            continue
+        if code == "G91":
+            abs_mode = False
+            out.append(raw)
+            continue
+
         xy_move = (code in GCODE_MOVES_WITH_XY) and (has_axis(tokens, "X") or has_axis(tokens, "Y"))
         z_move_only = (code in GCODE_MOVES_WITH_XY) and has_axis(tokens, "Z") and not (has_axis(tokens, "X") or has_axis(tokens, "Y"))
 
@@ -104,7 +257,10 @@ def touch_pen_down(lines, z_down, delay, z_up, mode, spindle_speed):
             for token in tokens:
                 up = token.upper()
                 if up.startswith("Z"):
-                    value = float(up[1:])
+                    value = _safe_float(up[1:])
+                    if value is None:
+                        continue
+                    current_z = float(value)
                     if abs(value - z_up) < 1e-6:
                         pen_down = False
                     elif abs(value - z_down) < 1e-6:
@@ -116,17 +272,44 @@ def touch_pen_down(lines, z_down, delay, z_up, mode, spindle_speed):
         if code.startswith("G0"):
             if xy_move:
                 add_pen_up()
+                x_tok = axis_value(tokens, "X")
+                y_tok = axis_value(tokens, "Y")
+                if x_tok is not None:
+                    current_x = x_tok if abs_mode or current_x is None else current_x + x_tok
+                if y_tok is not None:
+                    current_y = y_tok if abs_mode or current_y is None else current_y + y_tok
             out.append(raw)
             continue
 
         if code.startswith("G1") and xy_move:
-            add_pen_down()
+            x0, y0 = current_x, current_y
+            x_tok = axis_value(tokens, "X")
+            y_tok = axis_value(tokens, "Y")
+            x1 = x_tok if (x_tok is not None and (abs_mode or current_x is None)) else (current_x + x_tok if x_tok is not None and current_x is not None else current_x)
+            y1 = y_tok if (y_tok is not None and (abs_mode or current_y is None)) else (current_y + y_tok if y_tok is not None and current_y is not None else current_y)
+            add_pen_down(drawn_length_mm)
             out.append(raw)
+            if x0 is not None and y0 is not None and x1 is not None and y1 is not None:
+                drawn_length_mm += max(0.0, math.hypot(x1 - x0, y1 - y0))
+            current_x, current_y = x1, y1
             continue
 
         if code in {"G2", "G3"} and xy_move:
-            add_pen_down()
+            x0, y0 = current_x, current_y
+            x_tok = axis_value(tokens, "X")
+            y_tok = axis_value(tokens, "Y")
+            i_tok = axis_value(tokens, "I")
+            j_tok = axis_value(tokens, "J")
+            x1 = x_tok if (x_tok is not None and (abs_mode or current_x is None)) else (current_x + x_tok if x_tok is not None and current_x is not None else current_x)
+            y1 = y_tok if (y_tok is not None and (abs_mode or current_y is None)) else (current_y + y_tok if y_tok is not None and current_y is not None else current_y)
+            add_pen_down(drawn_length_mm)
             out.append(raw)
+            if x0 is not None and y0 is not None and x1 is not None and y1 is not None:
+                if i_tok is not None and j_tok is not None:
+                    drawn_length_mm += max(0.0, arc_length_xy(x0, y0, x1, y1, i_tok, j_tok, cw=(code == "G2")))
+                else:
+                    drawn_length_mm += max(0.0, math.hypot(x1 - x0, y1 - y0))
+            current_x, current_y = x1, y1
             continue
 
         out.append(raw)
@@ -135,9 +318,13 @@ def touch_pen_down(lines, z_down, delay, z_up, mode, spindle_speed):
         if mode == "spindle":
             out.append("M5")
         else:
-            out.append(f"G0 Z{z_up:.4f}")
-        if delay > 0:
-            out.append(f"G4 P{delay:.2f}")
+            start_z = current_z
+            z_pre = _approach_target(start_z, z_up, z_soft_up_mm)
+            if z_pre is not None and abs(z_pre - start_z) > 1e-6:
+                _emit_z_linear(z_pre, z_feed_up)
+            _emit_z_linear(z_up, z_feed_up_final)
+        if delay_up > 0:
+            out.append(f"G4 P{delay_up:.2f}")
 
     return out
 
@@ -155,6 +342,20 @@ if __name__ == "__main__":
         args.z_up,
         args.mode,
         args.spindle_speed,
+        args.delay_up,
+        args.z_feed_down_approach,
+        args.z_feed_down_touch,
+        args.z_feed_up,
+        args.z_feed_up_final,
+        args.z_soft_down_mm,
+        args.z_soft_up_mm,
+        args.z_travel_lift_mm,
+        args.dynamic_z_enable,
+        args.dynamic_base_z_down,
+        args.dynamic_initial_wear_mm,
+        args.dynamic_wear_mm_per_m,
+        args.dynamic_z_comp_per_wear,
+        args.dynamic_z_max_comp_mm,
     )
     output_path.write_text("\n".join(processed) + "\n", encoding="utf-8")
     print(f"saved: {output_path}")

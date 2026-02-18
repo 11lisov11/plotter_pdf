@@ -1,10 +1,22 @@
-﻿__pycache__/
-*.pyc
-*.pyo
-*.pyd
+__pycache__/
+*.py[cod]
 *.log
 *.tmp
-.vscode/
-.idea/
-*.egg-info/
+*.lnk
+
+# Python env / tooling
 venv/
+.venv/
+.env
+.idea/
+.vscode/
+*.egg-info/
+
+# Generated outputs
+_tmp/
+build/
+dist/
+PlotterStudio.spec
+*_prepared*.nc
+*_prepared*.gcode
+*_trimmed.svg

@@ -54,6 +54,7 @@ For safety every drawing job is followed by:
 
 - `M5`
 - `$1=0`
+- Optional: `$SLP` if you need guaranteed stepper disable/cooling (requires Reset to wake).
 
 This removes holding current from the motors after drawing.
 
@@ -109,6 +110,7 @@ G1 X0.0000 Y-280.0000
 G1 X0.0000 Y0.0000
 G0 Z0.0000 F300
 M5
+$1=0
 ```
 
 ## 9) Recovery when geometry drifts
@@ -121,5 +123,5 @@ M5
 
 ## 10) Corner calibration run
 - Run: `python src\plotter_pdf_drawer.py --calibrate-corners`
-- What it does: frame + 4 corner marks with explicit pen down/up.
+- What it does: 4 corner marks (no enclosing frame) with explicit pen down/up.
 - Good when: after physical origin adjustment or after any collision/alignment check.

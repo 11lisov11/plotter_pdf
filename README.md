@@ -1,74 +1,118 @@
-﻿# GRBL Plotter PDF Drawer
+# Plotter Studio
 
-Desktop workflow for CH340 GRBL plotter (Windows) to draw PDF/SVG files:
-- converts PDF via Inkscape,
-- clips to working area,
-- adds pen-lift logic,
-- sends G-code to GRBL (COM6 by default).
+Современное desktop-приложение для GRBL-плоттера (Windows 10/11):
+- UI на **PySide6** (русский интерфейс, светлая/тёмная тема),
+- workflow: **Подключение -> Калибровка -> Файл -> Рисование -> Сервис**,
+- сворачиваемый лог-дровер, статус-бар и аварийная отмена.
 
-## Что внутри
+## Запуск
 
-- `src/plotter_pdf_drawer.py` — GUI/CLI и конвертация PDF/SVG → G-code.
-- `src/penlift_postprocess.py` — пост-обработка G-code с управлением пером.
-- `src/send_grbl_file.py` — отправка файла в GRBL по COM.
-- `config/PLOTTER_CONTROL_RULES.md` — единый регламент настроек станка.
-- `config/axis_profile.json` — профиль осей.
-- `data/gost_a4_frame.nc`, `data/gost_a4_zone.nc` — эталоны рамки/рабочей зоны.
-- `scripts/*.bat` — запускающие утилиты:
-  - `scripts/run_plotter_pdf_drawer.bat`
-  - `scripts/draw_pdf_now.bat`
-  - `scripts/draw_work_area_frame.bat`
-  - `scripts/calibrate_corners.bat`
-  - `scripts/penlift_postprocess.bat`
-
-## Установка
-
-- Python 3.10+
-- Windows + COM-контроллер GRBL
-- Inkscape установлен и доступен в PATH, либо установлен по пути:
-  `C:\Program Files\Inkscape\bin\inkscape.com`
-- Установка зависимостей:
+### Вариант 1: Python (dev)
 
 ```bat
 pip install -r requirements.txt
+python main.py
 ```
 
-## Быстрый старт
+### Вариант 2: готовый EXE (portable)
 
-### 1) Быстрая загрузка файла
+После сборки запустите:
 
-- Двойной клик `scripts/run_plotter_pdf_drawer.bat` и выберите PDF/SVG.
+```text
+dist\PlotterStudio.exe
+```
 
-Или из CMD:
+Ничего устанавливать не нужно, админ-права не требуются.
+
+## Сборка portable EXE
+
+### Быстро (bat)
 
 ```bat
-python src\plotter_pdf_drawer.py C:\path\to\file.pdf
+build_windows.bat
 ```
 
-### 2) Простой drag&drop
+### Через PowerShell
+
+```powershell
+.\build_windows.ps1
+```
+
+Что делает сборка:
+1. создаёт `.venv`,
+2. ставит зависимости + `pyinstaller`,
+3. собирает `PlotterStudio.exe` (`--onefile --noconsole`),
+4. кладёт результат в `dist\`,
+5. собирает `dist\PlotterStudio-portable.zip`.
+
+## Где хранятся логи и настройки
+
+Приложение использует `QSettings` + JSON snapshot.
+
+- Логи:
+  - `%APPDATA%\PlotterStudio\logs\plotter_studio.log`
+- Снимок последних настроек:
+  - `%APPDATA%\PlotterStudio\last_state.json`
+
+## Горячие клавиши
+
+- `Ctrl+O` — выбрать файл
+- `Ctrl+Enter` — старт рисования
+- `Ctrl+Shift+Enter` — подготовить и открыть предпросмотр (SVG)
+- `Esc` — стоп/отмена текущей операции
+- `Ctrl+L` — показать/скрыть лог
+
+## Структура проекта
+
+```text
+plotter_studio/
+  main.py
+  core/
+    plotter_controller.py
+    serial_worker.py
+    protocol.py
+    settings.py
+  ui/
+    main_window.py
+    theme.py
+    pages/
+      connection_page.py
+      calibration_page.py
+      file_page.py
+      manual_page.py
+      logs_page.py
+    widgets/
+      segmented_control.py
+      status_pill.py
+      toast.py
+  assets/
+    icon.ico
+    icon.png
+```
+
+## Что сохранено из функционала
+
+- COM подключение/скан/подключить/отключить,
+- выбор инструмента (`pen`/`pencil`),
+- калибровка 4 угла + рамка активной зоны,
+- предпросмотр траектории перед отправкой (SVG),
+- расширенная настройка активной зоны: привязка, смещение XY,
+- A3 в 2 прохода по X (выбор прохода 1/2 или 2/2),
+- загрузка PDF/SVG/FRW/CDW/DOC/DOCX и отправка на плоттер,
+- тест износа карандаша,
+- ручные команды Z (вверх/вниз, шаг, feed),
+- отпуск моторов,
+- кнопка стоп/отмена.
+
+## Тесты
 
 ```bat
-scripts\draw_pdf_now.bat C:\path\to\file.svg
+python -m unittest discover -s tests -p "test_*.py"
 ```
 
-### 3) Только рамка/калибровка
+## Важно
 
-```bat
-python src\plotter_pdf_drawer.py --frame
-python src\plotter_pdf_drawer.py --calibrate-corners
-```
-
-## Команды по умолчанию
-
-- COM: `COM6`
-- Baud: `115200`
-- Z-up: `0.0`
-- Z-down: `11.9` (подбирается под ваш маркер/папочку)
-- Рабочая зона: `X 0..180`, `Y -280..0`
-
-Все правила по направлениям, нулю и последовательности команд — в `config/PLOTTER_CONTROL_RULES.md`.
-
-## Безопасная отправка
-
-- После передачи файла в GRBL скрипт снимает удержание моторов (`$1=0`), чтобы они не греялись в холостом режиме.
-- Для диагностики перед запуском используйте ручной Connect/алгоритм в UGS или этот же пайплайн приложений.
+- Новый UI использует существующий backend (`src/plotter_pdf_drawer.py`) через контроллер.
+- Для `DOC/DOCX` требуется установленный Microsoft Word (конвертация через COM в PDF).
+- Протокол команд плоттера не менялся.
+- Legacy-скрипты из `src/` и `scripts/` сохранены для обратной совместимости.
