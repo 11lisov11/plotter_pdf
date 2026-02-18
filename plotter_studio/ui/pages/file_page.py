@@ -24,10 +24,13 @@ class FilePage(QWidget):
     preview_requested = Signal(Path)
     wear_test_requested = Signal()
     file_changed = Signal(str)
-    render_settings_changed = Signal(str, bool, bool, bool, bool)  # quality, force_text_to_path, exact_geometry_mode, safe_travel_lift, strict_one_to_one
+    # quality, force_text_to_path, exact_geometry_mode, safe_travel_lift, strict_one_to_one
+    render_settings_changed = Signal(str, bool, bool, bool, bool)
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self._connected = False
+
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(12)
@@ -51,7 +54,7 @@ class FilePage(QWidget):
         row.setSpacing(8)
         self.path_edit = QLineEdit(card)
         self.path_edit.setPlaceholderText("Выберите файл для рисования...")
-        self.path_edit.textChanged.connect(self.file_changed.emit)
+        self.path_edit.textChanged.connect(self._on_path_changed)
         self.pick_btn = QPushButton("Выбрать файл…", card)
         self.pick_btn.clicked.connect(self.pick_file_dialog)
         row.addWidget(self.path_edit, 1)
@@ -88,11 +91,17 @@ class FilePage(QWidget):
         self.exact_geometry_check.toggled.connect(self._emit_render_settings_changed)
         layout.addWidget(self.exact_geometry_check)
 
-        self.safe_travel_lift_check = QCheckBox("Безопасный подъём пера между контурами (меньше артефактов)", card)
+        self.safe_travel_lift_check = QCheckBox(
+            "Безопасный подъём пера между контурами (меньше артефактов)",
+            card,
+        )
         self.safe_travel_lift_check.toggled.connect(self._emit_render_settings_changed)
         layout.addWidget(self.safe_travel_lift_check)
 
-        self.strict_one_to_one_check = QCheckBox("Сохранять 1:1 масштаб (если не помещается — клиппинг)", card)
+        self.strict_one_to_one_check = QCheckBox(
+            "Сохранять 1:1 масштаб (если не помещается — клиппинг)",
+            card,
+        )
         self.strict_one_to_one_check.toggled.connect(self._emit_render_settings_changed)
         layout.addWidget(self.strict_one_to_one_check)
 
@@ -123,7 +132,9 @@ class FilePage(QWidget):
 
         root.addWidget(card)
         root.addStretch(1)
+
         self._update_quality_hint()
+        self._update_action_buttons()
 
     def pick_file_dialog(self) -> None:
         path, _ = QFileDialog.getOpenFileName(
@@ -146,6 +157,19 @@ class FilePage(QWidget):
         if not text:
             return
         self.preview_requested.emit(Path(text))
+
+    def _on_path_changed(self, value: str) -> None:
+        self.file_changed.emit(value)
+        self._update_action_buttons()
+
+    def _has_file(self) -> bool:
+        return bool(self.path_edit.text().strip())
+
+    def _update_action_buttons(self) -> None:
+        has_file = self._has_file()
+        self.preview_btn.setEnabled(has_file)
+        self.draw_btn.setEnabled(self._connected and has_file)
+        self.wear_btn.setEnabled(self._connected)
 
     def _emit_render_settings_changed(self) -> None:
         quality, force_text_to_path, exact_mode, safe_lift, strict_scale = self.current_render_settings()
@@ -187,11 +211,11 @@ class FilePage(QWidget):
 
     def set_file_path(self, value: str) -> None:
         self.path_edit.setText(value or "")
+        self._update_action_buttons()
 
     def set_connected_enabled(self, enabled: bool) -> None:
-        self.preview_btn.setEnabled(True)
-        self.draw_btn.setEnabled(enabled)
-        self.wear_btn.setEnabled(enabled)
+        self._connected = bool(enabled)
+        self._update_action_buttons()
 
     def set_progress_indeterminate(self, active: bool, label: str = "") -> None:
         if active:
