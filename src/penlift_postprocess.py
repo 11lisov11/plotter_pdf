@@ -39,6 +39,16 @@ def parse_args():
     parser.add_argument("--dynamic-wear-mm-per-m", type=float, default=0.01, help="Estimated wear increase per drawn meter.")
     parser.add_argument("--dynamic-z-comp-per-wear", type=float, default=1.0, help="Extra Z mm per 1 mm estimated wear.")
     parser.add_argument("--dynamic-z-max-comp-mm", type=float, default=0.8, help="Maximum dynamic Z compensation (mm).")
+    parser.add_argument("--stroke-z-jitter-enable", action="store_true", help="Add tiny deterministic per-stroke Z variation for pencil naturalness.")
+    parser.add_argument("--stroke-z-jitter-mm", type=float, default=0.0, help="Amplitude of per-stroke Z jitter (mm).")
+    parser.add_argument("--stroke-z-jitter-seed", type=int, default=173, help="Seed for deterministic per-stroke Z jitter.")
+    parser.add_argument(
+        "--merge-short-travel-enable",
+        action="store_true",
+        help="Keep pen down on very short G0 XY hops (useful for handwriting continuity).",
+    )
+    parser.add_argument("--merge-short-travel-mm", type=float, default=0.0, help="Max XY distance for short-travel merge.")
+    parser.add_argument("--merge-short-travel-feed", type=float, default=2200.0, help="Feed for merged short travel moves.")
     return parser.parse_args()
 
 
@@ -129,6 +139,12 @@ def touch_pen_down(
     dynamic_wear_mm_per_m=0.01,
     dynamic_z_comp_per_wear=1.0,
     dynamic_z_max_comp_mm=0.8,
+    stroke_z_jitter_enable=False,
+    stroke_z_jitter_mm=0.0,
+    stroke_z_jitter_seed=173,
+    merge_short_travel_enable=False,
+    merge_short_travel_mm=0.0,
+    merge_short_travel_feed=2200.0,
 ):
     out = []
     pen_down = False
@@ -151,11 +167,18 @@ def touch_pen_down(
     dynamic_wear_mm_per_m = max(0.0, float(dynamic_wear_mm_per_m))
     dynamic_z_comp_per_wear = max(0.0, float(dynamic_z_comp_per_wear))
     dynamic_z_max_comp_mm = max(0.0, float(dynamic_z_max_comp_mm))
+    stroke_z_jitter_mm = max(0.0, float(stroke_z_jitter_mm))
+    stroke_z_jitter_enable = bool(stroke_z_jitter_enable and mode == "z" and stroke_z_jitter_mm > 0.0)
+    stroke_seed = int(stroke_z_jitter_seed or 0)
+    merge_short_travel_enable = bool(merge_short_travel_enable and float(merge_short_travel_mm) > 0.0)
+    merge_short_travel_mm = max(0.0, float(merge_short_travel_mm))
+    merge_short_travel_feed = max(1.0, float(merge_short_travel_feed))
     if dynamic_base_z_down is None:
         dynamic_base_z_down = float(z_down)
     else:
         dynamic_base_z_down = float(dynamic_base_z_down)
     dynamic_z_enable = bool(dynamic_z_enable and mode == "z")
+    stroke_index = 0
 
     def _safe_float(text: str):
         try:
@@ -169,6 +192,16 @@ def touch_pen_down(
         wear_now = dynamic_initial_wear_mm + (max(0.0, mm_drawn) / 1000.0) * dynamic_wear_mm_per_m
         comp = min(dynamic_z_max_comp_mm, wear_now * dynamic_z_comp_per_wear)
         return dynamic_base_z_down + comp
+
+    def _stroke_z_offset(idx: int) -> float:
+        # Deterministic pseudo-random offset per stroke.
+        if not stroke_z_jitter_enable:
+            return 0.0
+        s = math.sin((idx + 1 + stroke_seed * 0.37) * 12.9898 + 78.233) * 43758.5453
+        frac = s - math.floor(s)
+        rnd = (frac * 2.0) - 1.0
+        drift = math.sin((idx + 1 + stroke_seed * 0.11) * 0.43)
+        return (0.72 * rnd + 0.28 * drift) * stroke_z_jitter_mm
 
     def _approach_target(start_z: float, target_z: float, soft_mm: float):
         dz = target_z - start_z
@@ -207,12 +240,23 @@ def touch_pen_down(
             pen_down = False
 
     def add_pen_down(mm_drawn: float):
-        nonlocal pen_down, current_z
+        nonlocal pen_down, current_z, stroke_index
         if not pen_down:
+            stroke_index += 1
             if mode == "spindle":
                 out.append(f"M3 S{spindle_speed:.0f}")
             else:
                 z_target = _dynamic_z_down(mm_drawn)
+                if stroke_z_jitter_enable:
+                    z_target += _stroke_z_offset(stroke_index)
+                    # Keep jitter in a safe range around the current dynamic baseline.
+                    base_now = _dynamic_z_down(mm_drawn)
+                    if z_down >= z_up:
+                        z_target = max(z_up + 0.03, z_target)
+                        z_target = min(z_target, base_now + stroke_z_jitter_mm)
+                    else:
+                        z_target = min(z_up - 0.03, z_target)
+                        z_target = max(z_target, base_now - stroke_z_jitter_mm)
                 start_z = current_z
                 z_pre = _approach_target(start_z, z_target, z_soft_down_mm)
                 if z_pre is not None and abs(z_pre - start_z) > 1e-6:
@@ -271,13 +315,42 @@ def touch_pen_down(
 
         if code.startswith("G0"):
             if xy_move:
-                add_pen_up()
+                x0, y0 = current_x, current_y
                 x_tok = axis_value(tokens, "X")
                 y_tok = axis_value(tokens, "Y")
-                if x_tok is not None:
-                    current_x = x_tok if abs_mode or current_x is None else current_x + x_tok
-                if y_tok is not None:
-                    current_y = y_tok if abs_mode or current_y is None else current_y + y_tok
+                x1 = x_tok if (x_tok is not None and (abs_mode or current_x is None)) else (current_x + x_tok if x_tok is not None and current_x is not None else current_x)
+                y1 = y_tok if (y_tok is not None and (abs_mode or current_y is None)) else (current_y + y_tok if y_tok is not None and current_y is not None else current_y)
+                short_merge = False
+                if (
+                    merge_short_travel_enable
+                    and pen_down
+                    and x0 is not None
+                    and y0 is not None
+                    and x1 is not None
+                    and y1 is not None
+                ):
+                    dxy = math.hypot(x1 - x0, y1 - y0)
+                    short_merge = dxy <= merge_short_travel_mm
+                if short_merge:
+                    xy_tokens = []
+                    for token in tokens:
+                        up = token.upper()
+                        if up.startswith("X") or up.startswith("Y"):
+                            xy_tokens.append(token)
+                    if xy_tokens:
+                        merged = " ".join(["G1", *xy_tokens, f"F{merge_short_travel_feed:.1f}"]).strip()
+                        if comment:
+                            merged = f"{merged} {comment}"
+                        out.append(merged)
+                    else:
+                        out.append(raw)
+                    if x0 is not None and y0 is not None and x1 is not None and y1 is not None:
+                        drawn_length_mm += max(0.0, math.hypot(x1 - x0, y1 - y0))
+                    current_x, current_y = x1, y1
+                    continue
+
+                add_pen_up()
+                current_x, current_y = x1, y1
             out.append(raw)
             continue
 
@@ -356,6 +429,12 @@ if __name__ == "__main__":
         args.dynamic_wear_mm_per_m,
         args.dynamic_z_comp_per_wear,
         args.dynamic_z_max_comp_mm,
+        args.stroke_z_jitter_enable,
+        args.stroke_z_jitter_mm,
+        args.stroke_z_jitter_seed,
+        args.merge_short_travel_enable,
+        args.merge_short_travel_mm,
+        args.merge_short_travel_feed,
     )
     output_path.write_text("\n".join(processed) + "\n", encoding="utf-8")
     print(f"saved: {output_path}")

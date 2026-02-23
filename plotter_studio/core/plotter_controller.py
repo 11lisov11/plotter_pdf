@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import threading
 import uuid
 from dataclasses import dataclass
@@ -31,7 +32,7 @@ class PlotterController(QObject):
     operation_done = Signal(str, bool, str)  # op_type, ok, message
     operation_started = Signal(str, str)  # op_type, title
     pencil_banner_changed = Signal(str, bool)  # text, alert
-    preview_ready = Signal(str)  # path to preview svg
+    preview_ready = Signal(str)  # path to preview artifact (pdf/svg)
 
     def __init__(self, project_root: Path) -> None:
         super().__init__()
@@ -140,14 +141,12 @@ class PlotterController(QObject):
             self.connected = False
             self.connected_port = ""
             self._set_connection_state(False, "Отключено", "neutral")
-        elif meta.op_type == "preview" and ok:
-            preview_path = ""
-            if "Предпросмотр готов:" in message:
-                preview_part = message.split("Предпросмотр готов:", 1)[-1].strip()
-                preview_path = preview_part.split("|", 1)[0].strip()
+        elif meta.op_type in {"preview", "draw"} and ok:
+            preview_path = self._extract_preview_path(message)
             if not preview_path:
                 preview_path = (meta.payload or "").strip()
             if preview_path:
+                self.update_ui_settings(last_preview_svg=preview_path)
                 self.preview_ready.emit(preview_path)
 
         if message:
@@ -210,6 +209,40 @@ class PlotterController(QObject):
                 return True
         return False
 
+    @staticmethod
+    def _extract_preview_path(message: str) -> str:
+        text = (message or "").strip()
+        if not text:
+            return ""
+        # Stable primary marker from backend bridge.
+        m = re.search(r"Preview ready:\s*([^|]+)", text, flags=re.IGNORECASE)
+        if m:
+            return (m.group(1) or "").strip()
+        # Legacy marker from older builds.
+        m = re.search(r"РџСЂРµРґРїСЂРѕСЃРјРѕС‚СЂ РіРѕС‚РѕРІ:\s*([^|]+)", text)
+        if m:
+            return (m.group(1) or "").strip()
+        # Prefer PDF preview when available.
+        m = re.search(r"Preview PDF:\s*([^|]+)", text, flags=re.IGNORECASE)
+        if m:
+            return (m.group(1) or "").strip()
+        m = re.search(r"\bPDF:\s*([^|]+)", text, flags=re.IGNORECASE)
+        if m:
+            return (m.group(1) or "").strip()
+        # New stable marker.
+        m = re.search(r"Preview ready:\s*([^|]+)", text, flags=re.IGNORECASE)
+        if m:
+            return (m.group(1) or "").strip()
+        # Legacy marker from older builds.
+        m = re.search(r"Предпросмотр готов:\s*([^|]+)", text)
+        if m:
+            return (m.group(1) or "").strip()
+        # Secondary marker if only raw preview path is attached.
+        m = re.search(r"Preview SVG:\s*([^|]+)", text, flags=re.IGNORECASE)
+        if m:
+            return (m.group(1) or "").strip()
+        return ""
+
     def refresh_ports(self) -> None:
         try:
             ports = self.bridge.list_com_ports()
@@ -264,7 +297,13 @@ class PlotterController(QObject):
         last_file: Optional[str] = None,
         log_drawer_open: Optional[bool] = None,
         quality_profile: Optional[str] = None,
+        render_mode: Optional[str] = None,
         force_text_to_path: Optional[bool] = None,
+        handwriting_enabled: Optional[bool] = None,
+        handwriting_font: Optional[str] = None,
+        handwriting_formula_font: Optional[str] = None,
+        image_contours_mode: Optional[str] = None,
+        source_page_index: Optional[int] = None,
         exact_geometry_mode: Optional[bool] = None,
         safe_travel_lift: Optional[bool] = None,
         strict_one_to_one: Optional[bool] = None,
@@ -298,8 +337,28 @@ class PlotterController(QObject):
             if qp not in {"fast", "normal", "high"}:
                 qp = "normal"
             self.settings.quality_profile = qp
+        if render_mode is not None:
+            mode = (render_mode or "drawing").strip().lower()
+            if mode not in {"drawing", "handwriting"}:
+                mode = "drawing"
+            self.settings.render_mode = mode
         if force_text_to_path is not None:
             self.settings.force_text_to_path = bool(force_text_to_path)
+        if handwriting_enabled is not None:
+            self.settings.handwriting_enabled = bool(handwriting_enabled)
+        if handwriting_font is not None:
+            font = (handwriting_font or "").strip() or "Marck Script"
+            self.settings.handwriting_font = font
+        if handwriting_formula_font is not None:
+            ffont = (handwriting_formula_font or "").strip() or "Times New Roman"
+            self.settings.handwriting_formula_font = ffont
+        if image_contours_mode is not None:
+            mode = (image_contours_mode or "always").strip().lower()
+            if mode not in {"off", "word_only", "always"}:
+                mode = "always"
+            self.settings.image_contours_mode = mode
+        if source_page_index is not None:
+            self.settings.source_page_index = max(1, int(source_page_index))
         if exact_geometry_mode is not None:
             self.settings.exact_geometry_mode = bool(exact_geometry_mode)
         if safe_travel_lift is not None:
@@ -465,14 +524,31 @@ class PlotterController(QObject):
         sheet = self.sheet_config()
         tool = self.settings.tool_mode
         cal = self.settings.calibrate_before_draw
+        render_mode = self.settings.render_mode
         quality_profile = self.settings.quality_profile
         force_text_to_path = self.settings.force_text_to_path
+        handwriting_enabled = self.settings.handwriting_enabled
+        handwriting_font = self.settings.handwriting_font
+        handwriting_formula_font = self.settings.handwriting_formula_font
+        image_contours_mode = self.settings.image_contours_mode
+        source_page_index = max(1, int(self.settings.source_page_index or 1))
+        if file_path.suffix.lower() in {".doc", ".docx"}:
+            if render_mode != "handwriting" or not handwriting_enabled:
+                render_mode = "handwriting"
+                handwriting_enabled = True
+                self.log_line.emit("Word input: handwriting mode forced for this job.")
+            if image_contours_mode == "off":
+                image_contours_mode = "word_only"
+                self.log_line.emit("Word input: image contours forced to word_only.")
         exact_geometry_mode = self.settings.exact_geometry_mode
         safe_travel_lift = self.settings.safe_travel_lift
         strict_one_to_one = self.settings.strict_one_to_one or (
             sheet.sheet_format == "a3" and sheet.pass_cols > 1
         )
         self.update_ui_settings(last_file=str(file_path))
+        previews_dir = self.project_root / "_tmp"
+        previews_dir.mkdir(parents=True, exist_ok=True)
+        expected_draw_preview = str(previews_dir / "latest_draw_vector.svg")
 
         def handler(ctx: OperationContext) -> tuple[bool, str]:
             ctx.emit_progress(10, "Подготовка траектории...")
@@ -484,8 +560,14 @@ class PlotterController(QObject):
                 sheet=sheet,
                 tool_mode=tool,
                 calibrate_before_draw=cal,
+                render_mode=render_mode,
                 quality_profile=quality_profile,
                 force_text_to_path=force_text_to_path,
+                handwriting_enabled=handwriting_enabled,
+                handwriting_font=handwriting_font,
+                handwriting_formula_font=handwriting_formula_font,
+                image_contours_mode=image_contours_mode,
+                source_page_index=source_page_index,
                 exact_geometry_mode=exact_geometry_mode,
                 safe_travel_lift=safe_travel_lift,
                 strict_one_to_one=strict_one_to_one,
@@ -498,7 +580,13 @@ class PlotterController(QObject):
                 return False, msg
             return True, msg
 
-        self._enqueue("draw", "Отправка задания на рисование...", handler, com_port=port)
+        self._enqueue(
+            "draw",
+            "Отправка задания на рисование...",
+            handler,
+            com_port=port,
+            payload=expected_draw_preview,
+        )
 
     def preview_file(self, file_path: Path) -> None:
         if not file_path.exists():
@@ -510,8 +598,22 @@ class PlotterController(QObject):
 
         sheet = self.sheet_config()
         tool = self.settings.tool_mode
+        render_mode = self.settings.render_mode
         quality_profile = self.settings.quality_profile
         force_text_to_path = self.settings.force_text_to_path
+        handwriting_enabled = self.settings.handwriting_enabled
+        handwriting_font = self.settings.handwriting_font
+        handwriting_formula_font = self.settings.handwriting_formula_font
+        image_contours_mode = self.settings.image_contours_mode
+        source_page_index = max(1, int(self.settings.source_page_index or 1))
+        if file_path.suffix.lower() in {".doc", ".docx"}:
+            if render_mode != "handwriting" or not handwriting_enabled:
+                render_mode = "handwriting"
+                handwriting_enabled = True
+                self.log_line.emit("Word input: handwriting mode forced for preview.")
+            if image_contours_mode == "off":
+                image_contours_mode = "word_only"
+                self.log_line.emit("Word input: image contours forced to word_only.")
         exact_geometry_mode = self.settings.exact_geometry_mode
         safe_travel_lift = self.settings.safe_travel_lift
         strict_one_to_one = self.settings.strict_one_to_one or (
@@ -519,9 +621,9 @@ class PlotterController(QObject):
         )
         self.update_ui_settings(last_file=str(file_path))
 
-        previews_dir = self.project_root / "_tmp" / "previews"
+        previews_dir = self.project_root / "_tmp"
         previews_dir.mkdir(parents=True, exist_ok=True)
-        expected_preview = str(previews_dir)
+        expected_preview = str(previews_dir / "latest_preview_vector.svg")
 
         def handler(ctx: OperationContext) -> tuple[bool, str]:
             ctx.emit_progress(10, "Подготовка предпросмотра...")
@@ -530,16 +632,21 @@ class PlotterController(QObject):
                 input_path=file_path,
                 sheet=sheet,
                 tool_mode=tool,
+                render_mode=render_mode,
                 quality_profile=quality_profile,
                 force_text_to_path=force_text_to_path,
+                handwriting_enabled=handwriting_enabled,
+                handwriting_font=handwriting_font,
+                handwriting_formula_font=handwriting_formula_font,
+                image_contours_mode=image_contours_mode,
+                source_page_index=source_page_index,
                 exact_geometry_mode=exact_geometry_mode,
                 safe_travel_lift=safe_travel_lift,
                 strict_one_to_one=strict_one_to_one,
                 log=ctx.emit_log,
             )
             if ok:
-                preview_part = msg.split("Предпросмотр готов:", 1)[-1].strip() if "Предпросмотр готов:" in msg else ""
-                svg_path = preview_part.split("|", 1)[0].strip() if preview_part else ""
+                svg_path = self._extract_preview_path(msg)
                 if svg_path:
                     self.update_ui_settings(last_preview_svg=svg_path)
             return ok, msg

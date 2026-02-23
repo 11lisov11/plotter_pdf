@@ -59,7 +59,13 @@ class AppSettingsData:
     last_file: str = ""
     log_drawer_open: bool = False
     quality_profile: str = "normal"  # fast | normal | high
+    render_mode: str = "drawing"  # drawing | handwriting
     force_text_to_path: bool = True
+    handwriting_enabled: bool = False
+    handwriting_font: str = "Marck Script"
+    handwriting_formula_font: str = "Times New Roman"
+    source_page_index: int = 1
+    image_contours_mode: str = "always"  # off | word_only | always
     exact_geometry_mode: bool = True
     safe_travel_lift: bool = True
     strict_one_to_one: bool = False
@@ -91,11 +97,34 @@ class SettingsStore:
         data.last_file = self._qsettings.value("file/last_path", data.last_file, type=str)
         data.log_drawer_open = self._qsettings.value("ui/log_drawer_open", data.log_drawer_open, type=bool)
         data.quality_profile = self._qsettings.value("draw/quality_profile", data.quality_profile, type=str)
+        data.render_mode = self._qsettings.value("draw/render_mode", data.render_mode, type=str)
         data.force_text_to_path = self._qsettings.value("draw/force_text_to_path", data.force_text_to_path, type=bool)
+        data.handwriting_enabled = self._qsettings.value(
+            "draw/handwriting_enabled", data.handwriting_enabled, type=bool
+        )
+        data.handwriting_font = self._qsettings.value("draw/handwriting_font", data.handwriting_font, type=str)
+        data.handwriting_formula_font = self._qsettings.value(
+            "draw/handwriting_formula_font",
+            data.handwriting_formula_font,
+            type=str,
+        )
+        data.source_page_index = self._qsettings.value("draw/source_page_index", data.source_page_index, type=int)
+        data.image_contours_mode = self._qsettings.value(
+            "draw/image_contours_mode", data.image_contours_mode, type=str
+        )
         data.exact_geometry_mode = self._qsettings.value("draw/exact_geometry_mode", data.exact_geometry_mode, type=bool)
         data.safe_travel_lift = self._qsettings.value("draw/safe_travel_lift", data.safe_travel_lift, type=bool)
         data.strict_one_to_one = self._qsettings.value("draw/strict_one_to_one", data.strict_one_to_one, type=bool)
         data.last_preview_svg = self._qsettings.value("draw/last_preview_svg", data.last_preview_svg, type=str)
+        if data.image_contours_mode not in {"off", "word_only", "always"}:
+            data.image_contours_mode = "always"
+        if data.render_mode not in {"drawing", "handwriting"}:
+            data.render_mode = "drawing"
+        if not (data.handwriting_font or "").strip():
+            data.handwriting_font = "Marck Script"
+        if not (data.handwriting_formula_font or "").strip():
+            data.handwriting_formula_font = "Times New Roman"
+        data.source_page_index = max(1, int(data.source_page_index or 1))
         if data.sheet_anchor not in {"center", "lower_left", "upper_left", "lower_right", "upper_right"}:
             data.sheet_anchor = "lower_left"
         data.a3_pass_index = 1 if int(data.a3_pass_index) <= 1 else 2
@@ -119,7 +148,13 @@ class SettingsStore:
         self._qsettings.setValue("file/last_path", data.last_file)
         self._qsettings.setValue("ui/log_drawer_open", bool(data.log_drawer_open))
         self._qsettings.setValue("draw/quality_profile", data.quality_profile)
+        self._qsettings.setValue("draw/render_mode", data.render_mode)
         self._qsettings.setValue("draw/force_text_to_path", bool(data.force_text_to_path))
+        self._qsettings.setValue("draw/handwriting_enabled", bool(data.handwriting_enabled))
+        self._qsettings.setValue("draw/handwriting_font", data.handwriting_font)
+        self._qsettings.setValue("draw/handwriting_formula_font", data.handwriting_formula_font)
+        self._qsettings.setValue("draw/source_page_index", int(max(1, int(data.source_page_index))))
+        self._qsettings.setValue("draw/image_contours_mode", data.image_contours_mode)
         self._qsettings.setValue("draw/exact_geometry_mode", bool(data.exact_geometry_mode))
         self._qsettings.setValue("draw/safe_travel_lift", bool(data.safe_travel_lift))
         self._qsettings.setValue("draw/strict_one_to_one", bool(data.strict_one_to_one))

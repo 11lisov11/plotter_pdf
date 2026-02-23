@@ -20,3 +20,20 @@ PlotterStudio.spec
 *_prepared*.nc
 *_prepared*.gcode
 *_trimmed.svg
+
+# Local runtime/device state
+config/pencil_profile.json
+config/pencil_state.json
+config/pencil_wear_test_last.json
+
+# Local user samples / fonts (do not version personal inputs)
+Katerine Plus SL.otf
+Katherine Plus.ttf
+ofont.ru_Veles.ttf
+Kursovoy_EPU_Variant10.docx
+Resemu.docx
+Resemu.pdf
+Скан_20260219.pdf
+Фрагмент.frw
+Фрагмент.pdf
+Втулка _ КГН.11.01.pdf

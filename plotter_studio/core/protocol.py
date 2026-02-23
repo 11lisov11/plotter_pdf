@@ -5,15 +5,20 @@ import math
 import re
 import sys
 import tempfile
+from xml.etree import ElementTree as ET
 from contextlib import contextmanager
 from dataclasses import dataclass
-from datetime import datetime
 from pathlib import Path
 from typing import Callable, Iterator, Optional
 
 from serial.tools import list_ports
 
 from .serial_worker import OperationContext
+
+try:
+    import fitz  # type: ignore
+except Exception:
+    fitz = None
 
 
 LogFn = Callable[[str], None]
@@ -31,6 +36,71 @@ class SheetConfig:
     pass_rows: int = 1
     pass_col: int = 1
     pass_row: int = 1
+
+
+def normalize_render_mode(mode: Optional[str]) -> str:
+    value = (mode or "").strip().lower()
+    return value if value in {"drawing", "handwriting"} else "drawing"
+
+
+def resolve_render_flags(
+    render_mode: Optional[str],
+    *,
+    exact_geometry_mode: bool,
+    handwriting_enabled: bool,
+) -> tuple[str, bool, bool]:
+    mode = normalize_render_mode(render_mode)
+    if mode == "handwriting":
+        # Handwriting profile: force single-line handwriting logic.
+        return mode, False, True
+    # Drawing profile: keep technical geometry exact and disable handwriting transforms.
+    return mode, True, False
+
+
+def _looks_like_font_file_spec(value: str) -> bool:
+    s = (value or "").strip().lower()
+    if not s:
+        return False
+    if s.endswith((".ttf", ".otf", ".ttc")):
+        return True
+    return ("\\" in s) or ("/" in s) or (":" in s)
+
+
+def _select_cyrillic_handwriting_font(backend, selected_hw_font: str) -> str:
+    # Keep user-selected custom font when it is explicitly file-like or
+    # can be resolved by backend font lookup; otherwise use a safe fallback.
+    selected = str((selected_hw_font or "").strip() or "Marck Script")
+    if _looks_like_font_file_spec(selected):
+        return selected
+
+    resolver = getattr(backend, "_resolve_handwriting_ttf_path", None)
+    if callable(resolver):
+        try:
+            if resolver(selected) is not None:
+                return selected
+        except Exception:
+            pass
+
+    lower = selected.lower()
+    if any(
+        token in lower
+        for token in (
+            "marck",
+            "bad script",
+            "caveat",
+            "neucha",
+            "comic sans",
+            "arial",
+            "segoe script",
+            "katherine",
+            "katerine",
+            "veles",
+            "gogol",
+            "kosolapa",
+        )
+    ):
+        return selected
+    return "Marck Script"
 
 
 def _split_comment(line: str) -> str:
@@ -238,6 +308,48 @@ def _write_svg_preview(polylines: list[list[tuple[float, float]]], out_path: Pat
     out_path.write_text("\n".join(parts), encoding="utf-8")
 
 
+def _write_pdf_preview(polylines: list[list[tuple[float, float]]], out_path: Path, *, pad_mm: float = 2.0) -> None:
+    if fitz is None:
+        return
+
+    x0, x1, y0, y1 = _preview_bounds(polylines)
+    flipped = [[(x, -y) for x, y in poly] for poly in polylines]
+    x0, x1, y0, y1 = _preview_bounds(flipped)
+    width = max(1e-6, x1 - x0)
+    height = max(1e-6, y1 - y0)
+    pad = max(0.0, float(pad_mm))
+    vb_x = x0 - pad
+    vb_y = y0 - pad
+    vb_w = width + 2.0 * pad
+    vb_h = height + 2.0 * pad
+    mm_to_pt = 72.0 / 25.4
+
+    doc = fitz.open()
+    try:
+        page = doc.new_page(width=vb_w * mm_to_pt, height=vb_h * mm_to_pt)
+        shape = page.new_shape()
+        for poly in flipped:
+            if len(poly) < 2:
+                continue
+            for i in range(1, len(poly)):
+                x0_mm, y0_mm = poly[i - 1]
+                x1_mm, y1_mm = poly[i]
+                p0 = (
+                    (x0_mm - vb_x) * mm_to_pt,
+                    (vb_h - (y0_mm - vb_y)) * mm_to_pt,
+                )
+                p1 = (
+                    (x1_mm - vb_x) * mm_to_pt,
+                    (vb_h - (y1_mm - vb_y)) * mm_to_pt,
+                )
+                shape.draw_line(p0, p1)
+        shape.finish(color=(0.07, 0.10, 0.16), width=0.72)
+        shape.commit()
+        doc.save(out_path)
+    finally:
+        doc.close()
+
+
 class BackendBridge:
     def __init__(self, project_root: Path) -> None:
         self._project_root = project_root
@@ -315,6 +427,347 @@ class BackendBridge:
     def set_tool_mode(self, tool_mode: str) -> None:
         backend = self._backend()
         backend.TOOL_MODE = "pencil" if (tool_mode or "").strip().lower() == "pencil" else "pen"
+
+    def _build_vector_preview_from_gcode(
+        self,
+        gcode_path: Path,
+        svg_path: Path,
+        pdf_path: Path,
+        *,
+        backend,
+        log: LogFn,
+    ) -> tuple[bool, str]:
+        if not gcode_path.exists():
+            return False, f"G-code file not found: {gcode_path}"
+        try:
+            lines = gcode_path.read_text(encoding="utf-8", errors="ignore").splitlines()
+            polylines = _gcode_to_polylines(
+                lines,
+                z_up=float(backend.Z_UP),
+                z_down=float(backend.Z_DOWN),
+            )
+            if not polylines:
+                return False, "Generated G-code has no drawable paths."
+            _write_svg_preview(polylines, svg_path)
+            _write_pdf_preview(polylines, pdf_path)
+            log(f"Preview SVG: {svg_path}")
+            if pdf_path.exists():
+                log(f"Preview PDF: {pdf_path}")
+            return True, ""
+        except Exception as exc:
+            return False, f"Preview generation failed: {exc}"
+
+    @staticmethod
+    def _method3_threshold_candidates(backend, gray) -> list[int]:
+        cands = int(max(3, min(17, backend.HANDWRITING_SINGLELINE_TTF_AUTOTRACE_CANDIDATES)))
+        vals = [int(round(256.0 * (1 + i) / float(cands + 1))) for i in range(cands)]
+        try:
+            otsu_thr, _ = backend.cv2.threshold(gray, 0, 255, backend.cv2.THRESH_BINARY + backend.cv2.THRESH_OTSU)
+            vals.append(int(max(1, min(254, int(otsu_thr)))))
+        except Exception:
+            pass
+        vals.append(int(max(1, min(254, int(backend.HANDWRITING_SINGLELINE_TTF_BIN_THRESHOLD)))))
+        vals = [max(1, min(254, int(v))) for v in vals]
+        return list(dict.fromkeys(vals))
+
+    @staticmethod
+    def _method3_score_polylines_px(
+        backend,
+        polys: list[list[tuple[float, float]]],
+        *,
+        idx: int,
+        total: int,
+        w: int,
+        h: int,
+    ) -> float:
+        if not polys:
+            return -1e30
+        length = sum(backend.polyline_length(p) for p in polys if len(p) >= 2)
+        points = sum(len(p) for p in polys if len(p) >= 2)
+        segments = sum(max(0, len(p) - 1) for p in polys if len(p) >= 2)
+        offset = ((float(total) / 2.0) - float(idx)) ** 2 * float(w + h)
+        return (length * 5.0) - (offset * 0.005) - (points * 0.20) - (segments * 20.0)
+
+    @staticmethod
+    def _order_polylines_line_lr(polys: list[list[tuple[float, float]]], *, row_tol_mm: float) -> list[list[tuple[float, float]]]:
+        remaining = [p for p in polys if len(p) >= 2]
+        if not remaining:
+            return []
+        tol = max(0.6, float(row_tol_mm))
+        entries: list[tuple[int, float, float, float, float, list[tuple[float, float]]]] = []
+        for idx, poly in enumerate(remaining):
+            xs = [pt[0] for pt in poly]
+            ys = [pt[1] for pt in poly]
+            min_x = min(xs)
+            max_x = max(xs)
+            min_y = min(ys)
+            max_y = max(ys)
+            cy = 0.5 * (min_y + max_y)
+            entries.append((idx, min_x, max_x, min_y, cy, poly))
+
+        entries.sort(key=lambda row: (row[4], row[1], row[0]))
+        rows: list[tuple[float, list[tuple[int, float, float, float, float, list[tuple[float, float]]]]]] = []
+        for ent in entries:
+            if not rows:
+                rows.append((ent[4], [ent]))
+                continue
+            last_y, last_items = rows[-1]
+            if abs(ent[4] - last_y) <= tol:
+                last_items.append(ent)
+                rows[-1] = ((last_y * (len(last_items) - 1) + ent[4]) / len(last_items), last_items)
+            else:
+                rows.append((ent[4], [ent]))
+
+        ordered: list[list[tuple[float, float]]] = []
+        for _, row_items in rows:
+            row_items.sort(key=lambda row: (row[1], row[0]))
+            for _, min_x, max_x, _min_y, _cy, poly in row_items:
+                out_poly = list(poly)
+                if len(out_poly) >= 2:
+                    sx, ex = out_poly[0][0], out_poly[-1][0]
+                    span_x = max(0.0, max_x - min_x)
+                    if (sx - ex) > max(0.6, 0.15 * span_x):
+                        out_poly = list(reversed(out_poly))
+                ordered.append(out_poly)
+        return ordered
+
+    def _run_method3_centerline_page(self, backend, gray, log: LogFn) -> list[list[tuple[float, float]]]:
+        autotrace_exe = backend._resolve_autotrace_executable()
+        if autotrace_exe is None:
+            raise RuntimeError("autotrace.exe not found (tools/autotrace/autotrace.exe).")
+        if gray.ndim != 2:
+            gray = backend.cv2.cvtColor(gray, backend.cv2.COLOR_BGR2GRAY)
+
+        thresholds = self._method3_threshold_candidates(backend, gray)
+        h, w = gray.shape[:2]
+        best_score = -1e30
+        best_thr = thresholds[0]
+        best_polys: list[list[tuple[float, float]]] = []
+
+        for idx, thr in enumerate(thresholds):
+            mask = ((gray < int(thr)).astype(backend.np.uint8)) * 255
+            if int(backend.np.count_nonzero(mask)) <= 0:
+                continue
+            try:
+                kernel = backend.np.ones((2, 2), dtype=backend.np.uint8)
+                mask = backend.cv2.morphologyEx(mask, backend.cv2.MORPH_CLOSE, kernel, iterations=1)
+            except Exception:
+                pass
+            binary = backend.np.where(mask > 0, 0, 255).astype(backend.np.uint8)
+            polys = backend._run_autotrace_centerline_on_binary(
+                binary,
+                autotrace_exe=autotrace_exe,
+                error_threshold=float(backend.HANDWRITING_SINGLELINE_TTF_AUTOTRACE_ERROR_THRESHOLD),
+                filter_iterations=int(backend.HANDWRITING_SINGLELINE_TTF_AUTOTRACE_FILTER_ITERATIONS),
+                curve_step_px=float(backend.HANDWRITING_SINGLELINE_TTF_AUTOTRACE_CURVE_STEP_PX),
+            )
+            if not polys:
+                continue
+            cleaned: list[list[tuple[float, float]]] = []
+            for poly in polys:
+                if len(poly) < 2:
+                    continue
+                p = backend.simplify_polyline([(float(x), float(y)) for x, y in poly], eps=1e-6)
+                if len(p) >= 3:
+                    p = backend.rdp_simplify_polyline(p, eps=0.45)
+                if len(p) < 2:
+                    continue
+                if backend.polyline_length(p) < 2.2:
+                    continue
+                cleaned.append(p)
+            if not cleaned:
+                continue
+            score = self._method3_score_polylines_px(backend, cleaned, idx=idx, total=len(thresholds), w=w, h=h)
+            if score > best_score:
+                best_score = score
+                best_thr = int(thr)
+                best_polys = cleaned
+
+        if best_polys:
+            log(
+                f"Method3 centerline: threshold={best_thr}, "
+                f"candidates={len(thresholds)}, paths={len(best_polys)}"
+            )
+        return best_polys
+
+    @staticmethod
+    def _write_method3_svg(
+        out_svg: Path,
+        polys_mm: list[list[tuple[float, float]]],
+        *,
+        page_w_mm: float,
+        page_h_mm: float,
+    ) -> None:
+        ns = "http://www.w3.org/2000/svg"
+        ET.register_namespace("", ns)
+        root = ET.Element(
+            "{" + ns + "}svg",
+            {
+                "width": f"{page_w_mm:.3f}mm",
+                "height": f"{page_h_mm:.3f}mm",
+                "viewBox": f"0 0 {page_w_mm:.6f} {page_h_mm:.6f}",
+                "version": "1.1",
+            },
+        )
+        grp = ET.SubElement(
+            root,
+            "{" + ns + "}g",
+            {
+                "fill": "none",
+                "stroke": "#111111",
+                "stroke-width": "0.22",
+                "stroke-linecap": "round",
+                "stroke-linejoin": "round",
+            },
+        )
+        for poly in polys_mm:
+            if len(poly) < 2:
+                continue
+            d = [f"M {poly[0][0]:.4f} {poly[0][1]:.4f}"]
+            for x, y in poly[1:]:
+                d.append(f"L {x:.4f} {y:.4f}")
+            ET.SubElement(grp, "{" + ns + "}path", {"d": " ".join(d)})
+        ET.ElementTree(root).write(out_svg, encoding="utf-8", xml_declaration=True)
+
+    def _prepare_method3_page(
+        self,
+        *,
+        backend,
+        input_path: Path,
+        source_page_index: int,
+        body_font: str,
+        formula_font: str,
+        output_svg: Path,
+        output_pdf: Path,
+        output_nc: Optional[Path],
+        log: LogFn,
+    ) -> tuple[bool, str]:
+        if backend.cv2 is None or backend.np is None:
+            return False, "OpenCV/Numpy unavailable for method3 centerline."
+
+        page = max(1, int(source_page_index))
+        dpi = 420
+        output_svg.parent.mkdir(parents=True, exist_ok=True)
+        output_pdf.parent.mkdir(parents=True, exist_ok=True)
+        if output_nc is not None:
+            output_nc.parent.mkdir(parents=True, exist_ok=True)
+
+        for p in [output_svg, output_pdf, output_nc]:
+            if p is not None and p.exists():
+                try:
+                    p.unlink()
+                except Exception:
+                    pass
+
+        with tempfile.TemporaryDirectory(dir=str(backend.ensure_local_tmp_root()), ignore_cleanup_errors=True) as td:
+            work = Path(td)
+            ext = input_path.suffix.lower()
+            if ext in {".doc", ".docx"}:
+                pdf_src = work / "source.pdf"
+                backend.word_to_pdf(
+                    input_path,
+                    pdf_src,
+                    log,
+                    override_font=(body_font or None),
+                    formula_font=(formula_font or None),
+                )
+            elif ext == ".pdf":
+                pdf_src = input_path
+            else:
+                return False, f"Method3 page mode supports .doc/.docx/.pdf, got: {ext}"
+
+            if fitz is not None:
+                try:
+                    with fitz.open(str(pdf_src)) as doc:
+                        page_count = int(doc.page_count)
+                    if page > page_count:
+                        return False, f"Page {page} is out of range (total pages: {page_count})."
+                    log(f"Source pages: {page_count}, selected: {page}")
+                except Exception:
+                    pass
+
+            png = work / "page.png"
+            cmd = [
+                backend.find_inkscape(),
+                str(pdf_src),
+                "--export-type=png",
+                "--export-overwrite",
+                "--export-area-page",
+                f"--export-filename={png}",
+                "--export-dpi",
+                str(int(max(72, dpi))),
+                "--pdf-page",
+                str(page),
+                "--pdf-poppler",
+            ]
+            rc, out, err = backend.run_cmd(cmd, timeout_s=180.0)
+            if rc != 0 or (not png.exists()) or png.stat().st_size <= 0:
+                return False, (
+                    "Inkscape PNG export failed: "
+                    f"rc={rc}, out={(out or '').strip()[:180]}, err={(err or '').strip()[:180]}"
+                )
+
+            arr = backend.cv2.imread(str(png), backend.cv2.IMREAD_GRAYSCALE)
+            if arr is None or arr.size <= 0:
+                return False, "Failed to load exported page PNG."
+            img_h, img_w = arr.shape[:2]
+            page_w_mm = float(img_w) * 25.4 / float(max(1, int(dpi)))
+            page_h_mm = float(img_h) * 25.4 / float(max(1, int(dpi)))
+
+            polys_px = self._run_method3_centerline_page(backend, arr, log)
+            if not polys_px:
+                return False, "Method3 centerline produced no paths."
+
+            sx = float(page_w_mm) / float(max(1, img_w))
+            sy = float(page_h_mm) / float(max(1, img_h))
+            polys_mm: list[list[tuple[float, float]]] = []
+            for poly in polys_px:
+                p = [(float(x) * sx, float(y) * sy) for x, y in poly]
+                if len(p) >= 2 and backend.polyline_length(p) >= 0.25:
+                    polys_mm.append(p)
+
+            polys_mm = backend.stitch_polylines(polys_mm, eps=0.08, logger=None, gap_eps=0.16, angle_tol_deg=35.0)
+            polys_mm = self._order_polylines_line_lr(
+                polys_mm,
+                row_tol_mm=float(getattr(backend, "DRAW_ORDER_LINE_TOL_MM", 3.0)),
+            )
+            if not polys_mm:
+                return False, "No usable centerline polylines after cleanup."
+
+            self._write_method3_svg(output_svg, polys_mm, page_w_mm=page_w_mm, page_h_mm=page_h_mm)
+            cmd_pdf = [
+                backend.find_inkscape(),
+                str(output_svg),
+                "--export-type=pdf",
+                "--export-overwrite",
+                "--export-area-page",
+                f"--export-filename={output_pdf}",
+            ]
+            rc_pdf, out_pdf, err_pdf = backend.run_cmd(cmd_pdf, timeout_s=120.0)
+            if rc_pdf != 0 or (not output_pdf.exists()) or output_pdf.stat().st_size <= 0:
+                return False, (
+                    "Inkscape PDF export failed: "
+                    f"rc={rc_pdf}, out={(out_pdf or '').strip()[:180]}, err={(err_pdf or '').strip()[:180]}"
+                )
+
+            if output_nc is not None:
+                ok, msg = backend.run_pipeline_with_corner_calibration(
+                    output_svg,
+                    log,
+                    com=backend.detect_com_port(None),
+                    baud=backend.DEFAULT_BAUD,
+                    send_to_plotter=False,
+                    output_path=output_nc,
+                    skip_calibration=True,
+                    skip_confirmation=True,
+                    corner_mark_size=2.0,
+                    feed_travel=backend.FEED_TRAVEL,
+                    feed_draw=backend.FEED_DRAW,
+                    auto_resume=False,
+                )
+                if not ok:
+                    return False, msg
+        return True, ""
 
     def probe_connection(self, com_port: str, baud: str, log: LogFn) -> tuple[bool, str]:
         backend = self._backend()
@@ -412,8 +865,14 @@ class BackendBridge:
         sheet: SheetConfig,
         tool_mode: str,
         calibrate_before_draw: bool,
+        render_mode: str,
         quality_profile: str,
         force_text_to_path: bool,
+        handwriting_enabled: bool,
+        handwriting_font: str,
+        handwriting_formula_font: str,
+        image_contours_mode: str,
+        source_page_index: int,
         exact_geometry_mode: bool,
         safe_travel_lift: bool,
         strict_one_to_one: bool,
@@ -422,23 +881,110 @@ class BackendBridge:
         backend = self._backend()
         ctx.check_canceled()
         self.set_tool_mode(tool_mode)
-        backend.EXACT_GEOMETRY_MODE = bool(exact_geometry_mode)
+        render_mode_norm, effective_exact_mode, effective_handwriting = resolve_render_flags(
+            render_mode,
+            exact_geometry_mode=bool(exact_geometry_mode),
+            handwriting_enabled=bool(handwriting_enabled),
+        )
+        backend.EXACT_GEOMETRY_MODE = bool(effective_exact_mode)
         backend.SAFE_PEN_TRAVEL_UP = bool(safe_travel_lift)
         backend.MIN_FIT_SCALE_FOR_DIMENSIONAL_DRAW = 0.98 if bool(strict_one_to_one) else 0.0
+        backend.HANDWRITING_TEXT_ENABLED = bool(effective_handwriting)
+        selected_hw_font = str((handwriting_font or "").strip() or "Marck Script")
+        selected_formula_font = str((handwriting_formula_font or "").strip() or "Times New Roman")
+        source_page = max(1, int(source_page_index))
+        backend.HANDWRITING_FONT_FAMILY = selected_hw_font
+        backend.HANDWRITING_CYRILLIC_FONT_FAMILY = _select_cyrillic_handwriting_font(backend, selected_hw_font)
+        # Lock handwriting pipeline to method #3 for stable single-line output in GUI mode.
+        backend.HANDWRITING_SINGLELINE_TTF_BACKEND = "autotrace3"
+        backend.HANDWRITING_DIRECT_VECTOR_TEXT_ENABLED = True
+        mode = str((image_contours_mode or "always").strip().lower())
+        if mode not in {"off", "word_only", "always"}:
+            mode = "always"
+        backend.IMAGE_CONTOUR_MODE = mode
+        backend.IMAGE_CONTOUR_ENABLED = mode != "off"
+        backend.IMAGE_CONTOUR_WORD_ONLY = mode == "word_only"
+        # Keep PDF import fully non-interactive in GUI mode:
+        # avoid launching Inkscape PDF importer (it can show modal import options dialog).
+        backend.USE_INKSCAPE_PDF_IMPORT = False
         backend.apply_quality_profile(
             quality=(quality_profile or backend.DEFAULT_QUALITY_PROFILE),
             force_text_to_path=bool(force_text_to_path),
         )
+        log(
+            "Render mode: "
+            f"{render_mode_norm}; "
+            f"ExactGeometry={'on' if backend.EXACT_GEOMETRY_MODE else 'off'}; "
+            f"Handwriting={'on' if backend.HANDWRITING_TEXT_ENABLED else 'off'}"
+        )
         log(f"Drawing profile: {backend.quality_state()}")
         self._configure_sheet(sheet, log)
+
+        previews_dir = self._project_root / "_tmp"
+        previews_dir.mkdir(parents=True, exist_ok=True)
+        nc_path = previews_dir / "latest_draw.nc"
+        svg_path = previews_dir / "latest_draw_vector.svg"
+        pdf_path = previews_dir / "latest_draw_vector.pdf"
+        ext = input_path.suffix.lower()
+        use_method3_page = bool(effective_handwriting) and ext in {".doc", ".docx", ".pdf"}
+
+        if use_method3_page:
+            log(
+                "Method3 page mode: "
+                f"page={source_page}, body_font='{selected_hw_font}', formula_font='{selected_formula_font}'."
+            )
+            with self._track_backend_subprocess(ctx):
+                ok_prep, prep_msg = self._prepare_method3_page(
+                    backend=backend,
+                    input_path=input_path,
+                    source_page_index=source_page,
+                    body_font=selected_hw_font,
+                    formula_font=selected_formula_font,
+                    output_svg=svg_path,
+                    output_pdf=pdf_path,
+                    output_nc=nc_path,
+                    log=log,
+                )
+            if not ok_prep:
+                return False, prep_msg
+
+            ctx.check_canceled()
+            if calibrate_before_draw:
+                with self._track_backend_subprocess(ctx):
+                    ok_cal, msg_cal = backend.run_corner_calibration_pipeline(
+                        log,
+                        com=com_port,
+                        baud=baud,
+                        send_to_plotter=True,
+                        mark_size=2.0,
+                    )
+                if not ok_cal:
+                    return False, msg_cal
+            ctx.check_canceled()
+            with self._track_backend_subprocess(ctx):
+                plot_time_s = backend.send_to_grbl(
+                    nc_path,
+                    com_port,
+                    baud,
+                    log,
+                    sleep_after=True,
+                    auto_resume=False,
+                )
+            return (
+                True,
+                f"Done: page {source_page} sent. "
+                f"Preview ready: {svg_path} | Preview PDF: {pdf_path} | "
+                f"Plot time: {float(plot_time_s):.1f} s",
+            )
+
         with self._track_backend_subprocess(ctx):
-            return backend.run_pipeline_with_corner_calibration(
+            ok, msg = backend.run_pipeline_with_corner_calibration(
                 input_path,
                 log,
                 com=com_port,
                 baud=baud,
                 send_to_plotter=True,
-                output_path=None,
+                output_path=nc_path,
                 skip_calibration=not calibrate_before_draw,
                 skip_confirmation=True,
                 corner_mark_size=2.0,
@@ -446,6 +992,21 @@ class BackendBridge:
                 feed_draw=backend.FEED_DRAW,
                 auto_resume=False,
             )
+        if not ok:
+            return False, msg
+
+        preview_ok, preview_err = self._build_vector_preview_from_gcode(
+            nc_path,
+            svg_path,
+            pdf_path,
+            backend=backend,
+            log=log,
+        )
+        if preview_ok:
+            suffix = f" | Preview PDF: {pdf_path}" if pdf_path.exists() else ""
+            return True, f"{msg} | Preview ready: {svg_path}{suffix}"
+        log(f"Preview generation warning: {preview_err}")
+        return True, f"{msg} | Preview generation warning: {preview_err}"
 
     def run_preview(
         self,
@@ -453,8 +1014,14 @@ class BackendBridge:
         input_path: Path,
         sheet: SheetConfig,
         tool_mode: str,
+        render_mode: str,
         quality_profile: str,
         force_text_to_path: bool,
+        handwriting_enabled: bool,
+        handwriting_font: str,
+        handwriting_formula_font: str,
+        image_contours_mode: str,
+        source_page_index: int,
         exact_geometry_mode: bool,
         safe_travel_lift: bool,
         strict_one_to_one: bool,
@@ -463,21 +1030,73 @@ class BackendBridge:
         backend = self._backend()
         ctx.check_canceled()
         self.set_tool_mode(tool_mode)
-        backend.EXACT_GEOMETRY_MODE = bool(exact_geometry_mode)
+        render_mode_norm, effective_exact_mode, effective_handwriting = resolve_render_flags(
+            render_mode,
+            exact_geometry_mode=bool(exact_geometry_mode),
+            handwriting_enabled=bool(handwriting_enabled),
+        )
+        backend.EXACT_GEOMETRY_MODE = bool(effective_exact_mode)
         backend.SAFE_PEN_TRAVEL_UP = bool(safe_travel_lift)
         backend.MIN_FIT_SCALE_FOR_DIMENSIONAL_DRAW = 0.98 if bool(strict_one_to_one) else 0.0
+        backend.HANDWRITING_TEXT_ENABLED = bool(effective_handwriting)
+        selected_hw_font = str((handwriting_font or "").strip() or "Marck Script")
+        selected_formula_font = str((handwriting_formula_font or "").strip() or "Times New Roman")
+        source_page = max(1, int(source_page_index))
+        backend.HANDWRITING_FONT_FAMILY = selected_hw_font
+        backend.HANDWRITING_CYRILLIC_FONT_FAMILY = _select_cyrillic_handwriting_font(backend, selected_hw_font)
+        # Lock handwriting pipeline to method #3 for stable single-line output in GUI mode.
+        backend.HANDWRITING_SINGLELINE_TTF_BACKEND = "autotrace3"
+        backend.HANDWRITING_DIRECT_VECTOR_TEXT_ENABLED = True
+        mode = str((image_contours_mode or "always").strip().lower())
+        if mode not in {"off", "word_only", "always"}:
+            mode = "always"
+        backend.IMAGE_CONTOUR_MODE = mode
+        backend.IMAGE_CONTOUR_ENABLED = mode != "off"
+        backend.IMAGE_CONTOUR_WORD_ONLY = mode == "word_only"
+        # Keep PDF import fully non-interactive in GUI mode:
+        # avoid launching Inkscape PDF importer (it can show modal import options dialog).
+        backend.USE_INKSCAPE_PDF_IMPORT = False
         backend.apply_quality_profile(
             quality=(quality_profile or backend.DEFAULT_QUALITY_PROFILE),
             force_text_to_path=bool(force_text_to_path),
         )
+        log(
+            "Render mode: "
+            f"{render_mode_norm}; "
+            f"ExactGeometry={'on' if backend.EXACT_GEOMETRY_MODE else 'off'}; "
+            f"Handwriting={'on' if backend.HANDWRITING_TEXT_ENABLED else 'off'}"
+        )
         self._configure_sheet(sheet, log)
 
-        previews_dir = self._project_root / "_tmp" / "previews"
+        previews_dir = self._project_root / "_tmp"
         previews_dir.mkdir(parents=True, exist_ok=True)
-        stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        safe_stem = re.sub(r"[^0-9A-Za-zА-Яа-я_\-]+", "_", input_path.stem).strip("_") or "preview"
-        nc_path = previews_dir / f"{safe_stem}_{stamp}.nc"
-        svg_path = previews_dir / f"{safe_stem}_{stamp}.svg"
+        nc_path = previews_dir / "latest_preview.nc"
+        svg_path = previews_dir / "latest_preview_vector.svg"
+        pdf_path = previews_dir / "latest_preview_vector.pdf"
+        ext = input_path.suffix.lower()
+        use_method3_page = bool(effective_handwriting) and ext in {".doc", ".docx", ".pdf"}
+
+        if use_method3_page:
+            log(
+                "Method3 page preview: "
+                f"page={source_page}, body_font='{selected_hw_font}', formula_font='{selected_formula_font}'."
+            )
+            with self._track_backend_subprocess(ctx):
+                ok_prep, prep_msg = self._prepare_method3_page(
+                    backend=backend,
+                    input_path=input_path,
+                    source_page_index=source_page,
+                    body_font=selected_hw_font,
+                    formula_font=selected_formula_font,
+                    output_svg=svg_path,
+                    output_pdf=pdf_path,
+                    output_nc=nc_path,
+                    log=log,
+                )
+            if not ok_prep:
+                return False, prep_msg
+            suffix = f" | PDF: {pdf_path}" if pdf_path.exists() else ""
+            return True, f"Preview ready: {svg_path} | G-code: {nc_path}{suffix}"
 
         with self._track_backend_subprocess(ctx):
             ok, msg = backend.run_pipeline_with_corner_calibration(
@@ -497,19 +1116,18 @@ class BackendBridge:
         if not ok:
             return False, msg
 
-        try:
-            lines = nc_path.read_text(encoding="utf-8", errors="ignore").splitlines()
-            polylines = _gcode_to_polylines(
-                lines,
-                z_up=float(backend.Z_UP),
-                z_down=float(backend.Z_DOWN),
-            )
-            _write_svg_preview(polylines, svg_path)
-            log(f"Preview SVG: {svg_path}")
-        except Exception as exc:
-            return False, f"Ошибка генерации SVG-предпросмотра: {exc}"
+        preview_ok, preview_err = self._build_vector_preview_from_gcode(
+            nc_path,
+            svg_path,
+            pdf_path,
+            backend=backend,
+            log=log,
+        )
+        if not preview_ok:
+            return False, preview_err
 
-        return True, f"Предпросмотр готов: {svg_path} | G-code: {nc_path}"
+        suffix = f" | PDF: {pdf_path}" if pdf_path.exists() else ""
+        return True, f"Preview ready: {svg_path} | G-code: {nc_path}{suffix}"
 
     def run_wear_test(
         self,

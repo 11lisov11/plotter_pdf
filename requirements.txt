@@ -3,3 +3,4 @@ pyserial>=3.5
 pywin32>=306
 numpy>=2.0
 opencv-python-headless>=4.10
+hershey-fonts>=2.1.0

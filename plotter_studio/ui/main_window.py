@@ -220,12 +220,18 @@ class MainWindow(QMainWindow):
         self.file_page.draw_requested.connect(self.controller.draw_file)
         self.file_page.wear_test_requested.connect(self.controller.run_wear_test)
         self.file_page.render_settings_changed.connect(
-            lambda quality, force_text_to_path, exact_mode, safe_lift, strict_scale: self.controller.update_ui_settings(
+            lambda render_mode, quality, force_text_to_path, exact_mode, safe_lift, strict_scale, handwriting_enabled, handwriting_font, handwriting_formula_font, image_contours_mode, source_page_index: self.controller.update_ui_settings(
+                render_mode=render_mode,
                 quality_profile=quality,
                 force_text_to_path=force_text_to_path,
                 exact_geometry_mode=exact_mode,
                 safe_travel_lift=safe_lift,
                 strict_one_to_one=strict_scale,
+                handwriting_enabled=handwriting_enabled,
+                handwriting_font=handwriting_font,
+                handwriting_formula_font=handwriting_formula_font,
+                image_contours_mode=image_contours_mode,
+                source_page_index=source_page_index,
             )
         )
 
@@ -253,7 +259,7 @@ class MainWindow(QMainWindow):
         self.controller.operation_started.connect(self._on_operation_started)
         self.controller.operation_done.connect(self._on_operation_done)
         self.controller.pencil_banner_changed.connect(self.manual_page.set_pencil_banner)
-        self.controller.preview_ready.connect(self._open_preview_file)
+        self.controller.preview_ready.connect(self._on_preview_ready)
 
     def _apply_initial_state(self) -> None:
         self.tool_segment.set_value(self.settings.tool_mode)
@@ -275,12 +281,19 @@ class MainWindow(QMainWindow):
 
         self.file_page.set_file_path(self.settings.last_file)
         self.file_page.set_render_settings(
+            self.settings.render_mode,
             self.settings.quality_profile,
             self.settings.force_text_to_path,
             self.settings.exact_geometry_mode,
             self.settings.safe_travel_lift,
             self.settings.strict_one_to_one,
+            self.settings.handwriting_enabled,
+            self.settings.handwriting_font,
+            self.settings.handwriting_formula_font,
+            self.settings.image_contours_mode,
+            self.settings.source_page_index,
         )
+        self.file_page.set_preview_path(self.settings.last_preview_svg)
 
         self.manual_page.set_values(self.settings.z_step_mm, self.settings.z_feed)
         self._set_log_drawer_visible(bool(self.settings.log_drawer_open))
@@ -461,6 +474,10 @@ class MainWindow(QMainWindow):
             self.controller.preview_file(Path(text))
 
     @Slot(str)
+    def _on_preview_ready(self, path: str) -> None:
+        self.file_page.set_preview_path(path)
+
+    @Slot(str)
     def _open_preview_file(self, path: str) -> None:
         p = Path(path)
         if p.exists():
@@ -471,6 +488,19 @@ class MainWindow(QMainWindow):
         self.toast.show_message(level, text)
 
     def closeEvent(self, event: QCloseEvent) -> None:
+        (
+            render_mode,
+            quality_profile,
+            force_text_to_path,
+            exact_geometry_mode,
+            safe_travel_lift,
+            strict_one_to_one,
+            handwriting_enabled,
+            handwriting_font,
+            handwriting_formula_font,
+            image_contours_mode,
+            source_page_index,
+        ) = self.file_page.current_render_settings()
         self.controller.update_ui_settings(
             log_drawer_open=self.log_drawer.isVisible(),
             z_step_mm=self.manual_page.values()[0],
@@ -485,11 +515,17 @@ class MainWindow(QMainWindow):
             a3_pass_index=int(self.calibration_page.a3_pass_combo.currentData() or 1),
             calibrate_before_draw=self.calibration_page.calibrate_check.isChecked(),
             last_file=self.file_page.path_edit.text().strip(),
-            quality_profile=self.file_page.current_render_settings()[0],
-            force_text_to_path=self.file_page.current_render_settings()[1],
-            exact_geometry_mode=self.file_page.current_render_settings()[2],
-            safe_travel_lift=self.file_page.current_render_settings()[3],
-            strict_one_to_one=self.file_page.current_render_settings()[4],
+            render_mode=render_mode,
+            quality_profile=quality_profile,
+            force_text_to_path=force_text_to_path,
+            exact_geometry_mode=exact_geometry_mode,
+            safe_travel_lift=safe_travel_lift,
+            strict_one_to_one=strict_one_to_one,
+            handwriting_enabled=handwriting_enabled,
+            handwriting_font=handwriting_font,
+            handwriting_formula_font=handwriting_formula_font,
+            image_contours_mode=image_contours_mode,
+            source_page_index=source_page_index,
         )
         self.controller.shutdown()
         super().closeEvent(event)
