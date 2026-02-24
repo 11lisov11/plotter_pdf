@@ -27,8 +27,8 @@ class FilePage(QWidget):
     wear_test_requested = Signal()
     file_changed = Signal(str)
     # render_mode, quality, force_text_to_path, exact_geometry_mode, safe_travel_lift, strict_one_to_one,
-    # handwriting_enabled, handwriting_font, handwriting_formula_font, image_contours_mode, source_page_index
-    render_settings_changed = Signal(str, str, bool, bool, bool, bool, bool, str, str, str, int)
+    # handwriting_enabled, handwriting_font, handwriting_formula_font, image_contours_mode, source_page_index, source_all_pages
+    render_settings_changed = Signal(str, str, bool, bool, bool, bool, bool, str, str, str, int, bool)
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -106,10 +106,14 @@ class FilePage(QWidget):
         self.page_spin.setSingleStep(1)
         self.page_spin.setToolTip("Номер страницы для Word/PDF (постраничная отправка).")
         self.page_spin.valueChanged.connect(self._emit_render_settings_changed)
+        self.all_pages_check = QCheckBox("Все страницы", card)
+        self.all_pages_check.toggled.connect(self._sync_input_specific_controls)
+        self.all_pages_check.toggled.connect(self._emit_render_settings_changed)
         self.page_hint = QLabel("Постраничный режим: Word/PDF", card)
         self.page_hint.setObjectName("HintLabel")
         page_row.addWidget(page_lbl)
         page_row.addWidget(self.page_spin)
+        page_row.addWidget(self.all_pages_check)
         page_row.addWidget(self.page_hint, 1)
         layout.addLayout(page_row)
 
@@ -326,6 +330,7 @@ class FilePage(QWidget):
             handwriting_formula_font,
             image_contours_mode,
             source_page_index,
+            source_all_pages,
         ) = self.current_render_settings()
         self.render_settings_changed.emit(
             render_mode,
@@ -339,6 +344,7 @@ class FilePage(QWidget):
             handwriting_formula_font,
             image_contours_mode,
             source_page_index,
+            source_all_pages,
         )
 
     def current_render_mode(self) -> str:
@@ -379,9 +385,15 @@ class FilePage(QWidget):
         text = (self.path_edit.text() or "").strip()
         ext = Path(text).suffix.lower() if text else ""
         page_related = ext in {".pdf", ".doc", ".docx"}
-        self.page_spin.setEnabled(page_related)
+        self.all_pages_check.setEnabled(page_related)
+        if not page_related and self.all_pages_check.isChecked():
+            self.all_pages_check.setChecked(False)
+        use_all_pages = bool(self.all_pages_check.isChecked()) and page_related
+        self.page_spin.setEnabled(page_related and not use_all_pages)
         if not page_related:
             self.page_hint.setText("Для SVG/FRW/CDW используется 1 страница")
+        elif use_all_pages:
+            self.page_hint.setText("Пакетный режим: все страницы (Word/PDF)")
         else:
             self.page_hint.setText("Постраничный режим: Word/PDF")
 
@@ -459,7 +471,7 @@ class FilePage(QWidget):
             text = "Баланс: оптимальное соотношение скорости и качества для большинства файлов."
         self.quality_hint.setText(text)
 
-    def current_render_settings(self) -> tuple[str, str, bool, bool, bool, bool, bool, str, str, str, int]:
+    def current_render_settings(self) -> tuple[str, str, bool, bool, bool, bool, bool, str, str, str, int, bool]:
         render_mode = self.current_render_mode()
         quality = str(self.quality_combo.currentData() or "normal")
         force_text_to_path = bool(self.force_text_to_path_check.isChecked())
@@ -473,6 +485,7 @@ class FilePage(QWidget):
         )
         image_contours_mode = str(self.image_contours_mode_combo.currentData() or "always")
         source_page_index = max(1, int(self.page_spin.value()))
+        source_all_pages = bool(self.all_pages_check.isChecked())
         return (
             render_mode,
             quality,
@@ -485,6 +498,7 @@ class FilePage(QWidget):
             handwriting_formula_font,
             image_contours_mode,
             source_page_index,
+            source_all_pages,
         )
 
     def set_render_settings(
@@ -500,6 +514,7 @@ class FilePage(QWidget):
         handwriting_formula_font: str = "Times New Roman",
         image_contours_mode: str = "always",
         source_page_index: int = 1,
+        source_all_pages: bool = False,
     ) -> None:
         mode_idx = self.render_mode_combo.findData((render_mode or "drawing").strip().lower())
         if mode_idx >= 0:
@@ -517,10 +532,12 @@ class FilePage(QWidget):
             (handwriting_formula_font or "").strip() or "Times New Roman"
         )
         self.page_spin.setValue(max(1, int(source_page_index or 1)))
+        self.all_pages_check.setChecked(bool(source_all_pages))
         im_idx = self.image_contours_mode_combo.findData((image_contours_mode or "always").strip().lower())
         if im_idx >= 0:
             self.image_contours_mode_combo.setCurrentIndex(im_idx)
         self._apply_render_mode_preset()
+        self._sync_input_specific_controls()
 
     def set_file_path(self, value: str) -> None:
         self.path_edit.setText(value or "")

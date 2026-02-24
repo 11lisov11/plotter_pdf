@@ -161,9 +161,7 @@ def release_axes(ser, *, sleep: bool = False, wait: bool = True):
     _send_no_throw("G1 Z0 F800")
     _send_no_throw("G4 P0.05")
     _send_no_throw("M5")
-    # Best-effort motor release commands for broader firmware compatibility.
-    _send_no_throw("M18")
-    _send_no_throw("M84")
+    # GRBL-friendly motor release.
     _send_no_throw("$1=0")
     if sleep:
         _send_no_throw("$SLP")

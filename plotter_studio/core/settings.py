@@ -65,6 +65,7 @@ class AppSettingsData:
     handwriting_font: str = "Marck Script"
     handwriting_formula_font: str = "Times New Roman"
     source_page_index: int = 1
+    source_all_pages: bool = False
     image_contours_mode: str = "always"  # off | word_only | always
     exact_geometry_mode: bool = True
     safe_travel_lift: bool = True
@@ -109,6 +110,7 @@ class SettingsStore:
             type=str,
         )
         data.source_page_index = self._qsettings.value("draw/source_page_index", data.source_page_index, type=int)
+        data.source_all_pages = self._qsettings.value("draw/source_all_pages", data.source_all_pages, type=bool)
         data.image_contours_mode = self._qsettings.value(
             "draw/image_contours_mode", data.image_contours_mode, type=str
         )
@@ -125,6 +127,7 @@ class SettingsStore:
         if not (data.handwriting_formula_font or "").strip():
             data.handwriting_formula_font = "Times New Roman"
         data.source_page_index = max(1, int(data.source_page_index or 1))
+        data.source_all_pages = bool(data.source_all_pages)
         if data.sheet_anchor not in {"center", "lower_left", "upper_left", "lower_right", "upper_right"}:
             data.sheet_anchor = "lower_left"
         data.a3_pass_index = 1 if int(data.a3_pass_index) <= 1 else 2
@@ -154,6 +157,7 @@ class SettingsStore:
         self._qsettings.setValue("draw/handwriting_font", data.handwriting_font)
         self._qsettings.setValue("draw/handwriting_formula_font", data.handwriting_formula_font)
         self._qsettings.setValue("draw/source_page_index", int(max(1, int(data.source_page_index))))
+        self._qsettings.setValue("draw/source_all_pages", bool(data.source_all_pages))
         self._qsettings.setValue("draw/image_contours_mode", data.image_contours_mode)
         self._qsettings.setValue("draw/exact_geometry_mode", bool(data.exact_geometry_mode))
         self._qsettings.setValue("draw/safe_travel_lift", bool(data.safe_travel_lift))

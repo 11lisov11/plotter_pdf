@@ -3,8 +3,10 @@ from __future__ import annotations
 import importlib.util
 import math
 import re
+import shutil
 import sys
 import tempfile
+import threading
 from xml.etree import ElementTree as ET
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -101,6 +103,51 @@ def _select_cyrillic_handwriting_font(backend, selected_hw_font: str) -> str:
     ):
         return selected
     return "Marck Script"
+
+
+def _resolve_handwriting_font(backend, requested_font: str, log: Optional[LogFn] = None) -> str:
+    selected = str((requested_font or "").strip() or "Marck Script")
+    if _looks_like_font_file_spec(selected):
+        p = Path(selected)
+        if p.exists() and p.is_file():
+            return str(p)
+
+    resolver = getattr(backend, "_resolve_handwriting_ttf_path", None)
+    if callable(resolver):
+        try:
+            if resolver(selected) is not None:
+                return selected
+        except Exception:
+            pass
+    fallback = "Marck Script"
+    if log is not None and selected != fallback:
+        log(f"Handwriting font fallback: '{selected}' -> '{fallback}'")
+    return fallback
+
+
+def _resolve_formula_font(backend, requested_font: str, log: Optional[LogFn] = None) -> str:
+    selected = str((requested_font or "").strip() or "Times New Roman")
+    normalizer = getattr(backend, "_normalize_word_font_name", None)
+    if callable(normalizer):
+        try:
+            selected = str(normalizer(selected, default="Times New Roman") or "Times New Roman").strip()
+        except Exception:
+            selected = str((requested_font or "").strip() or "Times New Roman")
+    selected = selected.strip().strip("'").strip('"')
+    if not selected:
+        selected = "Times New Roman"
+    # Word formula font expects a family-like name, not a path.
+    if _looks_like_font_file_spec(selected):
+        stem = Path(selected).stem.strip()
+        if stem:
+            cleaned = stem.split("_", 1)[-1] if stem.lower().startswith("ofont.ru_") else stem
+            if log is not None:
+                log(f"Formula font normalized from file path: '{selected}' -> '{cleaned}'")
+            return cleaned
+        if log is not None and selected != "Times New Roman":
+            log(f"Formula font fallback: '{selected}' -> 'Times New Roman'")
+        return "Times New Roman"
+    return selected
 
 
 def _split_comment(line: str) -> str:
@@ -531,7 +578,12 @@ class BackendBridge:
                 ordered.append(out_poly)
         return ordered
 
-    def _run_method3_centerline_page(self, backend, gray, log: LogFn) -> list[list[tuple[float, float]]]:
+    def _run_method3_centerline_page(
+        self,
+        backend,
+        gray,
+        log: LogFn,
+    ) -> tuple[list[list[tuple[float, float]]], int]:
         autotrace_exe = backend._resolve_autotrace_executable()
         if autotrace_exe is None:
             raise RuntimeError("autotrace.exe not found (tools/autotrace/autotrace.exe).")
@@ -588,7 +640,100 @@ class BackendBridge:
                 f"Method3 centerline: threshold={best_thr}, "
                 f"candidates={len(thresholds)}, paths={len(best_polys)}"
             )
-        return best_polys
+        return best_polys, int(best_thr)
+
+    @staticmethod
+    def _split_method3_text_graphics_masks(backend, gray, threshold: int):
+        # Build two masks:
+        # 1) text/formula-like smaller components -> centerline tracing
+        # 2) large/filled drawing-image blocks -> contour outlining
+        base = ((gray < int(threshold)).astype(backend.np.uint8)) * 255
+        if int(backend.np.count_nonzero(base)) <= 0:
+            return base, backend.np.zeros_like(base, dtype=backend.np.uint8)
+
+        h, w = gray.shape[:2]
+        page_area = float(max(1, h * w))
+        text_mask = backend.np.zeros_like(base, dtype=backend.np.uint8)
+        graphics_mask = backend.np.zeros_like(base, dtype=backend.np.uint8)
+        num_labels, labels, stats, _ = backend.cv2.connectedComponentsWithStats(base, connectivity=8)
+
+        max_w_large = max(20.0, 0.18 * float(w))
+        max_h_large = max(20.0, 0.12 * float(h))
+        area_large = 0.010 * page_area
+        area_medium = 0.0022 * page_area
+
+        for label in range(1, int(num_labels)):
+            x = int(stats[label, backend.cv2.CC_STAT_LEFT])
+            y = int(stats[label, backend.cv2.CC_STAT_TOP])
+            bw = int(stats[label, backend.cv2.CC_STAT_WIDTH])
+            bh = int(stats[label, backend.cv2.CC_STAT_HEIGHT])
+            area = float(stats[label, backend.cv2.CC_STAT_AREA])
+            if bw <= 0 or bh <= 0 or area <= 0.0:
+                continue
+            box_area = float(max(1, bw * bh))
+            fill = area / box_area
+            is_graphics = (
+                (area >= area_large)
+                or (bw >= max_w_large and bh >= max_h_large)
+                or (area >= area_medium and fill >= 0.38)
+            )
+            target = graphics_mask if is_graphics else text_mask
+            target[labels == label] = 255
+
+        try:
+            text_mask = backend.cv2.morphologyEx(
+                text_mask,
+                backend.cv2.MORPH_OPEN,
+                backend.np.ones((2, 2), dtype=backend.np.uint8),
+                iterations=1,
+            )
+        except Exception:
+            pass
+        return text_mask, graphics_mask
+
+    @staticmethod
+    def _polyline_mask_overlap_ratio(poly: list[tuple[float, float]], mask) -> float:
+        if not poly:
+            return 0.0
+        h, w = mask.shape[:2]
+        inside = 0
+        valid = 0
+        for x, y in poly:
+            xi = int(round(float(x)))
+            yi = int(round(float(y)))
+            if xi < 0 or yi < 0 or xi >= w or yi >= h:
+                continue
+            valid += 1
+            if int(mask[yi, xi]) > 0:
+                inside += 1
+        if valid <= 0:
+            return 0.0
+        return float(inside) / float(valid)
+
+    def _extract_graphics_outline_polylines_px(self, backend, graphics_mask) -> list[list[tuple[float, float]]]:
+        if int(backend.np.count_nonzero(graphics_mask)) <= 0:
+            return []
+        try:
+            contours, _hier = backend.cv2.findContours(
+                graphics_mask,
+                backend.cv2.RETR_LIST,
+                backend.cv2.CHAIN_APPROX_NONE,
+            )
+        except Exception:
+            return []
+        out: list[list[tuple[float, float]]] = []
+        for cnt in contours:
+            if cnt is None or len(cnt) < 2:
+                continue
+            poly = [(float(pt[0][0]), float(pt[0][1])) for pt in cnt]
+            if len(poly) >= 3:
+                poly = backend.rdp_simplify_polyline(poly, eps=0.65)
+            if len(poly) < 2:
+                continue
+            if backend.polyline_length(poly) < 4.0:
+                continue
+            out.append(poly)
+        return out
 
     @staticmethod
     def _write_method3_svg(
@@ -641,6 +786,8 @@ class BackendBridge:
         output_pdf: Path,
         output_nc: Optional[Path],
         log: LogFn,
+        source_pdf_path: Optional[Path] = None,
+        source_page_count: Optional[int] = None,
     ) -> tuple[bool, str]:
         if backend.cv2 is None or backend.np is None:
             return False, "OpenCV/Numpy unavailable for method3 centerline."
@@ -662,29 +809,34 @@ class BackendBridge:
         with tempfile.TemporaryDirectory(dir=str(backend.ensure_local_tmp_root()), ignore_cleanup_errors=True) as td:
             work = Path(td)
             ext = input_path.suffix.lower()
-            if ext in {".doc", ".docx"}:
-                pdf_src = work / "source.pdf"
-                backend.word_to_pdf(
-                    input_path,
-                    pdf_src,
-                    log,
-                    override_font=(body_font or None),
-                    formula_font=(formula_font or None),
-                )
-            elif ext == ".pdf":
-                pdf_src = input_path
+            if source_pdf_path is not None:
+                pdf_src = Path(source_pdf_path)
             else:
-                return False, f"Method3 page mode supports .doc/.docx/.pdf, got: {ext}"
+                if ext in {".doc", ".docx"}:
+                    pdf_src = work / "source.pdf"
+                    backend.word_to_pdf(
+                        input_path,
+                        pdf_src,
+                        log,
+                        override_font=(body_font or None),
+                        formula_font=(formula_font or None),
+                    )
+                elif ext == ".pdf":
+                    pdf_src = input_path
+                else:
+                    return False, f"Method3 page mode supports .doc/.docx/.pdf, got: {ext}"
 
-            if fitz is not None:
+            page_count = int(source_page_count) if source_page_count is not None else 0
+            if fitz is not None and page_count <= 0:
                 try:
                     with fitz.open(str(pdf_src)) as doc:
                         page_count = int(doc.page_count)
-                    if page > page_count:
-                        return False, f"Page {page} is out of range (total pages: {page_count})."
-                    log(f"Source pages: {page_count}, selected: {page}")
                 except Exception:
                     pass
+            if page_count > 0:
+                if page > page_count:
+                    return False, f"Page {page} is out of range (total pages: {page_count})."
+                log(f"Source pages: {page_count}, selected: {page}")
 
             png = work / "page.png"
             cmd = [
@@ -714,7 +866,23 @@ class BackendBridge:
             page_w_mm = float(img_w) * 25.4 / float(max(1, int(dpi)))
             page_h_mm = float(img_h) * 25.4 / float(max(1, int(dpi)))
 
-            polys_px = self._run_method3_centerline_page(backend, arr, log)
+            text_centerline_px, best_thr = self._run_method3_centerline_page(backend, arr, log)
+            if not text_centerline_px:
+                return False, "Method3 centerline produced no paths."
+            text_mask, graphics_mask = self._split_method3_text_graphics_masks(backend, arr, best_thr)
+            filtered_text_px: list[list[tuple[float, float]]] = []
+            for poly in text_centerline_px:
+                overlap = self._polyline_mask_overlap_ratio(poly, graphics_mask)
+                if overlap >= 0.55:
+                    continue
+                filtered_text_px.append(poly)
+            graphics_outline_px = self._extract_graphics_outline_polylines_px(backend, graphics_mask)
+            if graphics_outline_px:
+                log(
+                    "Method3 layer split: "
+                    f"text_paths={len(filtered_text_px)}, graphics_paths={len(graphics_outline_px)}"
+                )
+            polys_px = [*filtered_text_px, *graphics_outline_px]
             if not polys_px:
                 return False, "Method3 centerline produced no paths."
 
@@ -769,17 +937,134 @@ class BackendBridge:
                     return False, msg
         return True, ""
 
+    def _resolve_method3_source_pdf(
+        self,
+        *,
+        backend,
+        input_path: Path,
+        body_font: str,
+        formula_font: str,
+        work_dir: Path,
+        log: LogFn,
+    ) -> tuple[bool, Optional[Path], str]:
+        ext = input_path.suffix.lower()
+        if ext == ".pdf":
+            return True, input_path, ""
+        if ext not in {".doc", ".docx"}:
+            return False, None, f"Method3 page mode supports .doc/.docx/.pdf, got: {ext}"
+        pdf_src = work_dir / "source_method3.pdf"
+        try:
+            backend.word_to_pdf(
+                input_path,
+                pdf_src,
+                log,
+                override_font=(body_font or None),
+                formula_font=(formula_font or None),
+            )
+        except Exception as exc:
+            return False, None, f"Word->PDF conversion failed: {exc}"
+        if not pdf_src.exists() or pdf_src.stat().st_size <= 0:
+            return False, None, "Word->PDF conversion produced no output."
+        return True, pdf_src, ""
+
+    @staticmethod
+    def _probe_pdf_page_count(pdf_path: Path) -> int:
+        if fitz is None:
+            return 0
+        try:
+            with fitz.open(str(pdf_path)) as doc:
+                return max(0, int(doc.page_count))
+        except Exception:
+            return 0
+
+    @staticmethod
+    def _copy_latest_artifacts(
+        *,
+        svg_src: Path,
+        pdf_src: Path,
+        nc_src: Optional[Path],
+        svg_dst: Path,
+        pdf_dst: Path,
+        nc_dst: Optional[Path],
+    ) -> None:
+        if svg_src.exists():
+            shutil.copyfile(str(svg_src), str(svg_dst))
+        if pdf_src.exists():
+            shutil.copyfile(str(pdf_src), str(pdf_dst))
+        if nc_src is not None and nc_dst is not None and nc_src.exists():
+            shutil.copyfile(str(nc_src), str(nc_dst))
+
+    @staticmethod
+    def _run_manual_commands_with_timeout(
+        backend,
+        com_port: str,
+        baud: str,
+        commands: list[str],
+        *,
+        kwargs: dict[str, object],
+        timeout_s: float,
+    ) -> tuple[bool, str]:
+        done = threading.Event()
+        result: dict[str, tuple[bool, str]] = {}
+        error: dict[str, Exception] = {}
+
+        def _worker() -> None:
+            try:
+                ok, text = backend.grbl_send_manual_commands(
+                    com_port,
+                    baud,
+                    commands,
+                    **kwargs,
+                )
+                result["value"] = (bool(ok), str(text or ""))
+            except Exception as exc:  # pragma: no cover - defensive path
+                error["exc"] = exc
+            finally:
+                done.set()
+
+        threading.Thread(target=_worker, daemon=True, name="grbl-manual-probe").start()
+        wait_s = max(0.2, float(timeout_s))
+        if not done.wait(wait_s):
+            return False, f"Connection probe timed out after {wait_s:.1f}s."
+        if "exc" in error:
+            return False, str(error["exc"])
+        return result.get("value", (False, "Connection probe failed."))
+
     def probe_connection(self, com_port: str, baud: str, log: LogFn) -> tuple[bool, str]:
         backend = self._backend()
-        ok, text = backend.grbl_send_manual_commands(
+        probe_cmds = ["$X", "$I", "?", "$$"]
+        probe_kwargs = {
+            "soft_reset_first": True,
+            "read_tail": True,
+            # Probe path should fail fast on missing/busy COM and not block UI for long.
+            "serial_timeout_s": 0.60,
+            "wake_delay_s": 0.12,
+            "reset_delay_s": 0.35,
+            "command_delay_s": 0.08,
+            "tail_delay_s": 0.20,
+            "wake_read_bytes": 2048,
+            "tail_read_bytes": 4096,
+        }
+        ok, text = self._run_manual_commands_with_timeout(
+            backend,
             com_port,
             baud,
-            ["$X", "$I", "?", "$$"],
-            soft_reset_first=True,
-            read_tail=True,
+            probe_cmds,
+            kwargs=probe_kwargs,
+            timeout_s=6.0,
         )
+        if (not ok) and ("unexpected keyword argument" in str(text).lower()):
+            # Compatibility fallback for older backend signatures without timing kwargs.
+            ok, text = self._run_manual_commands_with_timeout(
+                backend,
+                com_port,
+                baud,
+                probe_cmds,
+                kwargs={"soft_reset_first": True, "read_tail": True},
+                timeout_s=6.0,
+            )
         if ok:
-            log(f"Подключение к {com_port} успешно.")
+            log(f"Connected to {com_port}.")
             return True, text or "ok"
         return False, text
 
@@ -788,7 +1073,7 @@ class BackendBridge:
         ok, text = backend.grbl_send_manual_commands(
             com_port,
             baud,
-            ["!", "M5", "$X", "$1=0", "M18", "M84", "?"],
+            ["!", "M5", "$X", "$1=0", "?"],
             soft_reset_first=True,
             read_tail=True,
         )
@@ -873,6 +1158,7 @@ class BackendBridge:
         handwriting_formula_font: str,
         image_contours_mode: str,
         source_page_index: int,
+        source_all_pages: bool,
         exact_geometry_mode: bool,
         safe_travel_lift: bool,
         strict_one_to_one: bool,
@@ -890,9 +1176,10 @@ class BackendBridge:
         backend.SAFE_PEN_TRAVEL_UP = bool(safe_travel_lift)
         backend.MIN_FIT_SCALE_FOR_DIMENSIONAL_DRAW = 0.98 if bool(strict_one_to_one) else 0.0
         backend.HANDWRITING_TEXT_ENABLED = bool(effective_handwriting)
-        selected_hw_font = str((handwriting_font or "").strip() or "Marck Script")
-        selected_formula_font = str((handwriting_formula_font or "").strip() or "Times New Roman")
+        selected_hw_font = _resolve_handwriting_font(backend, handwriting_font, log=log)
+        selected_formula_font = _resolve_formula_font(backend, handwriting_formula_font, log=log)
         source_page = max(1, int(source_page_index))
+        all_pages = bool(source_all_pages)
         backend.HANDWRITING_FONT_FAMILY = selected_hw_font
         backend.HANDWRITING_CYRILLIC_FONT_FAMILY = _select_cyrillic_handwriting_font(backend, selected_hw_font)
         # Lock handwriting pipeline to method #3 for stable single-line output in GUI mode.
@@ -929,53 +1216,110 @@ class BackendBridge:
         use_method3_page = bool(effective_handwriting) and ext in {".doc", ".docx", ".pdf"}
 
         if use_method3_page:
-            log(
-                "Method3 page mode: "
-                f"page={source_page}, body_font='{selected_hw_font}', formula_font='{selected_formula_font}'."
-            )
-            with self._track_backend_subprocess(ctx):
-                ok_prep, prep_msg = self._prepare_method3_page(
+            with tempfile.TemporaryDirectory(dir=str(backend.ensure_local_tmp_root()), ignore_cleanup_errors=True) as td:
+                work = Path(td)
+                ok_src, pdf_src, src_msg = self._resolve_method3_source_pdf(
                     backend=backend,
                     input_path=input_path,
-                    source_page_index=source_page,
                     body_font=selected_hw_font,
                     formula_font=selected_formula_font,
-                    output_svg=svg_path,
-                    output_pdf=pdf_path,
-                    output_nc=nc_path,
+                    work_dir=work,
                     log=log,
                 )
-            if not ok_prep:
-                return False, prep_msg
-
-            ctx.check_canceled()
-            if calibrate_before_draw:
-                with self._track_backend_subprocess(ctx):
-                    ok_cal, msg_cal = backend.run_corner_calibration_pipeline(
-                        log,
-                        com=com_port,
-                        baud=baud,
-                        send_to_plotter=True,
-                        mark_size=2.0,
-                    )
-                if not ok_cal:
-                    return False, msg_cal
-            ctx.check_canceled()
-            with self._track_backend_subprocess(ctx):
-                plot_time_s = backend.send_to_grbl(
-                    nc_path,
-                    com_port,
-                    baud,
-                    log,
-                    sleep_after=True,
-                    auto_resume=False,
+                if not ok_src or pdf_src is None:
+                    return False, src_msg
+                page_count = self._probe_pdf_page_count(pdf_src)
+                if all_pages:
+                    if page_count <= 0:
+                        return False, "Cannot detect page count for all-pages mode."
+                    pages = list(range(1, page_count + 1))
+                else:
+                    if page_count > 0 and source_page > page_count:
+                        return False, f"Page {source_page} is out of range (total pages: {page_count})."
+                    pages = [source_page]
+                log(
+                    "Method3 page mode: "
+                    f"pages={pages[0]}..{pages[-1]}, body_font='{selected_hw_font}', "
+                    f"formula_font='{selected_formula_font}'."
                 )
-            return (
-                True,
-                f"Done: page {source_page} sent. "
-                f"Preview ready: {svg_path} | Preview PDF: {pdf_path} | "
-                f"Plot time: {float(plot_time_s):.1f} s",
-            )
+                if len(pages) > 1:
+                    log(
+                        "Method3 draw warning: multi-page batch draws pages sequentially in the same work area "
+                        "(no auto pause for sheet replacement)."
+                    )
+
+                if calibrate_before_draw:
+                    ctx.check_canceled()
+                    with self._track_backend_subprocess(ctx):
+                        ok_cal, msg_cal = backend.run_corner_calibration_pipeline(
+                            log,
+                            com=com_port,
+                            baud=baud,
+                            send_to_plotter=True,
+                            mark_size=2.0,
+                        )
+                    if not ok_cal:
+                        return False, msg_cal
+
+                total_plot_time = 0.0
+                first_svg: Optional[Path] = None
+                first_pdf: Optional[Path] = None
+                first_nc: Optional[Path] = None
+                for idx, page_no in enumerate(pages, start=1):
+                    ctx.check_canceled()
+                    page_svg = svg_path if len(pages) == 1 else previews_dir / f"latest_draw_p{page_no}.svg"
+                    page_pdf = pdf_path if len(pages) == 1 else previews_dir / f"latest_draw_p{page_no}.pdf"
+                    page_nc = nc_path if len(pages) == 1 else previews_dir / f"latest_draw_p{page_no}.nc"
+                    with self._track_backend_subprocess(ctx):
+                        ok_prep, prep_msg = self._prepare_method3_page(
+                            backend=backend,
+                            input_path=input_path,
+                            source_page_index=page_no,
+                            body_font=selected_hw_font,
+                            formula_font=selected_formula_font,
+                            output_svg=page_svg,
+                            output_pdf=page_pdf,
+                            output_nc=page_nc,
+                            log=log,
+                            source_pdf_path=pdf_src,
+                            source_page_count=page_count if page_count > 0 else None,
+                        )
+                    if not ok_prep:
+                        return False, prep_msg
+                    if first_svg is None:
+                        first_svg = page_svg
+                        first_pdf = page_pdf
+                        first_nc = page_nc
+                    ctx.check_canceled()
+                    with self._track_backend_subprocess(ctx):
+                        plot_time_s = backend.send_to_grbl(
+                            page_nc,
+                            com_port,
+                            baud,
+                            log,
+                            sleep_after=True,
+                            auto_resume=False,
+                        )
+                    total_plot_time += float(plot_time_s)
+                    log(f"Method3 draw: sent page {page_no} ({idx}/{len(pages)}).")
+
+                if len(pages) > 1 and first_svg is not None and first_pdf is not None and first_nc is not None:
+                    self._copy_latest_artifacts(
+                        svg_src=first_svg,
+                        pdf_src=first_pdf,
+                        nc_src=first_nc,
+                        svg_dst=svg_path,
+                        pdf_dst=pdf_path,
+                        nc_dst=nc_path,
+                    )
+
+                pages_desc = f"{pages[0]}..{pages[-1]}" if len(pages) > 1 else str(pages[0])
+                return (
+                    True,
+                    f"Done: page(s) {pages_desc} sent. "
+                    f"Preview ready: {svg_path} | Preview PDF: {pdf_path} | "
+                    f"Plot time: {float(total_plot_time):.1f} s",
+                )
 
         with self._track_backend_subprocess(ctx):
             ok, msg = backend.run_pipeline_with_corner_calibration(
@@ -1022,6 +1366,7 @@ class BackendBridge:
         handwriting_formula_font: str,
         image_contours_mode: str,
         source_page_index: int,
+        source_all_pages: bool,
         exact_geometry_mode: bool,
         safe_travel_lift: bool,
         strict_one_to_one: bool,
@@ -1039,9 +1384,10 @@ class BackendBridge:
         backend.SAFE_PEN_TRAVEL_UP = bool(safe_travel_lift)
         backend.MIN_FIT_SCALE_FOR_DIMENSIONAL_DRAW = 0.98 if bool(strict_one_to_one) else 0.0
         backend.HANDWRITING_TEXT_ENABLED = bool(effective_handwriting)
-        selected_hw_font = str((handwriting_font or "").strip() or "Marck Script")
-        selected_formula_font = str((handwriting_formula_font or "").strip() or "Times New Roman")
+        selected_hw_font = _resolve_handwriting_font(backend, handwriting_font, log=log)
+        selected_formula_font = _resolve_formula_font(backend, handwriting_formula_font, log=log)
         source_page = max(1, int(source_page_index))
+        all_pages = bool(source_all_pages)
         backend.HANDWRITING_FONT_FAMILY = selected_hw_font
         backend.HANDWRITING_CYRILLIC_FONT_FAMILY = _select_cyrillic_handwriting_font(backend, selected_hw_font)
         # Lock handwriting pipeline to method #3 for stable single-line output in GUI mode.
@@ -1077,26 +1423,72 @@ class BackendBridge:
         use_method3_page = bool(effective_handwriting) and ext in {".doc", ".docx", ".pdf"}
 
         if use_method3_page:
-            log(
-                "Method3 page preview: "
-                f"page={source_page}, body_font='{selected_hw_font}', formula_font='{selected_formula_font}'."
-            )
-            with self._track_backend_subprocess(ctx):
-                ok_prep, prep_msg = self._prepare_method3_page(
+            with tempfile.TemporaryDirectory(dir=str(backend.ensure_local_tmp_root()), ignore_cleanup_errors=True) as td:
+                work = Path(td)
+                ok_src, pdf_src, src_msg = self._resolve_method3_source_pdf(
                     backend=backend,
                     input_path=input_path,
-                    source_page_index=source_page,
                     body_font=selected_hw_font,
                     formula_font=selected_formula_font,
-                    output_svg=svg_path,
-                    output_pdf=pdf_path,
-                    output_nc=nc_path,
+                    work_dir=work,
                     log=log,
                 )
-            if not ok_prep:
-                return False, prep_msg
-            suffix = f" | PDF: {pdf_path}" if pdf_path.exists() else ""
-            return True, f"Preview ready: {svg_path} | G-code: {nc_path}{suffix}"
+                if not ok_src or pdf_src is None:
+                    return False, src_msg
+                page_count = self._probe_pdf_page_count(pdf_src)
+                if all_pages:
+                    if page_count <= 0:
+                        return False, "Cannot detect page count for all-pages mode."
+                    pages = list(range(1, page_count + 1))
+                else:
+                    if page_count > 0 and source_page > page_count:
+                        return False, f"Page {source_page} is out of range (total pages: {page_count})."
+                    pages = [source_page]
+                log(
+                    "Method3 page preview: "
+                    f"pages={pages[0]}..{pages[-1]}, body_font='{selected_hw_font}', "
+                    f"formula_font='{selected_formula_font}'."
+                )
+                first_svg: Optional[Path] = None
+                first_pdf: Optional[Path] = None
+                first_nc: Optional[Path] = None
+                for page_no in pages:
+                    ctx.check_canceled()
+                    page_svg = svg_path if len(pages) == 1 else previews_dir / f"latest_preview_p{page_no}.svg"
+                    page_pdf = pdf_path if len(pages) == 1 else previews_dir / f"latest_preview_p{page_no}.pdf"
+                    page_nc = nc_path if len(pages) == 1 else previews_dir / f"latest_preview_p{page_no}.nc"
+                    with self._track_backend_subprocess(ctx):
+                        ok_prep, prep_msg = self._prepare_method3_page(
+                            backend=backend,
+                            input_path=input_path,
+                            source_page_index=page_no,
+                            body_font=selected_hw_font,
+                            formula_font=selected_formula_font,
+                            output_svg=page_svg,
+                            output_pdf=page_pdf,
+                            output_nc=page_nc,
+                            log=log,
+                            source_pdf_path=pdf_src,
+                            source_page_count=page_count if page_count > 0 else None,
+                        )
+                    if not ok_prep:
+                        return False, prep_msg
+                    if first_svg is None:
+                        first_svg = page_svg
+                        first_pdf = page_pdf
+                        first_nc = page_nc
+
+                if len(pages) > 1 and first_svg is not None and first_pdf is not None and first_nc is not None:
+                    self._copy_latest_artifacts(
+                        svg_src=first_svg,
+                        pdf_src=first_pdf,
+                        nc_src=first_nc,
+                        svg_dst=svg_path,
+                        pdf_dst=pdf_path,
+                        nc_dst=nc_path,
+                    )
+                suffix = f" | PDF: {pdf_path}" if pdf_path.exists() else ""
+                return True, f"Preview ready: {svg_path} | G-code: {nc_path}{suffix}"
 
         with self._track_backend_subprocess(ctx):
             ok, msg = backend.run_pipeline_with_corner_calibration(

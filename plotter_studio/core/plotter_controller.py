@@ -160,7 +160,7 @@ class PlotterController(QObject):
         ok, tail = self.bridge.manual_commands(
             port,
             self.baud,
-            ["$X", "M5", "$1=0", "M18", "M84", "?", "$SLP"],
+            ["$X", "M5", "$1=0", "?", "$SLP"],
             soft_reset_first=False,
             read_tail=True,
         )
@@ -304,6 +304,7 @@ class PlotterController(QObject):
         handwriting_formula_font: Optional[str] = None,
         image_contours_mode: Optional[str] = None,
         source_page_index: Optional[int] = None,
+        source_all_pages: Optional[bool] = None,
         exact_geometry_mode: Optional[bool] = None,
         safe_travel_lift: Optional[bool] = None,
         strict_one_to_one: Optional[bool] = None,
@@ -359,6 +360,8 @@ class PlotterController(QObject):
             self.settings.image_contours_mode = mode
         if source_page_index is not None:
             self.settings.source_page_index = max(1, int(source_page_index))
+        if source_all_pages is not None:
+            self.settings.source_all_pages = bool(source_all_pages)
         if exact_geometry_mode is not None:
             self.settings.exact_geometry_mode = bool(exact_geometry_mode)
         if safe_travel_lift is not None:
@@ -451,7 +454,7 @@ class PlotterController(QObject):
             self.bridge.manual_commands(
                 port,
                 self.baud,
-                ["$X", "M5", "$1=0", "M18", "M84", "$SLP", "?"],
+                ["$X", "M5", "$1=0", "$SLP", "?"],
                 soft_reset_first=False,
                 read_tail=True,
             )
@@ -532,6 +535,7 @@ class PlotterController(QObject):
         handwriting_formula_font = self.settings.handwriting_formula_font
         image_contours_mode = self.settings.image_contours_mode
         source_page_index = max(1, int(self.settings.source_page_index or 1))
+        source_all_pages = bool(self.settings.source_all_pages)
         if file_path.suffix.lower() in {".doc", ".docx"}:
             if render_mode != "handwriting" or not handwriting_enabled:
                 render_mode = "handwriting"
@@ -568,6 +572,7 @@ class PlotterController(QObject):
                 handwriting_formula_font=handwriting_formula_font,
                 image_contours_mode=image_contours_mode,
                 source_page_index=source_page_index,
+                source_all_pages=source_all_pages,
                 exact_geometry_mode=exact_geometry_mode,
                 safe_travel_lift=safe_travel_lift,
                 strict_one_to_one=strict_one_to_one,
@@ -606,6 +611,7 @@ class PlotterController(QObject):
         handwriting_formula_font = self.settings.handwriting_formula_font
         image_contours_mode = self.settings.image_contours_mode
         source_page_index = max(1, int(self.settings.source_page_index or 1))
+        source_all_pages = bool(self.settings.source_all_pages)
         if file_path.suffix.lower() in {".doc", ".docx"}:
             if render_mode != "handwriting" or not handwriting_enabled:
                 render_mode = "handwriting"
@@ -640,6 +646,7 @@ class PlotterController(QObject):
                 handwriting_formula_font=handwriting_formula_font,
                 image_contours_mode=image_contours_mode,
                 source_page_index=source_page_index,
+                source_all_pages=source_all_pages,
                 exact_geometry_mode=exact_geometry_mode,
                 safe_travel_lift=safe_travel_lift,
                 strict_one_to_one=strict_one_to_one,
@@ -721,7 +728,7 @@ class PlotterController(QObject):
                 ok, tail = self.bridge.manual_commands(
                     port,
                     self.baud,
-                    ["$X", "G90", "G1 Z0 F800", "G4 P0.05", "M5", "$1=0", "M18", "M84", "?", "$SLP"],
+                    ["$X", "G90", "G1 Z0 F800", "G4 P0.05", "M5", "$1=0", "?", "$SLP"],
                     soft_reset_first=True,
                     read_tail=True,
                 )

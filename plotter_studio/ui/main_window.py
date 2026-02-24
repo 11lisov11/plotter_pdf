@@ -220,7 +220,7 @@ class MainWindow(QMainWindow):
         self.file_page.draw_requested.connect(self.controller.draw_file)
         self.file_page.wear_test_requested.connect(self.controller.run_wear_test)
         self.file_page.render_settings_changed.connect(
-            lambda render_mode, quality, force_text_to_path, exact_mode, safe_lift, strict_scale, handwriting_enabled, handwriting_font, handwriting_formula_font, image_contours_mode, source_page_index: self.controller.update_ui_settings(
+            lambda render_mode, quality, force_text_to_path, exact_mode, safe_lift, strict_scale, handwriting_enabled, handwriting_font, handwriting_formula_font, image_contours_mode, source_page_index, source_all_pages: self.controller.update_ui_settings(
                 render_mode=render_mode,
                 quality_profile=quality,
                 force_text_to_path=force_text_to_path,
@@ -232,6 +232,7 @@ class MainWindow(QMainWindow):
                 handwriting_formula_font=handwriting_formula_font,
                 image_contours_mode=image_contours_mode,
                 source_page_index=source_page_index,
+                source_all_pages=source_all_pages,
             )
         )
 
@@ -292,6 +293,7 @@ class MainWindow(QMainWindow):
             self.settings.handwriting_formula_font,
             self.settings.image_contours_mode,
             self.settings.source_page_index,
+            self.settings.source_all_pages,
         )
         self.file_page.set_preview_path(self.settings.last_preview_svg)
 
@@ -500,6 +502,7 @@ class MainWindow(QMainWindow):
             handwriting_formula_font,
             image_contours_mode,
             source_page_index,
+            source_all_pages,
         ) = self.file_page.current_render_settings()
         self.controller.update_ui_settings(
             log_drawer_open=self.log_drawer.isVisible(),
@@ -526,6 +529,7 @@ class MainWindow(QMainWindow):
             handwriting_formula_font=handwriting_formula_font,
             image_contours_mode=image_contours_mode,
             source_page_index=source_page_index,
+            source_all_pages=source_all_pages,
         )
         self.controller.shutdown()
         super().closeEvent(event)

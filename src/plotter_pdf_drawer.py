@@ -11588,6 +11588,13 @@ def grbl_send_manual_commands(
     *,
     soft_reset_first: bool = False,
     read_tail: bool = True,
+    serial_timeout_s: float = 1.0,
+    wake_delay_s: float = 0.20,
+    reset_delay_s: float = 1.0,
+    command_delay_s: float = 0.16,
+    tail_delay_s: float = 0.35,
+    wake_read_bytes: int = 4096,
+    tail_read_bytes: int = 8192,
 ) -> Tuple[bool, str]:
     try:
         import serial  # type: ignore
@@ -11603,11 +11610,18 @@ def grbl_send_manual_commands(
         baud_i = int(DEFAULT_BAUD)
 
     ser = None
+    timeout_s = max(0.05, float(serial_timeout_s))
+    wake_delay = max(0.0, float(wake_delay_s))
+    reset_delay = max(0.0, float(reset_delay_s))
+    command_delay = max(0.0, float(command_delay_s))
+    tail_delay = max(0.0, float(tail_delay_s))
+    wake_read = max(0, int(wake_read_bytes))
+    tail_read = max(0, int(tail_read_bytes))
     try:
         ser = serial.Serial()
         ser.port = port
         ser.baudrate = baud_i
-        ser.timeout = 1.0
+        ser.timeout = timeout_s
         try:
             ser.dtr = False
             ser.rts = False
@@ -11618,14 +11632,16 @@ def grbl_send_manual_commands(
         # Wake channel.
         ser.write(b"\r\n")
         ser.flush()
-        time.sleep(0.20)
-        ser.read(4096)
+        time.sleep(wake_delay)
+        if wake_read > 0:
+            ser.read(wake_read)
 
         if soft_reset_first:
             ser.write(b"\x18")
             ser.flush()
-            time.sleep(1.0)
-            ser.read(4096)
+            time.sleep(reset_delay)
+            if wake_read > 0:
+                ser.read(wake_read)
 
         for cmd in commands:
             line = (cmd or "").strip()
@@ -11633,13 +11649,13 @@ def grbl_send_manual_commands(
                 continue
             ser.write((line + "\n").encode("ascii", errors="replace"))
             ser.flush()
-            time.sleep(0.16)
+            time.sleep(command_delay)
 
         if not read_tail:
             return True, "ok"
 
-        time.sleep(0.35)
-        tail = ser.read(8192).decode("ascii", errors="replace").strip()
+        time.sleep(tail_delay)
+        tail = ser.read(tail_read).decode("ascii", errors="replace").strip() if tail_read > 0 else ""
         return True, tail or "ok"
     except Exception as exc:
         return False, str(exc)
@@ -12411,7 +12427,7 @@ class PlotterApp:
     def _release_motors(self):
         if self.busy:
             return
-        cmds = ["$X", "M5", "$1=0", "M18", "M84", "?"]
+        cmds = ["$X", "M5", "$1=0", "?"]
         self._start_background("Отпуск моторов...", self._manual_worker, cmds, "Done: моторы отпущены.")
 
     def _manual_worker(self, commands: List[str], done_message: str):
