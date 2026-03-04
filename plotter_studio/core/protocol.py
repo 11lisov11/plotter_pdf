@@ -663,8 +663,6 @@ class BackendBridge:
         area_medium = 0.0022 * page_area
 
         for label in range(1, int(num_labels)):
-            x = int(stats[label, backend.cv2.CC_STAT_LEFT])
-            y = int(stats[label, backend.cv2.CC_STAT_TOP])
             bw = int(stats[label, backend.cv2.CC_STAT_WIDTH])
             bh = int(stats[label, backend.cv2.CC_STAT_HEIGHT])
             area = float(stats[label, backend.cv2.CC_STAT_AREA])
@@ -962,7 +960,7 @@ class BackendBridge:
                 formula_font=(formula_font or None),
             )
         except Exception as exc:
-            return False, None, f"Word->PDF conversion failed: {exc}"
+            return False, None, f"Word->PDF conversion failed ({type(exc).__name__}): {exc}"
         if not pdf_src.exists() or pdf_src.stat().st_size <= 0:
             return False, None, "Word->PDF conversion produced no output."
         return True, pdf_src, ""

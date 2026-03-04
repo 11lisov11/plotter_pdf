@@ -1,0 +1,135 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint (ruff)
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+          cache-dependency-path: |
+            requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pytest ruff coverage pyinstaller
+
+      - name: Run ruff
+        run: ruff check src plotter_studio tests
+
+  tests:
+    name: Tests (unittest + pytest)
+    runs-on: windows-latest
+    timeout-minutes: 30
+    needs: lint
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+          cache-dependency-path: |
+            requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pytest
+
+      - name: Run unittest suite
+        run: python -m unittest discover -s tests -p "test_*.py" -v
+
+      - name: Run pytest suite
+        run: python -m pytest -q
+
+  coverage-report:
+    name: Coverage (pytest)
+    runs-on: windows-latest
+    timeout-minutes: 20
+    needs: tests
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+          cache-dependency-path: |
+            requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pytest coverage
+
+      - name: Run coverage
+        run: |
+          python -m coverage run -m pytest -q
+          python -m coverage report -m --include "src/*,plotter_studio/*" --fail-under=32
+          python -m coverage xml -o coverage.xml
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml
+          retention-days: 14
+
+  build-smoke-windows:
+    name: Build smoke (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 45
+    needs: tests
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+          cache-dependency-path: |
+            requirements.txt
+
+      - name: Build portable executable
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File .\build_windows.ps1
+
+      - name: Verify build outputs
+        shell: pwsh
+        run: |
+          if (!(Test-Path "dist\PlotterStudio.exe")) { throw "dist\PlotterStudio.exe not found" }
+          if (!(Test-Path "dist\PlotterStudio-portable.zip")) { throw "dist\PlotterStudio-portable.zip not found" }
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: plotterstudio-portable
+          path: |
+            dist/PlotterStudio.exe
+            dist/PlotterStudio-portable.zip
+          retention-days: 7

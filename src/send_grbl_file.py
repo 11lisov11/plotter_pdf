@@ -17,7 +17,7 @@ def _force_utf8_stdio() -> None:
 
 try:
     import serial  # pyserial
-except Exception as e:
+except Exception:
     print('Missing dependency: pyserial')
     raise
 try:
@@ -267,17 +267,17 @@ def stream_lines_to_grbl(
                 i += 1
                 continue
             data = (line + "\n").encode("ascii", errors="replace")
-            l = len(data)
-            if l >= rx_buffer_size:
+            line_len = len(data)
+            if line_len >= rx_buffer_size:
                 raise RuntimeError(f"Line too long for GRBL RX buffer ({rx_buffer_size}): {line[:120]!r}")
-            if buf_used + l > rx_buffer_size:
+            if buf_used + line_len > rx_buffer_size:
                 break
             try:
                 ser.write(data)
             except Exception as exc:
                 raise RuntimeError(f"Serial write failed: {exc}") from exc
-            pending.append((l, i + 1, line))
-            buf_used += l
+            pending.append((line_len, i + 1, line))
+            buf_used += line_len
             i += 1
 
         try:

@@ -78,7 +78,7 @@ class ProtocolControlTests(unittest.TestCase):
 
             def grbl_send_manual_commands(self, com: str, baud: str, commands: list[str], **kwargs):
                 self.calls += 1
-                time.sleep(0.25)
+                time.sleep(0.60)
                 return True, "late-ok"
 
         bridge = protocol.BackendBridge(Path.cwd())

@@ -247,15 +247,15 @@ class PlotterController(QObject):
         try:
             ports = self.bridge.list_com_ports()
             saved = (self.settings.com_port or "").strip()
-            suggested = "COM11"
+            suggested = "COM6"
 
             selected = ""
             if self.connected and self.connected_port in ports:
                 selected = self.connected_port
             elif saved and saved in ports:
                 selected = saved
-            elif "COM11" in ports:
-                selected = "COM11"
+            elif "COM6" in ports:
+                selected = "COM6"
             elif ports:
                 selected = ports[0]
             elif saved:

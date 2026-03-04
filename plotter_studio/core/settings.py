@@ -42,7 +42,7 @@ def state_snapshot_path() -> Path:
 
 @dataclass
 class AppSettingsData:
-    com_port: str = "COM11"
+    com_port: str = "COM6"
     tool_mode: str = "pencil"
     theme_mode: str = "auto"  # auto | light | dark
     sheet_format: str = "a4"  # work | a4 | a3 | notebook | custom

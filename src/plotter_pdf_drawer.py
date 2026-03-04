@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 from dataclasses import dataclass
 from pathlib import Path
 from queue import Queue, Empty
-from typing import Iterable, List, Optional, Tuple
+from typing import Dict, Iterable, List, Optional, Tuple
 from urllib.parse import unquote, urlparse
 from xml.etree import ElementTree as ET
 
@@ -45,6 +45,17 @@ except Exception:
 
 import tkinter as tk
 from tkinter import filedialog, messagebox, scrolledtext
+
+try:
+    from src.plotter_backend.converters import cad_converter as cad_converter_mod
+    from src.plotter_backend.converters import pdf_converter as pdf_converter_mod
+    from src.plotter_backend.converters import word_converter as word_converter_mod
+    from src.plotter_backend.errors import BackendError
+except Exception:
+    from plotter_backend.converters import cad_converter as cad_converter_mod
+    from plotter_backend.converters import pdf_converter as pdf_converter_mod
+    from plotter_backend.converters import word_converter as word_converter_mod
+    from plotter_backend.errors import BackendError
 
 CYRILLIC_TEXT_RE = re.compile(r"[\u0400-\u04FF\u0500-\u052F]")
 
@@ -108,7 +119,7 @@ CONFIG_DIR = ROOT_DIR / "config"
 AXIS_PROFILE_PATH = CONFIG_DIR / "axis_profile.json"
 LOCAL_TMP_ROOT = ROOT_DIR / "_tmp"
 
-DEFAULT_COM_PORT = "COM5"
+DEFAULT_COM_PORT = "COM6"
 DEFAULT_BAUD = "115200"
 Z_UP = 0.0
 Z_DOWN = 11.9
@@ -3310,8 +3321,8 @@ def _measure_text_advance_mm(text: str, *, font, render_scale: float) -> float:
         adv_px = 0.0
     if adv_px <= 0.0:
         try:
-            l, _, r, _ = draw.textbbox((0, 0), text, font=font, anchor="ls")
-            adv_px = float(r - l)
+            left, _, right, _ = draw.textbbox((0, 0), text, font=font, anchor="ls")
+            adv_px = float(right - left)
         except Exception:
             adv_px = 0.0
     return max(0.0, adv_px / max(1e-9, float(render_scale)))
@@ -3804,7 +3815,6 @@ def _render_singleline_text_line_ttf(
     for token in tokens:
         token_norm = _normalize_handwriting_text_token(token)
         token_has_cyr = _text_contains_cyrillic(token_norm)
-        token_has_mathish = bool(re.search(r"[0-9=+\-*/^()]", token_norm or ""))
         token_ttf_path = ttf_path
         if (
             line_has_cyrillic
@@ -9588,164 +9598,25 @@ def pdf_to_svg(pdf_path: Path, svg_path: Path, logger) -> None:
         return had_text, handwriting_nodes
 
     def ensure_svg_exists(prefix: Path, target_svg: Path) -> bool:
-        candidates = []
-        for cand in [
-            prefix.with_suffix(".svg"),
-            prefix,
-            Path(f"{prefix}-1"),
-            Path(f"{prefix}-1.svg"),
-        ]:
-            candidates.append(cand)
-
-        try:
-            candidates.extend(sorted(prefix.parent.glob(f"{prefix.name}*")))
-        except Exception:
-            pass
-
-        seen = set()
-        ordered: List[Path] = []
-        for cand in candidates:
-            rp = Path(cand)
-            if rp in seen:
-                continue
-            seen.add(rp)
-            ordered.append(rp)
-
-        for candidate in ordered:
-            if not candidate.exists() or not candidate.is_file():
-                continue
-            if candidate.stat().st_size <= 0:
-                continue
-            if candidate == target_svg:
-                return True
-            if candidate.suffix.lower() == "" and candidate.with_suffix(".svg").exists():
-                # prefer explicit .svg file over raw file names
-                continue
-            if target_svg.exists():
-                target_svg.unlink()
-            candidate.replace(target_svg)
-            logger(f"Using generated SVG: {candidate}")
-            return True
-
-        if target_svg.exists() and target_svg.stat().st_size > 0:
-            return True
-        return False
+        return pdf_converter_mod.ensure_generated_svg_exists(prefix, target_svg, logger)
 
     def score_svg_quality(svg_target: Path) -> Tuple[float, str]:
-        # Lower score is better. Use scale-independent metrics so px/mm export differences
-        # do not bias converter selection.
-        try:
-            items = extract_polylines(svg_target)
-            if not items:
-                return float("inf"), "no paths"
-            polylines = to_drawing_polylines(items)
-            if not polylines:
-                return float("inf"), "no drawable geometry"
-
-            seg_lengths: List[float] = []
-            for poly in polylines:
-                for i in range(len(poly) - 1):
-                    d = points_distance(poly[i], poly[i + 1])
-                    if d > 0.0:
-                        seg_lengths.append(d)
-            if not seg_lengths:
-                return float("inf"), "empty segment set"
-
-            seg_count = len(seg_lengths)
-            lengths_sorted = sorted(seg_lengths)
-            med = lengths_sorted[len(lengths_sorted) // 2]
-            tiny_th = max(1e-9, med * 0.20)
-            short_th = max(1e-9, med * 0.40)
-            tiny_rel = sum(1 for d in seg_lengths if d <= tiny_th)
-            short_rel = sum(1 for d in seg_lengths if d <= short_th)
-            score = float(seg_count) + (2.5 * float(tiny_rel)) + (1.0 * float(short_rel)) + (0.2 * float(len(polylines)))
-
-            overflow_penalty = 0.0
-            page_w_mm, page_h_mm = svg_page_size_mm(svg_target)
-            b = bounds_path_items(items)
-            if b is not None and page_w_mm > 0.0 and page_h_mm > 0.0:
-                x0, x1, y0, y1 = b
-                bw = max(0.0, x1 - x0)
-                bh = max(0.0, y1 - y0)
-                ox = max(0.0, (bw / page_w_mm) - 1.15)
-                oy = max(0.0, (bh / page_h_mm) - 1.15)
-                overflow_penalty = 4000.0 * (ox + oy)
-                score += overflow_penalty
-
-            details = (
-                f"score={score:.1f}, paths={len(polylines)}, seg={seg_count}, "
-                f"med={med:.4f}, tiny<=0.2*med={tiny_rel}, short<=0.4*med={short_rel}, "
-                f"overflow_penalty={overflow_penalty:.1f}"
-            )
-            return score, details
-        except Exception as exc:
-            return float("inf"), f"metric-error: {exc}"
+        return pdf_converter_mod.score_svg_quality(
+            svg_target,
+            extract_polylines=extract_polylines,
+            to_drawing_polylines=to_drawing_polylines,
+            points_distance=points_distance,
+            svg_page_size_mm=svg_page_size_mm,
+            bounds_path_items=bounds_path_items,
+        )
 
     def inkscape_candidates(exe: str, target_svg: Path) -> List[List[str]]:
-        major, _, _ = get_inkscape_version(exe)
-        if major >= 1:
-            return [
-                [
-                    exe,
-                    str(pdf_path),
-                    "--export-type=svg",
-                    "--export-area-page",
-                    "--export-overwrite",
-                    f"--export-filename={target_svg}",
-                    "--pdf-page=1",
-                    "--pdf-poppler",
-                ],
-                [
-                    exe,
-                    str(pdf_path),
-                    "--export-type=svg",
-                    "--export-area-page",
-                    "--export-overwrite",
-                    f"--export-filename={target_svg}",
-                    "--pdf-page=1",
-                ],
-                [
-                    exe,
-                    str(pdf_path),
-                    "--actions=select-all;object-to-path;export-text-to-path",
-                    "--export-overwrite",
-                    "--export-area-page",
-                    f"--export-filename={target_svg}",
-                    "--pdf-page=1",
-                ],
-                [
-                    exe,
-                    str(pdf_path),
-                    "--actions=select-all;object-to-path;export-text-to-path",
-                    "--export-overwrite",
-                    "--export-area-page",
-                    "--export-plain-svg",
-                    f"--export-filename={target_svg}",
-                    "--pdf-page=1",
-                ],
-            ]
-        return [
-            [
-                exe,
-                "--export-area-page",
-                f"--export-plain-svg={target_svg}",
-                str(pdf_path),
-            ],
-            [
-                exe,
-                "-D",
-                "--export-plain-svg",
-                str(target_svg),
-                str(pdf_path),
-            ],
-            [
-                exe,
-                "-z",
-                "-l",
-                str(target_svg),
-                str(pdf_path),
-            ],
-        ]
+        return pdf_converter_mod.build_inkscape_pdf_to_svg_candidates(
+            exe,
+            pdf_path,
+            target_svg,
+            get_inkscape_version=get_inkscape_version,
+        )
 
     def try_inkscape_export(target_svg: Path) -> Tuple[bool, str]:
         try:
@@ -9884,53 +9755,16 @@ def pdf_to_svg(pdf_path: Path, svg_path: Path, logger) -> None:
 
 
 def _normalize_word_font_name(font_name: Optional[str], default: str = "") -> str:
-    raw = str(font_name or "").strip().strip("'").strip('"')
-    if not raw:
-        return str(default or "").strip()
-    stem = Path(raw).stem if raw.lower().endswith((".ttf", ".otf", ".ttc")) else ""
-    candidates: List[str] = []
-    if stem:
-        candidates.append(stem)
-        candidates.append(stem.replace("_", " "))
-        if stem.lower().startswith("ofont.ru_"):
-            short = stem.split("_", 1)[1]
-            candidates.append(short)
-            candidates.append(short.replace("_", " "))
-    candidates.append(raw)
-    for cand in candidates:
-        name = str(cand or "").strip()
-        if name:
-            return name
-    return str(default or "").strip()
+    return word_converter_mod.normalize_word_font_name(font_name, default=default)
 
 
 def _apply_word_formula_font(doc, formula_font: Optional[str], logger) -> int:
-    apply_math = bool(formula_font) or bool(HANDWRITING_WORD_KEEP_MATH)
-    if not apply_math:
-        return 0
-    target_math = _normalize_word_font_name(formula_font, default="Cambria Math")
-    restored_math = 0
-    try:
-        omaths = getattr(doc, "OMaths", None)
-        count = int(getattr(omaths, "Count", 0) or 0) if omaths is not None else 0
-        for i in range(1, count + 1):
-            try:
-                rng = omaths.Item(i).Range
-                rng.Font.Name = target_math
-                try:
-                    rng.Font.NameAscii = target_math
-                    rng.Font.NameFarEast = target_math
-                    rng.Font.NameOther = target_math
-                except Exception:
-                    pass
-                restored_math += 1
-            except Exception:
-                continue
-    except Exception:
-        restored_math = 0
-    if restored_math > 0:
-        logger(f"Word export: formula font '{target_math}', runs={restored_math}")
-    return restored_math
+    return word_converter_mod.apply_word_formula_font(
+        doc,
+        formula_font,
+        logger,
+        handwriting_word_keep_math=HANDWRITING_WORD_KEEP_MATH,
+    )
 
 
 def apply_word_handwriting_font(
@@ -9939,25 +9773,14 @@ def apply_word_handwriting_font(
     logger,
     math_font: Optional[str] = None,
 ) -> Tuple[bool, int]:
-    target = _normalize_word_font_name(font_name, default=normalize_handwriting_font_name(font_name))
-    try:
-        doc.Content.Font.Name = target
-        try:
-            doc.Content.Font.NameAscii = target
-            doc.Content.Font.NameFarEast = target
-            doc.Content.Font.NameOther = target
-        except Exception:
-            pass
-    except Exception as exc:
-        logger(f"Word handwriting mode warning: cannot force font '{target}': {exc}")
-        return False, 0
-
-    restored_math = _apply_word_formula_font(doc, math_font, logger)
-    logger(
-        f"Word handwriting mode: forcing font '{target}' before PDF export; "
-        f"math_runs_restored={restored_math}"
+    return word_converter_mod.apply_word_handwriting_font(
+        doc,
+        font_name,
+        logger,
+        math_font=math_font,
+        normalize_handwriting_font_name=normalize_handwriting_font_name,
+        handwriting_word_keep_math=HANDWRITING_WORD_KEEP_MATH,
     )
-    return True, restored_math
 
 
 def word_to_pdf(
@@ -9967,125 +9790,28 @@ def word_to_pdf(
     override_font: Optional[str] = None,
     formula_font: Optional[str] = None,
 ) -> None:
-    logger("Converting Word file to PDF ...")
-
-    if word_path.suffix.lower() not in {".doc", ".docx"}:
-        raise ValueError(f"Expected Word file (.doc/.docx), got: {word_path}")
-
-    word_abs = word_path.resolve()
-    pdf_abs = pdf_path.resolve()
-    pdf_abs.parent.mkdir(parents=True, exist_ok=True)
-
-    try:
-        import win32com.client
-    except Exception as exc:
-        raise RuntimeError("pywin32 is required to convert Word files. Install with: pip install pywin32") from exc
-
-    pythoncom = None
-    try:
-        import pythoncom as _pythoncom  # type: ignore
-        _pythoncom.CoInitialize()
-        pythoncom = _pythoncom
-    except Exception:
-        pythoncom = None
-
-    app = None
-    try:
-        app = win32com.client.gencache.EnsureDispatch("Word.Application")
-        app.Visible = False
-        app.DisplayAlerts = 0
-
-        def _export_once(font_override: Optional[str]) -> None:
-            doc = None
-            try:
-                doc = app.Documents.Open(
-                    str(word_abs),
-                    ConfirmConversions=False,
-                    ReadOnly=False,
-                    AddToRecentFiles=False,
-                )
-                if font_override:
-                    # Apply in-memory only (document is closed without save).
-                    apply_word_handwriting_font(doc, font_override, logger, math_font=formula_font)
-                elif formula_font:
-                    _apply_word_formula_font(doc, formula_font, logger)
-                # Word Export format constants:
-                # 17 = wdExportFormatPDF
-                # Keep call minimal/positional for compatibility across Office versions.
-                doc.ExportAsFixedFormat(str(pdf_abs), 17)
-                if not pdf_abs.exists() or pdf_abs.stat().st_size == 0:
-                    raise RuntimeError(f"Word->PDF produced no output: {pdf_abs}")
-            finally:
-                if doc is not None:
-                    try:
-                        doc.Close(False)
-                    except Exception:
-                        pass
-
-        # First pass: requested mode (with optional handwriting font).
-        _export_once(override_font if override_font else None)
-
-        # Safety fallback: if forced handwriting font produced many "?" symbols,
-        # re-export with native fonts to preserve readable content.
-        if override_font:
-            qm = pdf_text_questionmark_metrics(pdf_abs, logger=logger)
-            if qm is not None:
-                ratio, qmarks, meaningful = qm
-                if qmarks >= int(HANDWRITING_WORD_MAX_QMARK_COUNT) and ratio >= float(HANDWRITING_WORD_MAX_QMARK_RATIO):
-                    logger(
-                        "Word handwriting mode warning: exported PDF looks garbled "
-                        f"(qmarks={qmarks}/{meaningful}, ratio={ratio:.3f}). "
-                        "Retrying export with native fonts to preserve text."
-                    )
-                    try:
-                        if pdf_abs.exists():
-                            pdf_abs.unlink()
-                    except Exception:
-                        pass
-                    _export_once(None)
-    except Exception as exc:
-        raise RuntimeError(f"Word conversion failed: {exc}") from exc
-    finally:
-        if app is not None:
-            try:
-                app.Quit()
-            except Exception:
-                pass
-        if pythoncom is not None:
-            try:
-                pythoncom.CoUninitialize()
-            except Exception:
-                pass
-        if not _wait_until_path_unlocked(pdf_abs, timeout_s=8.0, poll_s=0.25):
-            logger(
-                "Warning: Word->PDF output file is still locked after export. "
-                "Continuing with best effort."
-            )
+    word_converter_mod.word_to_pdf(
+        word_path,
+        pdf_path,
+        logger,
+        normalize_handwriting_font_name=normalize_handwriting_font_name,
+        pdf_text_questionmark_metrics=pdf_text_questionmark_metrics,
+        handwriting_word_max_qmark_count=int(HANDWRITING_WORD_MAX_QMARK_COUNT),
+        handwriting_word_max_qmark_ratio=float(HANDWRITING_WORD_MAX_QMARK_RATIO),
+        handwriting_word_keep_math=bool(HANDWRITING_WORD_KEEP_MATH),
+        wait_until_path_unlocked_fn=_wait_until_path_unlocked,
+        override_font=override_font,
+        formula_font=formula_font,
+    )
 
 
 def _wait_for_nonempty_file(path: Path, timeout_s: float = 15.0, poll_s: float = 0.25, stable_polls: int = 2) -> bool:
-    deadline = time.time() + max(0.1, float(timeout_s))
-    poll = max(0.05, float(poll_s))
-    stable_need = max(1, int(stable_polls))
-    last_size = -1
-    stable = 0
-
-    while time.time() < deadline:
-        try:
-            if path.exists():
-                sz = int(path.stat().st_size)
-                if sz > 0:
-                    if sz == last_size:
-                        stable += 1
-                    else:
-                        stable = 1
-                    last_size = sz
-                    if stable >= stable_need:
-                        return True
-        except Exception:
-            pass
-        time.sleep(poll)
-    return False
+    return cad_converter_mod.wait_for_nonempty_file(
+        path,
+        timeout_s=timeout_s,
+        poll_s=poll_s,
+        stable_polls=stable_polls,
+    )
 
 
 def _wait_until_path_unlocked(path: Path, timeout_s: float = 8.0, poll_s: float = 0.20) -> bool:
@@ -10104,129 +9830,24 @@ def _wait_until_path_unlocked(path: Path, timeout_s: float = 8.0, poll_s: float 
 
 
 def _kompas_print_to_pdf(input_path: Path, output_pdf: Path, logger) -> None:
-    import win32com.client
-
-    pythoncom = None
-    try:
-        import pythoncom as _pythoncom  # type: ignore
-
-        _pythoncom.CoInitialize()
-        pythoncom = _pythoncom
-    except Exception:
-        pythoncom = None
-
-    app = None
-    try:
-        app = None
-        last_exc: Optional[Exception] = None
-        for progid in ("KOMPAS.Application.7", "KOMPAS.Application"):
-            try:
-                logger(f"KOMPAS dispatch: {progid}")
-                app = win32com.client.gencache.EnsureDispatch(progid)
-                break
-            except Exception as exc:
-                last_exc = exc
-                app = None
-        if app is None:
-            raise RuntimeError(f"KOMPAS COM application is unavailable: {last_exc}")
-
-        try:
-            app.Visible = False
-        except Exception:
-            pass
-        try:
-            app.SuppressAlerts = True
-        except Exception:
-            pass
-
-        try:
-            print_job = app.PrintJob
-        except Exception as exc:
-            raise RuntimeError("KOMPAS PrintJob is unavailable.") from exc
-
-        for attempt in range(1, 4):
-            try:
-                if output_pdf.exists():
-                    output_pdf.unlink()
-            except Exception:
-                pass
-            try:
-                print_job.Clear()
-            except Exception:
-                pass
-
-            logger(f"PrintJob.AddSheets (attempt {attempt}): {input_path}")
-            print_job.AddSheets(str(input_path), 0, 0)
-            logger(f"PrintJob.Execute (attempt {attempt}): {output_pdf}")
-            result = print_job.Execute(str(output_pdf))
-            logger(f"PrintJob.Execute result (attempt {attempt}): {result!r}")
-
-            if _wait_for_nonempty_file(output_pdf, timeout_s=18.0):
-                return
-            time.sleep(0.6)
-
-        raise RuntimeError(f"KOMPAS PrintJob completed without PDF output: {output_pdf}")
-    finally:
-        if app is not None:
-            try:
-                app.Quit()
-            except Exception:
-                pass
-        if pythoncom is not None:
-            try:
-                pythoncom.CoUninitialize()
-            except Exception:
-                pass
+    cad_converter_mod.kompas_print_to_pdf(
+        input_path,
+        output_pdf,
+        logger,
+        wait_for_nonempty_file_fn=_wait_for_nonempty_file,
+    )
 
 
 def frw_to_pdf(frw_path: Path, pdf_path: Path, logger) -> None:
-    logger("Converting CAD file to PDF ...")
-
-    if frw_path.suffix.lower() not in {".frw", ".cdw"}:
-        raise ValueError(f"Expected CAD file (.frw/.cdw), got: {frw_path}")
-
-    frw_abs = frw_path.resolve()
-    pdf_abs = pdf_path.resolve()
-    pdf_abs.parent.mkdir(parents=True, exist_ok=True)
-    if not frw_abs.exists():
-        raise RuntimeError(f"CAD file not found: {frw_abs}")
-
-    try:
-        import win32com.client
-    except Exception as exc:
-        raise RuntimeError("pywin32 is required to convert CAD formats. Install with: pip install pywin32") from exc
-
-    primary_error: Optional[Exception] = None
-    try:
-        # KOMPAS can fail on non-ASCII source paths depending on locale/settings.
-        # Copy to a short ASCII temp name first.
-        with tempfile.TemporaryDirectory(dir=str(ensure_local_tmp_root()), ignore_cleanup_errors=True) as td:
-            work = Path(td)
-            src_local = work / f"source{frw_abs.suffix.lower()}"
-            out_local = work / "export.pdf"
-            shutil.copyfile(str(frw_abs), str(src_local))
-
-            _kompas_print_to_pdf(src_local, out_local, logger)
-            if not _wait_for_nonempty_file(out_local, timeout_s=6.0):
-                raise RuntimeError(f"CAD->PDF produced no output: {out_local}")
-
-            shutil.copyfile(str(out_local), str(pdf_abs))
-            if not _wait_for_nonempty_file(pdf_abs, timeout_s=2.0):
-                raise RuntimeError(f"Failed to finalize CAD PDF output: {pdf_abs}")
-            return
-    except Exception as exc:
-        primary_error = exc
-        logger(f"Warning: primary CAD conversion failed: {exc}")
-
-    # Fallback: if source folder already has an exported PDF with same stem, reuse it.
-    fallback_pdf = frw_abs.with_suffix(".pdf")
-    if fallback_pdf.exists() and _wait_for_nonempty_file(fallback_pdf, timeout_s=0.5):
-        logger(f"Using fallback PDF next to source: {fallback_pdf}")
-        shutil.copyfile(str(fallback_pdf), str(pdf_abs))
-        if _wait_for_nonempty_file(pdf_abs, timeout_s=2.0):
-            return
-
-    raise RuntimeError(f"CAD conversion failed: {primary_error}")
+    cad_converter_mod.frw_to_pdf(
+        frw_path,
+        pdf_path,
+        logger,
+        ensure_local_tmp_root=ensure_local_tmp_root,
+        find_spec=importlib.util.find_spec,
+        kompas_print_to_pdf_fn=_kompas_print_to_pdf,
+        wait_for_nonempty_file_fn=_wait_for_nonempty_file,
+    )
 
 def make_final_with_preamble(prepared_gcode: Path, final_gcode: Path) -> None:
     lines = [
@@ -10973,7 +10594,10 @@ def run_pipeline(
                     return_msg += f" (estimated pencil draw length {draw_length_mm / 1000.0:.2f} m)"
             return True, return_msg
     except Exception as exc:
-        return False, f"Error: {exc}"
+        err_name = type(exc).__name__
+        if isinstance(exc, BackendError):
+            return False, f"{err_name}: {exc}"
+        return False, f"Error[{err_name}]: {exc}"
 
 
 def _ask_confirmation_in_console(prompt: str = "Continue drawing?") -> bool:
@@ -12456,6 +12080,7 @@ def main():
     global PENCIL_Z_COMP_MM_PER_WEAR_MM
     global PENCIL_MAX_COMP_MM
     global PENCIL_REMIND_WEAR_MM
+    global PENCIL_SHARPEN_INTERVAL_M
     global Z_DELAY_DOWN
     global Z_DELAY_UP
     global Z_FEED_DOWN_APPROACH
