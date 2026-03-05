@@ -89,6 +89,7 @@ class PipelineDryRunIntegrationTests(unittest.TestCase):
             self.assertTrue(output_pdf.exists(), "Expected CAD fallback PDF output is missing")
             self.assertEqual(output_pdf.read_bytes(), fallback_pdf.read_bytes())
             self.assertTrue(any("primary CAD conversion failed" in line for line in logs))
+            self.assertTrue(any("RuntimeError" in line for line in logs))
             self.assertTrue(any("Using fallback PDF next to source" in line for line in logs))
 
     @unittest.skipUnless(_is_enabled("PLOTTER_ENABLE_EXTENDED_INTEGRATION"), "Extended integration is disabled")

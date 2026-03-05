@@ -1,7 +1,13 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import List
+from typing import Callable, List
+
+from ..errors import ConversionError, ToolDependencyError
+
+
+def _format_exc(exc: Exception) -> str:
+    return f"{type(exc).__name__}: {exc}"
 
 
 def ensure_generated_svg_exists(prefix: Path, target_svg: Path, logger) -> bool:
@@ -116,6 +122,188 @@ def build_inkscape_pdf_to_svg_candidates(exe: str, pdf_path: Path, target_svg: P
     ]
 
 
+def _clip_output_block(text: str, *, max_len: int = 500) -> str:
+    block = str(text or "").strip()
+    if block and len(block) > max_len:
+        block = block[:max_len] + " ..."
+    return block
+
+
+def try_inkscape_export(
+    pdf_path: Path,
+    target_svg: Path,
+    logger,
+    *,
+    find_inkscape,
+    run_cmd,
+    get_inkscape_version,
+) -> tuple[bool, str]:
+    try:
+        exe = find_inkscape()
+    except Exception as exc:
+        return False, f"{ToolDependencyError.__name__}: Inkscape unavailable ({_format_exc(exc)})"
+
+    logger(f"Using Inkscape: {exe}")
+    last_error = ""
+    commands = build_inkscape_pdf_to_svg_candidates(
+        exe,
+        pdf_path,
+        target_svg,
+        get_inkscape_version=get_inkscape_version,
+    )
+    for i, cmd in enumerate(commands, start=1):
+        logger(f"Inkscape command #{i}: {' '.join([Path(str(cmd[0])).name] + [str(x) for x in cmd[1:]])}")
+        rc, out, err = run_cmd(cmd)
+        if rc == 0 and target_svg.exists() and target_svg.stat().st_size > 0:
+            return True, "ok"
+        block = _clip_output_block((out + "\n" + err).strip())
+        logger(f"Inkscape command #{i} failed or produced empty SVG: {block}")
+        if block:
+            last_error = block
+    return False, last_error or "unknown Inkscape export failure"
+
+
+def try_pdftocairo_export(
+    pdf_path: Path,
+    target_svg: Path,
+    logger,
+    *,
+    find_pdftocairo,
+    run_cmd,
+) -> tuple[bool, str]:
+    try:
+        cairo = find_pdftocairo()
+    except Exception as exc:
+        return False, f"{ToolDependencyError.__name__}: pdftocairo unavailable ({_format_exc(exc)})"
+    cairo_prefix = target_svg.with_suffix("")
+    cmd = [cairo, "-svg", "-f", "1", "-l", "1", str(pdf_path), str(cairo_prefix)]
+    logger(f"Trying pdftocairo: {' '.join(cmd)}")
+    rc, out, err = run_cmd(cmd)
+    if rc != 0:
+        block = _clip_output_block((out + "\n" + err).strip())
+        detail = block or f"rc={rc}"
+        return False, f"{ConversionError.__name__}: pdftocairo export failed ({detail})"
+    if ensure_generated_svg_exists(cairo_prefix, target_svg, logger):
+        return True, "ok"
+    return False, f"{ConversionError.__name__}: pdftocairo export produced no SVG output"
+
+
+def collect_pdf_converter_exports(
+    pdf_path: Path,
+    svg_path: Path,
+    logger,
+    *,
+    try_inkscape: bool,
+    postprocess: Callable[[Path], tuple[bool, int]],
+    svg_has_text_nodes,
+    find_inkscape,
+    run_cmd,
+    get_inkscape_version,
+    find_pdftocairo,
+) -> List[tuple[str, Path, bool, int]]:
+    exports: List[tuple[str, Path, bool, int]] = []
+
+    # 1) Inkscape PDF import is optional and disabled by default to avoid interactive
+    # "PDF import options" dialog windows.
+    if try_inkscape:
+        ink_svg = svg_path.with_name(f"{svg_path.stem}_inkscape.svg")
+        ok_ink, msg_ink = try_inkscape_export(
+            pdf_path,
+            ink_svg,
+            logger,
+            find_inkscape=find_inkscape,
+            run_cmd=run_cmd,
+            get_inkscape_version=get_inkscape_version,
+        )
+        if ok_ink:
+            try:
+                had_text, handwriting_nodes = postprocess(ink_svg)
+                exports.append(("inkscape", ink_svg, had_text, handwriting_nodes))
+            except Exception as exc:
+                logger(f"Inkscape output rejected in postprocess ({_format_exc(exc)})")
+                exports.append(("inkscape", ink_svg, svg_has_text_nodes(ink_svg), 0))
+        else:
+            logger(f"Inkscape export failed: {msg_ink}")
+    else:
+        logger("Inkscape PDF import disabled (USE_INKSCAPE_PDF_IMPORT=False and handwriting=off).")
+
+    # 2) pdftocairo fallback/candidate for auto-choice.
+    cairo_svg = svg_path.with_name(f"{svg_path.stem}_pdftocairo.svg")
+    ok_cairo, msg_cairo = try_pdftocairo_export(
+        pdf_path,
+        cairo_svg,
+        logger,
+        find_pdftocairo=find_pdftocairo,
+        run_cmd=run_cmd,
+    )
+    if ok_cairo:
+        try:
+            had_text, handwriting_nodes = postprocess(cairo_svg)
+            exports.append(("pdftocairo", cairo_svg, had_text, handwriting_nodes))
+        except Exception as exc:
+            logger(f"pdftocairo output rejected in postprocess ({_format_exc(exc)})")
+            exports.append(("pdftocairo", cairo_svg, svg_has_text_nodes(cairo_svg), 0))
+    else:
+        logger(f"pdftocairo export failed: {msg_cairo}")
+
+    return exports
+
+
+def score_converter_exports(
+    exports: List[tuple[str, Path, bool, int]],
+    logger,
+    *,
+    score_svg_quality,
+) -> List[tuple[str, Path, float, str, bool, int]]:
+    scored: List[tuple[str, Path, float, str, bool, int]] = []
+    for name, candidate, had_text, handwriting_nodes in exports:
+        score, details = score_svg_quality(candidate)
+        logger(
+            f"Converter metrics [{name}]: {details}, "
+            f"had_text={'yes' if had_text else 'no'}, handwriting_nodes={handwriting_nodes}"
+        )
+        scored.append((name, candidate, score, details, had_text, handwriting_nodes))
+    return scored
+
+
+def select_best_scored_export(
+    scored: List[tuple[str, Path, float, str, bool, int]],
+    logger,
+    *,
+    handwriting_enabled: bool,
+) -> tuple[str, Path, float, str, bool, int]:
+    preferred = scored
+    if handwriting_enabled:
+        with_handwriting = [row for row in scored if row[5] > 0]
+        with_text = [row for row in scored if row[4]]
+        if with_handwriting:
+            preferred = with_handwriting
+            logger(
+                "Handwriting mode: forcing converter with editable text "
+                f"(font applied to {sum(row[5] for row in with_handwriting)} node(s) total)."
+            )
+        elif with_text:
+            preferred = with_text
+            logger(
+                "Handwriting mode: forcing converter that preserved text nodes "
+                "(font substitution reported 0 changed nodes)."
+            )
+        else:
+            inkscape_only = [row for row in scored if row[0] == "inkscape"]
+            if inkscape_only:
+                preferred = inkscape_only
+                logger(
+                    "Handwriting mode warning: no converter produced editable text; "
+                    "using Inkscape geometry for contour-only fallback."
+                )
+            else:
+                logger(
+                    "Handwriting mode warning: no converter produced editable text; "
+                    "font substitution cannot be applied for this PDF page."
+                )
+    return min(preferred, key=lambda row: row[2])
+
+
 def score_svg_quality(
     svg_target: Path,
     *,
@@ -172,4 +360,4 @@ def score_svg_quality(
         )
         return score, details
     except Exception as exc:
-        return float("inf"), f"metric-error: {exc}"
+        return float("inf"), f"metric-error ({_format_exc(exc)})"

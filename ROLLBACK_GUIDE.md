@@ -9,6 +9,7 @@ Restore a previously known-good Plotter Studio build in less than 15 minutes.
 - Previous stable package (`PlotterStudio-portable.zip` or `PlotterStudio.exe`).
 - Known-good config snapshot:
   - `config\axis_profile.json`
+  - versioned baseline snapshots in `config\snapshots\` (for example `axis_profile.2026-03-04.known-good.json`)
   - optional machine-specific presets or temp calibrations.
 - Current release notes with version and commit tag.
 
@@ -46,4 +47,3 @@ Initiate rollback if any of these are true:
 - Record rollback timestamp and operator.
 - Reference failing release version and rollback target version.
 - Open incident ticket with reproduction steps and logs.
-

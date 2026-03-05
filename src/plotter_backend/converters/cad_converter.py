@@ -66,7 +66,7 @@ def kompas_print_to_pdf(
                 last_exc = exc
                 app = None
         if app is None:
-            raise RuntimeError(f"KOMPAS COM application is unavailable: {last_exc}")
+            raise ToolDependencyError(f"KOMPAS COM application is unavailable: {last_exc}")
 
         try:
             app.Visible = False
@@ -80,7 +80,7 @@ def kompas_print_to_pdf(
         try:
             print_job = app.PrintJob
         except Exception as exc:
-            raise RuntimeError("KOMPAS PrintJob is unavailable.") from exc
+            raise ConversionError("KOMPAS PrintJob is unavailable.") from exc
 
         for attempt in range(1, 4):
             try:
@@ -103,7 +103,7 @@ def kompas_print_to_pdf(
                 return
             time.sleep(0.6)
 
-        raise RuntimeError(f"KOMPAS PrintJob completed without PDF output: {output_pdf}")
+        raise ConversionError(f"KOMPAS PrintJob completed without PDF output: {output_pdf}")
     finally:
         if app is not None:
             try:
@@ -165,7 +165,7 @@ def frw_to_pdf(
             return
     except Exception as exc:
         primary_error = exc
-        logger(f"Warning: primary CAD conversion failed: {exc}")
+        logger(f"Warning: primary CAD conversion failed ({type(exc).__name__}): {exc}")
 
     # Fallback: if source folder already has an exported PDF with same stem, reuse it.
     fallback_pdf = frw_abs.with_suffix(".pdf")
@@ -175,4 +175,8 @@ def frw_to_pdf(
         if wait_for_nonempty(pdf_abs, timeout_s=2.0):
             return
 
-    raise ConversionError(f"CAD conversion failed: {primary_error}")
+    if primary_error is not None:
+        raise ConversionError(
+            f"CAD conversion failed ({type(primary_error).__name__}): {primary_error}"
+        ) from primary_error
+    raise ConversionError("CAD conversion failed: unknown error")

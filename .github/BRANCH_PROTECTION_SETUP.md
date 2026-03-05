@@ -18,3 +18,13 @@ Configure GitHub branch protection for `main`:
 
 After configuration, direct pushes to `main` should be blocked.
 
+## Optional API automation
+
+You can apply the same rule via GitHub API:
+
+```powershell
+$env:GITHUB_TOKEN = "<token with repo admin permission>"
+powershell -NoProfile -ExecutionPolicy Bypass -File .\set_branch_protection.ps1
+```
+
+Script location: `set_branch_protection.ps1`.

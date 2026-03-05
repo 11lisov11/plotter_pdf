@@ -31,6 +31,7 @@ Local verification commands:
 .\.venv\Scripts\python.exe -m unittest discover -s tests -p "test_*.py" -v
 .\.venv\Scripts\python.exe -m pytest -q
 powershell -NoProfile -ExecutionPolicy Bypass -File .\build_windows.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\validate_portable.ps1
 ```
 
 ## 4. Packaging and artifacts
@@ -79,4 +80,3 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\build_windows.ps1
 - [ ] Previous known-good `config\axis_profile.json` snapshot archived.
 - [ ] Rollback owner assigned.
 - [ ] Rollback dry-run tested (target < 15 min).
-

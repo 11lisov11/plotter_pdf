@@ -261,6 +261,7 @@ class MainWindow(QMainWindow):
         self.controller.operation_done.connect(self._on_operation_done)
         self.controller.pencil_banner_changed.connect(self.manual_page.set_pencil_banner)
         self.controller.preview_ready.connect(self._on_preview_ready)
+        self.controller.sheet_swap_confirmation_requested.connect(self._confirm_sheet_swap_between_pages)
 
     def _apply_initial_state(self) -> None:
         self.tool_segment.set_value(self.settings.tool_mode)
@@ -464,6 +465,22 @@ class MainWindow(QMainWindow):
         )
         if result == QMessageBox.Yes:
             self.controller.release_motors()
+
+    @Slot(int, int, str)
+    def _confirm_sheet_swap_between_pages(self, completed_page: int, total_pages: int, source_name: str) -> None:
+        next_page = int(completed_page) + 1
+        result = QMessageBox.question(
+            self,
+            "Смена листа",
+            (
+                f"Завершена страница {int(completed_page)} из {int(total_pages)} "
+                f"({source_name}).\n\n"
+                f"Установите новый лист и продолжите со страницы {next_page}."
+            ),
+            QMessageBox.Yes | QMessageBox.Cancel,
+            QMessageBox.Yes,
+        )
+        self.controller.respond_sheet_swap_confirmation(result == QMessageBox.Yes)
 
     def _draw_from_current_file(self) -> None:
         text = self.file_page.path_edit.text().strip()

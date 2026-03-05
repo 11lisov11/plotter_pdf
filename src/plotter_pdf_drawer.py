@@ -50,12 +50,48 @@ try:
     from src.plotter_backend.converters import cad_converter as cad_converter_mod
     from src.plotter_backend.converters import pdf_converter as pdf_converter_mod
     from src.plotter_backend.converters import word_converter as word_converter_mod
-    from src.plotter_backend.errors import BackendError
+    from src.plotter_backend.errors import BackendError, ConversionError, SerialTransportError, ToolDependencyError
+    from src.plotter_backend.geometry import arc_fit as geometry_arc_fit_mod
+    from src.plotter_backend.geometry import clipping as geometry_clipping_mod
+    from src.plotter_backend.geometry import fitting as geometry_fitting_mod
+    from src.plotter_backend.geometry import hatching as geometry_hatching_mod
+    from src.plotter_backend.geometry import path_processing as geometry_path_processing_mod
+    from src.plotter_backend.geometry import polyline as geometry_polyline_mod
+    from src.plotter_backend.geometry import sheet_tiling as geometry_sheet_tiling_mod
+    from src.plotter_backend.geometry import simplify as geometry_simplify_mod
+    from src.plotter_backend.geometry import svg_path as geometry_svg_path_mod
+    from src.plotter_backend.geometry import transform as geometry_transform_mod
+    from src.plotter_backend.geometry import work_area as geometry_work_area_mod
+    from src.plotter_backend.gcode import bounds as gcode_bounds_mod
+    from src.plotter_backend.gcode import finalize as gcode_finalize_mod
+    from src.plotter_backend.gcode import penlift as gcode_penlift_mod
+    from src.plotter_backend.gcode import preflight as gcode_preflight_mod
+    from src.plotter_backend.gcode import stats as gcode_stats_mod
+    from src.plotter_backend.machine import grbl_sender as grbl_sender_mod
+    from src.plotter_backend.machine import manual_commands as manual_commands_mod
 except Exception:
     from plotter_backend.converters import cad_converter as cad_converter_mod
     from plotter_backend.converters import pdf_converter as pdf_converter_mod
     from plotter_backend.converters import word_converter as word_converter_mod
-    from plotter_backend.errors import BackendError
+    from plotter_backend.errors import BackendError, ConversionError, SerialTransportError, ToolDependencyError
+    from plotter_backend.geometry import arc_fit as geometry_arc_fit_mod
+    from plotter_backend.geometry import clipping as geometry_clipping_mod
+    from plotter_backend.geometry import fitting as geometry_fitting_mod
+    from plotter_backend.geometry import hatching as geometry_hatching_mod
+    from plotter_backend.geometry import path_processing as geometry_path_processing_mod
+    from plotter_backend.geometry import polyline as geometry_polyline_mod
+    from plotter_backend.geometry import sheet_tiling as geometry_sheet_tiling_mod
+    from plotter_backend.geometry import simplify as geometry_simplify_mod
+    from plotter_backend.geometry import svg_path as geometry_svg_path_mod
+    from plotter_backend.geometry import transform as geometry_transform_mod
+    from plotter_backend.geometry import work_area as geometry_work_area_mod
+    from plotter_backend.gcode import bounds as gcode_bounds_mod
+    from plotter_backend.gcode import finalize as gcode_finalize_mod
+    from plotter_backend.gcode import penlift as gcode_penlift_mod
+    from plotter_backend.gcode import preflight as gcode_preflight_mod
+    from plotter_backend.gcode import stats as gcode_stats_mod
+    from plotter_backend.machine import grbl_sender as grbl_sender_mod
+    from plotter_backend.machine import manual_commands as manual_commands_mod
 
 CYRILLIC_TEXT_RE = re.compile(r"[\u0400-\u04FF\u0500-\u052F]")
 
@@ -1051,7 +1087,7 @@ def find_inkscape() -> str:
             return str(Path(found))
         if Path(candidate).is_file():
             return str(Path(candidate))
-    raise RuntimeError("Inkscape not found. Install and add it to PATH.")
+    raise ToolDependencyError("Inkscape not found. Install and add it to PATH.")
 
 
 def find_pdftocairo() -> str:
@@ -1061,7 +1097,7 @@ def find_pdftocairo() -> str:
             return str(Path(found))
         if Path(candidate).is_file():
             return str(Path(candidate))
-    raise RuntimeError("pdftocairo not found.")
+    raise ToolDependencyError("pdftocairo not found.")
 
 
 def find_pdftotext() -> str:
@@ -1083,7 +1119,7 @@ def find_pdftotext() -> str:
                 return str(cand)
     except Exception:
         pass
-    raise RuntimeError("pdftotext not found.")
+    raise ToolDependencyError("pdftotext not found.")
 
 
 def pdf_text_questionmark_metrics(pdf_path: Path, logger=print) -> Optional[Tuple[float, int, int]]:
@@ -1197,62 +1233,15 @@ def get_inkscape_version(exe: str) -> Tuple[int, int, int]:
     return major, minor, patch
 
 def mat_mul(m1: Tuple[float, float, float, float, float, float], m2: Tuple[float, float, float, float, float, float]):
-    a1, b1, c1, d1, e1, f1 = m1
-    a2, b2, c2, d2, e2, f2 = m2
-    return (
-        a2 * a1 + c2 * b1,
-        b2 * a1 + d2 * b1,
-        a2 * c1 + c2 * d1,
-        b2 * c1 + d2 * d1,
-        a2 * e1 + c2 * f1 + e2,
-        b2 * e1 + d2 * f1 + f2,
-    )
+    return geometry_transform_mod.mat_mul(m1, m2)
 
 
 def mat_apply(m: Tuple[float, float, float, float, float, float], p: Tuple[float, float]) -> Tuple[float, float]:
-    x, y = p
-    return (m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5])
+    return geometry_transform_mod.mat_apply(m, p)
 
 
 def parse_transform(value: str) -> Tuple[float, float, float, float, float, float]:
-    matrix = (1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
-    for name, raw in TRANSFORM_RE.findall(value):
-        params = parse_floats(raw)
-        if not params:
-            continue
-        if name == "matrix" and len(params) == 6:
-            op = tuple(params)
-        elif name == "translate":
-            tx = params[0]
-            ty = params[1] if len(params) > 1 else 0.0
-            op = (1.0, 0.0, 0.0, 1.0, tx, ty)
-        elif name == "scale":
-            sx = params[0]
-            sy = params[1] if len(params) > 1 else params[0]
-            op = (sx, 0.0, 0.0, sy, 0.0, 0.0)
-        elif name == "rotate":
-            angle = math.radians(params[0])
-            cos_a = math.cos(angle)
-            sin_a = math.sin(angle)
-            if len(params) >= 3:
-                cx, cy = params[1], params[2]
-                op = (
-                    cos_a, sin_a, -sin_a, cos_a,
-                    cx - cos_a * cx + sin_a * cy,
-                    cy - sin_a * cx - cos_a * cy,
-                )
-            else:
-                op = (cos_a, sin_a, -sin_a, cos_a, 0.0, 0.0)
-        elif name == "skewX":
-            a = math.radians(params[0])
-            op = (1.0, 0.0, math.tan(a), 1.0, 0.0, 0.0)
-        elif name == "skewY":
-            a = math.radians(params[0])
-            op = (1.0, math.tan(a), 0.0, 1.0, 0.0, 0.0)
-        else:
-            continue
-        matrix = mat_mul(matrix, op)
-    return matrix
+    return geometry_transform_mod.parse_transform(value)
 
 
 def infer_scale(root: ET.Element) -> float:
@@ -1280,141 +1269,28 @@ def infer_scale(root: ET.Element) -> float:
 
 
 def parse_path_tokens(path_d: str) -> Iterable[Tuple[str, List[float]]]:
-    tokens = [t for t in re.split(r"([MmLlHhVvCcSsQqTtAaZz])", path_d) if t and not t.isspace()]
-    if not tokens:
-        return
-    cmd: Optional[str] = None
-    i = 0
-    while i < len(tokens):
-        token = tokens[i]
-        if CMD_END_RE.fullmatch(token):
-            cmd = token
-            i += 1
-            if cmd in "Zz":
-                yield cmd, []
-            continue
-        if cmd is None:
-            raise ValueError("Path starts with coordinates")
-        params: List[float] = []
-        while i < len(tokens) and not CMD_END_RE.fullmatch(tokens[i]):
-            params.extend(parse_floats(tokens[i]))
-            i += 1
-        yield cmd, params
+    return geometry_svg_path_mod.parse_path_tokens(path_d, parse_floats_fn=parse_floats)
 
 
 def cubic_approx(p0, p1, p2, p3, step=CURVE_SEGMENT_MM) -> List[Tuple[float, float]]:
-    def bezier_point(a, b, c, d, t):
-        mt = 1.0 - t
-        return (
-            mt * mt * mt * a[0] + 3 * mt * mt * t * b[0] + 3 * mt * t * t * c[0] + t * t * t * d[0],
-            mt * mt * mt * a[1] + 3 * mt * mt * t * b[1] + 3 * mt * t * t * c[1] + t * t * t * d[1],
-        )
-
-    # Do NOT use chord-length only: it severely underestimates loops where endpoints are close
-    # (common in fonts), producing jagged curves. Use a quick polyline length estimate.
-    samples = 10
-    prev = p0
-    length = 0.0
-    for i in range(1, samples + 1):
-        t = i / samples
-        cur = bezier_point(p0, p1, p2, p3, t)
-        length += math.hypot(cur[0] - prev[0], cur[1] - prev[1])
-        prev = cur
-    chord = math.hypot(p3[0] - p0[0], p3[1] - p0[1])
-    length = max(length, chord, 0.0001)
-
-    seg = max(2, int(math.ceil(length / max(step, 0.0001))))
-    return [bezier_point(p0, p1, p2, p3, i / seg) for i in range(1, seg + 1)]
+    return geometry_svg_path_mod.cubic_approx(p0, p1, p2, p3, step=step)
 
 
 def quadratic_approx(p0, p1, p2, step=CURVE_SEGMENT_MM) -> List[Tuple[float, float]]:
-    def bezier_point(a, b, c, t):
-        mt = 1.0 - t
-        return (
-            mt * mt * a[0] + 2 * mt * t * b[0] + t * t * c[0],
-            mt * mt * a[1] + 2 * mt * t * b[1] + t * t * c[1],
-        )
-
-    samples = 10
-    prev = p0
-    length = 0.0
-    for i in range(1, samples + 1):
-        t = i / samples
-        cur = bezier_point(p0, p1, p2, t)
-        length += math.hypot(cur[0] - prev[0], cur[1] - prev[1])
-        prev = cur
-    chord = math.hypot(p2[0] - p0[0], p2[1] - p0[1])
-    length = max(length, chord, 0.0001)
-
-    seg = max(2, int(math.ceil(length / max(step, 0.0001))))
-    return [bezier_point(p0, p1, p2, i / seg) for i in range(1, seg + 1)]
+    return geometry_svg_path_mod.quadratic_approx(p0, p1, p2, step=step)
 
 
 def arc_to_polyline(p0, rx, ry, angle_deg, large_arc, sweep, p1, step=0.35) -> List[Tuple[float, float]]:
-    x1, y1 = p0
-    x2, y2 = p1
-    if rx == 0 or ry == 0:
-        return [(x2, y2)]
-    phi = math.radians(angle_deg % 360)
-    cos_phi = math.cos(phi)
-    sin_phi = math.sin(phi)
-
-    rx = abs(rx)
-    ry = abs(ry)
-    if abs(x1 - x2) < 1e-9 and abs(y1 - y2) < 1e-9:
-        # Per SVG behavior, identical endpoints on "A/a" represent a zero-length arc.
-        # Expanding this case to a full ellipse can create random circles on imported PDFs.
-        return []
-
-    dx2 = (x1 - x2) / 2.0
-    dy2 = (y1 - y2) / 2.0
-    x1p = cos_phi * dx2 + sin_phi * dy2
-    y1p = -sin_phi * dx2 + cos_phi * dy2
-
-    lam = (x1p * x1p) / (rx * rx) + (y1p * y1p) / (ry * ry)
-    if lam > 1:
-        scale = math.sqrt(lam)
-        rx *= scale
-        ry *= scale
-
-    sign = -1.0 if bool(large_arc) == bool(sweep) else 1.0
-    den = (rx * rx * y1p * y1p + ry * ry * x1p * x1p)
-    if den <= 1e-15:
-        return [(x2, y2)]
-    sq = max(0.0, (rx * rx * ry * ry - rx * rx * y1p * y1p - ry * ry * x1p * x1p) / den)
-    if not math.isfinite(sq):
-        return [(x2, y2)]
-    cpx = sign * math.sqrt(sq) * (rx * y1p / ry)
-    cpy = sign * math.sqrt(sq) * (-ry * x1p / rx)
-
-    cx = cos_phi * cpx - sin_phi * cpy + (x1 + x2) / 2.0
-    cy = sin_phi * cpx + cos_phi * cpy + (y1 + y2) / 2.0
-    if not (math.isfinite(cx) and math.isfinite(cy)):
-        return [(x2, y2)]
-
-    v1x = (x1p - cpx) / rx
-    v1y = (y1p - cpy) / ry
-    v2x = (-x1p - cpx) / rx
-    v2y = (-y1p - cpy) / ry
-    theta1 = math.atan2(v1y, v1x)
-    delta = math.atan2(v1x * v2y - v1y * v2x, v1x * v2x + v1y * v2y)
-    if not sweep and delta > 0:
-        delta -= 2 * math.pi
-    if sweep and delta < 0:
-        delta += 2 * math.pi
-
-    arc_len = abs(delta) * max(rx, ry)
-    n = max(1, int(math.ceil(arc_len / max(step, 0.1))))
-    n = max(n, 1)
-    pts = []
-    for i in range(1, n + 1):
-        t = theta1 + delta * (i / n)
-        x = cx + rx * math.cos(t) * cos_phi - ry * math.sin(t) * sin_phi
-        y = cy + rx * math.cos(t) * sin_phi + ry * math.sin(t) * cos_phi
-        if not (math.isfinite(x) and math.isfinite(y)):
-            return [(x2, y2)]
-        pts.append((x, y))
-    return pts
+    return geometry_svg_path_mod.arc_to_polyline(
+        p0,
+        rx,
+        ry,
+        angle_deg,
+        large_arc,
+        sweep,
+        p1,
+        step=step,
+    )
 
 
 def apply_style_filter(style: Optional[dict], tag: str, element: Optional[ET.Element] = None) -> bool:
@@ -2287,7 +2163,7 @@ def _load_svg_stroke_font_data(font_name: str, logger) -> Optional[SvgStrokeFont
     try:
         root = ET.parse(font_path).getroot()
     except Exception as exc:
-        logger(f"SVG stroke font load failed ({font_name}): {exc}")
+        logger(_format_internal_exception(f"SVG stroke font load failed ({font_name})", exc))
         _SVG_STROKE_FONT_DATA_CACHE[key] = None
         return None
 
@@ -3122,7 +2998,7 @@ def _run_autotrace_centerline_on_binary(
     curve_step_px: float,
 ) -> List[List[Tuple[float, float]]]:
     # Input array is uint8 with 0=black stroke, 255=white background.
-    if Image is None or np is None:
+    if np is None:
         return []
     if binary_black_on_white is None or binary_black_on_white.size <= 0:
         return []
@@ -3130,8 +3006,23 @@ def _run_autotrace_centerline_on_binary(
     try:
         with tempfile.NamedTemporaryFile(prefix="ctrace_", suffix=".pbm", delete=False) as fp:
             pbm_path = Path(fp.name)
-        img = Image.fromarray(binary_black_on_white.astype(np.uint8), mode="L").convert("1")
-        img.save(str(pbm_path))
+        arr = binary_black_on_white.astype(np.uint8, copy=False)
+        if Image is not None:
+            img = Image.fromarray(arr, mode="L").convert("1")
+            img.save(str(pbm_path))
+        else:
+            # Pillow is optional in this project. Write PBM directly so
+            # Method3 centerline tracing keeps working in headless environments.
+            h, w = int(arr.shape[0]), int(arr.shape[1])
+            black_bits = (arr == 0).astype(np.uint8)
+            pad = (8 - (w % 8)) % 8
+            if pad:
+                black_bits = np.pad(black_bits, ((0, 0), (0, pad)), mode="constant", constant_values=0)
+            packed = np.packbits(black_bits, axis=1, bitorder="big")
+            header = f"P4\n{w} {h}\n".encode("ascii")
+            with pbm_path.open("wb") as fh:
+                fh.write(header)
+                fh.write(packed.tobytes())
         cmd = [
             str(autotrace_exe),
             "--centerline",
@@ -3855,7 +3746,7 @@ def replace_svg_text_with_singleline_ttf(svg_path: Path, font_name: str, logger)
         tree = ET.parse(svg_path)
         root = tree.getroot()
     except Exception as exc:
-        logger(f"TTF centerline replace failed: {exc}")
+        logger(_format_internal_exception("TTF centerline replace failed", exc))
         return 0
 
     changed = 0
@@ -4040,7 +3931,7 @@ def replace_svg_text_with_singleline_ttf(svg_path: Path, font_name: str, logger)
     try:
         tree.write(svg_path, encoding="utf-8", xml_declaration=True)
     except Exception as exc:
-        logger(f"TTF centerline save failed: {exc}")
+        logger(_format_internal_exception("TTF centerline save failed", exc))
         return 0
     logger(
         f"Handwriting TTF centerline mode: replaced {changed} text node(s), "
@@ -4054,7 +3945,7 @@ def apply_handwriting_font(svg_path: Path, font_name: str, logger) -> int:
         tree = ET.parse(svg_path)
         root = tree.getroot()
     except Exception as exc:
-        logger(f"Handwriting font apply failed: {exc}")
+        logger(_format_internal_exception("Handwriting font apply failed", exc))
         return 0
 
     target_font = normalize_handwriting_font_name(font_name)
@@ -4090,7 +3981,7 @@ def apply_handwriting_font(svg_path: Path, font_name: str, logger) -> int:
     try:
         tree.write(svg_path, encoding="utf-8", xml_declaration=True)
     except Exception as exc:
-        logger(f"Handwriting font save failed: {exc}")
+        logger(_format_internal_exception("Handwriting font save failed", exc))
         return 0
 
     logger(f"Handwriting mode: applied font '{target_font}' to {changed} text node(s).")
@@ -4420,7 +4311,7 @@ def replace_svg_text_with_svg_stroke_fonts(svg_path: Path, font_name: str, logge
         tree = ET.parse(svg_path)
         root = tree.getroot()
     except Exception as exc:
-        logger(f"SVG stroke text replace failed: {exc}")
+        logger(_format_internal_exception("SVG stroke text replace failed", exc))
         return 0
 
     changed = 0
@@ -4638,7 +4529,7 @@ def replace_svg_text_with_svg_stroke_fonts(svg_path: Path, font_name: str, logge
     try:
         tree.write(svg_path, encoding="utf-8", xml_declaration=True)
     except Exception as exc:
-        logger(f"SVG stroke text save failed: {exc}")
+        logger(_format_internal_exception("SVG stroke text save failed", exc))
         return 0
 
     used = ", ".join(sorted(fonts_used)) if fonts_used else "-"
@@ -4667,7 +4558,7 @@ def replace_svg_text_with_hershey_strokes(svg_path: Path, font_name: str, logger
         tree = ET.parse(svg_path)
         root = tree.getroot()
     except Exception as exc:
-        logger(f"Hershey text replace failed: {exc}")
+        logger(_format_internal_exception("Hershey text replace failed", exc))
         return 0
 
     font_cache: dict[str, HersheyFonts] = {}
@@ -4930,7 +4821,7 @@ def replace_svg_text_with_hershey_strokes(svg_path: Path, font_name: str, logger
     try:
         tree.write(svg_path, encoding="utf-8", xml_declaration=True)
     except Exception as exc:
-        logger(f"Hershey text replace save failed: {exc}")
+        logger(_format_internal_exception("Hershey text replace save failed", exc))
         return 0
 
     used = ",".join(sorted(fonts_used)) if fonts_used else default_font_name
@@ -5197,126 +5088,19 @@ def is_full_page_white_fill_rect(poly: List[Tuple[float, float]], elem: ET.Eleme
 
 
 def point_line_distance(point: Tuple[float, float], line_a: Tuple[float, float], line_b: Tuple[float, float]) -> float:
-    x, y = point
-    x1, y1 = line_a
-    x2, y2 = line_b
-    vx = x2 - x1
-    vy = y2 - y1
-    wx = x - x1
-    wy = y - y1
-    vv = vx * vx + vy * vy
-    if vv < 1e-12:
-        return points_distance(point, line_a)
-    t = max(0.0, min(1.0, (wx * vx + wy * vy) / vv))
-    px = x1 + t * vx
-    py = y1 + t * vy
-    return points_distance(point, (px, py))
+    return geometry_simplify_mod.point_line_distance(point, line_a, line_b)
 
 
 def solve_3x3(mat: List[List[float]], vec: List[float]) -> Optional[Tuple[float, float, float]]:
-    # Gaussian elimination with partial pivoting for a 3x3 system.
-    a = [row[:] for row in mat]
-    b = vec[:]
-
-    n = 3
-    for col in range(n):
-        # pivot
-        pivot = col
-        pivot_val = abs(a[col][col])
-        for r in range(col + 1, n):
-            v = abs(a[r][col])
-            if v > pivot_val:
-                pivot = r
-                pivot_val = v
-        if pivot_val < 1e-12:
-            return None
-        if pivot != col:
-            a[col], a[pivot] = a[pivot], a[col]
-            b[col], b[pivot] = b[pivot], b[col]
-
-        # eliminate
-        div = a[col][col]
-        for r in range(col + 1, n):
-            factor = a[r][col] / div
-            if abs(factor) < 1e-18:
-                continue
-            for c in range(col, n):
-                a[r][c] -= factor * a[col][c]
-            b[r] -= factor * b[col]
-
-    # back-substitution
-    x = [0.0, 0.0, 0.0]
-    for r in range(n - 1, -1, -1):
-        s = b[r]
-        for c in range(r + 1, n):
-            s -= a[r][c] * x[c]
-        if abs(a[r][r]) < 1e-12:
-            return None
-        x[r] = s / a[r][r]
-    return float(x[0]), float(x[1]), float(x[2])
+    return geometry_arc_fit_mod.solve_3x3(mat, vec)
 
 
 def fit_circle_kasa(points: List[Tuple[float, float]]) -> Optional[Tuple[float, float, float, float]]:
-    # Algebraic least-squares circle fit (Kasa). Returns (cx, cy, r, max_radial_err).
-    if len(points) < 3:
-        return None
-
-    s_xx = s_xy = s_x = 0.0
-    s_yy = s_y = 0.0
-    s_b = s_xb = s_yb = 0.0
-    n = 0
-    for x, y in points:
-        b = -(x * x + y * y)
-        s_xx += x * x
-        s_xy += x * y
-        s_x += x
-        s_yy += y * y
-        s_y += y
-        s_b += b
-        s_xb += x * b
-        s_yb += y * b
-        n += 1
-
-    mat = [
-        [s_xx, s_xy, s_x],
-        [s_xy, s_yy, s_y],
-        [s_x, s_y, float(n)],
-    ]
-    vec = [s_xb, s_yb, s_b]
-    sol = solve_3x3(mat, vec)
-    if sol is None:
-        return None
-
-    d, e, f = sol
-    cx = -d * 0.5
-    cy = -e * 0.5
-    rr = cx * cx + cy * cy - f
-    if rr <= 1e-12 or not math.isfinite(rr):
-        return None
-    r = math.sqrt(rr)
-
-    max_err = 0.0
-    for x, y in points:
-        err = abs(math.hypot(x - cx, y - cy) - r)
-        if err > max_err:
-            max_err = err
-    return float(cx), float(cy), float(r), float(max_err)
+    return geometry_arc_fit_mod.fit_circle_kasa(points)
 
 
 def unwrap_angles(angles: List[float]) -> List[float]:
-    if not angles:
-        return []
-    out = [angles[0]]
-    two_pi = 2.0 * math.pi
-    for a in angles[1:]:
-        v = a
-        prev = out[-1]
-        while v - prev > math.pi:
-            v -= two_pi
-        while v - prev < -math.pi:
-            v += two_pi
-        out.append(v)
-    return out
+    return geometry_arc_fit_mod.unwrap_angles(angles)
 
 
 def arc_extents_xy(
@@ -5325,248 +5109,63 @@ def arc_extents_xy(
     center: Tuple[float, float],
     cw: bool,
 ) -> Tuple[float, float, float, float]:
-    # Conservative bounding box of a circular arc (includes quadrant extrema if swept).
-    cx, cy = center
-    x0, y0 = start
-    x1, y1 = end
-    r = math.hypot(x0 - cx, y0 - cy)
-    if r <= 1e-12:
-        return min(x0, x1), max(x0, x1), min(y0, y1), max(y0, y1)
-
-    a0 = math.atan2(y0 - cy, x0 - cx)
-    a1 = math.atan2(y1 - cy, x1 - cx)
-
-    # Unwrap end relative to start according to direction.
-    if cw:
-        while a1 > a0:
-            a1 -= 2.0 * math.pi
-    else:
-        while a1 < a0:
-            a1 += 2.0 * math.pi
-
-    def in_sweep(a: float) -> bool:
-        # Unwrap a near a0.
-        v = a
-        while v - a0 > math.pi:
-            v -= 2.0 * math.pi
-        while v - a0 < -math.pi:
-            v += 2.0 * math.pi
-        if cw:
-            while v < a1:
-                v += 2.0 * math.pi
-            return a1 <= v <= a0
-        while v > a1:
-            v -= 2.0 * math.pi
-        return a0 <= v <= a1
-
-    xs = [x0, x1]
-    ys = [y0, y1]
-    # Cardinal angles: 0, 90, 180, 270 degrees.
-    for ang in (0.0, 0.5 * math.pi, math.pi, 1.5 * math.pi):
-        if in_sweep(ang):
-            xs.append(cx + r * math.cos(ang))
-            ys.append(cy + r * math.sin(ang))
-
-    return min(xs), max(xs), min(ys), max(ys)
+    return geometry_arc_fit_mod.arc_extents_xy(start, end, center, cw)
 
 
 def polyline_is_near_line(poly: List[Tuple[float, float]], tol_mm: float) -> bool:
-    if len(poly) < 3:
-        return False
-    a = poly[0]
-    b = poly[-1]
-    if points_distance(a, b) < 1e-9:
-        return False
-    max_d = 0.0
-    for p in poly[1:-1]:
-        d = point_line_distance(p, a, b)
-        if d > max_d:
-            max_d = d
-            if max_d > tol_mm:
-                return False
-    return True
+    return geometry_arc_fit_mod.polyline_is_near_line(poly, tol_mm)
 
 
 def polyline_fit_arc(poly: List[Tuple[float, float]], tol_mm: float) -> Optional[Tuple[bool, Tuple[float, float], float, float]]:
-    # Try to fit the whole polyline to a circular arc. Returns (cw, center, r, sweep_rad).
-    if len(poly) < 3:
-        return None
-
-    pts = poly[:]
-    # Drop duplicated closure point for fitting.
-    if points_distance(pts[0], pts[-1]) <= 1e-6:
-        pts = pts[:-1]
-    if len(pts) < 3:
-        return None
-
-    fit = fit_circle_kasa(pts)
-    if fit is None:
-        return None
-    cx, cy, r, max_err = fit
-    if r < ARC_MIN_RADIUS_MM:
-        return None
-    if max_err > tol_mm:
-        return None
-
-    angles = [math.atan2(y - cy, x - cx) for x, y in pts]
-    unwrapped = unwrap_angles(angles)
-    # Total sweep following the point order.
-    sweep = unwrapped[-1] - unwrapped[0]
-    if abs(sweep) < math.radians(ARC_MIN_SWEEP_DEG):
-        return None
-
-    # Direction: positive sweep => CCW (G3), negative => CW (G2).
-    cw = sweep < 0.0
-    return cw, (cx, cy), r, sweep
-
-
-def path_is_closed(poly: List[Tuple[float, float]], eps: float = 1e-6) -> bool:
-    return len(poly) >= 4 and points_distance(poly[0], poly[-1]) <= eps
-
-
-def _rdp_simplify_open(poly: List[Tuple[float, float]], eps: float) -> List[Tuple[float, float]]:
-    # RamerвЂ“DouglasвЂ“Peucker for an open polyline. Preserves endpoints.
-    if eps <= 0.0 or len(poly) < 3:
-        return poly
-
-    keep = [False] * len(poly)
-    keep[0] = True
-    keep[-1] = True
-    stack = [(0, len(poly) - 1)]
-
-    while stack:
-        a_i, b_i = stack.pop()
-        ax, ay = poly[a_i]
-        bx, by = poly[b_i]
-        max_d = -1.0
-        max_i = -1
-        for i in range(a_i + 1, b_i):
-            d = point_line_distance(poly[i], (ax, ay), (bx, by))
-            if d > max_d:
-                max_d = d
-                max_i = i
-        if max_d > eps and max_i != -1:
-            keep[max_i] = True
-            stack.append((a_i, max_i))
-            stack.append((max_i, b_i))
-
-    out = [p for i, p in enumerate(poly) if keep[i]]
-    return out if len(out) >= 2 else poly
-
-
-def rdp_simplify_polyline(poly: List[Tuple[float, float]], eps: float) -> List[Tuple[float, float]]:
-    # Simplify open and closed polylines using RDP.
-    if eps <= 0.0 or len(poly) < 3:
-        return poly
-
-    if not path_is_closed(poly):
-        return _rdp_simplify_open(poly, eps)
-
-    # Closed: remove duplicated end point, choose a seam at a low-curvature vertex,
-    # simplify as open, then re-close.
-    ring = poly[:-1]
-    if len(ring) < 4:
-        return poly
-
-    # Pick seam at the straightest vertex to reduce visible artifacts at the closure.
-    best_i = 0
-    best_score = -1.0
-    n = len(ring)
-    for i in range(n):
-        x0, y0 = ring[(i - 1) % n]
-        x1, y1 = ring[i]
-        x2, y2 = ring[(i + 1) % n]
-        ux, uy = (x0 - x1), (y0 - y1)
-        vx, vy = (x2 - x1), (y2 - y1)
-        un = math.hypot(ux, uy)
-        vn = math.hypot(vx, vy)
-        if un <= 1e-9 or vn <= 1e-9:
-            continue
-        dot = max(-1.0, min(1.0, (ux * vx + uy * vy) / (un * vn)))
-        # Higher is straighter (dot ~ -1 is 180deg in opposite vectors due to direction).
-        # We want angle close to 180deg => dot close to -1.
-        score = -dot
-        if score > best_score:
-            best_score = score
-            best_i = i
-
-    rotated = ring[best_i:] + ring[:best_i]
-    simplified = _rdp_simplify_open(rotated, eps)
-    if len(simplified) < 3:
-        return poly
-
-    # Re-close.
-    if points_distance(simplified[0], simplified[-1]) <= 1e-6:
-        out = simplified
-    else:
-        out = simplified + [simplified[0]]
-    return out
-
-
-def polygon_area(poly: List[Tuple[float, float]]) -> float:
-    if len(poly) < 3:
-        return 0.0
-    area = 0.0
-    for i in range(len(poly)):
-        x1, y1 = poly[i]
-        x2, y2 = poly[(i + 1) % len(poly)]
-        area += x1 * y2 - x2 * y1
-    return area * 0.5
-
-
-def polygon_bbox(poly: List[Tuple[float, float]]) -> Tuple[float, float, float, float]:
-    xs = [p[0] for p in poly]
-    ys = [p[1] for p in poly]
-    return min(xs), max(xs), min(ys), max(ys)
-
-
-def rotate_point(point: Tuple[float, float], angle_rad: float) -> Tuple[float, float]:
-    x, y = point
-    cos_a = math.cos(angle_rad)
-    sin_a = math.sin(angle_rad)
-    return (
-        x * cos_a + y * sin_a,
-        -x * sin_a + y * cos_a,
+    return geometry_arc_fit_mod.polyline_fit_arc(
+        poly,
+        tol_mm,
+        arc_min_radius_mm=float(ARC_MIN_RADIUS_MM),
+        arc_min_sweep_deg=float(ARC_MIN_SWEEP_DEG),
     )
 
 
+def path_is_closed(poly: List[Tuple[float, float]], eps: float = 1e-6) -> bool:
+    return geometry_simplify_mod.path_is_closed(poly, eps=eps)
+
+
+def _rdp_simplify_open(poly: List[Tuple[float, float]], eps: float) -> List[Tuple[float, float]]:
+    return geometry_simplify_mod.rdp_simplify_open(poly, eps)
+
+
+def rdp_simplify_polyline(poly: List[Tuple[float, float]], eps: float) -> List[Tuple[float, float]]:
+    return geometry_simplify_mod.rdp_simplify_polyline(poly, eps)
+
+
+def polygon_area(poly: List[Tuple[float, float]]) -> float:
+    return geometry_hatching_mod.polygon_area(poly)
+
+
+def polygon_bbox(poly: List[Tuple[float, float]]) -> Tuple[float, float, float, float]:
+    return geometry_hatching_mod.polygon_bbox(poly)
+
+
+def rotate_point(point: Tuple[float, float], angle_rad: float) -> Tuple[float, float]:
+    return geometry_hatching_mod.rotate_point(point, angle_rad)
+
+
 def rotate_polyline(poly: List[Tuple[float, float]], angle_rad: float) -> List[Tuple[float, float]]:
-    if angle_rad == 0.0:
-        return list(poly)
-    return [rotate_point(p, angle_rad) for p in poly]
+    return geometry_hatching_mod.rotate_polyline(poly, angle_rad)
 
 
 def intersects_for_scanline(edges: List[Tuple[Tuple[float, float], Tuple[float, float]]], y: float) -> List[float]:
-    xs: List[float] = []
-    for p1, p2 in edges:
-        x1, y1 = p1
-        x2, y2 = p2
-        if y1 == y2:
-            continue
-        if y1 <= y < y2 or y2 <= y < y1:
-            t = (y - y1) / (y2 - y1)
-            xs.append(x1 + t * (x2 - x1))
-    return sorted(xs)
+    return geometry_hatching_mod.intersects_for_scanline(edges, y)
 
 
 def should_hatch_polygon(poly: List[Tuple[float, float]], closed: bool) -> bool:
-    if not closed or len(poly) < 4:
-        return False
-    if not FILL_HATCH_ENABLED:
-        return False
-
-    # Work with unique endpoints.
-    ring = poly[:-1] if path_is_closed(poly) else list(poly)
-    if len(ring) < 4:
-        return False
-
-    area = abs(polygon_area(ring))
-    if area < FILL_HATCH_MIN_AREA_MM2:
-        return False
-    min_x, max_x, min_y, max_y = polygon_bbox(ring)
-    if (max_x - min_x) < FILL_HATCH_MIN_SIDE_MM or (max_y - min_y) < FILL_HATCH_MIN_SIDE_MM:
-        return False
-    return True
+    return geometry_hatching_mod.should_hatch_polygon(
+        poly,
+        closed,
+        fill_hatch_enabled=bool(FILL_HATCH_ENABLED),
+        fill_hatch_min_area_mm2=float(FILL_HATCH_MIN_AREA_MM2),
+        fill_hatch_min_side_mm=float(FILL_HATCH_MIN_SIDE_MM),
+        path_is_closed_fn=path_is_closed,
+    )
 
 
 def hatch_polygon(
@@ -5575,65 +5174,21 @@ def hatch_polygon(
     angle_deg: float = FILL_HATCH_ANGLE_DEG,
     min_segment: float = FILL_HATCH_MIN_SEGMENT_MM,
 ) -> List[List[Tuple[float, float]]]:
-    if spacing <= 0:
-        return []
-    angle_rad = math.radians(angle_deg)
-
-    valid_contours = [c[:-1] if path_is_closed(c) else c for c in contours if len(c) >= 3]
-    if not valid_contours:
-        return []
-
-    rotated = [rotate_polyline(c, angle_rad) for c in valid_contours]
-    edges: List[Tuple[Tuple[float, float], Tuple[float, float]]] = []
-    for poly in rotated:
-        if len(poly) < 2:
-            continue
-        for i in range(len(poly)):
-            p1 = poly[i]
-            p2 = poly[(i + 1) % len(poly)]
-            if p1 == p2:
-                continue
-            edges.append((p1, p2))
-
-    if not edges:
-        return []
-
-    min_x = min(p[0] for e in edges for p in e)
-    max_x = max(p[0] for e in edges for p in e)
-    min_y = min(p[1] for e in edges for p in e)
-    max_y = max(p[1] for e in edges for p in e)
-    if not math.isfinite(min_x + max_x + min_y + max_y):
-        return []
-
-    out: List[List[Tuple[float, float]]] = []
-    # Keep a tiny margin to reduce duplicates from boundary coincidences.
-    scan_y = min_y + 1e-6
-    while scan_y <= max_y - 1e-6:
-        xs = intersects_for_scanline(edges, scan_y)
-        if len(xs) % 2 == 1:
-            xs = xs[:-1]
-        for i in range(0, len(xs), 2):
-            if i + 1 >= len(xs):
-                break
-            x1, x2 = xs[i], xs[i + 1]
-            if (x2 - x1) < min_segment:
-                continue
-            p1 = rotate_point((x1, scan_y), -angle_rad)
-            p2 = rotate_point((x2, scan_y), -angle_rad)
-            if points_distance(p1, p2) >= min_segment:
-                out.append([p1, p2])
-        scan_y += spacing
-    return out
+    return geometry_hatching_mod.hatch_polygon(
+        contours,
+        spacing=spacing,
+        angle_deg=angle_deg,
+        min_segment=min_segment,
+        path_is_closed_fn=path_is_closed,
+    )
 
 
 def polyline_length(poly: List[Tuple[float, float]]) -> float:
-    if len(poly) < 2:
-        return 0.0
-    return sum(points_distance(poly[i], poly[i + 1]) for i in range(len(poly) - 1))
+    return geometry_polyline_mod.polyline_length(poly)
 
 
 def total_draw_length_mm(polylines: List[List[Tuple[float, float]]]) -> float:
-    return sum(polyline_length(poly) for poly in polylines if len(poly) >= 2)
+    return geometry_polyline_mod.total_draw_length_mm(polylines)
 
 
 def _zhang_suen_thinning(mask: "np.ndarray") -> "np.ndarray":
@@ -6710,83 +6265,32 @@ def simplify_polyline(
     *,
     collinear_eps: Optional[float] = None,
 ) -> List[Tuple[float, float]]:
-    if not poly:
-        return []
     if not SIMPLIFY_ENABLED:
         return poly
-    out: List[Tuple[float, float]] = [poly[0]]
-    for p in poly[1:]:
-        if points_distance(out[-1], p) > eps:
-            out.append(p)
-
-    # Drop only tiny immediate A->B->A spikes (artifact), keep long A->B->A strokes intact.
-    if len(out) >= 3 and BACKTRACK_SPIKE_MAX_MM > 0:
-        collapsed: List[Tuple[float, float]] = []
-        for p in out:
-            if (
-                len(collapsed) >= 2
-                and points_distance(collapsed[-2], p) <= eps
-                and points_distance(collapsed[-2], collapsed[-1]) <= BACKTRACK_SPIKE_MAX_MM
-            ):
-                collapsed.pop()
-                continue
-            collapsed.append(p)
-        out = collapsed
-
-    # Reduce collinear noise from text/vector import and tiny font artifacts.
-    if len(out) < 3:
-        return out
-    col = [out[0]]
-    col_eps = float(POLYLINE_COLLINEAR_EPS if collinear_eps is None else max(0.0, collinear_eps))
-    for p in out[1:]:
-        if len(col) >= 2:
-            last = col[-1]
-            prev = col[-2]
-            if point_line_distance(last, prev, p) <= col_eps:
-                col[-1] = p
-                continue
-        col.append(p)
-
-    # Ensure path tail still ends in same direction; cleanup duplicate points after collinear pass.
-    if len(col) < 2:
-        return col
-    cleaned = [col[0]]
-    for p in col[1:]:
-        if points_distance(cleaned[-1], p) > eps:
-            cleaned.append(p)
-    return cleaned
+    return geometry_simplify_mod.simplify_polyline(
+        poly,
+        eps=eps,
+        collinear_eps=collinear_eps,
+        simplify_enabled=True,
+        default_collinear_eps=float(POLYLINE_COLLINEAR_EPS),
+        backtrack_spike_max_mm=float(BACKTRACK_SPIKE_MAX_MM),
+    )
 
 
 def parse_points(points_text: str) -> List[Tuple[float, float]]:
-    nums = parse_floats(points_text)
-    return [(nums[i], nums[i + 1]) for i in range(0, len(nums) - 1, 2)]
+    return geometry_transform_mod.parse_points(points_text)
 
 
 def transform_points(points: List[Tuple[float, float]], matrix: Tuple[float, float, float, float, float, float], scale: float) -> List[Tuple[float, float]]:
-    out: List[Tuple[float, float]] = []
-    for x, y in points:
-        tx, ty = mat_apply(matrix, (x, y))
-        out.append((tx * scale, ty * scale))
-    return out
+    return geometry_transform_mod.transform_points(points, matrix, scale)
 
 
 def bounds_polylines(polylines: List[List[Tuple[float, float]]]) -> Tuple[float, float, float, float]:
-    min_x = min((p[0] for poly in polylines for p in poly), default=0.0)
-    max_x = max((p[0] for poly in polylines for p in poly), default=0.0)
-    min_y = min((p[1] for poly in polylines for p in poly), default=0.0)
-    max_y = max((p[1] for poly in polylines for p in poly), default=0.0)
-    return min_x, max_x, min_y, max_y
+    return geometry_polyline_mod.bounds_polylines(polylines)
 
 
 def bounds_path_items(path_items: List[PathItem]) -> Optional[Tuple[float, float, float, float]]:
-    points = [p for item in path_items for p in item.points]
-    if not points:
-        return None
-    min_x = min(p[0] for p in points)
-    max_x = max(p[0] for p in points)
-    min_y = min(p[1] for p in points)
-    max_y = max(p[1] for p in points)
-    return min_x, max_x, min_y, max_y
+    return geometry_path_processing_mod.bounds_path_items(path_items)
 
 
 def normalize_path_units_to_page(
@@ -6795,44 +6299,15 @@ def normalize_path_units_to_page(
     page_h_mm: float,
     logger=print,
 ) -> Tuple[List[PathItem], float]:
-    # Some PDF->SVG converters output path coordinates in px while the page size is in mm.
-    # Detect near-uniform scale mismatch and normalize to page units before cropping/fitting.
-    if not items or page_w_mm <= 0.0 or page_h_mm <= 0.0:
-        return items, 1.0
-    b = bounds_path_items(items)
-    if b is None:
-        return items, 1.0
-    x0, x1, y0, y1 = b
-    w = max(0.0, x1 - x0)
-    h = max(0.0, y1 - y0)
-    if w <= 0.0 or h <= 0.0:
-        return items, 1.0
-
-    rx = w / page_w_mm
-    ry = h / page_h_mm
-    if rx < 1.5 or ry < 1.5:
-        return items, 1.0
-    if rx > 20.0 or ry > 20.0:
-        return items, 1.0
-    if abs(rx - ry) / max(rx, ry) > 0.20:
-        return items, 1.0
-
-    ratio = 0.5 * (rx + ry)
-    if ratio <= 0.0:
-        return items, 1.0
-    scale = 1.0 / ratio
-
-    for it in items:
-        if not it.points:
-            continue
-        it.points = [(x * scale, y * scale) for x, y in it.points]
-
-    if logger:
-        logger(
-            "Normalized SVG units to page mm: "
-            f"ratioв‰€{ratio:.3f} (rx={rx:.3f}, ry={ry:.3f}), scale={scale:.6f}"
-        )
-    return items, scale
+    return geometry_path_processing_mod.normalize_path_units_to_page(
+        items,
+        page_w_mm,
+        page_h_mm,
+        ratio_min=1.5,
+        ratio_max=20.0,
+        ratio_uniform_tol=0.20,
+        logger=logger,
+    )
 
 
 def poly_inside_bbox(
@@ -6843,138 +6318,25 @@ def poly_inside_bbox(
     y_max: float,
     eps: float,
 ) -> bool:
-    return all((x_min - eps) <= x <= (x_max + eps) and (y_min - eps) <= y <= (y_max + eps) for x, y in poly)
+    return geometry_path_processing_mod.poly_inside_bbox(poly, x_min, x_max, y_min, y_max, eps)
 
 
 def filter_outer_frame_path_items(
     items: List[PathItem],
     logger,
 ) -> Tuple[List[PathItem], List[PathItem]]:
-    if not AUTO_TRIM_OUTER_FRAME or len(items) < 2:
-        return items, []
-
-    all_bounds = bounds_path_items(items)
-    if all_bounds is None:
-        return items, []
-    all_x0, all_x1, all_y0, all_y1 = all_bounds
-    all_w = all_x1 - all_x0
-    all_h = all_y1 - all_y0
-    all_area = abs(all_w * all_h)
-    if all_w <= 0.0 or all_h <= 0.0:
-        return items, []
-
-    bbox_tol = max(OUTER_FRAME_EDGE_EPS_MM, min(all_w, all_h) * 0.002)
-
-    def candidate_score(it: PathItem) -> Optional[Tuple[float, Tuple[float, float, float, float]]]:
-        if not it.points or not it.closed:
-            return None
-        if not is_axis_aligned_rectangle(it.points):
-            return None
-        if not it.is_stroke:
-            return None
-
-        x0, x1, y0, y1 = bounds_polylines([it.points])
-        w = x1 - x0
-        h = y1 - y0
-        if w <= 0.0 or h <= 0.0:
-            return None
-
-        width_ratio = w / all_w
-        height_ratio = h / all_h
-        area_ratio = (w * h) / all_area if all_area > 0 else 0.0
-        if width_ratio < OUTER_FRAME_SIDE_RATIO or height_ratio < OUTER_FRAME_SIDE_RATIO:
-            return None
-        if area_ratio < OUTER_FRAME_MIN_FILL_RATIO:
-            return None
-
-        touches_left = abs(x0 - all_x0) <= bbox_tol
-        touches_right = abs(x1 - all_x1) <= bbox_tol
-        touches_bottom = abs(y0 - all_y0) <= bbox_tol
-        touches_top = abs(y1 - all_y1) <= bbox_tol
-        if not (touches_left and touches_right and touches_bottom and touches_top):
-            return None
-
-        inner: List[PathItem] = [other for other in items if other is not it]
-        if not inner:
-            return None
-
-        all_inner = 0
-        inside = 0
-        for other in inner:
-            all_inner += len(other.points)
-            for pt in other.points:
-                x, y = pt
-                if poly_inside_bbox([pt], x0, x1, y0, y1, bbox_tol):
-                    inside += 1
-
-        if all_inner == 0:
-            return None
-        cover_ratio = inside / float(all_inner)
-        if cover_ratio < OUTER_FRAME_COVER_RATIO:
-            return None
-
-        score = area_ratio + 0.5 * cover_ratio + 0.05 * max(width_ratio, height_ratio)
-        return score, (x0, x1, y0, y1)
-
-    scored = []
-    for item in items:
-        if not item.points:
-            continue
-        score = candidate_score(item)
-        if score is not None:
-            scored.append((score[0], score[1], item))
-
-    if not scored:
-        # Fallback: some PDFs export borders as separate axis-aligned lines instead of one closed path.
-        edge_candidates = {"left": [], "right": [], "bottom": [], "top": []}
-        for item in items:
-            if not item.is_stroke or not item.points:
-                continue
-            x0, x1, y0, y1 = bounds_polylines([item.points])
-            w = x1 - x0
-            h = y1 - y0
-            if w <= 0.0 and h <= 0.0:
-                continue
-
-            center_x = (x0 + x1) * 0.5
-            center_y = (y0 + y1) * 0.5
-            # Vertical candidates.
-            if abs(w) <= bbox_tol and (h / all_h) >= OUTER_FRAME_SIDE_RATIO:
-                if abs(x0 - all_x0) <= bbox_tol or abs(x1 - all_x0) <= bbox_tol or abs(center_x - all_x0) <= bbox_tol:
-                    edge_candidates["left"].append((h, item))
-                if abs(x0 - all_x1) <= bbox_tol or abs(x1 - all_x1) <= bbox_tol or abs(center_x - all_x1) <= bbox_tol:
-                    edge_candidates["right"].append((h, item))
-            # Horizontal candidates.
-            if abs(h) <= bbox_tol and (w / all_w) >= OUTER_FRAME_SIDE_RATIO:
-                if abs(y0 - all_y0) <= bbox_tol or abs(y1 - all_y0) <= bbox_tol or abs(center_y - all_y0) <= bbox_tol:
-                    edge_candidates["bottom"].append((w, item))
-                if abs(y0 - all_y1) <= bbox_tol or abs(y1 - all_y1) <= bbox_tol or abs(center_y - all_y1) <= bbox_tol:
-                    edge_candidates["top"].append((w, item))
-
-        if all(edge_candidates.values()):
-            left = sorted(edge_candidates["left"], key=lambda e: e[0], reverse=True)[0][1]
-            right = sorted(edge_candidates["right"], key=lambda e: e[0], reverse=True)[0][1]
-            bottom = sorted(edge_candidates["bottom"], key=lambda e: e[0], reverse=True)[0][1]
-            top = sorted(edge_candidates["top"], key=lambda e: e[0], reverse=True)[0][1]
-            chosen_ids = {id(left), id(right), id(bottom), id(top)}
-            if len(chosen_ids) >= 4:
-                logger(
-                    "Detected outer border from separate axis-aligned lines: "
-                    f"left/right/bottom/top candidates={len(edge_candidates['left'])}/{len(edge_candidates['right'])}/"
-                    f"{len(edge_candidates['bottom'])}/{len(edge_candidates['top'])}"
-                )
-                return [it for it in items if id(it) not in chosen_ids], [it for it in items if id(it) in chosen_ids]
-
-        return items, []
-
-    scored.sort(key=lambda x: x[0], reverse=True)
-    _, chosen_bounds, chosen_item = scored[0]
-    logger(
-        "Detected outer border candidate: "
-        f"bbox=({chosen_bounds[0]:.2f},{chosen_bounds[1]:.2f},{chosen_bounds[2]:.2f},{chosen_bounds[3]:.2f}) "
-        f"points={len(chosen_item.points)}"
+    return geometry_path_processing_mod.filter_outer_frame_path_items(
+        items,
+        auto_trim_outer_frame=bool(AUTO_TRIM_OUTER_FRAME),
+        outer_frame_edge_eps_mm=float(OUTER_FRAME_EDGE_EPS_MM),
+        outer_frame_side_ratio=float(OUTER_FRAME_SIDE_RATIO),
+        outer_frame_min_fill_ratio=float(OUTER_FRAME_MIN_FILL_RATIO),
+        outer_frame_cover_ratio=float(OUTER_FRAME_COVER_RATIO),
+        bounds_polylines_fn=bounds_polylines,
+        is_axis_aligned_rectangle_fn=is_axis_aligned_rectangle,
+        poly_inside_bbox_fn=poly_inside_bbox,
+        logger=logger,
     )
-    return [it for it in items if it is not chosen_item], [chosen_item]
 
 
 def clip_path_items_to_rect(
@@ -6985,93 +6347,30 @@ def clip_path_items_to_rect(
     max_y: float,
     logger=print,
 ) -> Tuple[List[PathItem], int, int]:
-    if not items:
-        return [], 0, 0
+    def _path_item_factory(points: List[Tuple[float, float]], source_item: PathItem, closed: bool) -> PathItem:
+        return PathItem(
+            points=points,
+            closed=closed,
+            is_fill=bool(source_item.is_fill),
+            is_stroke=bool(source_item.is_stroke),
+            source_id=source_item.source_id,
+        )
 
-    clipped_all: List[PathItem] = []
-    dropped_segments = 0
-    written_segments = 0
-    for item in items:
-        if len(item.points) < 2:
-            continue
-        out_poly: List[Tuple[float, float]] = []
-        for i in range(1, len(item.points)):
-            x1, y1 = item.points[i - 1]
-            x2, y2 = item.points[i]
-            clipped = clip_segment_to_rect(x1, y1, x2, y2, min_x, max_x, min_y, max_y)
-            if clipped is None:
-                dropped_segments += 1
-                if out_poly and len(out_poly) >= 2:
-                    p = PathItem(
-                        points=out_poly,
-                        closed=False,
-                        is_fill=item.is_fill,
-                        is_stroke=item.is_stroke,
-                        source_id=item.source_id,
-                    )
-                    p.closed = path_is_closed(p.points)
-                    clipped_all.append(p)
-                out_poly = []
-                continue
-
-            (cx1, cy1), (cx2, cy2) = clipped
-            cx1, cy1 = clamp_to_work_area(cx1, cy1, min_x, max_x, min_y, max_y)
-            cx2, cy2 = clamp_to_work_area(cx2, cy2, min_x, max_x, min_y, max_y)
-
-            if not point_in_work_area(cx1, cy1, min_x, max_x, min_y, max_y):
-                dropped_segments += 1
-                if out_poly and len(out_poly) >= 2:
-                    p = PathItem(
-                        points=out_poly,
-                        closed=False,
-                        is_fill=item.is_fill,
-                        is_stroke=item.is_stroke,
-                        source_id=item.source_id,
-                    )
-                    p.closed = path_is_closed(p.points)
-                    clipped_all.append(p)
-                out_poly = []
-                continue
-
-            if not out_poly:
-                out_poly = [(cx1, cy1)]
-
-            if points_distance((cx1, cy1), out_poly[-1]) > CLIP_CONTINUITY_EPS_MM:
-                p = PathItem(
-                    points=out_poly,
-                    closed=False,
-                    is_fill=item.is_fill,
-                    is_stroke=item.is_stroke,
-                    source_id=item.source_id,
-                )
-                p.closed = path_is_closed(p.points)
-                clipped_all.append(p)
-                out_poly = [(cx1, cy1)]
-            else:
-                # Snap to maintain continuity after numeric clipping.
-                cx1, cy1 = out_poly[-1]
-
-            if points_distance((cx2, cy2), out_poly[-1]) > 1e-6:
-                out_poly.append((cx2, cy2))
-                written_segments += 1
-
-        if len(out_poly) >= 2:
-            p = PathItem(
-                points=out_poly,
-                closed=False,
-                is_fill=item.is_fill,
-                is_stroke=item.is_stroke,
-                source_id=item.source_id,
-            )
-            p.closed = path_is_closed(p.points)
-            clipped_all.append(p)
-
-    if logger:
-        if dropped_segments:
-            logger(
-                f"Page/content clip: kept {written_segments} visible segments, dropped {dropped_segments} out-of-area segments."
-            )
-    return clipped_all, written_segments, dropped_segments
+    return geometry_path_processing_mod.clip_path_items_to_rect(
+        items,
+        min_x,
+        max_x,
+        min_y,
+        max_y,
+        clip_segment_to_rect_fn=clip_segment_to_rect,
+        clamp_to_rect_fn=clamp_to_work_area,
+        point_in_rect_fn=point_in_work_area,
+        points_distance_fn=points_distance,
+        path_is_closed_fn=path_is_closed,
+        item_factory=_path_item_factory,
+        clip_continuity_eps_mm=float(CLIP_CONTINUITY_EPS_MM),
+        logger=logger,
+    )
 
 
 def svg_page_size_mm(svg_path: Path) -> Tuple[float, float]:
@@ -7087,66 +6386,41 @@ def clip_to_content_area(
     page_h: float,
     logger=print,
 ) -> Tuple[List[PathItem], bool]:
-    if (
-        not PAGE_MARGIN_ENABLED
-        or page_w <= 1.0
-        or page_h <= 1.0
-        or (PAGE_MARGIN_LEFT_MM <= 0 and PAGE_MARGIN_RIGHT_MM <= 0 and PAGE_MARGIN_TOP_MM <= 0 and PAGE_MARGIN_BOTTOM_MM <= 0)
-    ):
-        return items, False
+    def _clip_cb(src_items: List[PathItem], x0: float, x1: float, y0: float, y1: float) -> Tuple[List[PathItem], int, int]:
+        return clip_path_items_to_rect(src_items, x0, x1, y0, y1, logger=logger)
 
-    left = PAGE_MARGIN_LEFT_MM
-    right = PAGE_MARGIN_RIGHT_MM
-    top = PAGE_MARGIN_TOP_MM
-    bottom = PAGE_MARGIN_BOTTOM_MM
-    if left < 0 or right < 0 or top < 0 or bottom < 0:
-        logger("Warning: page margin is negative, skipping content area crop.")
-        return items, False
-
-    if PAGE_MARGIN_A4_ONLY:
-        # Р“РћРЎРў-РїРѕР»СЏ (20/5/10/5) РєРѕСЂСЂРµРєС‚РЅС‹ С‚РѕР»СЊРєРѕ РґР»СЏ A4. РќР° "РјР°Р»РµРЅСЊРєРёС…" PDF (С„СЂР°РіРјРµРЅС‚С‹)
-        # С‚Р°РєР°СЏ РѕР±СЂРµР·РєР° РІС‹СЂРµР¶РµС‚ СЂРµР°Р»СЊРЅСѓСЋ РіРµРѕРјРµС‚СЂРёСЋ.
-        is_a4 = (abs(page_w - 210.0) <= PAGE_A4_TOL_MM and abs(page_h - 297.0) <= PAGE_A4_TOL_MM) or (
-            abs(page_w - 297.0) <= PAGE_A4_TOL_MM and abs(page_h - 210.0) <= PAGE_A4_TOL_MM
-        )
-        if not is_a4:
-            logger(f"Page {page_w:.1f}x{page_h:.1f} mm not A4; skipping content area crop.")
-            return items, False
-
-    content_min_x = left
-    content_max_x = page_w - right
-    content_min_y = top
-    content_max_y = page_h - bottom
-
-    if not (content_min_x < content_max_x and content_min_y < content_max_y):
-        logger("Warning: invalid page content area, skipping content area crop.")
-        return items, False
-
-    clipped_items, _, dropped = clip_path_items_to_rect(items, content_min_x, content_max_x, content_min_y, content_max_y, logger=logger)
-    if not clipped_items:
-        logger("Content area crop removed all paths; keeping original geometry.")
-        return items, False
-
-    logger(
-        f"Applied content area crop: x({content_min_x:.1f},{content_max_x:.1f}) y({content_min_y:.1f},{content_max_y:.1f}) "
-        f"dropped segments={dropped}"
+    return geometry_path_processing_mod.clip_to_content_area(
+        items,
+        page_w,
+        page_h,
+        page_margin_enabled=bool(PAGE_MARGIN_ENABLED),
+        page_margin_left_mm=float(PAGE_MARGIN_LEFT_MM),
+        page_margin_right_mm=float(PAGE_MARGIN_RIGHT_MM),
+        page_margin_top_mm=float(PAGE_MARGIN_TOP_MM),
+        page_margin_bottom_mm=float(PAGE_MARGIN_BOTTOM_MM),
+        page_margin_a4_only=bool(PAGE_MARGIN_A4_ONLY),
+        page_a4_tol_mm=float(PAGE_A4_TOL_MM),
+        clip_path_items_to_rect_fn=_clip_cb,
+        logger=logger,
     )
-    return clipped_items, True
 
 
 def base_work_area_bounds() -> Tuple[float, float, float, float]:
-    min_x = min(WORK_AREA_MIN_X + WORK_OFFSET_X_MM, WORK_AREA_MAX_X + WORK_OFFSET_X_MM)
-    max_x = max(WORK_AREA_MIN_X + WORK_OFFSET_X_MM, WORK_AREA_MAX_X + WORK_OFFSET_X_MM)
-    min_y = min(WORK_AREA_MIN_Y + WORK_OFFSET_Y_MM, WORK_AREA_MAX_Y + WORK_OFFSET_Y_MM)
-    max_y = max(WORK_AREA_MIN_Y + WORK_OFFSET_Y_MM, WORK_AREA_MAX_Y + WORK_OFFSET_Y_MM)
-    return min_x, max_x, min_y, max_y
+    return geometry_work_area_mod.base_work_area_bounds(
+        work_area_min_x=float(WORK_AREA_MIN_X),
+        work_area_max_x=float(WORK_AREA_MAX_X),
+        work_area_min_y=float(WORK_AREA_MIN_Y),
+        work_area_max_y=float(WORK_AREA_MAX_Y),
+        work_offset_x_mm=float(WORK_OFFSET_X_MM),
+        work_offset_y_mm=float(WORK_OFFSET_Y_MM),
+    )
 
 
 def work_area_bounds() -> Tuple[float, float, float, float]:
-    if ACTIVE_WORK_AREA_BOUNDS is not None:
-        x0, x1, y0, y1 = ACTIVE_WORK_AREA_BOUNDS
-        return min(x0, x1), max(x0, x1), min(y0, y1), max(y0, y1)
-    return base_work_area_bounds()
+    return geometry_work_area_mod.work_area_bounds(
+        active_work_area_bounds=ACTIVE_WORK_AREA_BOUNDS,
+        base_work_area_bounds_fn=base_work_area_bounds,
+    )
 
 
 def configure_active_work_area(
@@ -7160,121 +6434,28 @@ def configure_active_work_area(
     logger=print,
 ) -> None:
     global ACTIVE_WORK_AREA_BOUNDS
-
-    base_min_x, base_max_x, base_min_y, base_max_y = base_work_area_bounds()
-    base_w = max(1e-9, base_max_x - base_min_x)
-    base_h = max(1e-9, base_max_y - base_min_y)
-
-    fmt = (sheet_format or "work").strip().lower()
-    if fmt == "custom":
-        if sheet_width_mm is None or sheet_height_mm is None:
-            raise ValueError("--sheet-format custom requires --sheet-width-mm and --sheet-height-mm")
-        target_w = float(sheet_width_mm)
-        target_h = float(sheet_height_mm)
-    elif fmt in SHEET_PRESETS_MM:
-        preset = SHEET_PRESETS_MM[fmt]
-        if preset is None:
-            target_w = base_w
-            target_h = base_h
-        else:
-            target_w, target_h = preset
-            if sheet_width_mm is not None:
-                target_w = float(sheet_width_mm)
-            if sheet_height_mm is not None:
-                target_h = float(sheet_height_mm)
-    else:
-        raise ValueError(f"Unknown --sheet-format '{sheet_format}'.")
-
-    if target_w <= 0.0 or target_h <= 0.0:
-        raise ValueError("Sheet width/height must be > 0.")
-
-    # Drawing cannot exceed actual machine workspace.
-    active_w = min(target_w, base_w)
-    active_h = min(target_h, base_h)
-    if target_w > base_w or target_h > base_h:
-        logger(
-            f"Sheet {target_w:.1f}x{target_h:.1f} mm is larger than workspace {base_w:.1f}x{base_h:.1f} mm. "
-            "Using workspace-sized active area (overflow must be tiled or clipped)."
-        )
-
-    anc = (anchor or "center").strip().lower()
-    if anc not in SHEET_ANCHOR_CHOICES:
-        raise ValueError(f"Unknown --sheet-anchor '{anchor}'.")
-
-    if anc == "center":
-        x0 = base_min_x + (base_w - active_w) * 0.5
-        y0 = base_min_y + (base_h - active_h) * 0.5
-    elif anc == "lower_left":
-        x0 = base_min_x
-        y0 = base_min_y
-    elif anc == "upper_left":
-        x0 = base_min_x
-        y0 = base_max_y - active_h
-    elif anc == "lower_right":
-        x0 = base_max_x - active_w
-        y0 = base_min_y
-    else:  # upper_right
-        x0 = base_max_x - active_w
-        y0 = base_max_y - active_h
-
-    x0 += float(offset_x_mm)
-    y0 += float(offset_y_mm)
-
-    # Keep active window inside machine base area.
-    x0 = min(max(x0, base_min_x), base_max_x - active_w)
-    y0 = min(max(y0, base_min_y), base_max_y - active_h)
-    x1 = x0 + active_w
-    y1 = y0 + active_h
-
-    ACTIVE_WORK_AREA_BOUNDS = (x0, x1, y0, y1)
-    logger(
-        f"Active area: {active_w:.1f}x{active_h:.1f} mm, "
-        f"bounds x({x0:.3f},{x1:.3f}) y({y0:.3f},{y1:.3f}), "
-        f"sheet={fmt}, anchor={anc}, offset=({offset_x_mm:.2f},{offset_y_mm:.2f})"
+    ACTIVE_WORK_AREA_BOUNDS = geometry_work_area_mod.configure_active_work_area(
+        sheet_format=sheet_format,
+        sheet_width_mm=sheet_width_mm,
+        sheet_height_mm=sheet_height_mm,
+        anchor=anchor,
+        offset_x_mm=offset_x_mm,
+        offset_y_mm=offset_y_mm,
+        base_bounds=base_work_area_bounds(),
+        sheet_presets_mm=SHEET_PRESETS_MM,
+        sheet_anchor_choices=SHEET_ANCHOR_CHOICES,
+        logger=logger,
     )
 
 
 def plan_tiled_passes_for_sheet(sheet_w_mm: float, sheet_h_mm: float) -> dict:
     min_x, max_x, min_y, max_y = work_area_bounds()
-    area_w = max(1e-9, max_x - min_x)
-    area_h = max(1e-9, max_y - min_y)
-
-    def _passes(w: float, h: float) -> Tuple[int, int, int]:
-        nx = int(math.ceil(w / area_w))
-        ny = int(math.ceil(h / area_h))
-        return nx, ny, nx * ny
-
-    nx1, ny1, n1 = _passes(sheet_w_mm, sheet_h_mm)
-    nx2, ny2, n2 = _passes(sheet_h_mm, sheet_w_mm)
-    if n2 < n1:
-        best = {
-            "rotated": True,
-            "sheet_w_mm": sheet_h_mm,
-            "sheet_h_mm": sheet_w_mm,
-            "nx": nx2,
-            "ny": ny2,
-            "passes": n2,
-        }
-    else:
-        best = {
-            "rotated": False,
-            "sheet_w_mm": sheet_w_mm,
-            "sheet_h_mm": sheet_h_mm,
-            "nx": nx1,
-            "ny": ny1,
-            "passes": n1,
-        }
-
-    # Best possible scale if user insists on exactly 2 passes.
-    two_pass_scales = []
-    for w, h in ((sheet_w_mm, sheet_h_mm), (sheet_h_mm, sheet_w_mm)):
-        s_side = min((2.0 * area_w) / w, area_h / h)
-        s_stack = min(area_w / w, (2.0 * area_h) / h)
-        two_pass_scales.append(max(s_side, s_stack))
-    best["max_two_pass_scale"] = max(two_pass_scales)
-    best["area_w_mm"] = area_w
-    best["area_h_mm"] = area_h
-    return best
+    return geometry_sheet_tiling_mod.plan_tiled_passes_for_sheet(
+        sheet_w_mm,
+        sheet_h_mm,
+        area_w_mm=(max_x - min_x),
+        area_h_mm=(max_y - min_y),
+    )
 
 
 def resolve_sheet_size_mm(
@@ -7283,36 +6464,18 @@ def resolve_sheet_size_mm(
     sheet_width_mm: Optional[float],
     sheet_height_mm: Optional[float],
 ) -> Tuple[float, float]:
-    fmt = (sheet_format or "work").strip().lower()
-    if fmt == "custom":
-        if sheet_width_mm is None or sheet_height_mm is None:
-            raise ValueError("--sheet-format custom requires --sheet-width-mm and --sheet-height-mm")
-        return float(sheet_width_mm), float(sheet_height_mm)
-    if fmt in SHEET_PRESETS_MM:
-        preset = SHEET_PRESETS_MM[fmt]
-        if preset is None:
-            min_x, max_x, min_y, max_y = work_area_bounds()
-            return max_x - min_x, max_y - min_y
-        w, h = preset
-        if sheet_width_mm is not None:
-            w = float(sheet_width_mm)
-        if sheet_height_mm is not None:
-            h = float(sheet_height_mm)
-        return float(w), float(h)
-    raise ValueError(f"Unknown --sheet-format '{sheet_format}'.")
+    min_x, max_x, min_y, max_y = work_area_bounds()
+    return geometry_sheet_tiling_mod.resolve_sheet_size_mm(
+        sheet_format=sheet_format,
+        sheet_width_mm=sheet_width_mm,
+        sheet_height_mm=sheet_height_mm,
+        sheet_presets_mm=SHEET_PRESETS_MM,
+        work_area_size_mm=(max_x - min_x, max_y - min_y),
+    )
 
 
 def _tile_window_start(total_mm: float, window_mm: float, idx0: int, count: int) -> float:
-    if count <= 1 or total_mm <= window_mm + 1e-9:
-        return 0.0
-    span = max(0.0, total_mm - window_mm)
-    step = span / float(count - 1)
-    s = float(idx0) * step
-    if s < 0.0:
-        return 0.0
-    if s > span:
-        return span
-    return s
+    return geometry_sheet_tiling_mod.tile_window_start(total_mm, window_mm, idx0, count)
 
 
 def compute_pass_shift(
@@ -7321,37 +6484,16 @@ def compute_pass_shift(
     window_w_mm: float,
     window_h_mm: float,
 ) -> Tuple[float, float, dict]:
-    cols = max(1, int(PASS_COLS))
-    rows = max(1, int(PASS_ROWS))
-    col = min(max(1, int(PASS_COL)), cols)
-    row = min(max(1, int(PASS_ROW)), rows)
-
-    w = max(1e-9, float(source_w_mm))
-    h = max(1e-9, float(source_h_mm))
-    win_w = min(max(1e-9, float(window_w_mm)), w)
-    win_h = min(max(1e-9, float(window_h_mm)), h)
-
-    # Columns progress left -> right.
-    sx = _tile_window_start(w, win_w, col - 1, cols)
-    # Rows progress top -> bottom for human-readable pass order.
-    sy = _tile_window_start(h, win_h, row - 1, rows)
-
-    # Base fit centers full source; to select a tile window, shift by center delta.
-    shift_x = (w * 0.5) - (sx + win_w * 0.5)
-    shift_y = (h * 0.5) - (sy + win_h * 0.5)
-    info = {
-        "cols": cols,
-        "rows": rows,
-        "col": col,
-        "row": row,
-        "sx": sx,
-        "sy": sy,
-        "win_w": win_w,
-        "win_h": win_h,
-        "src_w": w,
-        "src_h": h,
-    }
-    return shift_x, shift_y, info
+    return geometry_sheet_tiling_mod.compute_pass_shift(
+        source_w_mm,
+        source_h_mm,
+        window_w_mm,
+        window_h_mm,
+        pass_cols=int(PASS_COLS),
+        pass_rows=int(PASS_ROWS),
+        pass_col=int(PASS_COL),
+        pass_row=int(PASS_ROW),
+    )
 
 
 def clamp_to_work_area(
@@ -7362,14 +6504,11 @@ def clamp_to_work_area(
     min_y: float,
     max_y: float,
 ) -> Tuple[float, float]:
-    return (
-        min(max(x, min_x), max_x),
-        min(max(y, min_y), max_y),
-    )
+    return geometry_clipping_mod.clamp_to_rect(x, y, min_x, max_x, min_y, max_y)
 
 
 def point_in_work_area(x: float, y: float, min_x: float, max_x: float, min_y: float, max_y: float, eps: float = WORK_AREA_EPS) -> bool:
-    return (min_x - eps) <= x <= (max_x + eps) and (min_y - eps) <= y <= (max_y + eps)
+    return geometry_clipping_mod.point_in_rect(x, y, min_x, max_x, min_y, max_y, eps=eps)
 
 
 def clip_segment_to_rect(
@@ -7382,59 +6521,7 @@ def clip_segment_to_rect(
     min_y: float,
     max_y: float,
 ) -> Optional[Tuple[Tuple[float, float], Tuple[float, float]]]:
-    dx = x2 - x1
-    dy = y2 - y1
-    t0 = 0.0
-    t1 = 1.0
-
-    def upd(p: float, q: float, current_t0: float, current_t1: float) -> Optional[Tuple[float, float]]:
-        if abs(p) < 1e-15:
-            if q < 0.0:
-                return None
-            return current_t0, current_t1
-        t = q / p
-        if p < 0.0:
-            if t > current_t1:
-                return None
-            return max(current_t0, t), current_t1
-        if p > 0.0:
-            if t < current_t0:
-                return None
-            return current_t0, min(current_t1, t)
-        return current_t0, current_t1
-
-    # Left
-    r = upd(-(dx), x1 - min_x, t0, t1)
-    if r is None:
-        return None
-    t0, t1 = r
-
-    # Right
-    r = upd(dx, max_x - x1, t0, t1)
-    if r is None:
-        return None
-    t0, t1 = r
-
-    # Bottom
-    r = upd(-(dy), y1 - min_y, t0, t1)
-    if r is None:
-        return None
-    t0, t1 = r
-
-    # Top
-    r = upd(dy, max_y - y1, t0, t1)
-    if r is None:
-        return None
-    t0, t1 = r
-
-    if t0 > t1:
-        return None
-
-    x_start = x1 + dx * t0
-    y_start = y1 + dy * t0
-    x_end = x1 + dx * t1
-    y_end = y1 + dy * t1
-    return (x_start, y_start), (x_end, y_end)
+    return geometry_clipping_mod.clip_segment_to_rect(x1, y1, x2, y2, min_x, max_x, min_y, max_y)
 
 
 def clip_polylines_to_work_area(
@@ -7442,57 +6529,17 @@ def clip_polylines_to_work_area(
     logger=print,
 ) -> List[List[Tuple[float, float]]]:
     min_x, max_x, min_y, max_y = work_area_bounds()
-    clipped_all: List[List[Tuple[float, float]]] = []
-    dropped_segments = 0
-    written_segments = 0
-
-    for poly in polylines:
-        if len(poly) < 2:
-            continue
-        out_poly: List[Tuple[float, float]] = []
-        for i in range(1, len(poly)):
-            x1, y1 = poly[i - 1]
-            x2, y2 = poly[i]
-            clipped = clip_segment_to_rect(x1, y1, x2, y2, min_x, max_x, min_y, max_y)
-            if clipped is None:
-                dropped_segments += 1
-                if out_poly:
-                    if len(out_poly) >= 2:
-                        clipped_all.append(out_poly)
-                    out_poly = []
-                continue
-
-            (cx1, cy1), (cx2, cy2) = clipped
-            cx1, cy1 = clamp_to_work_area(cx1, cy1, min_x, max_x, min_y, max_y)
-            cx2, cy2 = clamp_to_work_area(cx2, cy2, min_x, max_x, min_y, max_y)
-            # Close and restart if next visible piece doesn't touch current one.
-            if not point_in_work_area(cx1, cy1, min_x, max_x, min_y, max_y):
-                dropped_segments += 1
-                if out_poly and len(out_poly) >= 2:
-                    clipped_all.append(out_poly)
-                out_poly = []
-                continue
-
-            if not out_poly:
-                out_poly = [(cx1, cy1)]
-
-            if points_distance((cx1, cy1), out_poly[-1]) > CLIP_CONTINUITY_EPS_MM:
-                clipped_all.append(out_poly)
-                out_poly = [(cx1, cy1)]
-            else:
-                cx1, cy1 = out_poly[-1]
-
-            if points_distance((cx2, cy2), out_poly[-1]) > 1e-6:
-                out_poly.append((cx2, cy2))
-                written_segments += 1
-
-        if len(out_poly) >= 2:
-            clipped_all.append(out_poly)
-
-    if logger:
-        if dropped_segments:
-            logger(f"Work area clipping: kept {written_segments} visible segments, dropped {dropped_segments} out-of-area segments.")
-    return clipped_all
+    return geometry_clipping_mod.clip_polylines_to_rect(
+        polylines,
+        min_x,
+        max_x,
+        min_y,
+        max_y,
+        continuity_eps_mm=float(CLIP_CONTINUITY_EPS_MM),
+        logger=logger,
+        clamp_fn=clamp_to_work_area,
+        point_in_rect_fn=point_in_work_area,
+    )
 
 
 def fit_polylines_to_area(
@@ -7503,75 +6550,23 @@ def fit_polylines_to_area(
     max_y: float,
     logger=print,
 ) -> List[List[Tuple[float, float]]]:
-    if not polylines or not FIT_TO_WORK_AREA:
-        return polylines
-
-    w = max_x - min_x
-    h = max_y - min_y
-    if w <= 0.0 or h <= 0.0:
-        return polylines
-
-    area_min_x, area_max_x, area_min_y, area_max_y = work_area_bounds()
-    area_w = max(1.0, area_max_x - area_min_x)
-    area_h = max(1.0, area_max_y - area_min_y)
-    usable_w = max(1.0, area_w - 2 * WORK_AREA_MARGIN)
-    usable_h = max(1.0, area_h - 2 * WORK_AREA_MARGIN)
-
-    raw_scale = min(usable_w / w, usable_h / h)
-    fit_scale = raw_scale if ALLOW_UPSCALE_TO_WORK_AREA else min(1.0, raw_scale)
-    use_dimensional_guard = (
-        EXACT_GEOMETRY_MODE
-        and fit_scale < float(MIN_FIT_SCALE_FOR_DIMENSIONAL_DRAW)
+    return geometry_fitting_mod.fit_polylines_to_area(
+        polylines,
+        min_x,
+        max_x,
+        min_y,
+        max_y,
+        fit_to_work_area=bool(FIT_TO_WORK_AREA),
+        work_area_bounds_fn=work_area_bounds,
+        work_area_margin=float(WORK_AREA_MARGIN),
+        allow_upscale_to_work_area=bool(ALLOW_UPSCALE_TO_WORK_AREA),
+        exact_geometry_mode=bool(EXACT_GEOMETRY_MODE),
+        min_fit_scale_for_dimensional_draw=float(MIN_FIT_SCALE_FOR_DIMENSIONAL_DRAW),
+        pass_cols=int(PASS_COLS),
+        pass_rows=int(PASS_ROWS),
+        compute_pass_shift_fn=compute_pass_shift,
+        logger=logger,
     )
-
-    if use_dimensional_guard:
-        # Preserve real mm dimensions for technical drawings.
-        # Keep source centered in work area; excess is clipped symmetrically.
-        scale = 1.0
-        tx = area_min_x + WORK_AREA_MARGIN + (usable_w - w) / 2.0 - min_x
-        ty = area_min_y + WORK_AREA_MARGIN + (usable_h - h) / 2.0 - min_y
-        if logger:
-            logger(
-                "Fit guard (1:1 mm): required fit scale "
-                f"{fit_scale:.4f} is below threshold {MIN_FIT_SCALE_FOR_DIMENSIONAL_DRAW:.3f}; "
-                "keeping scale=1.0 and clipping overflow to work area."
-            )
-    else:
-        scale = fit_scale
-        scaled_w = w * scale
-        scaled_h = h * scale
-        tx = area_min_x + WORK_AREA_MARGIN + (usable_w - scaled_w) / 2.0 - min_x * scale
-        ty = area_min_y + WORK_AREA_MARGIN + (usable_h - scaled_h) / 2.0 - min_y * scale
-
-        if scale < 0.999999 or abs(tx) > 1e-9 or abs(ty) > 1e-9:
-            if logger:
-                logger(
-                    f"Fit to work area: scale={scale:.4f}, translate=({tx:.3f},{ty:.3f}), "
-                    f"from ({min_x:.3f}, {min_y:.3f})-({max_x:.3f}, {max_y:.3f})"
-                )
-
-    # Optional multi-pass window shift (keeps scale behavior, changes visible tile).
-    # This is intended for large sheets (e.g., A3) split into several physical passes.
-    if int(PASS_COLS) > 1 or int(PASS_ROWS) > 1:
-        src_w_eff = w * scale
-        src_h_eff = h * scale
-        shift_x, shift_y, info = compute_pass_shift(src_w_eff, src_h_eff, usable_w, usable_h)
-        tx += shift_x
-        ty += shift_y
-        if logger:
-            logger(
-                "Pass window: "
-                f"col {info['col']}/{info['cols']}, row {info['row']}/{info['rows']}, "
-                f"source={info['src_w']:.3f}x{info['src_h']:.3f} mm, "
-                f"window={info['win_w']:.3f}x{info['win_h']:.3f} mm, "
-                f"offset=({info['sx']:.3f},{info['sy']:.3f}), "
-                f"shift=({shift_x:.3f},{shift_y:.3f})"
-            )
-
-    out: List[List[Tuple[float, float]]] = []
-    for poly in polylines:
-        out.append([((x * scale) + tx, (y * scale) + ty) for x, y in poly])
-    return out
 
 
 def get_path_polylines(
@@ -8213,12 +7208,10 @@ def to_drawing_polylines(items: List[PathItem]) -> List[List[Tuple[float, float]
 
 
 def translate_polylines(polylines: List[List[Tuple[float, float]]], dx: float, dy: float) -> List[List[Tuple[float, float]]]:
-    if dx == 0.0 and dy == 0.0:
-        return polylines
-    return [[(x + dx, y + dy) for x, y in poly] for poly in polylines]
+    return geometry_polyline_mod.translate_polylines(polylines, dx, dy)
 
 def points_distance(a: Tuple[float, float], b: Tuple[float, float]) -> float:
-    return math.hypot(a[0] - b[0], a[1] - b[1])
+    return geometry_polyline_mod.points_distance(a, b)
 
 
 def _q(v: float, nd: int = GCODE_COORD_DECIMALS) -> float:
@@ -9326,80 +8319,38 @@ def apply_penlift(
         # Force full lift for every G0 travel to avoid accidental drag lines.
         # A tiny extra margin prevents edge cases with float rounding.
         travel_lift_mm = max(travel_lift_mm, abs(float(z_down) - float(Z_UP)) + 0.1)
-
-    cmd = [
-        sys.executable,
-        str(script),
-        str(xy_gcode),
-        "--output",
-        str(pen_gcode),
-        "--z-down",
-        f"{float(z_down):.3f}",
-        "--z-up",
-        f"{Z_UP:.4f}",
-        "--mode",
-        PEN_LIFT_MODE,
-        "--spindle-speed",
-        str(PEN_SPINDLE_SPEED),
-        "--delay",
-        f"{z_delay_down_eff:.2f}",
-        "--delay-up",
-        f"{z_delay_up_eff:.2f}",
-        "--z-feed-down-approach",
-        f"{z_feed_down_approach_eff:.1f}",
-        "--z-feed-down-touch",
-        f"{z_feed_down_touch_eff:.1f}",
-        "--z-feed-up",
-        f"{z_feed_up_eff:.1f}",
-        "--z-feed-up-final",
-        f"{z_feed_up_final_eff:.1f}",
-        "--z-soft-down-mm",
-        f"{z_soft_down_eff:.3f}",
-        "--z-soft-up-mm",
-        f"{z_soft_up_eff:.3f}",
-        "--z-travel-lift-mm",
-        f"{travel_lift_mm:.3f}",
-    ]
-    if dynamic_z_enable:
-        base_z = float(z_down) if dynamic_base_z_down is None else float(dynamic_base_z_down)
-        cmd.extend(
-            [
-                "--dynamic-z-enable",
-                "--dynamic-base-z-down",
-                f"{base_z:.4f}",
-                "--dynamic-initial-wear-mm",
-                f"{max(0.0, float(dynamic_initial_wear_mm)):.6f}",
-                "--dynamic-wear-mm-per-m",
-                f"{max(0.0, float(PENCIL_WEAR_MM_PER_M)):.6f}",
-                "--dynamic-z-comp-per-wear",
-                f"{max(0.0, float(PENCIL_Z_COMP_MM_PER_WEAR_MM)):.6f}",
-                "--dynamic-z-max-comp-mm",
-                f"{max(0.0, float(PENCIL_MAX_COMP_MM)):.6f}",
-            ]
-        )
-        if PENCIL_STROKE_Z_JITTER_ENABLED:
-            cmd.extend(
-                [
-                    "--stroke-z-jitter-enable",
-                    "--stroke-z-jitter-mm",
-                    f"{max(0.0, float(PENCIL_STROKE_Z_JITTER_MM)):.6f}",
-                    "--stroke-z-jitter-seed",
-                    str(int(PENCIL_STROKE_Z_JITTER_SEED)),
-                ]
-            )
-    if HANDWRITING_MERGE_SHORT_TRAVEL_ENABLE and (handwriting_mode or TOOL_MODE == "pen"):
-        cmd.extend(
-            [
-                "--merge-short-travel-enable",
-                "--merge-short-travel-mm",
-                f"{max(0.0, float(HANDWRITING_MERGE_SHORT_TRAVEL_MM)):.3f}",
-                "--merge-short-travel-feed",
-                f"{max(1.0, float(HANDWRITING_MERGE_SHORT_TRAVEL_FEED)):.1f}",
-            ]
-        )
-    rc, out, err = run_cmd(cmd)
-    if rc != 0:
-        raise RuntimeError(f"PenLift postprocess error: {err.strip() or out.strip()}")
+    gcode_penlift_mod.run_penlift_postprocess(
+        xy_gcode,
+        pen_gcode,
+        python_executable=sys.executable,
+        script_path=script,
+        z_down=float(z_down),
+        z_up=float(Z_UP),
+        pen_lift_mode=PEN_LIFT_MODE,
+        pen_spindle_speed=int(PEN_SPINDLE_SPEED),
+        z_delay_down=float(z_delay_down_eff),
+        z_delay_up=float(z_delay_up_eff),
+        z_feed_down_approach=float(z_feed_down_approach_eff),
+        z_feed_down_touch=float(z_feed_down_touch_eff),
+        z_feed_up=float(z_feed_up_eff),
+        z_feed_up_final=float(z_feed_up_final_eff),
+        z_soft_down_mm=float(z_soft_down_eff),
+        z_soft_up_mm=float(z_soft_up_eff),
+        z_travel_lift_mm=float(travel_lift_mm),
+        dynamic_z_enable=bool(dynamic_z_enable),
+        dynamic_base_z_down=dynamic_base_z_down,
+        dynamic_initial_wear_mm=float(dynamic_initial_wear_mm),
+        dynamic_wear_mm_per_m=float(PENCIL_WEAR_MM_PER_M),
+        dynamic_z_comp_per_wear=float(PENCIL_Z_COMP_MM_PER_WEAR_MM),
+        dynamic_z_max_comp_mm=float(PENCIL_MAX_COMP_MM),
+        stroke_z_jitter_enable=bool(PENCIL_STROKE_Z_JITTER_ENABLED),
+        stroke_z_jitter_mm=float(PENCIL_STROKE_Z_JITTER_MM),
+        stroke_z_jitter_seed=int(PENCIL_STROKE_Z_JITTER_SEED),
+        merge_short_travel_enable=bool(HANDWRITING_MERGE_SHORT_TRAVEL_ENABLE and (handwriting_mode or TOOL_MODE == "pen")),
+        merge_short_travel_mm=float(HANDWRITING_MERGE_SHORT_TRAVEL_MM),
+        merge_short_travel_feed=float(HANDWRITING_MERGE_SHORT_TRAVEL_FEED),
+        run_cmd=run_cmd,
+    )
 
 
 def apply_quality_profile(
@@ -9593,12 +8544,9 @@ def pdf_to_svg(pdf_path: Path, svg_path: Path, logger) -> None:
         if FORCE_TEXT_TO_PATH or has_text:
             text_only = bool(used_stroke_text)
             if not convert_svg_text_to_paths(svg_target, logger, text_only=text_only) or svg_has_text_nodes(svg_target):
-                raise RuntimeError("Text->path conversion required and failed.")
+                raise ConversionError("Text->path conversion required and failed.")
             logger(f"Text nodes after conversion: {svg_text_node_count(svg_target)}")
         return had_text, handwriting_nodes
-
-    def ensure_svg_exists(prefix: Path, target_svg: Path) -> bool:
-        return pdf_converter_mod.ensure_generated_svg_exists(prefix, target_svg, logger)
 
     def score_svg_quality(svg_target: Path) -> Tuple[float, str]:
         return pdf_converter_mod.score_svg_quality(
@@ -9610,53 +8558,6 @@ def pdf_to_svg(pdf_path: Path, svg_path: Path, logger) -> None:
             bounds_path_items=bounds_path_items,
         )
 
-    def inkscape_candidates(exe: str, target_svg: Path) -> List[List[str]]:
-        return pdf_converter_mod.build_inkscape_pdf_to_svg_candidates(
-            exe,
-            pdf_path,
-            target_svg,
-            get_inkscape_version=get_inkscape_version,
-        )
-
-    def try_inkscape_export(target_svg: Path) -> Tuple[bool, str]:
-        try:
-            exe = find_inkscape()
-        except Exception as exc:
-            return False, f"Inkscape unavailable: {exc}"
-
-        logger(f"Using Inkscape: {exe}")
-        last_error = ""
-        for i, cmd in enumerate(inkscape_candidates(exe, target_svg), start=1):
-            logger(f"Inkscape command #{i}: {' '.join([Path(str(cmd[0])).name] + [str(x) for x in cmd[1:]])}")
-            rc, out, err = run_cmd(cmd)
-            if rc == 0 and target_svg.exists() and target_svg.stat().st_size > 0:
-                return True, "ok"
-            block = (out + "\n" + err).strip()
-            if block and len(block) > 500:
-                block = block[:500] + " ..."
-            logger(f"Inkscape command #{i} failed or produced empty SVG: {block}")
-            if block:
-                last_error = block
-        return False, last_error or "unknown Inkscape export failure"
-
-    def try_pdftocairo_export(target_svg: Path) -> Tuple[bool, str]:
-        try:
-            cairo = find_pdftocairo()
-        except Exception as exc:
-            return False, f"pdftocairo unavailable: {exc}"
-        cairo_prefix = target_svg.with_suffix("")
-        cmd = [cairo, "-svg", "-f", "1", "-l", "1", str(pdf_path), str(cairo_prefix)]
-        logger(f"Trying pdftocairo: {' '.join(cmd)}")
-        rc, out, err = run_cmd(cmd)
-        if rc != 0:
-            block = (out + "\n" + err).strip()
-            if block and len(block) > 500:
-                block = block[:500] + " ..."
-            return False, block or f"rc={rc}"
-        if ensure_svg_exists(cairo_prefix, target_svg):
-            return True, "ok"
-        return False, "svg not produced"
-
     exports: List[Tuple[str, Path, bool, int]] = []
     # Keep non-interactive behavior by default:
     # do not force Inkscape PDF import from handwriting mode, because some environments
@@ -9665,86 +8566,38 @@ def pdf_to_svg(pdf_path: Path, svg_path: Path, logger) -> None:
     # it can preserve editable text nodes before text->path conversion and
     # usually yields cleaner glyph geometry than pdftocairo-only output.
     try_inkscape = bool(USE_INKSCAPE_PDF_IMPORT or HANDWRITING_TEXT_ENABLED)
-
-    # 1) Inkscape PDF import is optional and disabled by default to avoid interactive
-    # "PDF import options" dialog windows.
-    if try_inkscape:
-        ink_svg = svg_path.with_name(f"{svg_path.stem}_inkscape.svg")
-        ok_ink, msg_ink = try_inkscape_export(ink_svg)
-        if ok_ink:
-            try:
-                had_text, handwriting_nodes = postprocess_text(ink_svg)
-                exports.append(("inkscape", ink_svg, had_text, handwriting_nodes))
-            except Exception as exc:
-                logger(f"Inkscape output rejected in postprocess: {exc}")
-                exports.append(("inkscape", ink_svg, svg_has_text_nodes(ink_svg), 0))
-        else:
-            logger(f"Inkscape export failed: {msg_ink}")
-    else:
-        logger("Inkscape PDF import disabled (USE_INKSCAPE_PDF_IMPORT=False and handwriting=off).")
-
-    # 2) pdftocairo fallback/candidate for auto-choice.
-    cairo_svg = svg_path.with_name(f"{svg_path.stem}_pdftocairo.svg")
-    ok_cairo, msg_cairo = try_pdftocairo_export(cairo_svg)
-    if ok_cairo:
-        try:
-            had_text, handwriting_nodes = postprocess_text(cairo_svg)
-            exports.append(("pdftocairo", cairo_svg, had_text, handwriting_nodes))
-        except Exception as exc:
-            logger(f"pdftocairo output rejected in postprocess: {exc}")
-            exports.append(("pdftocairo", cairo_svg, svg_has_text_nodes(cairo_svg), 0))
-    else:
-        logger(f"pdftocairo export failed: {msg_cairo}")
+    exports = pdf_converter_mod.collect_pdf_converter_exports(
+        pdf_path,
+        svg_path,
+        logger,
+        try_inkscape=try_inkscape,
+        postprocess=postprocess_text,
+        svg_has_text_nodes=svg_has_text_nodes,
+        find_inkscape=find_inkscape,
+        run_cmd=run_cmd,
+        get_inkscape_version=get_inkscape_version,
+        find_pdftocairo=find_pdftocairo,
+    )
 
     if not exports:
         if not USE_INKSCAPE_PDF_IMPORT:
-            raise RuntimeError(
+            raise ToolDependencyError(
                 "Failed to convert PDF to SVG with pdftocairo. "
                 "Install/configure Poppler pdftocairo or enable Inkscape PDF import in code."
             )
-        raise RuntimeError("Failed to convert PDF to SVG with both Inkscape and pdftocairo.")
+        raise ConversionError("Failed to convert PDF to SVG with both Inkscape and pdftocairo.")
 
-    scored: List[Tuple[str, Path, float, str, bool, int]] = []
-    for name, candidate, had_text, handwriting_nodes in exports:
-        score, details = score_svg_quality(candidate)
-        logger(
-            f"Converter metrics [{name}]: {details}, "
-            f"had_text={'yes' if had_text else 'no'}, handwriting_nodes={handwriting_nodes}"
+    scored = pdf_converter_mod.score_converter_exports(
+        exports,
+        logger,
+        score_svg_quality=score_svg_quality,
+    )
+    best_name, best_svg, best_score, best_details, _best_had_text, _best_hw_nodes = (
+        pdf_converter_mod.select_best_scored_export(
+            scored,
+            logger,
+            handwriting_enabled=bool(HANDWRITING_TEXT_ENABLED),
         )
-        scored.append((name, candidate, score, details, had_text, handwriting_nodes))
-
-    preferred = scored
-    if HANDWRITING_TEXT_ENABLED:
-        with_handwriting = [row for row in scored if row[5] > 0]
-        with_text = [row for row in scored if row[4]]
-        if with_handwriting:
-            preferred = with_handwriting
-            logger(
-                "Handwriting mode: forcing converter with editable text "
-                f"(font applied to {sum(row[5] for row in with_handwriting)} node(s) total)."
-            )
-        elif with_text:
-            preferred = with_text
-            logger(
-                "Handwriting mode: forcing converter that preserved text nodes "
-                "(font substitution reported 0 changed nodes)."
-            )
-        else:
-            inkscape_only = [row for row in scored if row[0] == "inkscape"]
-            if inkscape_only:
-                preferred = inkscape_only
-                logger(
-                    "Handwriting mode warning: no converter produced editable text; "
-                    "using Inkscape geometry for contour-only fallback."
-                )
-            else:
-                logger(
-                    "Handwriting mode warning: no converter produced editable text; "
-                    "font substitution cannot be applied for this PDF page."
-                )
-
-    best_name, best_svg, best_score, best_details, _best_had_text, _best_hw_nodes = min(
-        preferred, key=lambda row: row[2]
     )
     HANDWRITING_STROKE_ACTIVE = bool(HANDWRITING_TEXT_ENABLED and (_best_hw_nodes > 0))
 
@@ -9850,33 +8703,18 @@ def frw_to_pdf(frw_path: Path, pdf_path: Path, logger) -> None:
     )
 
 def make_final_with_preamble(prepared_gcode: Path, final_gcode: Path) -> None:
-    lines = [
-        "$X",
-        # Hold steppers while a job is running (prevents Z from back-driving / pen from springing).
-        # We explicitly restore to $1=0 in the trailer and also in the sender teardown.
-        "$1=255",
-        "G21",
-        "G90",
-        # Always raise pen before any XY move (e.g. before going home).
-        f"G0 Z{Z_UP:.4f} F{SAFE_LIFT_FEED:.1f}",
-        f"G4 P{Z_DELAY_UP:.2f}",
-        f"G92 Z{Z_UP:.4f}",
-        f"G0 Z{Z_UP:.4f} F{SAFE_LIFT_FEED:.1f}",
-        f"G0 X{HOME_X:.4f} Y{HOME_Y:.4f} F{FEED_TRAVEL:.1f}" if GO_HOME_BEFORE_DRAW else "",
-        "",
-    ]
-    g = prepared_gcode.read_text(encoding="utf-8", errors="ignore")
-    trailer = [
-        "",
-        # End-of-job safety: pen up, optional park to origin.
-        f"G0 Z{Z_UP:.4f} F{SAFE_LIFT_FEED:.1f}",
-        f"G4 P{Z_DELAY_UP:.2f}",
-        f"G0 X{HOME_X:.4f} Y{HOME_Y:.4f} F{FEED_TRAVEL:.1f}" if GO_HOME_AFTER_DRAW else "",
-        "M5",
-        "G4 P0.10",
-        "$1=0",
-    ]
-    final_gcode.write_text("\n".join(lines) + g + "\n".join(trailer) + "\n", encoding="utf-8")
+    gcode_finalize_mod.make_final_with_preamble(
+        prepared_gcode,
+        final_gcode,
+        z_up=float(Z_UP),
+        safe_lift_feed=float(SAFE_LIFT_FEED),
+        z_delay_up=float(Z_DELAY_UP),
+        home_x=float(HOME_X),
+        home_y=float(HOME_Y),
+        feed_travel=float(FEED_TRAVEL),
+        go_home_before_draw=bool(GO_HOME_BEFORE_DRAW),
+        go_home_after_draw=bool(GO_HOME_AFTER_DRAW),
+    )
 
 
 def _open_serial_no_reset(port: str, baud: int, *, timeout_s: float = 1.0):
@@ -9975,13 +8813,16 @@ def _grbl_query_offsets(ser) -> Tuple[Tuple[float, float, float], Tuple[float, f
 
 
 def grbl_wait_for_idle(port: str, baud: str, logger, *, timeout_s: float = 600.0) -> None:
-    ser = _open_serial_no_reset(port, int(baud), timeout_s=0.5)
+    try:
+        ser = _open_serial_no_reset(port, int(baud), timeout_s=0.5)
+    except Exception as exc:
+        raise SerialTransportError(f"Cannot open GRBL serial ({type(exc).__name__}: {exc})") from exc
     try:
         t0 = time.time()
         last_log = 0.0
         while True:
             if time.time() - t0 > timeout_s:
-                raise RuntimeError("Timeout waiting for GRBL to become Idle.")
+                raise SerialTransportError("Timeout waiting for GRBL to become Idle.")
             st = _grbl_status_line(ser, timeout_s=0.8)
             if st.startswith("<Idle|"):
                 return
@@ -9998,7 +8839,10 @@ def grbl_wait_for_idle(port: str, baud: str, logger, *, timeout_s: float = 600.0
 
 def grbl_get_wpos_xyz(port: str, baud: str) -> Tuple[float, float, float]:
     # Prefer WPos if present; else compute from MPos and WCO/($#).
-    ser = _open_serial_no_reset(port, int(baud), timeout_s=0.8)
+    try:
+        ser = _open_serial_no_reset(port, int(baud), timeout_s=0.8)
+    except Exception as exc:
+        raise SerialTransportError(f"Cannot open GRBL serial ({type(exc).__name__}: {exc})") from exc
     try:
         st = _grbl_status_line(ser, timeout_s=0.8)
         wpos = _parse_grbl_triplet("WPos", st) if st else None
@@ -10006,7 +8850,7 @@ def grbl_get_wpos_xyz(port: str, baud: str) -> Tuple[float, float, float]:
             return wpos
         mpos = _parse_grbl_triplet("MPos", st) if st else None
         if mpos is None:
-            raise RuntimeError(f"Cannot read GRBL position (status='{st}').")
+            raise SerialTransportError(f"Cannot read GRBL position (status='{st}').")
         wco = _parse_grbl_triplet("WCO", st) if st else None
         if wco is None:
             g54, g92 = _grbl_query_offsets(ser)
@@ -10020,60 +8864,18 @@ def grbl_get_wpos_xyz(port: str, baud: str) -> Tuple[float, float, float]:
 
 
 def _gcode_find_nearest_g0_xy_line(gcode_file: Path, *, x: float, y: float) -> int:
-    # Find nearest G0 XY endpoint to current position. We resume at a travel move to avoid dragging the pen.
-    x_re = re.compile(r"\bX(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)")
-    y_re = re.compile(r"\bY(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)")
-
-    cur_x: Optional[float] = None
-    cur_y: Optional[float] = None
-    best_d = float("inf")
-    best_line = 1
-
-    with gcode_file.open("r", encoding="utf-8", errors="ignore") as fh:
-        for ln, raw in enumerate(fh, 1):
-            line = raw.strip()
-            if not line or line.startswith(";") or line.startswith("("):
-                continue
-            sx = x_re.search(line)
-            sy = y_re.search(line)
-            if sx:
-                cur_x = float(sx.group(1))
-            if sy:
-                cur_y = float(sy.group(1))
-
-            if not line.startswith("G0"):
-                continue
-            # Only consider G0 lines that actually move in XY.
-            if ("X" not in line) and ("Y" not in line):
-                continue
-            if cur_x is None or cur_y is None:
-                continue
-            d = (cur_x - x) ** 2 + (cur_y - y) ** 2
-            if d < best_d:
-                best_d = d
-                best_line = ln
-
-    return best_line
+    return grbl_sender_mod.find_nearest_g0_xy_line(gcode_file, x=x, y=y)
 
 
 def _write_resume_file(src_gcode: Path, dst_gcode: Path, *, start_line: int) -> None:
-    # Resume file must NOT include G92 (it would shift coordinates). We only restore modal state + pen up.
-    src_lines = src_gcode.read_text(encoding="utf-8", errors="ignore").splitlines()
-    payload = src_lines[max(0, int(start_line) - 1) :]
-    pre = [
-        "$X",
-        "$1=255",
-        "G21",
-        "G90",
-        "G17",
-        "G91.1",
-        f"G0 Z{Z_UP:.4f} F{SAFE_LIFT_FEED:.1f}",
-        f"G4 P{Z_DELAY_UP:.2f}",
-        f"; AUTO-RESUME from line {start_line} of {src_gcode.name}",
-        "",
-    ]
-    dst_gcode.parent.mkdir(parents=True, exist_ok=True)
-    dst_gcode.write_text("\n".join(pre + payload) + "\n", encoding="utf-8")
+    grbl_sender_mod.write_resume_file(
+        src_gcode,
+        dst_gcode,
+        start_line=start_line,
+        z_up=Z_UP,
+        safe_lift_feed=SAFE_LIFT_FEED,
+        z_delay_up=Z_DELAY_UP,
+    )
 
 
 def send_to_grbl(
@@ -10086,126 +8888,22 @@ def send_to_grbl(
     auto_resume: bool = False,
     max_resume_attempts: int = 1,
 ) -> float:
-    sender = ROOT_DIR / "src" / "send_grbl_file.py"
-    if not sender.exists():
-        raise RuntimeError("send_grbl_file.py not found")
-
-    def _load_sender_module():
-        # In frozen builds, launching sys.executable opens PlotterStudio.exe again.
-        # Import sender module and run it in-process to avoid recursive GUI spawn.
-        module_name = "_plotter_sender_inline"
-        existing = sys.modules.get(module_name)
-        if existing is not None:
-            return existing
-        spec = importlib.util.spec_from_file_location(module_name, str(sender))
-        if spec is None or spec.loader is None:
-            raise RuntimeError("Cannot load send_grbl_file.py")
-        module = importlib.util.module_from_spec(spec)
-        sys.modules[module_name] = module
-        spec.loader.exec_module(module)
-        return module
-
-    def _run_sender_inline() -> Tuple[int, List[str], Optional[float], float]:
-        sender_mod = _load_sender_module()
-        out_lines: List[str] = []
-        sender_plot_time_s: Optional[float] = None
-        started_local = time.perf_counter()
-
-        original_print = getattr(sender_mod, "_safe_print", None)
-        original_enabled = getattr(sender_mod, "_PRINT_ENABLED", True)
-
-        def _forward_print(*args, **kwargs):
-            nonlocal sender_plot_time_s
-            line = " ".join(str(a) for a in args).strip()
-            if not line:
-                return
-            out_lines.append(line)
-            logger(line)
-            if line.startswith("PLOT_TIME_SECONDS="):
-                try:
-                    sender_plot_time_s = float(line.split("=", 1)[1].strip())
-                except Exception:
-                    pass
-
-        try:
-            sender_mod._PRINT_ENABLED = True
-            sender_mod._safe_print = _forward_print
-            argv = ["send_grbl_file.py", com, baud, str(gcode_file)]
-            if sleep_after:
-                argv.append("--sleep")
-            rc = int(sender_mod.main(argv))
-        finally:
-            if original_print is not None:
-                sender_mod._safe_print = original_print
-            sender_mod._PRINT_ENABLED = original_enabled
-
-        elapsed_local = time.perf_counter() - started_local
-        return rc, out_lines, sender_plot_time_s, elapsed_local
-
-    logger("Sending to Grbl ...")
-    use_inline = bool(getattr(sys, "frozen", False)) or os.environ.get("PLOTTER_INLINE_SENDER") == "1"
-
-    if use_inline:
-        rc, out_lines, sender_plot_time_s, elapsed = _run_sender_inline()
-    else:
-        cmd = [sys.executable, str(sender), com, baud, str(gcode_file)]
-        if sleep_after:
-            cmd.append("--sleep")
-        started = time.perf_counter()
-        proc = subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-        )
-        if proc.stdout is None:
-            raise RuntimeError("Failed to read sender output")
-        out_lines = []
-        sender_plot_time_s = None
-        while True:
-            line = proc.stdout.readline()
-            if not line:
-                break
-            s = line.strip()
-            out_lines.append(s)
-            logger(s)
-            if s.startswith("PLOT_TIME_SECONDS="):
-                try:
-                    sender_plot_time_s = float(s.split("=", 1)[1].strip())
-                except Exception:
-                    pass
-        rc = proc.wait()
-        elapsed = time.perf_counter() - started
-
-    if rc == 0:
-        return sender_plot_time_s if sender_plot_time_s is not None else max(0.0, elapsed)
-
-    # Sender failed.
-    if not auto_resume or max_resume_attempts <= 0:
-        # Surface the most relevant lines to the caller.
-        tail = "\n".join(out_lines[-8:]) if out_lines else ""
-        raise RuntimeError(f"Sender error code: {rc}\n{tail}".strip())
-
-    logger("Sender failed. Waiting for machine to become Idle, then auto-resuming from current position...")
-    grbl_wait_for_idle(com, baud, logger)
-    wx, wy, _wz = grbl_get_wpos_xyz(com, baud)
-    start_line = _gcode_find_nearest_g0_xy_line(gcode_file, x=wx, y=wy)
-    resume_path = ensure_local_tmp_root() / f"resume_{gcode_file.stem}_from_{start_line}.nc"
-    _write_resume_file(gcode_file, resume_path, start_line=start_line)
-    logger(f"Auto-resume: WPos=({wx:.3f},{wy:.3f}), start_line={start_line}, file={resume_path}")
-    # Second attempt: do not recurse forever.
-    resumed = send_to_grbl(
-        resume_path,
+    return grbl_sender_mod.send_to_grbl(
+        gcode_file,
         com,
         baud,
         logger,
         sleep_after=sleep_after,
-        auto_resume=False,
-        max_resume_attempts=0,
+        auto_resume=auto_resume,
+        max_resume_attempts=max_resume_attempts,
+        root_dir=ROOT_DIR,
+        ensure_local_tmp_root=ensure_local_tmp_root,
+        grbl_wait_for_idle=grbl_wait_for_idle,
+        grbl_get_wpos_xyz=grbl_get_wpos_xyz,
+        z_up=Z_UP,
+        safe_lift_feed=SAFE_LIFT_FEED,
+        z_delay_up=Z_DELAY_UP,
     )
-    return max(0.0, elapsed) + max(0.0, resumed)
 
 def run_pipeline(
     input_path: Path,
@@ -10307,7 +9005,7 @@ def run_pipeline(
                         return False, "Text conversion left unresolved text nodes."
                     log(f"Text nodes after conversion: {svg_text_node_count(svg_path)}")
             except Exception as exc:
-                return False, f"Text->path conversion failed: {exc}"
+                return False, f"Text->path conversion failed ({type(exc).__name__}): {exc}"
 
             log("Extracting paths from SVG ...")
             path_items = extract_polylines(svg_path)
@@ -10383,7 +9081,7 @@ def run_pipeline(
                             write_outer_trim_preview_svg(path_items, trimmed_candidates, trim_debug_target)
                             log(f"Trim preview: {trim_debug_target}")
                         except Exception as exc:
-                            log(f"Warning: failed to write trim preview: {exc}")
+                            log(_format_internal_exception("Warning: failed to write trim preview", exc))
                 elif AUTO_TRIM_OUTER_FRAME:
                     log("Auto trim: no outer border detected.")
 
@@ -10594,10 +9292,18 @@ def run_pipeline(
                     return_msg += f" (estimated pencil draw length {draw_length_mm / 1000.0:.2f} m)"
             return True, return_msg
     except Exception as exc:
-        err_name = type(exc).__name__
-        if isinstance(exc, BackendError):
-            return False, f"{err_name}: {exc}"
-        return False, f"Error[{err_name}]: {exc}"
+        return False, _format_backend_exception(exc)
+
+
+def _format_backend_exception(exc: Exception) -> str:
+    err_name = type(exc).__name__
+    if isinstance(exc, BackendError):
+        return f"{err_name}: {exc}"
+    return f"Error[{err_name}]: {exc}"
+
+
+def _format_internal_exception(prefix: str, exc: Exception) -> str:
+    return f"{prefix} ({type(exc).__name__}): {exc}"
 
 
 def _ask_confirmation_in_console(prompt: str = "Continue drawing?") -> bool:
@@ -10682,7 +9388,7 @@ def run_frame_pipeline(
                 return_msg = f"Done: work area frame saved to {target}"
         return True, return_msg
     except Exception as exc:
-        return False, f"Error: {exc}"
+        return False, _format_backend_exception(exc)
 
 
 def run_corner_calibration_pipeline(
@@ -10726,7 +9432,7 @@ def run_corner_calibration_pipeline(
                 return_msg = f"Done: calibration file saved to {target}"
         return True, return_msg
     except Exception as exc:
-        return False, f"Error: {exc}"
+        return False, _format_backend_exception(exc)
 
 
 def run_pencil_wear_test_pipeline(
@@ -10897,234 +9603,33 @@ def run_pencil_wear_test_pipeline(
             log(f"Saved: {target}")
             return True, f"Done: pencil wear-test saved to {target} (draw={draw_length_mm / 1000.0:.2f} m)."
     except Exception as exc:
-        return False, f"Error: {exc}"
+        return False, _format_backend_exception(exc)
 
 
 def summarize_gcode_file(gcode_path: Path) -> Tuple[int, int, int, Tuple[float, float, float, float]]:
-    total_lines = 0
-    draw_moves = 0
-    travel_moves = 0
-    min_x = math.inf
-    max_x = -math.inf
-    min_y = math.inf
-    max_y = -math.inf
-
-    x_re = re.compile(r"\bX(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)")
-    y_re = re.compile(r"\bY(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)")
-    i_re = re.compile(r"\bI(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)")
-    j_re = re.compile(r"\bJ(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)")
-    g_re = re.compile(r"\bG(\d+)")
-
-    cur_x = None
-    cur_y = None
-
-    with gcode_path.open("r", encoding="utf-8", errors="ignore") as fh:
-        for raw in fh:
-            line = raw.strip()
-            if not line or line.startswith(";") or line.startswith("("):
-                continue
-            total_lines += 1
-
-            g_match = g_re.search(line)
-            if g_match:
-                code = int(g_match.group(1))
-            else:
-                code = None
-
-            sx = x_re.search(line)
-            sy = y_re.search(line)
-            x = float(sx.group(1)) if sx else None
-            y = float(sy.group(1)) if sy else None
-            si = i_re.search(line)
-            sj = j_re.search(line)
-
-            # Update bounds. For G2/G3, include arc "bulge" (not just endpoints).
-            if code in {2, 3} and cur_x is not None and cur_y is not None and x is not None and y is not None and si and sj:
-                i = float(si.group(1))
-                j = float(sj.group(1))
-                start = (cur_x, cur_y)
-                end = (x, y)
-                center = (cur_x + i, cur_y + j)
-                if points_distance(start, end) <= 1e-6:
-                    r = math.hypot(start[0] - center[0], start[1] - center[1])
-                    ax0, ax1, ay0, ay1 = (center[0] - r, center[0] + r, center[1] - r, center[1] + r)
-                else:
-                    ax0, ax1, ay0, ay1 = arc_extents_xy(start, end, center, cw=(code == 2))
-                min_x = min(min_x, ax0)
-                max_x = max(max_x, ax1)
-                min_y = min(min_y, ay0)
-                max_y = max(max_y, ay1)
-                cur_x, cur_y = end
-            elif x is not None and y is not None:
-                min_x = min(min_x, x)
-                max_x = max(max_x, x)
-                min_y = min(min_y, y)
-                max_y = max(max_y, y)
-                cur_x, cur_y = x, y
-
-            if code in {1, 2, 3}:
-                draw_moves += 1
-            elif code == 0:
-                travel_moves += 1
-
-    if min_x == math.inf:
-        return total_lines, draw_moves, travel_moves, (0.0, 0.0, 0.0, 0.0)
-    return total_lines, draw_moves, travel_moves, (min_x, max_x, min_y, max_y)
+    return gcode_stats_mod.summarize_gcode_file(
+        gcode_path,
+        points_distance=points_distance,
+        arc_extents_xy=arc_extents_xy,
+    )
 
 
 def _strip_gcode_comments(line: str) -> str:
-    s = (line or "").strip()
-    if not s:
-        return ""
-    if ";" in s:
-        s = s.split(";", 1)[0].strip()
-    # Remove parenthesized comments conservatively.
-    while "(" in s and ")" in s:
-        a = s.find("(")
-        b = s.find(")", a + 1)
-        if b < 0:
-            break
-        s = (s[:a] + " " + s[b + 1 :]).strip()
-    return s
+    return gcode_bounds_mod.strip_gcode_comments(line)
 
 
 def _pen_down_from_z_level(cur_z: float, z_up: float, z_down: float) -> bool:
-    rng = abs(float(z_down) - float(z_up))
-    if rng <= 1e-9:
-        return True
-    tol = max(0.05, rng * 0.18)
-    if z_down >= z_up:
-        return cur_z >= (z_down - tol)
-    return cur_z <= (z_down + tol)
+    return gcode_bounds_mod.pen_down_from_z_level(cur_z, z_up, z_down)
 
 
 def _gcode_draw_bounds(gcode_path: Path, *, z_up: float, z_down: float) -> Optional[Tuple[float, float, float, float]]:
-    x_re = re.compile(r"\bX(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)")
-    y_re = re.compile(r"\bY(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)")
-    z_re = re.compile(r"\bZ(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)")
-    i_re = re.compile(r"\bI(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)")
-    j_re = re.compile(r"\bJ(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)")
-    g_re = re.compile(r"\bG(\d+(?:\.\d+)?)")
-    m_re = re.compile(r"\bM(\d+(?:\.\d+)?)")
-
-    cur_x = 0.0
-    cur_y = 0.0
-    cur_z = float(z_up)
-    abs_mode = True
-    ijk_abs = False
-    pen_down = _pen_down_from_z_level(cur_z, z_up, z_down)
-    last_motion: Optional[int] = None
-
-    min_x = math.inf
-    max_x = -math.inf
-    min_y = math.inf
-    max_y = -math.inf
-
-    def _expand(x0: float, x1: float, y0: float, y1: float) -> None:
-        nonlocal min_x, max_x, min_y, max_y
-        min_x = min(min_x, x0)
-        max_x = max(max_x, x1)
-        min_y = min(min_y, y0)
-        max_y = max(max_y, y1)
-
-    with gcode_path.open("r", encoding="utf-8", errors="ignore") as fh:
-        for raw in fh:
-            body = _strip_gcode_comments(raw)
-            if not body:
-                continue
-
-            motion: Optional[int] = None
-            for gm in g_re.findall(body):
-                try:
-                    gval = float(gm)
-                except Exception:
-                    continue
-                if abs(gval - 90.0) <= 1e-9:
-                    abs_mode = True
-                elif abs(gval - 91.0) <= 1e-9:
-                    abs_mode = False
-                elif abs(gval - 90.1) <= 1e-9:
-                    ijk_abs = True
-                elif abs(gval - 91.1) <= 1e-9:
-                    ijk_abs = False
-                elif abs(gval - 0.0) <= 1e-9:
-                    motion = 0
-                elif abs(gval - 1.0) <= 1e-9:
-                    motion = 1
-                elif abs(gval - 2.0) <= 1e-9:
-                    motion = 2
-                elif abs(gval - 3.0) <= 1e-9:
-                    motion = 3
-            if motion is None:
-                motion = last_motion
-            else:
-                last_motion = motion
-
-            for mm in m_re.findall(body):
-                try:
-                    mval = int(float(mm))
-                except Exception:
-                    continue
-                if mval == 3:
-                    pen_down = True
-                elif mval == 5:
-                    pen_down = False
-
-            mz = z_re.search(body)
-            if mz:
-                try:
-                    z_val = float(mz.group(1))
-                    cur_z = z_val if abs_mode else (cur_z + z_val)
-                    pen_down = _pen_down_from_z_level(cur_z, z_up, z_down)
-                except Exception:
-                    pass
-
-            sx = x_re.search(body)
-            sy = y_re.search(body)
-            has_xy = sx is not None or sy is not None
-            tx = cur_x
-            ty = cur_y
-            if sx:
-                try:
-                    xv = float(sx.group(1))
-                    tx = xv if abs_mode else (cur_x + xv)
-                except Exception:
-                    tx = cur_x
-            if sy:
-                try:
-                    yv = float(sy.group(1))
-                    ty = yv if abs_mode else (cur_y + yv)
-                except Exception:
-                    ty = cur_y
-
-            if pen_down and has_xy and motion in {1, 2, 3}:
-                if motion in {2, 3}:
-                    si = i_re.search(body)
-                    sj = j_re.search(body)
-                    if si and sj:
-                        try:
-                            i_val = float(si.group(1))
-                            j_val = float(sj.group(1))
-                            center = (i_val, j_val) if ijk_abs else (cur_x + i_val, cur_y + j_val)
-                            if points_distance((cur_x, cur_y), (tx, ty)) <= 1e-6:
-                                r = math.hypot(cur_x - center[0], cur_y - center[1])
-                                _expand(center[0] - r, center[0] + r, center[1] - r, center[1] + r)
-                            else:
-                                ax0, ax1, ay0, ay1 = arc_extents_xy((cur_x, cur_y), (tx, ty), center, cw=(motion == 2))
-                                _expand(ax0, ax1, ay0, ay1)
-                        except Exception:
-                            _expand(min(cur_x, tx), max(cur_x, tx), min(cur_y, ty), max(cur_y, ty))
-                    else:
-                        _expand(min(cur_x, tx), max(cur_x, tx), min(cur_y, ty), max(cur_y, ty))
-                else:
-                    _expand(min(cur_x, tx), max(cur_x, tx), min(cur_y, ty), max(cur_y, ty))
-
-            if has_xy:
-                cur_x, cur_y = tx, ty
-
-    if min_x == math.inf:
-        return None
-    return min_x, max_x, min_y, max_y
+    return gcode_bounds_mod.gcode_draw_bounds(
+        gcode_path,
+        z_up=float(z_up),
+        z_down=float(z_down),
+        points_distance=points_distance,
+        arc_extents_xy=arc_extents_xy,
+    )
 
 
 def preflight_check_gcode(
@@ -11133,55 +9638,23 @@ def preflight_check_gcode(
     *,
     bounds: Optional[Tuple[float, float, float, float]] = None,
 ) -> Tuple[bool, str]:
-    if not PREFLIGHT_ENABLED:
-        return True, "disabled"
-
-    lines, draw_moves, travel_moves, g_bounds = summarize_gcode_file(gcode_path)
-    if lines <= 0:
-        return False, "empty or invalid G-code."
-    if draw_moves <= 0:
-        return False, "no drawing moves (G1/G2/G3)."
-    if lines > int(PREFLIGHT_MAX_GCODE_LINES):
-        return False, f"too many G-code lines: {lines} > {int(PREFLIGHT_MAX_GCODE_LINES)}."
-
-    ratio = float(travel_moves) / max(1.0, float(draw_moves))
-    if ratio > float(PREFLIGHT_MAX_TRAVEL_TO_DRAW_RATIO):
-        logger(
-            "Preflight warning: high travel ratio "
-            f"{ratio:.2f} (travel={travel_moves}, draw={draw_moves}). "
-            "Trajectory may be inefficient."
-        )
-
-    min_x, max_x, min_y, max_y = bounds if bounds is not None else work_area_bounds()
-    margin = max(0.0, float(PREFLIGHT_BOUNDS_MARGIN_MM))
-    gx0, gx1, gy0, gy1 = g_bounds
-
-    # Bounds safety should validate drawing geometry (pen-down), not all travel/home moves.
-    # This avoids false-positive area errors when trailer parks at Y=0 outside active draw Y range.
-    draw_bounds = None
-    try:
-        draw_bounds = _gcode_draw_bounds(gcode_path, z_up=float(Z_UP), z_down=float(Z_DOWN))
-    except Exception:
-        draw_bounds = None
-    if draw_bounds is not None:
-        gx0, gx1, gy0, gy1 = draw_bounds
-
-    if (
-        gx0 < (min_x - margin)
-        or gx1 > (max_x + margin)
-        or gy0 < (min_y - margin)
-        or gy1 > (max_y + margin)
-    ):
-        return (
-            False,
-            "geometry exceeds active area: "
-            f"gcode x({gx0:.3f},{gx1:.3f}) y({gy0:.3f},{gy1:.3f}) vs "
-            f"area x({min_x:.3f},{max_x:.3f}) y({min_y:.3f},{max_y:.3f}) (margin {margin:.3f}).",
-        )
-
-    return (
-        True,
-        f"ok: lines={lines}, draw={draw_moves}, travel={travel_moves}, ratio={ratio:.2f}",
+    return gcode_preflight_mod.preflight_check_gcode(
+        gcode_path,
+        logger,
+        preflight_enabled=bool(PREFLIGHT_ENABLED),
+        preflight_max_gcode_lines=int(PREFLIGHT_MAX_GCODE_LINES),
+        preflight_max_travel_to_draw_ratio=float(PREFLIGHT_MAX_TRAVEL_TO_DRAW_RATIO),
+        preflight_bounds_margin_mm=float(PREFLIGHT_BOUNDS_MARGIN_MM),
+        z_up=float(Z_UP),
+        z_down=float(Z_DOWN),
+        bounds=bounds,
+        work_area_bounds=work_area_bounds,
+        summarize_gcode_file=summarize_gcode_file,
+        gcode_draw_bounds=lambda path, z_up_val, z_down_val: _gcode_draw_bounds(
+            path,
+            z_up=float(z_up_val),
+            z_down=float(z_down_val),
+        ),
     )
 
 
@@ -11196,7 +9669,7 @@ def open_with_default_viewer(path: Path, logger=print) -> None:
         os.startfile(str(path))
         logger(f"Opened preview: {path}")
     except Exception as exc:
-        logger(f"Cannot open preview automatically: {exc}")
+        logger(_format_internal_exception("Cannot open preview automatically", exc))
 
 
 def ensure_local_tmp_root() -> Path:
@@ -11220,75 +9693,21 @@ def grbl_send_manual_commands(
     wake_read_bytes: int = 4096,
     tail_read_bytes: int = 8192,
 ) -> Tuple[bool, str]:
-    try:
-        import serial  # type: ignore
-    except Exception as exc:
-        return False, f"pyserial not available: {exc}"
-
-    port = (com or "").strip()
-    if not port:
-        return False, "COM port is empty."
-    try:
-        baud_i = int(str(baud).strip() or DEFAULT_BAUD)
-    except Exception:
-        baud_i = int(DEFAULT_BAUD)
-
-    ser = None
-    timeout_s = max(0.05, float(serial_timeout_s))
-    wake_delay = max(0.0, float(wake_delay_s))
-    reset_delay = max(0.0, float(reset_delay_s))
-    command_delay = max(0.0, float(command_delay_s))
-    tail_delay = max(0.0, float(tail_delay_s))
-    wake_read = max(0, int(wake_read_bytes))
-    tail_read = max(0, int(tail_read_bytes))
-    try:
-        ser = serial.Serial()
-        ser.port = port
-        ser.baudrate = baud_i
-        ser.timeout = timeout_s
-        try:
-            ser.dtr = False
-            ser.rts = False
-        except Exception:
-            pass
-        ser.open()
-
-        # Wake channel.
-        ser.write(b"\r\n")
-        ser.flush()
-        time.sleep(wake_delay)
-        if wake_read > 0:
-            ser.read(wake_read)
-
-        if soft_reset_first:
-            ser.write(b"\x18")
-            ser.flush()
-            time.sleep(reset_delay)
-            if wake_read > 0:
-                ser.read(wake_read)
-
-        for cmd in commands:
-            line = (cmd or "").strip()
-            if not line:
-                continue
-            ser.write((line + "\n").encode("ascii", errors="replace"))
-            ser.flush()
-            time.sleep(command_delay)
-
-        if not read_tail:
-            return True, "ok"
-
-        time.sleep(tail_delay)
-        tail = ser.read(tail_read).decode("ascii", errors="replace").strip() if tail_read > 0 else ""
-        return True, tail or "ok"
-    except Exception as exc:
-        return False, str(exc)
-    finally:
-        try:
-            if ser is not None:
-                ser.close()
-        except Exception:
-            pass
+    return manual_commands_mod.grbl_send_manual_commands(
+        com,
+        baud,
+        commands,
+        default_baud=DEFAULT_BAUD,
+        soft_reset_first=soft_reset_first,
+        read_tail=read_tail,
+        serial_timeout_s=serial_timeout_s,
+        wake_delay_s=wake_delay_s,
+        reset_delay_s=reset_delay_s,
+        command_delay_s=command_delay_s,
+        tail_delay_s=tail_delay_s,
+        wake_read_bytes=wake_read_bytes,
+        tail_read_bytes=tail_read_bytes,
+    )
 
 
 class PlotterApp:
@@ -11927,7 +10346,7 @@ class PlotterApp:
                 fg="#ffffff",
                 bg="#374151",
             )
-            self._add_log(f"Pencil banner update failed: {exc}")
+            self._add_log(_format_internal_exception("Pencil banner update failed", exc))
 
     def _mark_sharpened(self):
         if self.busy:
@@ -11950,7 +10369,7 @@ class PlotterApp:
                 mark_size=2.0,
             )
         except Exception as exc:
-            ok, msg = False, f"Error: {exc}"
+            ok, msg = False, _format_backend_exception(exc)
         self.root.after(0, lambda: self._finish(ok, msg, popup=False))
 
     def _draw_area_frame(self):
@@ -11966,7 +10385,7 @@ class PlotterApp:
                 send_to_plotter=True,
             )
         except Exception as exc:
-            ok, msg = False, f"Error: {exc}"
+            ok, msg = False, _format_backend_exception(exc)
         self.root.after(0, lambda: self._finish(ok, msg, popup=False))
 
     def _draw_selected(self):
@@ -11997,7 +10416,7 @@ class PlotterApp:
                 auto_resume=True,
             )
         except Exception as exc:
-            ok, msg = False, f"Error: {exc}"
+            ok, msg = False, _format_backend_exception(exc)
         self.root.after(0, lambda: self._finish(ok, msg, popup=True))
 
     def _run_wear_test(self):
@@ -12025,7 +10444,7 @@ class PlotterApp:
                 gap_mm=6.0,
             )
         except Exception as exc:
-            ok, msg = False, f"Error: {exc}"
+            ok, msg = False, _format_backend_exception(exc)
         self.root.after(0, lambda: self._finish(ok, msg, popup=True))
 
     def _manual_pen_step(self, down: bool):
@@ -12416,7 +10835,7 @@ def main():
             logger=print,
         )
     except ValueError as exc:
-        print(f"Invalid sheet configuration: {exc}")
+        print(_format_internal_exception("Invalid sheet configuration", exc))
         return 1
 
     try:
@@ -12426,7 +10845,7 @@ def main():
             sheet_height_mm=args.sheet_height_mm,
         )
     except ValueError as exc:
-        print(f"Invalid sheet size: {exc}")
+        print(_format_internal_exception("Invalid sheet size", exc))
         return 1
 
     if args.auto_pass_grid:
@@ -12478,7 +10897,7 @@ def main():
             force_text_to_path=args.force_text_to_path,
         )
     except ValueError as exc:
-        print(f"Invalid quality configuration: {exc}")
+        print(_format_internal_exception("Invalid quality configuration", exc))
         return 1
     print(f"Drawing profile: {quality_state()}")
     if args.plan_sheet and not args.frame and not args.calibrate_corners and not args.pencil_wear_test and not args.input:

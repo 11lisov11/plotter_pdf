@@ -21,14 +21,31 @@ Generated artifacts:
 - `dist\PlotterStudio.exe`
 - `dist\PlotterStudio-portable.zip`
 
+## Portable package smoke validation
+
+Command:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\validate_portable.ps1
+```
+
+Result: `pass`
+
+Observed behavior:
+
+- archive extracted to temporary directory;
+- `PlotterStudio.exe` launched successfully;
+- smoke instance terminated after startup wait.
+
 ## Artifact checksums (SHA256)
 
 - `dist\PlotterStudio.exe`
-  - `676E0DFB05AF06EC96661C48227643052DE4D73E538EE9B03DEAA68F2DC7C3E7`
+  - `E4B04A6DD1CADA0406D3123083F794EF29F59D0E625D6EFCECCE67238E33953C`
 - `dist\PlotterStudio-portable.zip`
-  - `56892998AB4E12DE79D6F5EE553F13660CBF962597373B19382B642BD8A6A6C1`
+  - `88C545C142C7CDC0346AF89D4D56C7898017B0A2E3AAEED4460308E9B62C3EEB`
 
 ## Notes
 
 - This log confirms reproducible local build generation and artifact hashing.
+- Validation was re-run after backend extraction/error-model updates (`machine/grbl_sender.py`, `gcode/stats.py`, `gcode/finalize.py`, `gcode/penlift.py`, `gcode/bounds.py`, `gcode/preflight.py`, protocol/manual error mapping).
 - Clean-machine validation (fresh Windows VM/host install path) remains a separate release gate step.

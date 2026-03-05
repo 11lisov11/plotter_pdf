@@ -345,6 +345,30 @@ class PlotterControllerLifecycleTests(unittest.TestCase):
             self.controller.preview_file(bad)
         self.assertGreaterEqual(sum(1 for level, _text in toasts if level == "error"), 2)
 
+    def test_sheet_swap_confirmation_wait_returns_true_after_response(self) -> None:
+        calls: list[tuple[int, int, str]] = []
+
+        def _on_request(completed_page: int, total_pages: int, source_name: str) -> None:
+            calls.append((completed_page, total_pages, source_name))
+            self.controller.respond_sheet_swap_confirmation(True)
+
+        self.controller.sheet_swap_confirmation_requested.connect(_on_request)
+        result = self.controller._wait_for_sheet_swap_confirmation(1, 3, "article.pdf")
+        self.assertTrue(result)
+        self.assertEqual(calls, [(1, 3, "article.pdf")])
+
+    def test_sheet_swap_confirmation_wait_returns_false_after_response(self) -> None:
+        calls: list[tuple[int, int, str]] = []
+
+        def _on_request(completed_page: int, total_pages: int, source_name: str) -> None:
+            calls.append((completed_page, total_pages, source_name))
+            self.controller.respond_sheet_swap_confirmation(False)
+
+        self.controller.sheet_swap_confirmation_requested.connect(_on_request)
+        result = self.controller._wait_for_sheet_swap_confirmation(2, 5, "paper.pdf")
+        self.assertFalse(result)
+        self.assertEqual(calls, [(2, 5, "paper.pdf")])
+
 
 if __name__ == "__main__":
     unittest.main()

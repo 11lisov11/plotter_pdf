@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 
 from src.plotter_backend.converters import cad_converter
-from src.plotter_backend.errors import PipelineValidationError, ToolDependencyError
+from src.plotter_backend.errors import ConversionError, PipelineValidationError, ToolDependencyError
 
 
 class CadConverterModuleTests(unittest.TestCase):
@@ -57,6 +57,7 @@ class CadConverterModuleTests(unittest.TestCase):
             self.assertTrue(output.exists())
             self.assertEqual(output.read_bytes(), fallback_pdf.read_bytes())
             self.assertTrue(any("primary CAD conversion failed" in line for line in logs))
+            self.assertTrue(any("RuntimeError" in line for line in logs))
             self.assertTrue(any("Using fallback PDF next to source" in line for line in logs))
 
     def test_frw_to_pdf_requires_pywin32_for_real_conversion(self) -> None:
@@ -74,6 +75,31 @@ class CadConverterModuleTests(unittest.TestCase):
                     ensure_local_tmp_root=lambda: root,
                     find_spec=lambda _name: None,
                 )
+
+    def test_frw_to_pdf_reports_primary_error_class_when_no_fallback(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="plotter_cad_primary_class_") as td:
+            root = Path(td)
+            source = root / "source.frw"
+            output = root / "result.pdf"
+            source.write_text("cad-source", encoding="utf-8")
+            logs: list[str] = []
+
+            def _raise_dep(_src: Path, _dst: Path, _logger) -> None:
+                raise ToolDependencyError("kompas missing")
+
+            with self.assertRaises(ConversionError) as ctx:
+                cad_converter.frw_to_pdf(
+                    source,
+                    output,
+                    logs.append,
+                    ensure_local_tmp_root=lambda: root,
+                    find_spec=lambda _name: object(),
+                    kompas_print_to_pdf_fn=_raise_dep,
+                )
+
+            self.assertIn("ToolDependencyError", str(ctx.exception))
+            self.assertTrue(any("primary CAD conversion failed" in line for line in logs))
+            self.assertTrue(any("ToolDependencyError" in line for line in logs))
 
 
 if __name__ == "__main__":

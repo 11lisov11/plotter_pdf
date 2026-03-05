@@ -125,6 +125,9 @@ jobs:
           if (!(Test-Path "dist\PlotterStudio.exe")) { throw "dist\PlotterStudio.exe not found" }
           if (!(Test-Path "dist\PlotterStudio-portable.zip")) { throw "dist\PlotterStudio-portable.zip not found" }
 
+      - name: Portable smoke validation
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File .\validate_portable.ps1
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:

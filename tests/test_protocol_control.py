@@ -95,6 +95,24 @@ class ProtocolControlTests(unittest.TestCase):
         self.assertFalse(ok)
         self.assertIn("timed out", text.lower())
 
+    def test_probe_connection_includes_exception_class_on_backend_error(self) -> None:
+        class SerialFailure(Exception):
+            pass
+
+        class _FailingBackend:
+            def grbl_send_manual_commands(self, com: str, baud: str, commands: list[str], **kwargs):
+                raise SerialFailure("port unavailable")
+
+        bridge = protocol.BackendBridge(Path.cwd())
+        backend = _FailingBackend()
+
+        with mock.patch.object(bridge, "_backend", return_value=backend):
+            ok, text = bridge.probe_connection("COM7", "115200", lambda *_: None)
+
+        self.assertFalse(ok)
+        self.assertIn("SerialFailure", text)
+        self.assertIn("port unavailable", text)
+
     def test_manual_commands_forwards_flags(self) -> None:
         class _Backend:
             def __init__(self) -> None:
@@ -124,6 +142,32 @@ class ProtocolControlTests(unittest.TestCase):
         self.assertEqual(baud, "230400")
         self.assertEqual(commands, ["G21", "G90"])
         self.assertEqual(kwargs, {"soft_reset_first": True, "read_tail": False})
+
+    def test_manual_commands_returns_typed_error_on_backend_exception(self) -> None:
+        class _Backend:
+            def grbl_send_manual_commands(self, *_args, **_kwargs):
+                raise RuntimeError("manual channel unavailable")
+
+        bridge = protocol.BackendBridge(Path.cwd())
+        with mock.patch.object(bridge, "_backend", return_value=_Backend()):
+            ok, text = bridge.manual_commands("COM4", "115200", ["$I"])
+
+        self.assertFalse(ok)
+        self.assertIn("RuntimeError", text)
+        self.assertIn("manual channel unavailable", text)
+
+    def test_emergency_stop_returns_typed_error_on_backend_exception(self) -> None:
+        class _Backend:
+            def grbl_send_manual_commands(self, *_args, **_kwargs):
+                raise ValueError("estop transport failure")
+
+        bridge = protocol.BackendBridge(Path.cwd())
+        with mock.patch.object(bridge, "_backend", return_value=_Backend()):
+            ok, text = bridge.emergency_stop("COM8", "115200", lambda *_args: None)
+
+        self.assertFalse(ok)
+        self.assertIn("ValueError", text)
+        self.assertIn("estop transport failure", text)
 
 
 if __name__ == "__main__":

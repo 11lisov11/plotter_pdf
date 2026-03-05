@@ -18,6 +18,15 @@ from serial.tools import list_ports
 from .serial_worker import OperationContext
 
 try:
+    from src.plotter_backend.errors import ToolDependencyError
+except Exception:  # pragma: no cover - fallback for non-package layouts
+    try:
+        from plotter_backend.errors import ToolDependencyError  # type: ignore
+    except Exception:  # pragma: no cover - defensive fallback
+        class ToolDependencyError(RuntimeError):
+            pass
+
+try:
     import fitz  # type: ignore
 except Exception:
     fitz = None
@@ -38,6 +47,13 @@ class SheetConfig:
     pass_rows: int = 1
     pass_col: int = 1
     pass_row: int = 1
+
+
+def _format_user_exception(exc: Exception, *, prefix: str = "") -> str:
+    base = f"{type(exc).__name__}: {exc}"
+    if prefix:
+        return f"{prefix} ({base})"
+    return base
 
 
 def normalize_render_mode(mode: Optional[str]) -> str:
@@ -210,6 +226,34 @@ def _arc_points(
         t = a0 + sweep * (i / n)
         pts.append((cx + radius * math.cos(t), cy + radius * math.sin(t)))
     return pts
+
+
+def _prune_short_polyline_segments(
+    poly: list[tuple[float, float]],
+    *,
+    min_seg_mm: float,
+) -> list[tuple[float, float]]:
+    if len(poly) < 2:
+        return []
+    tol = max(1e-6, float(min_seg_mm))
+    out: list[tuple[float, float]] = [poly[0]]
+    for pt in poly[1:-1]:
+        if math.hypot(float(pt[0]) - float(out[-1][0]), float(pt[1]) - float(out[-1][1])) >= tol:
+            out.append((float(pt[0]), float(pt[1])))
+    end = (float(poly[-1][0]), float(poly[-1][1]))
+    if math.hypot(end[0] - float(out[-1][0]), end[1] - float(out[-1][1])) >= tol:
+        out.append(end)
+    elif len(out) >= 2:
+        # Keep original end-point for geometry fidelity when the tail segment is tiny.
+        out[-1] = end
+    else:
+        out.append(end)
+
+    deduped: list[tuple[float, float]] = [out[0]]
+    for pt in out[1:]:
+        if math.hypot(float(pt[0]) - float(deduped[-1][0]), float(pt[1]) - float(deduped[-1][1])) >= 1e-9:
+            deduped.append(pt)
+    return deduped if len(deduped) >= 2 else []
 
 
 def _pen_down_from_z(cur_z: float, z_up: float, z_down: float) -> bool:
@@ -418,10 +462,10 @@ class BackendBridge:
 
         # Fallback for environments where src is not importable as a package.
         if not self._backend_path.exists():
-            raise RuntimeError(f"Backend script not found: {self._backend_path}")
+            raise ToolDependencyError(f"Backend script not found: {self._backend_path}")
         spec = importlib.util.spec_from_file_location("plotter_pdf_drawer_backend", str(self._backend_path))
         if spec is None or spec.loader is None:
-            raise RuntimeError("Cannot load backend module.")
+            raise ToolDependencyError("Cannot load backend module.")
         module = importlib.util.module_from_spec(spec)
         sys.modules[spec.name] = module
         spec.loader.exec_module(module)
@@ -502,7 +546,7 @@ class BackendBridge:
                 log(f"Preview PDF: {pdf_path}")
             return True, ""
         except Exception as exc:
-            return False, f"Preview generation failed: {exc}"
+            return False, _format_user_exception(exc, prefix="Preview generation failed")
 
     @staticmethod
     def _method3_threshold_candidates(backend, gray) -> list[int]:
@@ -586,7 +630,7 @@ class BackendBridge:
     ) -> tuple[list[list[tuple[float, float]]], int]:
         autotrace_exe = backend._resolve_autotrace_executable()
         if autotrace_exe is None:
-            raise RuntimeError("autotrace.exe not found (tools/autotrace/autotrace.exe).")
+            raise ToolDependencyError("autotrace.exe not found (tools/autotrace/autotrace.exe).")
         if gray.ndim != 2:
             gray = backend.cv2.cvtColor(gray, backend.cv2.COLOR_BGR2GRAY)
 
@@ -892,6 +936,21 @@ class BackendBridge:
                 if len(p) >= 2 and backend.polyline_length(p) >= 0.25:
                     polys_mm.append(p)
 
+            pre_prune_segments = sum(max(0, len(poly) - 1) for poly in polys_mm)
+            min_seg_mm = 0.08
+            pruned_polys_mm: list[list[tuple[float, float]]] = []
+            for poly in polys_mm:
+                cleaned = _prune_short_polyline_segments(poly, min_seg_mm=min_seg_mm)
+                if len(cleaned) >= 2 and backend.polyline_length(cleaned) >= 0.25:
+                    pruned_polys_mm.append(cleaned)
+            polys_mm = pruned_polys_mm
+            post_prune_segments = sum(max(0, len(poly) - 1) for poly in polys_mm)
+            if post_prune_segments < pre_prune_segments:
+                log(
+                    "Method3 micro-segment prune: "
+                    f"segments={pre_prune_segments}->{post_prune_segments}, min={min_seg_mm:.2f} mm"
+                )
+
             polys_mm = backend.stitch_polylines(polys_mm, eps=0.08, logger=None, gap_eps=0.16, angle_tol_deg=35.0)
             polys_mm = self._order_polylines_line_lr(
                 polys_mm,
@@ -960,7 +1019,7 @@ class BackendBridge:
                 formula_font=(formula_font or None),
             )
         except Exception as exc:
-            return False, None, f"Word->PDF conversion failed ({type(exc).__name__}): {exc}"
+            return False, None, _format_user_exception(exc, prefix="Word->PDF conversion failed")
         if not pdf_src.exists() or pdf_src.stat().st_size <= 0:
             return False, None, "Word->PDF conversion produced no output."
         return True, pdf_src, ""
@@ -1025,7 +1084,8 @@ class BackendBridge:
         if not done.wait(wait_s):
             return False, f"Connection probe timed out after {wait_s:.1f}s."
         if "exc" in error:
-            return False, str(error["exc"])
+            exc = error["exc"]
+            return False, _format_user_exception(exc)
         return result.get("value", (False, "Connection probe failed."))
 
     def probe_connection(self, com_port: str, baud: str, log: LogFn) -> tuple[bool, str]:
@@ -1068,13 +1128,16 @@ class BackendBridge:
 
     def emergency_stop(self, com_port: str, baud: str, log: LogFn) -> tuple[bool, str]:
         backend = self._backend()
-        ok, text = backend.grbl_send_manual_commands(
-            com_port,
-            baud,
-            ["!", "M5", "$X", "$1=0", "?"],
-            soft_reset_first=True,
-            read_tail=True,
-        )
+        try:
+            ok, text = backend.grbl_send_manual_commands(
+                com_port,
+                baud,
+                ["!", "M5", "$X", "$1=0", "?"],
+                soft_reset_first=True,
+                read_tail=True,
+            )
+        except Exception as exc:
+            return False, _format_user_exception(exc, prefix="Emergency stop failed")
         if ok:
             log("Аварийная остановка отправлена.")
         return ok, text
@@ -1089,13 +1152,16 @@ class BackendBridge:
         read_tail: bool = True,
     ) -> tuple[bool, str]:
         backend = self._backend()
-        return backend.grbl_send_manual_commands(
-            com_port,
-            baud,
-            commands,
-            soft_reset_first=soft_reset_first,
-            read_tail=read_tail,
-        )
+        try:
+            return backend.grbl_send_manual_commands(
+                com_port,
+                baud,
+                commands,
+                soft_reset_first=soft_reset_first,
+                read_tail=read_tail,
+            )
+        except Exception as exc:
+            return False, _format_user_exception(exc, prefix="Manual command execution failed")
 
     @contextmanager
     def _track_backend_subprocess(self, ctx: OperationContext) -> Iterator[None]:
@@ -1161,6 +1227,7 @@ class BackendBridge:
         safe_travel_lift: bool,
         strict_one_to_one: bool,
         log: LogFn,
+        sheet_swap_confirm: Callable[[int, int], bool] | None = None,
     ) -> tuple[bool, str]:
         backend = self._backend()
         ctx.check_canceled()
@@ -1242,9 +1309,13 @@ class BackendBridge:
                 )
                 if len(pages) > 1:
                     log(
-                        "Method3 draw warning: multi-page batch draws pages sequentially in the same work area "
-                        "(no auto pause for sheet replacement)."
+                        "Method3 draw: multi-page batch with sheet swap pauses enabled."
                     )
+                    if sheet_swap_confirm is None:
+                        return (
+                            False,
+                            "Sheet swap confirmation callback is required for multi-page draw mode.",
+                        )
 
                 if calibrate_before_draw:
                     ctx.check_canceled()
@@ -1300,6 +1371,15 @@ class BackendBridge:
                         )
                     total_plot_time += float(plot_time_s)
                     log(f"Method3 draw: sent page {page_no} ({idx}/{len(pages)}).")
+                    if idx < len(pages):
+                        ctx.check_canceled()
+                        if sheet_swap_confirm is not None:
+                            log(
+                                f"Sheet swap pause: page {page_no}/{len(pages)} completed. "
+                                "Replace paper sheet and confirm to continue."
+                            )
+                            if not bool(sheet_swap_confirm(page_no, len(pages))):
+                                return False, f"Canceled during sheet replacement after page {page_no}."
 
                 if len(pages) > 1 and first_svg is not None and first_pdf is not None and first_nc is not None:
                     self._copy_latest_artifacts(
@@ -1555,7 +1635,7 @@ class BackendBridge:
             backend.reset_pencil_state_after_sharpen(log, reason="gui")
             return True, "Состояние карандаша сброшено."
         except Exception as exc:
-            return False, f"Ошибка сброса состояния карандаша: {exc}"
+            return False, _format_user_exception(exc)
 
     def pencil_banner_text(self) -> tuple[str, bool]:
         backend = self._backend()

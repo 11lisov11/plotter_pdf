@@ -76,7 +76,10 @@ def apply_word_handwriting_font(
         except Exception:
             pass
     except Exception as exc:
-        logger(f"Word handwriting mode warning: cannot force font '{target}': {exc}")
+        logger(
+            f"Word handwriting mode warning: cannot force font '{target}' "
+            f"({type(exc).__name__}: {exc})"
+        )
         return False, 0
 
     restored_math = apply_word_formula_font(
@@ -252,7 +255,7 @@ def word_to_pdf(
                     )
                     _export_once(None)
     except Exception as exc:
-        raise ConversionError(f"Word conversion failed: {exc}") from exc
+        raise ConversionError(f"Word conversion failed ({type(exc).__name__}): {exc}") from exc
     finally:
         if app is not None:
             try:
@@ -269,4 +272,3 @@ def word_to_pdf(
                 "Warning: Word->PDF output file is still locked after export. "
                 "Continuing with best effort."
             )
-

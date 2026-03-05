@@ -715,6 +715,36 @@ class BackendGeometryTests(unittest.TestCase):
         self.assertGreater(len(polylines), 0)
         self.assertTrue(all(len(poly) >= 2 for poly in polylines))
 
+    def test_run_autotrace_centerline_on_binary_works_without_pillow(self) -> None:
+        if backend.np is None:
+            self.skipTest("numpy unavailable")
+
+        binary = backend.np.full((8, 16), 255, dtype=backend.np.uint8)
+        binary[3:5, 2:14] = 0
+        captured: dict[str, object] = {}
+
+        def _fake_run_cmd(cmd, timeout_s=0.0):
+            pbm_path = Path(cmd[-1])
+            captured["pbm_exists"] = pbm_path.exists()
+            captured["pbm_head"] = pbm_path.read_bytes()[:2]
+            captured["timeout_s"] = float(timeout_s)
+            return 0, '<svg xmlns="http://www.w3.org/2000/svg"><path d="M 0 0 L 5 0"/></svg>', ""
+
+        with mock.patch.object(backend, "Image", None):
+            with mock.patch.object(backend, "run_cmd", side_effect=_fake_run_cmd):
+                polylines = backend._run_autotrace_centerline_on_binary(
+                    binary,
+                    autotrace_exe=Path("autotrace.exe"),
+                    error_threshold=2.0,
+                    filter_iterations=2,
+                    curve_step_px=0.85,
+                )
+
+        self.assertTrue(bool(captured.get("pbm_exists")))
+        self.assertEqual(captured.get("pbm_head"), b"P4")
+        self.assertGreater(len(polylines), 0)
+        self.assertGreaterEqual(len(polylines[0]), 2)
+
     def test_replace_svg_text_with_singleline_ttf_respects_inherited_font_size(self) -> None:
         font_path = backend._resolve_handwriting_ttf_path("Segoe Script")
         if font_path is None:

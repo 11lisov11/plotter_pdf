@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 from __future__ import annotations
+# ruff: noqa: E402
 
 import argparse
-import math
 import sys
 import tempfile
 import xml.etree.ElementTree as ET

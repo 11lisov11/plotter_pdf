@@ -33,6 +33,7 @@ class PlotterController(QObject):
     operation_started = Signal(str, str)  # op_type, title
     pencil_banner_changed = Signal(str, bool)  # text, alert
     preview_ready = Signal(str)  # path to preview artifact (pdf/svg)
+    sheet_swap_confirmation_requested = Signal(int, int, str)  # completed_page, total_pages, source_name
 
     def __init__(self, project_root: Path) -> None:
         super().__init__()
@@ -47,6 +48,9 @@ class PlotterController(QObject):
         self._operations: dict[str, OperationMeta] = {}
         self._settings_dirty = False
         self._log_buffer: list[str] = []
+        self._sheet_swap_lock = threading.Lock()
+        self._sheet_swap_event: threading.Event | None = None
+        self._sheet_swap_result: bool | None = None
 
         self._settings_save_timer = QTimer(self)
         self._settings_save_timer.setSingleShot(True)
@@ -183,6 +187,31 @@ class PlotterController(QObject):
         op_id = uuid.uuid4().hex
         self._operations[op_id] = OperationMeta(op_type=op_type, com_port=com_port, payload=payload)
         self.worker.enqueue(WorkerOperation(op_id=op_id, title=title, handler=handler))
+
+    def _wait_for_sheet_swap_confirmation(self, completed_page: int, total_pages: int, source_name: str) -> bool:
+        event = threading.Event()
+        with self._sheet_swap_lock:
+            self._sheet_swap_event = event
+            self._sheet_swap_result = None
+        self.sheet_swap_confirmation_requested.emit(
+            int(completed_page),
+            int(total_pages),
+            str(source_name or "").strip() or "input.pdf",
+        )
+        event.wait()
+        with self._sheet_swap_lock:
+            result = bool(self._sheet_swap_result)
+            self._sheet_swap_event = None
+            self._sheet_swap_result = None
+        return result
+
+    def respond_sheet_swap_confirmation(self, proceed: bool) -> None:
+        with self._sheet_swap_lock:
+            event = self._sheet_swap_event
+            if event is None:
+                return
+            self._sheet_swap_result = bool(proceed)
+            event.set()
 
     def _resolve_target_port(self) -> str:
         return (self.connected_port or self.settings.com_port or "").strip()
@@ -577,6 +606,11 @@ class PlotterController(QObject):
                 safe_travel_lift=safe_travel_lift,
                 strict_one_to_one=strict_one_to_one,
                 log=ctx.emit_log,
+                sheet_swap_confirm=lambda completed_page, total_pages: self._wait_for_sheet_swap_confirmation(
+                    completed_page,
+                    total_pages,
+                    file_path.name,
+                ),
             )
             rel_ok, rel_msg = self._release_idle_motors_in_operation(ctx, port)
             if ok and rel_ok:

@@ -259,6 +259,176 @@ class ProtocolRunPathTests(unittest.TestCase):
             self.assertTrue(backend.IMAGE_CONTOUR_WORD_ONLY)
             self.assertFalse(backend.USE_INKSCAPE_PDF_IMPORT)
 
+    def test_run_draw_method3_all_pages_calls_sheet_swap_confirmation(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="plotter_proto_method3_pages_") as td:
+            root = Path(td)
+            input_pdf = root / "input.pdf"
+            input_pdf.write_bytes(b"%PDF-1.4\n")
+            backend = _FakeBackend(root)
+            bridge = BackendBridge(root)
+            ctx = _FakeCtx()
+
+            sent_pages: list[Path] = []
+
+            def _send_to_grbl(path, _com, _baud, _log, *, sleep_after, auto_resume):
+                sent_pages.append(Path(path))
+                self.assertTrue(sleep_after)
+                self.assertFalse(auto_resume)
+                return 1.0
+
+            backend.send_to_grbl = _send_to_grbl  # type: ignore[attr-defined]
+
+            def _prepare_method3_page(*_args, **kwargs):
+                out_svg = Path(kwargs["output_svg"])
+                out_pdf = Path(kwargs["output_pdf"])
+                out_nc = Path(kwargs["output_nc"])
+                out_svg.write_text("<svg/>", encoding="utf-8")
+                out_pdf.write_bytes(b"%PDF-1.4\n")
+                out_nc.write_text("G21\nG90\nG1 X1 Y1\n", encoding="utf-8")
+                return True, "ok"
+
+            pauses: list[tuple[int, int]] = []
+
+            with (
+                mock.patch.object(bridge, "_backend", return_value=backend),
+                mock.patch.object(bridge, "_resolve_method3_source_pdf", return_value=(True, input_pdf, "")),
+                mock.patch.object(bridge, "_probe_pdf_page_count", return_value=3),
+                mock.patch.object(bridge, "_prepare_method3_page", side_effect=_prepare_method3_page),
+            ):
+                ok, msg = bridge.run_draw(
+                    ctx=ctx,
+                    input_path=input_pdf,
+                    com_port="COM6",
+                    baud="115200",
+                    sheet=SheetConfig(sheet_format="a4"),
+                    tool_mode="pen",
+                    calibrate_before_draw=False,
+                    render_mode="handwriting",
+                    quality_profile="normal",
+                    force_text_to_path=False,
+                    handwriting_enabled=True,
+                    handwriting_font="Marck Script",
+                    handwriting_formula_font="Times New Roman",
+                    image_contours_mode="always",
+                    source_page_index=1,
+                    source_all_pages=True,
+                    exact_geometry_mode=False,
+                    safe_travel_lift=True,
+                    strict_one_to_one=False,
+                    log=ctx.emit_log,
+                    sheet_swap_confirm=lambda completed, total: pauses.append((completed, total)) or True,
+                )
+
+            self.assertTrue(ok, msg)
+            self.assertEqual(len(sent_pages), 3)
+            self.assertEqual(pauses, [(1, 3), (2, 3)])
+
+    def test_run_draw_method3_all_pages_cancels_on_sheet_swap_decline(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="plotter_proto_method3_cancel_") as td:
+            root = Path(td)
+            input_pdf = root / "input.pdf"
+            input_pdf.write_bytes(b"%PDF-1.4\n")
+            backend = _FakeBackend(root)
+            bridge = BackendBridge(root)
+            ctx = _FakeCtx()
+
+            sent_pages: list[Path] = []
+
+            def _send_to_grbl(path, _com, _baud, _log, *, sleep_after, auto_resume):
+                sent_pages.append(Path(path))
+                self.assertTrue(sleep_after)
+                self.assertFalse(auto_resume)
+                return 1.0
+
+            backend.send_to_grbl = _send_to_grbl  # type: ignore[attr-defined]
+
+            def _prepare_method3_page(*_args, **kwargs):
+                out_svg = Path(kwargs["output_svg"])
+                out_pdf = Path(kwargs["output_pdf"])
+                out_nc = Path(kwargs["output_nc"])
+                out_svg.write_text("<svg/>", encoding="utf-8")
+                out_pdf.write_bytes(b"%PDF-1.4\n")
+                out_nc.write_text("G21\nG90\nG1 X1 Y1\n", encoding="utf-8")
+                return True, "ok"
+
+            pauses: list[tuple[int, int]] = []
+
+            with (
+                mock.patch.object(bridge, "_backend", return_value=backend),
+                mock.patch.object(bridge, "_resolve_method3_source_pdf", return_value=(True, input_pdf, "")),
+                mock.patch.object(bridge, "_probe_pdf_page_count", return_value=4),
+                mock.patch.object(bridge, "_prepare_method3_page", side_effect=_prepare_method3_page),
+            ):
+                ok, msg = bridge.run_draw(
+                    ctx=ctx,
+                    input_path=input_pdf,
+                    com_port="COM6",
+                    baud="115200",
+                    sheet=SheetConfig(sheet_format="a4"),
+                    tool_mode="pen",
+                    calibrate_before_draw=False,
+                    render_mode="handwriting",
+                    quality_profile="normal",
+                    force_text_to_path=False,
+                    handwriting_enabled=True,
+                    handwriting_font="Marck Script",
+                    handwriting_formula_font="Times New Roman",
+                    image_contours_mode="always",
+                    source_page_index=1,
+                    source_all_pages=True,
+                    exact_geometry_mode=False,
+                    safe_travel_lift=True,
+                    strict_one_to_one=False,
+                    log=ctx.emit_log,
+                    sheet_swap_confirm=lambda completed, total: pauses.append((completed, total)) and False,
+                )
+
+            self.assertFalse(ok)
+            self.assertIn("Canceled during sheet replacement", msg)
+            self.assertEqual(pauses, [(1, 4)])
+            self.assertEqual(len(sent_pages), 1)
+
+    def test_run_draw_method3_all_pages_requires_sheet_swap_callback(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="plotter_proto_method3_need_pause_cb_") as td:
+            root = Path(td)
+            input_pdf = root / "input.pdf"
+            input_pdf.write_bytes(b"%PDF-1.4\n")
+            backend = _FakeBackend(root)
+            bridge = BackendBridge(root)
+            ctx = _FakeCtx()
+
+            with (
+                mock.patch.object(bridge, "_backend", return_value=backend),
+                mock.patch.object(bridge, "_resolve_method3_source_pdf", return_value=(True, input_pdf, "")),
+                mock.patch.object(bridge, "_probe_pdf_page_count", return_value=3),
+            ):
+                ok, msg = bridge.run_draw(
+                    ctx=ctx,
+                    input_path=input_pdf,
+                    com_port="COM6",
+                    baud="115200",
+                    sheet=SheetConfig(sheet_format="a4"),
+                    tool_mode="pen",
+                    calibrate_before_draw=False,
+                    render_mode="handwriting",
+                    quality_profile="normal",
+                    force_text_to_path=False,
+                    handwriting_enabled=True,
+                    handwriting_font="Marck Script",
+                    handwriting_formula_font="Times New Roman",
+                    image_contours_mode="always",
+                    source_page_index=1,
+                    source_all_pages=True,
+                    exact_geometry_mode=False,
+                    safe_travel_lift=True,
+                    strict_one_to_one=False,
+                    log=ctx.emit_log,
+                    sheet_swap_confirm=None,
+                )
+
+            self.assertFalse(ok)
+            self.assertIn("Sheet swap confirmation callback is required", msg)
+
 
 if __name__ == "__main__":
     unittest.main()
