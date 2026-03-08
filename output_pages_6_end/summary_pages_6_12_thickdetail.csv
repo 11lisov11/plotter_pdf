@@ -1,0 +1,9 @@
+﻿page,status,multipass_candidates,multipass_extra,scale,draw_m,lines,draw_moves,travel_moves,bounds,mode
+6,ok,40,68,0.9702,5.89,5072,4581,163,"0.000..180.000 x, -292.104..0.000 y",left_crop_20.0mm + thick_detail_multipass_only
+7,ok,85,143,0.9702,8.82,7422,6781,213,"0.000..180.000 x, -292.104..0.000 y",left_crop_20.0mm + thick_detail_multipass_only
+8,ok,82,136,0.9702,9.01,7505,6849,218,"0.000..180.000 x, -292.104..0.000 y",left_crop_20.0mm + thick_detail_multipass_only
+9,ok,106,166,0.9702,10.18,9229,8459,256,"0.000..180.000 x, -292.104..0.000 y",left_crop_20.0mm + thick_detail_multipass_only
+10,ok,129,200,0.9702,10.81,9057,8368,229,"0.000..180.000 x, -292.104..0.000 y",left_crop_20.0mm + thick_detail_multipass_only
+11,ok,48,83,0.9702,6.87,5840,5310,176,"0.000..180.000 x, -292.104..0.000 y",left_crop_20.0mm + thick_detail_multipass_only
+12,ok,54,89,0.9702,7.95,6133,5603,176,"0.000..180.000 x, -292.104..0.000 y",left_crop_20.0mm + thick_detail_multipass_only
+

@@ -45,7 +45,12 @@ def fit_polylines_to_area(
 
     if use_dimensional_guard:
         scale = 1.0
-        tx = area_min_x + work_area_margin + (usable_w - w) / 2.0 - min_x
+        # In strict 1:1 mode, do not center overflowing width.
+        # Keep the left edge anchored and clip only on the right side.
+        if w > usable_w:
+            tx = area_min_x + work_area_margin - min_x
+        else:
+            tx = area_min_x + work_area_margin + (usable_w - w) / 2.0 - min_x
         ty = area_min_y + work_area_margin + (usable_h - h) / 2.0 - min_y
         if logger:
             logger(

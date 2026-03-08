@@ -150,10 +150,28 @@ def _safe_logger(logger):
     return _emit
 
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
-CONFIG_DIR = ROOT_DIR / "config"
+def _resolve_bundle_root() -> Path:
+    meipass = getattr(sys, "_MEIPASS", "")
+    if meipass:
+        return Path(str(meipass)).resolve()
+    return Path(__file__).resolve().parent.parent
+
+
+def _resolve_work_root(bundle_root: Path) -> Path:
+    # In PyInstaller --onefile mode, keep runtime artifacts near the executable
+    # instead of transient extraction directory (%TEMP%\\_MEI...).
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent
+    return bundle_root
+
+
+ROOT_DIR = _resolve_bundle_root()
+WORK_ROOT = _resolve_work_root(ROOT_DIR)
+CONFIG_DIR = WORK_ROOT / "config"
+BUNDLE_CONFIG_DIR = ROOT_DIR / "config"
 AXIS_PROFILE_PATH = CONFIG_DIR / "axis_profile.json"
-LOCAL_TMP_ROOT = ROOT_DIR / "_tmp"
+AXIS_PROFILE_FALLBACK_PATH = BUNDLE_CONFIG_DIR / "axis_profile.json"
+LOCAL_TMP_ROOT = WORK_ROOT / "_tmp"
 
 DEFAULT_COM_PORT = "COM6"
 DEFAULT_BAUD = "115200"
@@ -572,9 +590,11 @@ def load_axis_profile() -> None:
 
     global AXIS_INVERT_X, AXIS_INVERT_Y
     data = defaults
-    if AXIS_PROFILE_PATH.exists():
+    for profile_path in [AXIS_PROFILE_PATH, AXIS_PROFILE_FALLBACK_PATH]:
+        if not profile_path.exists():
+            continue
         try:
-            loaded = json.loads(AXIS_PROFILE_PATH.read_text(encoding="utf-8"))
+            loaded = json.loads(profile_path.read_text(encoding="utf-8"))
             if isinstance(loaded, dict):
                 data = {**defaults, **loaded}
                 # merge nested maps explicitly
@@ -582,6 +602,7 @@ def load_axis_profile() -> None:
                     axis = data["axis"]
                     axis.update(loaded["axis"])
                     data["axis"] = axis
+                break
         except Exception:
             # Keep defaults for safety; no throw.
             data = defaults
@@ -2094,7 +2115,7 @@ def _svg_stroke_font_dirs() -> List[Path]:
     # Project-local bundle (preferred for reproducibility).
     dirs.append(ROOT_DIR / "data" / "stroke_fonts")
     # Dev/test clone used during tuning.
-    dirs.append(ROOT_DIR / "_tmp" / "inkscapestrokefont" / "strokefontdata")
+    dirs.append(LOCAL_TMP_ROOT / "inkscapestrokefont" / "strokefontdata")
     out: List[Path] = []
     seen: set[str] = set()
     for d in dirs:
@@ -5573,6 +5594,47 @@ def centerline_is_usable(
     return min_ratio <= ratio <= max_ratio
 
 
+def centerline_is_usable_relaxed_small_cluster(
+    group: List["PathItem"],
+    centerlines: List[List[Tuple[float, float]]],
+) -> bool:
+    # Tolerant centerline gate for tiny fill clusters (mostly glyph fragments).
+    if not group or not centerlines:
+        return False
+
+    pts = [p for it in group for p in it.points]
+    if not pts:
+        return False
+    x0 = min(p[0] for p in pts)
+    x1 = max(p[0] for p in pts)
+    y0 = min(p[1] for p in pts)
+    y1 = max(p[1] for p in pts)
+    w = max(0.0, x1 - x0)
+    h = max(0.0, y1 - y0)
+    if w <= 0.0 or h <= 0.0:
+        return False
+
+    # Keep strictly scoped to small clusters to avoid affecting real geometry.
+    if w > 14.0 or h > 14.0 or (w * h) > 160.0:
+        return False
+    if len(centerlines) > 20:
+        return False
+
+    source_len = 0.0
+    for item in group:
+        if len(item.points) >= 2:
+            source_len += polyline_length(item.points)
+    if source_len <= 1e-9:
+        return False
+
+    center_len = sum(polyline_length(poly) for poly in centerlines if len(poly) >= 2)
+    if center_len <= 1e-9:
+        return False
+
+    ratio = center_len / source_len
+    return 0.10 <= ratio <= 1.35
+
+
 def refine_centerline_paths(
     centerlines: List[List[Tuple[float, float]]],
     *,
@@ -5831,6 +5893,36 @@ def _split_handwriting_fill_group_components(
     return out
 
 
+def _centerline_fill_components_with_fallback(
+    group: List["PathItem"],
+    *,
+    handwriting: bool,
+) -> Tuple[List[List[Tuple[float, float]]], List["PathItem"]]:
+    if not group:
+        return [], []
+    components = _split_handwriting_fill_group_components(group, gap_mm=0.06) if len(group) > 1 else [group]
+    converted: List[List[Tuple[float, float]]] = []
+    remaining: List["PathItem"] = []
+    for comp in components:
+        centerlines = centerline_fill_group(comp)
+        centerlines = refine_centerline_paths(centerlines, handwriting=handwriting)
+        if centerline_is_usable(comp, centerlines) or centerline_is_usable_relaxed_small_cluster(comp, centerlines) or (
+            _likely_handwriting_text_group(comp) and _centerline_quality_ok_for_handwriting(centerlines)
+        ):
+            converted.extend(centerlines)
+            continue
+        forced_single = force_single_stroke_handwriting_group(comp, centerlines)
+        if forced_single:
+            converted.extend(forced_single)
+            continue
+        tiny_fallback = tiny_handwriting_text_fallback(comp, centerlines)
+        if tiny_fallback:
+            converted.extend(tiny_fallback)
+            continue
+        remaining.extend(comp)
+    return converted, remaining
+
+
 def tiny_handwriting_text_fallback(
     group: List["PathItem"],
     centerlines: List[List[Tuple[float, float]]],
@@ -6056,7 +6148,7 @@ def cluster_small_fill_items_for_single_stroke(items: List["PathItem"]) -> List[
 
 
 def cluster_small_outline_items_for_single_stroke(items: List["PathItem"]) -> List[List[int]]:
-    if not SINGLE_STROKE_OUTLINE_TEXT_ENABLED or not HANDWRITING_TEXT_ENABLED:
+    if not SINGLE_STROKE_OUTLINE_TEXT_ENABLED:
         return []
 
     candidates: List[Tuple[int, Tuple[float, float, float, float]]] = []
@@ -7102,13 +7194,13 @@ def to_drawing_polylines(items: List[PathItem]) -> List[List[Tuple[float, float]
             group = [items[i] for i in comp]
             centerlines = centerline_fill_group(group)
             centerlines = refine_centerline_paths(centerlines, handwriting=handwriting)
-            if centerline_is_usable(group, centerlines) or (
+            if centerline_is_usable(group, centerlines) or centerline_is_usable_relaxed_small_cluster(group, centerlines) or (
                 _likely_handwriting_text_group(group) and _centerline_quality_ok_for_handwriting(centerlines)
             ):
                 out.extend(centerlines)
                 consumed_idx.update(comp)
 
-    if SINGLE_STROKE_OUTLINE_TEXT_ENABLED and handwriting and not preserve_fill_outlines:
+    if SINGLE_STROKE_OUTLINE_TEXT_ENABLED and not preserve_fill_outlines:
         outline_clusters = cluster_small_outline_items_for_single_stroke(items)
         for comp in outline_clusters:
             if any(i in consumed_idx for i in comp):
@@ -7116,7 +7208,7 @@ def to_drawing_polylines(items: List[PathItem]) -> List[List[Tuple[float, float]
             group = [items[i] for i in comp]
             centerlines = centerline_fill_group(group)
             centerlines = refine_centerline_paths(centerlines, handwriting=handwriting)
-            if centerline_is_usable(group, centerlines) or _centerline_quality_ok_for_handwriting(centerlines):
+            if centerline_is_usable(group, centerlines) or centerline_is_usable_relaxed_small_cluster(group, centerlines) or _centerline_quality_ok_for_handwriting(centerlines):
                 out.extend(centerlines)
                 consumed_idx.update(comp)
 
@@ -7136,28 +7228,19 @@ def to_drawing_polylines(items: List[PathItem]) -> List[List[Tuple[float, float]
         if (not preserve_fill_outlines) and HANDWRITING_OUTLINE_CENTERLINE_ENABLED and _likely_handwriting_outline_group(group):
             centerlines = centerline_fill_group(group)
             centerlines = refine_centerline_paths(centerlines, handwriting=handwriting)
-            if centerline_is_usable(group, centerlines):
+            if centerline_is_usable(group, centerlines) or centerline_is_usable_relaxed_small_cluster(group, centerlines):
                 out.extend(centerlines)
                 continue
 
         # Some PDF text glyphs come as fill+stroke simultaneously.
         # Prefer a single centerline stroke when stable, otherwise keep original geometry.
         if is_fill and (not preserve_fill_outlines):
-            centerlines = centerline_fill_group(group)
-            centerlines = refine_centerline_paths(centerlines, handwriting=handwriting)
-            if centerline_is_usable(group, centerlines) or (
-                _likely_handwriting_text_group(group) and _centerline_quality_ok_for_handwriting(centerlines)
-            ):
-                out.extend(centerlines)
+            converted, rem = _centerline_fill_components_with_fallback(group, handwriting=handwriting)
+            if converted:
+                out.extend(converted)
+            if not rem:
                 continue
-            forced_single = force_single_stroke_handwriting_group(group, centerlines)
-            if forced_single:
-                out.extend(forced_single)
-                continue
-            tiny_fallback = tiny_handwriting_text_fallback(group, centerlines)
-            if tiny_fallback:
-                out.extend(tiny_fallback)
-                continue
+            group = rem
 
         # Fill-only regions are converted to hatch fill when possible.
         if is_fill and not is_stroke:
@@ -7184,21 +7267,12 @@ def to_drawing_polylines(items: List[PathItem]) -> List[List[Tuple[float, float]
             # Most PDF text glyphs are exported as tiny fill-only outlines.
             # Convert them to centerlines to avoid "double contour" letters.
             if not preserve_fill_outlines:
-                centerlines = centerline_fill_group(fill_rest)
-                centerlines = refine_centerline_paths(centerlines, handwriting=handwriting)
-                if centerline_is_usable(fill_rest, centerlines) or (
-                    _likely_handwriting_text_group(fill_rest) and _centerline_quality_ok_for_handwriting(centerlines)
-                ):
-                    out.extend(centerlines)
+                converted, rem = _centerline_fill_components_with_fallback(fill_rest, handwriting=handwriting)
+                if converted:
+                    out.extend(converted)
+                if not rem:
                     continue
-                forced_single = force_single_stroke_handwriting_group(fill_rest, centerlines)
-                if forced_single:
-                    out.extend(forced_single)
-                    continue
-                tiny_fallback = tiny_handwriting_text_fallback(fill_rest, centerlines)
-                if tiny_fallback:
-                    out.extend(tiny_fallback)
-                    continue
+                fill_rest = rem
 
         for item in (fill_rest if (is_fill and not is_stroke) else group):
             if len(item.points) >= 2:
@@ -10992,5 +11066,6 @@ def main():
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
 
 

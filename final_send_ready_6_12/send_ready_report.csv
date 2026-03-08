@@ -1,0 +1,9 @@
+﻿page,pdf,nc,gcode,multipass_candidates,multipass_extra,draw_m,lines,draw_moves,travel_moves,bounds
+06,page_06.pdf,page_06.nc,page_06.gcode,40,68,5.89,5072,4581,163,"0.000..180.000 x, -292.104..0.000 y"
+07,page_07.pdf,page_07.nc,page_07.gcode,85,143,8.82,7422,6781,213,"0.000..180.000 x, -292.104..0.000 y"
+08,page_08.pdf,page_08.nc,page_08.gcode,82,136,9.01,7505,6849,218,"0.000..180.000 x, -292.104..0.000 y"
+09,page_09.pdf,page_09.nc,page_09.gcode,106,166,10.18,9229,8459,256,"0.000..180.000 x, -292.104..0.000 y"
+10,page_10.pdf,page_10.nc,page_10.gcode,129,200,10.81,9057,8368,229,"0.000..180.000 x, -292.104..0.000 y"
+11,page_11.pdf,page_11.nc,page_11.gcode,48,83,6.87,5840,5310,176,"0.000..180.000 x, -292.104..0.000 y"
+12,page_12.pdf,page_12.nc,page_12.gcode,54,89,7.95,6133,5603,176,"0.000..180.000 x, -292.104..0.000 y"
+

@@ -165,7 +165,7 @@ class ProtocolRunPathTests(unittest.TestCase):
             self.assertEqual(backend.quality_calls[-1], ("high", True))
             self.assertTrue(backend.EXACT_GEOMETRY_MODE)
             self.assertFalse(backend.SAFE_PEN_TRAVEL_UP)
-            self.assertAlmostEqual(float(backend.MIN_FIT_SCALE_FOR_DIMENSIONAL_DRAW), 0.98, places=6)
+            self.assertAlmostEqual(float(backend.MIN_FIT_SCALE_FOR_DIMENSIONAL_DRAW), 1.0, places=6)
             self.assertEqual(backend.IMAGE_CONTOUR_MODE, "always")
             self.assertTrue(backend.IMAGE_CONTOUR_ENABLED)
             self.assertFalse(backend.IMAGE_CONTOUR_WORD_ONLY)

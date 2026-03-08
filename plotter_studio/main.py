@@ -11,20 +11,35 @@ from .core.plotter_controller import PlotterController
 from .ui.main_window import MainWindow
 
 
-def create_application(project_root: Path) -> QApplication:
+def _resolve_bundle_root() -> Path:
+    meipass = getattr(sys, "_MEIPASS", "")
+    if meipass:
+        return Path(str(meipass)).resolve()
+    return Path(__file__).resolve().parent.parent
+
+
+def _resolve_project_root() -> Path:
+    # Keep runtime artifacts in a stable location for PyInstaller --onefile.
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent
+    return Path(__file__).resolve().parent.parent
+
+
+def create_application(bundle_root: Path) -> QApplication:
     QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
     app = QApplication(sys.argv)
     app.setApplicationName("PlotterStudio")
     app.setOrganizationName("PlotterStudio")
-    icon_path = project_root / "plotter_studio" / "assets" / "icon.png"
+    icon_path = bundle_root / "plotter_studio" / "assets" / "icon.png"
     if icon_path.exists():
         app.setWindowIcon(QIcon(str(icon_path)))
     return app
 
 
 def main() -> int:
-    project_root = Path(__file__).resolve().parent.parent
-    app = create_application(project_root)
+    bundle_root = _resolve_bundle_root()
+    project_root = _resolve_project_root()
+    app = create_application(bundle_root)
     controller = PlotterController(project_root)
     window = MainWindow(controller)
     window.show()

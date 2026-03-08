@@ -256,6 +256,168 @@ def _prune_short_polyline_segments(
     return deduped if len(deduped) >= 2 else []
 
 
+def _collapse_immediate_backtracks(
+    poly: list[tuple[float, float]],
+    *,
+    close_eps: float,
+) -> list[tuple[float, float]]:
+    """Drop immediate A->B->A backtracks that create doubled text strokes."""
+    if len(poly) < 3:
+        return [(float(x), float(y)) for x, y in poly] if len(poly) >= 2 else []
+    eps = max(1e-6, float(close_eps))
+    out: list[tuple[float, float]] = []
+    for x, y in poly:
+        pt = (float(x), float(y))
+        if out and math.hypot(pt[0] - out[-1][0], pt[1] - out[-1][1]) <= (eps * 0.25):
+            continue
+        out.append(pt)
+        while len(out) >= 3:
+            a = out[-3]
+            c = out[-1]
+            if math.hypot(c[0] - a[0], c[1] - a[1]) > eps:
+                break
+            # Remove B and trailing A~ to collapse "... A B A ..." into "... A ...".
+            out.pop()
+            out.pop()
+    if len(out) < 2:
+        return []
+    deduped: list[tuple[float, float]] = [out[0]]
+    for pt in out[1:]:
+        if math.hypot(pt[0] - deduped[-1][0], pt[1] - deduped[-1][1]) > 1e-9:
+            deduped.append(pt)
+    return deduped if len(deduped) >= 2 else []
+
+
+def _straighten_axis_aligned_polyline_mm(
+    poly: list[tuple[float, float]],
+    *,
+    min_span_mm: float = 8.0,
+    max_thickness_mm: float = 1.6,
+    dominance_ratio: float = 4.0,
+) -> list[tuple[float, float]]:
+    if len(poly) < 2:
+        return []
+    pts = [(float(x), float(y)) for x, y in poly]
+    xs = [p[0] for p in pts]
+    ys = [p[1] for p in pts]
+    x0 = min(xs)
+    x1 = max(xs)
+    y0 = min(ys)
+    y1 = max(ys)
+    w = x1 - x0
+    h = y1 - y0
+    if w <= 0.0 and h <= 0.0:
+        return []
+
+    total_dx = 0.0
+    total_dy = 0.0
+    for i in range(1, len(pts)):
+        total_dx += abs(pts[i][0] - pts[i - 1][0])
+        total_dy += abs(pts[i][1] - pts[i - 1][1])
+
+    if w >= float(min_span_mm) and h <= float(max_thickness_mm):
+        if total_dx >= float(dominance_ratio) * max(1e-9, total_dy):
+            ys_sorted = sorted(ys)
+            y_med = ys_sorted[len(ys_sorted) // 2]
+            return [(x0, y_med), (x1, y_med)]
+    if h >= float(min_span_mm) and w <= float(max_thickness_mm):
+        if total_dy >= float(dominance_ratio) * max(1e-9, total_dx):
+            xs_sorted = sorted(xs)
+            x_med = xs_sorted[len(xs_sorted) // 2]
+            return [(x_med, y0), (x_med, y1)]
+    return pts
+
+
+def _estimate_polyline_thickness_px(poly: list[tuple[float, float]], dist_map) -> float:
+    if not poly:
+        return 0.0
+    h, w = dist_map.shape[:2]
+    sample: list[float] = []
+    step = max(1, int(len(poly) // 40))
+    for i in range(0, len(poly), step):
+        x, y = poly[i]
+        xi = int(round(float(x)))
+        yi = int(round(float(y)))
+        if 0 <= xi < w and 0 <= yi < h:
+            sample.append(float(dist_map[yi, xi]) * 2.0)
+    if not sample:
+        return 0.0
+    sample.sort()
+    return float(sample[len(sample) // 2])
+
+
+def _offset_polyline_mm(poly: list[tuple[float, float]], offset_mm: float) -> list[tuple[float, float]]:
+    if len(poly) < 2:
+        return []
+    off = float(offset_mm)
+    if abs(off) <= 1e-9:
+        return [(float(x), float(y)) for x, y in poly]
+    pts = [(float(x), float(y)) for x, y in poly]
+    out: list[tuple[float, float]] = []
+    for i in range(len(pts)):
+        p = pts[i]
+        p_prev = pts[i - 1] if i > 0 else pts[i]
+        p_next = pts[i + 1] if i + 1 < len(pts) else pts[i]
+        tx = float(p_next[0] - p_prev[0])
+        ty = float(p_next[1] - p_prev[1])
+        tlen = math.hypot(tx, ty)
+        if tlen <= 1e-9:
+            if i > 0:
+                tx = float(p[0] - pts[i - 1][0])
+                ty = float(p[1] - pts[i - 1][1])
+                tlen = math.hypot(tx, ty)
+            if tlen <= 1e-9 and i + 1 < len(pts):
+                tx = float(pts[i + 1][0] - p[0])
+                ty = float(pts[i + 1][1] - p[1])
+                tlen = math.hypot(tx, ty)
+        if tlen <= 1e-9:
+            out.append(p)
+            continue
+        nx = -ty / tlen
+        ny = tx / tlen
+        out.append((p[0] + off * nx, p[1] + off * ny))
+    deduped: list[tuple[float, float]] = [out[0]]
+    for pt in out[1:]:
+        if math.hypot(pt[0] - deduped[-1][0], pt[1] - deduped[-1][1]) > 1e-9:
+            deduped.append(pt)
+    return deduped if len(deduped) >= 2 else []
+
+
+def _is_detail_polyline_mm(
+    poly: list[tuple[float, float]],
+    *,
+    page_w_mm: float,
+    page_h_mm: float,
+) -> bool:
+    if len(poly) < 2:
+        return False
+    xs = [float(p[0]) for p in poly]
+    ys = [float(p[1]) for p in poly]
+    x0, x1 = min(xs), max(xs)
+    y0, y1 = min(ys), max(ys)
+    bw = max(0.0, x1 - x0)
+    bh = max(0.0, y1 - y0)
+    if bw <= 0.0 and bh <= 0.0:
+        return False
+
+    edge_margin = 5.0
+    if x0 <= edge_margin or x1 >= (float(page_w_mm) - edge_margin):
+        return False
+    if y0 <= edge_margin or y1 >= (float(page_h_mm) - edge_margin):
+        return False
+
+    # Exclude bottom title-block/table region from multipass.
+    if y1 >= (0.78 * float(page_h_mm)):
+        return False
+
+    # Exclude very long axis-aligned frame/table strokes.
+    if bh <= 0.9 and bw >= (0.55 * float(page_w_mm)):
+        return False
+    if bw <= 0.9 and bh >= (0.55 * float(page_h_mm)):
+        return False
+    return True
+
+
 def _pen_down_from_z(cur_z: float, z_up: float, z_down: float) -> bool:
     """Treat pen as down only when Z is near the down level.
 
@@ -722,6 +884,22 @@ class BackendBridge:
             target = graphics_mask if is_graphics else text_mask
             target[labels == label] = 255
 
+        # Force long axis-aligned frame/table lines into graphics so they do not
+        # merge with nearby text glyphs during centerline tracing.
+        try:
+            h_len = max(28, int(round(0.060 * float(w))))
+            v_len = max(28, int(round(0.060 * float(h))))
+            h_kernel = backend.cv2.getStructuringElement(backend.cv2.MORPH_RECT, (h_len, 1))
+            v_kernel = backend.cv2.getStructuringElement(backend.cv2.MORPH_RECT, (1, v_len))
+            h_lines = backend.cv2.morphologyEx(base, backend.cv2.MORPH_OPEN, h_kernel, iterations=1)
+            v_lines = backend.cv2.morphologyEx(base, backend.cv2.MORPH_OPEN, v_kernel, iterations=1)
+            line_mask = backend.cv2.bitwise_or(h_lines, v_lines)
+            if int(backend.np.count_nonzero(line_mask)) > 0:
+                graphics_mask = backend.cv2.bitwise_or(graphics_mask, line_mask)
+                text_mask[line_mask > 0] = 0
+        except Exception:
+            pass
+
         try:
             text_mask = backend.cv2.morphologyEx(
                 text_mask,
@@ -773,6 +951,338 @@ class BackendBridge:
             if len(poly) < 2:
                 continue
             if backend.polyline_length(poly) < 4.0:
+                continue
+            out.append(poly)
+        return out
+
+    def _extract_graphics_centerline_polylines_px(
+        self,
+        backend,
+        graphics_mask,
+        log: LogFn,
+    ) -> list[list[tuple[float, float]]]:
+        if int(backend.np.count_nonzero(graphics_mask)) <= 0:
+            return []
+        autotrace_exe = backend._resolve_autotrace_executable()
+        if autotrace_exe is None:
+            return []
+
+        mask = graphics_mask
+        try:
+            # Connect tiny breaks before centerline tracing.
+            kernel = backend.np.ones((2, 2), dtype=backend.np.uint8)
+            mask = backend.cv2.morphologyEx(mask, backend.cv2.MORPH_CLOSE, kernel, iterations=1)
+        except Exception:
+            pass
+
+        binary = backend.np.where(mask > 0, 0, 255).astype(backend.np.uint8)
+        polys = backend._run_autotrace_centerline_on_binary(
+            binary,
+            autotrace_exe=autotrace_exe,
+            error_threshold=float(max(0.8, backend.HANDWRITING_SINGLELINE_TTF_AUTOTRACE_ERROR_THRESHOLD)),
+            filter_iterations=int(max(2, backend.HANDWRITING_SINGLELINE_TTF_AUTOTRACE_FILTER_ITERATIONS)),
+            curve_step_px=float(max(0.75, backend.HANDWRITING_SINGLELINE_TTF_AUTOTRACE_CURVE_STEP_PX)),
+        )
+        if not polys:
+            return []
+
+        out: list[list[tuple[float, float]]] = []
+        for poly in polys:
+            if len(poly) < 2:
+                continue
+            p = backend.simplify_polyline([(float(x), float(y)) for x, y in poly], eps=1e-6)
+            if len(p) >= 3:
+                p = backend.rdp_simplify_polyline(p, eps=0.65)
+            if len(p) < 2:
+                continue
+            if backend.polyline_length(p) < 3.0:
+                continue
+            out.append(p)
+        if out:
+            log(f"Method3 graphics centerline: paths={len(out)}")
+        return out
+
+    @staticmethod
+    def _polyline_bbox_px(poly: list[tuple[float, float]]) -> Optional[tuple[float, float, float, float]]:
+        if not poly:
+            return None
+        xs = [float(p[0]) for p in poly]
+        ys = [float(p[1]) for p in poly]
+        if not xs or not ys:
+            return None
+        return min(xs), max(xs), min(ys), max(ys)
+
+    def _filter_bottom_row_text_polylines_px(
+        self,
+        text_polys: list[list[tuple[float, float]]],
+        *,
+        img_h: int,
+        img_w: int,
+    ) -> tuple[list[list[tuple[float, float]]], int]:
+        if not text_polys:
+            return [], 0
+        # Remove only the very bottom metadata row (e.g. "Формат A4")
+        # and keep title-block rows above it (Н.контр/Утв and similar).
+        bottom_cut = float(img_h) * 0.985
+        tail_cut = float(img_h) * 0.992
+        max_glyph_h = max(28.0, float(img_h) * 0.055)
+        max_glyph_w = max(200.0, float(img_w) * 0.40)
+        tail_max_h = max(22.0, float(img_h) * 0.020)
+        tail_max_w = max(120.0, float(img_w) * 0.18)
+        out: list[list[tuple[float, float]]] = []
+        removed = 0
+        for poly in text_polys:
+            b = self._polyline_bbox_px(poly)
+            if b is None:
+                continue
+            x0, x1, y0, y1 = b
+            bh = max(0.0, y1 - y0)
+            bw = max(0.0, x1 - x0)
+            if y0 >= bottom_cut and bh <= max_glyph_h and bw <= max_glyph_w:
+                removed += 1
+                continue
+            if y0 >= tail_cut and bh <= tail_max_h and bw <= tail_max_w:
+                removed += 1
+                continue
+            out.append(poly)
+        return out, removed
+
+    def _filter_outer_frame_polylines_px(
+        self,
+        polys: list[list[tuple[float, float]]],
+        *,
+        img_w: int,
+        img_h: int,
+    ) -> tuple[list[list[tuple[float, float]]], int]:
+        if not polys:
+            return [], 0
+        margin = max(8.0, 0.008 * float(min(img_w, img_h)))
+        thin_h = max(6.0, 0.020 * float(img_h))
+        thin_w = max(6.0, 0.020 * float(img_w))
+        long_h_span = 0.90 * float(img_w)
+        long_v_span = 0.90 * float(img_h)
+
+        out: list[list[tuple[float, float]]] = []
+        removed = 0
+        for poly in polys:
+            b = self._polyline_bbox_px(poly)
+            if b is None:
+                continue
+            x0, x1, y0, y1 = b
+            bw = max(0.0, x1 - x0)
+            bh = max(0.0, y1 - y0)
+            poly_points = int(len(poly))
+            touch_l = x0 <= margin
+            touch_r = x1 >= (float(img_w) - margin)
+            touch_t = y0 <= margin
+            touch_b = y1 >= (float(img_h) - margin)
+
+            is_outer_hline = (bw >= long_h_span) and (bh <= thin_h) and (touch_t or touch_b)
+            is_outer_vline = (bh >= long_v_span) and (bw <= thin_w) and (touch_l or touch_r)
+            is_full_edge_loop = touch_l and touch_r and touch_t and touch_b
+            # Outer frame can be represented as one sparse open path around 3 sides.
+            is_sparse_outer_box = (bw >= long_h_span) and (bh >= long_v_span) and (poly_points <= 24)
+            if is_sparse_outer_box:
+                # If the sparse box hugs full page edges, this is the external contour:
+                # drop it and keep only the inner frame.
+                if touch_l and touch_r and touch_t and touch_b:
+                    removed += 1
+                    continue
+                # Rebuild interior sparse frame as a closed rectangle
+                # to avoid open-corner gaps.
+                xx0 = float(x0)
+                xx1 = float(x1)
+                yy0 = float(y0)
+                yy1 = float(y1)
+                out.append([(xx0, yy0), (xx1, yy0)])  # top
+                out.append([(xx1, yy0), (xx1, yy1)])  # right
+                out.append([(xx1, yy1), (xx0, yy1)])  # bottom
+                out.append([(xx0, yy1), (xx0, yy0)])  # left
+                removed += 1
+                continue
+            if is_outer_hline or is_outer_vline or is_full_edge_loop:
+                removed += 1
+                continue
+            out.append(poly)
+        return out, removed
+
+    def _extract_pdf_filled_micro_strokes_mm(
+        self,
+        *,
+        pdf_path: Path,
+        page_index: int,
+        page_w_mm: float,
+        page_h_mm: float,
+        log: LogFn,
+    ) -> list[list[tuple[float, float]]]:
+        # Recover tiny filled details (dimension arrowheads, etc.) from vector PDF paths.
+        if fitz is None:
+            return []
+        if not pdf_path.exists():
+            return []
+
+        try:
+            with fitz.open(str(pdf_path)) as doc:
+                if page_index < 1 or page_index > int(doc.page_count):
+                    return []
+                page = doc[page_index - 1]
+                drawings = page.get_drawings()
+                page_rect = page.rect
+        except Exception:
+            return []
+
+        pt_to_mm = 25.4 / 72.0
+        src_w_mm = float(page_rect.width) * pt_to_mm
+        src_h_mm = float(page_rect.height) * pt_to_mm
+        sx = float(page_w_mm) / src_w_mm if src_w_mm > 1e-9 else 1.0
+        sy = float(page_h_mm) / src_h_mm if src_h_mm > 1e-9 else 1.0
+
+        max_dim_mm = 6.2
+        max_box_area_mm2 = 22.0
+        bottom_cut_mm = float(page_h_mm) * 0.93
+
+        def _pt_xy_mm(pt) -> Optional[tuple[float, float]]:
+            try:
+                x_pt = float(pt.x)
+                y_pt = float(pt.y)
+            except Exception:
+                try:
+                    x_pt = float(pt[0])
+                    y_pt = float(pt[1])
+                except Exception:
+                    return None
+            return (x_pt * pt_to_mm * sx, y_pt * pt_to_mm * sy)
+
+        out: list[list[tuple[float, float]]] = []
+        kept_paths = 0
+        for d in drawings:
+            fill = d.get("fill")
+            if fill is None:
+                continue
+            try:
+                if isinstance(fill, (list, tuple)) and len(fill) >= 3:
+                    lum = (0.2126 * float(fill[0])) + (0.7152 * float(fill[1])) + (0.0722 * float(fill[2]))
+                    if lum > 0.55:
+                        continue
+            except Exception:
+                pass
+
+            rect = d.get("rect")
+            if rect is None:
+                continue
+            rw_mm = float(rect.width) * pt_to_mm * sx
+            rh_mm = float(rect.height) * pt_to_mm * sy
+            y0_mm = float(rect.y0) * pt_to_mm * sy
+            if rw_mm <= 0.0 or rh_mm <= 0.0:
+                continue
+            if max(rw_mm, rh_mm) > max_dim_mm:
+                continue
+            if (rw_mm * rh_mm) > max_box_area_mm2:
+                continue
+            if y0_mm >= bottom_cut_mm:
+                continue
+
+            items = d.get("items") or []
+            seg_count = 0
+            for item in items:
+                if not item:
+                    continue
+                op = str(item[0]).lower()
+                if op == "l" and len(item) >= 3:
+                    p0 = _pt_xy_mm(item[1])
+                    p1 = _pt_xy_mm(item[2])
+                    if p0 is None or p1 is None:
+                        continue
+                    if math.hypot(float(p1[0]) - float(p0[0]), float(p1[1]) - float(p0[1])) < 0.03:
+                        continue
+                    out.append([p0, p1])
+                    seg_count += 1
+                elif op == "re" and len(item) >= 2:
+                    r = item[1]
+                    try:
+                        x0 = float(r.x0) * pt_to_mm * sx
+                        y0 = float(r.y0) * pt_to_mm * sy
+                        x1 = float(r.x1) * pt_to_mm * sx
+                        y1 = float(r.y1) * pt_to_mm * sy
+                    except Exception:
+                        continue
+                    box_poly = [(x0, y0), (x1, y0), (x1, y1), (x0, y1), (x0, y0)]
+                    if max(abs(x1 - x0), abs(y1 - y0)) < 0.03:
+                        continue
+                    out.append(box_poly)
+                    seg_count += 1
+            if seg_count > 0:
+                kept_paths += 1
+
+        if out:
+            log(f"Method3 filled accents: paths={kept_paths}, segments={len(out)}")
+        return out
+
+    def _drop_tiny_bottom_artifacts_mm(
+        self,
+        polys_mm: list[list[tuple[float, float]]],
+        *,
+        page_h_mm: float,
+    ) -> tuple[list[list[tuple[float, float]]], int]:
+        if not polys_mm:
+            return [], 0
+        # Remove only tiny speckles in the very bottom tail strip.
+        artifact_cut = float(page_h_mm) * 0.98
+        max_w = 5.0
+        max_h = 5.0
+        max_len = 15.0
+        out: list[list[tuple[float, float]]] = []
+        removed = 0
+        for poly in polys_mm:
+            b = self._polyline_bbox_px(poly)
+            if b is None:
+                continue
+            x0, x1, y0, y1 = b
+            bw = max(0.0, x1 - x0)
+            bh = max(0.0, y1 - y0)
+            plen = 0.0
+            if len(poly) >= 2:
+                for i in range(len(poly) - 1):
+                    plen += math.hypot(
+                        float(poly[i + 1][0]) - float(poly[i][0]),
+                        float(poly[i + 1][1]) - float(poly[i][1]),
+                    )
+            if y0 >= artifact_cut and bw <= max_w and bh <= max_h and plen <= max_len:
+                removed += 1
+                continue
+            out.append(poly)
+        return out, removed
+
+    def _select_graphics_outline_accents_px(
+        self,
+        outlines: list[list[tuple[float, float]]],
+        *,
+        img_w: int,
+        img_h: int,
+    ) -> list[list[tuple[float, float]]]:
+        # Keep compact closed outlines (dimension arrowheads and similar accents)
+        # so they don't disappear when graphics are centerlined.
+        if not outlines:
+            return []
+        max_dim = max(24.0, 0.015 * float(min(img_w, img_h)))
+        max_area = max_dim * max_dim * 0.70
+        out: list[list[tuple[float, float]]] = []
+        for poly in outlines:
+            if len(poly) < 3:
+                continue
+            b = self._polyline_bbox_px(poly)
+            if b is None:
+                continue
+            x0, x1, y0, y1 = b
+            bw = max(0.0, x1 - x0)
+            bh = max(0.0, y1 - y0)
+            if bw <= 0.0 or bh <= 0.0:
+                continue
+            if bw > max_dim or bh > max_dim or (bw * bh) > max_area:
+                continue
+            p0 = poly[0]
+            p1 = poly[-1]
+            if math.hypot(float(p0[0]) - float(p1[0]), float(p0[1]) - float(p1[1])) > 3.0:
                 continue
             out.append(poly)
         return out
@@ -918,23 +1428,156 @@ class BackendBridge:
                 if overlap >= 0.55:
                     continue
                 filtered_text_px.append(poly)
+
+            filtered_text_px, removed_bottom_text = self._filter_bottom_row_text_polylines_px(
+                filtered_text_px,
+                img_h=img_h,
+                img_w=img_w,
+            )
+            cleaned_text_px: list[list[tuple[float, float]]] = []
+            removed_text_backtracks = 0
+            for poly in filtered_text_px:
+                cleaned = _collapse_immediate_backtracks(poly, close_eps=1.6)
+                if len(cleaned) >= 2:
+                    cleaned_text_px.append(cleaned)
+                removed_text_backtracks += max(0, len(poly) - len(cleaned))
+            filtered_text_px = cleaned_text_px
+            graphics_centerline_px = self._extract_graphics_centerline_polylines_px(backend, graphics_mask, log)
             graphics_outline_px = self._extract_graphics_outline_polylines_px(backend, graphics_mask)
-            if graphics_outline_px:
+            graphics_accents_px = self._select_graphics_outline_accents_px(
+                graphics_outline_px,
+                img_w=img_w,
+                img_h=img_h,
+            )
+            if graphics_centerline_px:
+                graphics_px = [*graphics_centerline_px, *graphics_accents_px]
+            else:
+                graphics_px = graphics_outline_px
+            graphics_px, removed_bottom_graphics = self._filter_bottom_row_text_polylines_px(
+                graphics_px,
+                img_h=img_h,
+                img_w=img_w,
+            )
+            cleaned_graphics_px: list[list[tuple[float, float]]] = []
+            removed_graphics_backtracks = 0
+            for poly in graphics_px:
+                cleaned = _collapse_immediate_backtracks(poly, close_eps=1.2)
+                if len(cleaned) >= 2:
+                    cleaned_graphics_px.append(cleaned)
+                removed_graphics_backtracks += max(0, len(poly) - len(cleaned))
+            graphics_px = cleaned_graphics_px
+
+            filtered_text_px, removed_text_frame = self._filter_outer_frame_polylines_px(
+                filtered_text_px,
+                img_w=img_w,
+                img_h=img_h,
+            )
+            graphics_px, removed_graphics_frame = self._filter_outer_frame_polylines_px(
+                graphics_px,
+                img_w=img_w,
+                img_h=img_h,
+            )
+            if graphics_px:
                 log(
                     "Method3 layer split: "
-                    f"text_paths={len(filtered_text_px)}, graphics_paths={len(graphics_outline_px)}"
+                    f"text_paths={len(filtered_text_px)}, "
+                    f"graphics_centerline={len(graphics_centerline_px)}, "
+                    f"graphics_outline={len(graphics_outline_px)}, "
+                    f"graphics_accents={len(graphics_accents_px)}"
                 )
-            polys_px = [*filtered_text_px, *graphics_outline_px]
-            if not polys_px:
+            if removed_bottom_text > 0:
+                log(f"Method3 cleanup: removed bottom-row text paths={removed_bottom_text}")
+            if removed_bottom_graphics > 0:
+                log(f"Method3 cleanup: removed bottom-row graphics-glyph paths={removed_bottom_graphics}")
+            if removed_text_backtracks > 0:
+                log(f"Method3 cleanup: collapsed text backtracks points={removed_text_backtracks}")
+            if removed_graphics_backtracks > 0:
+                log(f"Method3 cleanup: collapsed graphics backtracks points={removed_graphics_backtracks}")
+            if (removed_text_frame + removed_graphics_frame) > 0:
+                log(
+                    "Method3 cleanup: removed outer-frame paths="
+                    f"{removed_text_frame + removed_graphics_frame}"
+                )
+            if not filtered_text_px and not graphics_px:
                 return False, "Method3 centerline produced no paths."
 
             sx = float(page_w_mm) / float(max(1, img_w))
             sy = float(page_h_mm) / float(max(1, img_h))
-            polys_mm: list[list[tuple[float, float]]] = []
-            for poly in polys_px:
+            text_polys_mm: list[list[tuple[float, float]]] = []
+            for poly in filtered_text_px:
                 p = [(float(x) * sx, float(y) * sy) for x, y in poly]
                 if len(p) >= 2 and backend.polyline_length(p) >= 0.25:
-                    polys_mm.append(p)
+                    text_polys_mm.append(p)
+            graphics_polys_mm: list[list[tuple[float, float]]] = []
+            graphics_dist_map = None
+            try:
+                mask_u8 = (graphics_mask > 0).astype(backend.np.uint8)
+                graphics_dist_map = backend.cv2.distanceTransform(mask_u8, backend.cv2.DIST_L2, 3)
+            except Exception:
+                graphics_dist_map = None
+            detail_thick = 0
+            detail_extra_passes = 0
+            for poly in graphics_px:
+                p = [(float(x) * sx, float(y) * sy) for x, y in poly]
+                if len(p) >= 2 and backend.polyline_length(p) >= 0.25:
+                    graphics_polys_mm.append(p)
+                    if graphics_dist_map is None:
+                        continue
+                    if not _is_detail_polyline_mm(
+                        p,
+                        page_w_mm=float(page_w_mm),
+                        page_h_mm=float(page_h_mm),
+                    ):
+                        continue
+                    thick_px = _estimate_polyline_thickness_px(poly, graphics_dist_map)
+                    passes = 1
+                    offset_mm = 0.0
+                    if thick_px >= 8.0:
+                        passes = 3
+                        offset_mm = 0.07
+                    elif thick_px >= 5.4:
+                        passes = 2
+                        offset_mm = 0.05
+                    if passes <= 1:
+                        continue
+                    detail_thick += 1
+                    if passes == 2:
+                        p2 = _offset_polyline_mm(p, offset_mm)
+                        if len(p2) >= 2 and backend.polyline_length(p2) >= 0.25:
+                            graphics_polys_mm.append(p2)
+                            detail_extra_passes += 1
+                    else:
+                        p2 = _offset_polyline_mm(p, offset_mm)
+                        p3 = _offset_polyline_mm(p, -offset_mm)
+                        if len(p2) >= 2 and backend.polyline_length(p2) >= 0.25:
+                            graphics_polys_mm.append(p2)
+                            detail_extra_passes += 1
+                        if len(p3) >= 2 and backend.polyline_length(p3) >= 0.25:
+                            graphics_polys_mm.append(p3)
+                            detail_extra_passes += 1
+            if detail_extra_passes > 0:
+                log(
+                    "Method3 detail thick-lines multipass: "
+                    f"candidates={detail_thick}, extra_passes={detail_extra_passes}"
+                )
+
+            filled_accents_mm = self._extract_pdf_filled_micro_strokes_mm(
+                pdf_path=pdf_src,
+                page_index=page,
+                page_w_mm=page_w_mm,
+                page_h_mm=page_h_mm,
+                log=log,
+            )
+            if filled_accents_mm:
+                graphics_polys_mm.extend(filled_accents_mm)
+
+            polys_mm = [*text_polys_mm, *graphics_polys_mm]
+            polys_mm, removed_bottom_tiny = self._drop_tiny_bottom_artifacts_mm(
+                polys_mm,
+                page_h_mm=page_h_mm,
+            )
+            if removed_bottom_tiny > 0:
+                log(f"Method3 cleanup: removed tiny bottom artifacts={removed_bottom_tiny}")
 
             pre_prune_segments = sum(max(0, len(poly) - 1) for poly in polys_mm)
             min_seg_mm = 0.08
@@ -951,7 +1594,26 @@ class BackendBridge:
                     f"segments={pre_prune_segments}->{post_prune_segments}, min={min_seg_mm:.2f} mm"
                 )
 
-            polys_mm = backend.stitch_polylines(polys_mm, eps=0.08, logger=None, gap_eps=0.16, angle_tol_deg=35.0)
+            straightened = 0
+            straightened_polys_mm: list[list[tuple[float, float]]] = []
+            for poly in polys_mm:
+                fixed = _straighten_axis_aligned_polyline_mm(
+                    poly,
+                    min_span_mm=8.0,
+                    max_thickness_mm=1.8,
+                    dominance_ratio=4.5,
+                )
+                if len(fixed) >= 2 and fixed != poly:
+                    straightened += 1
+                if len(fixed) >= 2:
+                    straightened_polys_mm.append(fixed)
+            polys_mm = straightened_polys_mm
+            if straightened > 0:
+                log(f"Method3 cleanup: straightened axis-aligned lines={straightened}")
+
+            # Conservative stitch in Method3: keep tiny continuity joins, but avoid
+            # cross-connecting nearby text and table/frame strokes.
+            polys_mm = backend.stitch_polylines(polys_mm, eps=0.03, logger=None, gap_eps=0.03, angle_tol_deg=18.0)
             polys_mm = self._order_polylines_line_lr(
                 polys_mm,
                 row_tol_mm=float(getattr(backend, "DRAW_ORDER_LINE_TOL_MM", 3.0)),
@@ -1237,9 +1899,10 @@ class BackendBridge:
             exact_geometry_mode=bool(exact_geometry_mode),
             handwriting_enabled=bool(handwriting_enabled),
         )
-        backend.EXACT_GEOMETRY_MODE = bool(effective_exact_mode)
+        # In strict 1:1 mode we must enforce dimensional guard even in handwriting profile.
+        backend.EXACT_GEOMETRY_MODE = bool(effective_exact_mode or strict_one_to_one)
         backend.SAFE_PEN_TRAVEL_UP = bool(safe_travel_lift)
-        backend.MIN_FIT_SCALE_FOR_DIMENSIONAL_DRAW = 0.98 if bool(strict_one_to_one) else 0.0
+        backend.MIN_FIT_SCALE_FOR_DIMENSIONAL_DRAW = 1.0 if bool(strict_one_to_one) else 0.0
         backend.HANDWRITING_TEXT_ENABLED = bool(effective_handwriting)
         selected_hw_font = _resolve_handwriting_font(backend, handwriting_font, log=log)
         selected_formula_font = _resolve_formula_font(backend, handwriting_formula_font, log=log)
@@ -1458,9 +2121,10 @@ class BackendBridge:
             exact_geometry_mode=bool(exact_geometry_mode),
             handwriting_enabled=bool(handwriting_enabled),
         )
-        backend.EXACT_GEOMETRY_MODE = bool(effective_exact_mode)
+        # In strict 1:1 mode we must enforce dimensional guard even in handwriting profile.
+        backend.EXACT_GEOMETRY_MODE = bool(effective_exact_mode or strict_one_to_one)
         backend.SAFE_PEN_TRAVEL_UP = bool(safe_travel_lift)
-        backend.MIN_FIT_SCALE_FOR_DIMENSIONAL_DRAW = 0.98 if bool(strict_one_to_one) else 0.0
+        backend.MIN_FIT_SCALE_FOR_DIMENSIONAL_DRAW = 1.0 if bool(strict_one_to_one) else 0.0
         backend.HANDWRITING_TEXT_ENABLED = bool(effective_handwriting)
         selected_hw_font = _resolve_handwriting_font(backend, handwriting_font, log=log)
         selected_formula_font = _resolve_formula_font(backend, handwriting_formula_font, log=log)

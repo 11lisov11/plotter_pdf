@@ -1,0 +1,7 @@
+page 6: status=ok; trim=0; scale=0.9702; len=4.88m; stats(lines/draw/travel)=4939/4463/158; bounds=0.000..180.000 x, -292.081..0.000 y
+page 7: status=ok; trim=0; scale=0.9702; len=7.04m; stats(lines/draw/travel)=7075/6452/207; bounds=0.000..180.000 x, -292.081..0.000 y
+page 8: status=ok; trim=0; scale=0.9702; len=7.50m; stats(lines/draw/travel)=7213/6581/210; bounds=0.000..180.000 x, -292.081..0.000 y
+page 9: status=ok; trim=0; scale=0.9702; len=7.65m; stats(lines/draw/travel)=8318/7596/240; bounds=0.000..180.000 x, -292.081..0.000 y
+page 10: status=ok; trim=0; scale=0.9702; len=7.91m; stats(lines/draw/travel)=7842/7159/227; bounds=0.000..180.000 x, -292.081..0.000 y
+page 11: status=ok; trim=0; scale=0.9702; len=5.35m; stats(lines/draw/travel)=5411/4923/162; bounds=0.000..180.000 x, -292.081..0.000 y
+page 12: status=ok; trim=0; scale=0.9702; len=5.95m; stats(lines/draw/travel)=5676/5164/170; bounds=0.000..180.000 x, -292.081..0.000 y

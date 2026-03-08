@@ -1,0 +1,8 @@
+page 6: ok; trim=1; scale=0.9746; len=4.08m; lines/draw/travel=4937/4479/152; bounds=0.000..180.000 x, -294.774..0.000 y
+page 7: ok; trim=1; scale=0.9746; len=6.26m; lines/draw/travel=6926/6315/203; bounds=0.000..180.000 x, -294.774..0.000 y
+page 8: ok; trim=1; scale=0.9746; len=6.74m; lines/draw/travel=7347/6694/217; bounds=0.000..180.000 x, -294.774..0.000 y
+page 9: ok; trim=1; scale=0.9746; len=6.84m; lines/draw/travel=8201/7497/234; bounds=0.000..180.000 x, -294.774..0.000 y
+page 10: ok; trim=1; scale=0.9746; len=7.09m; lines/draw/travel=7867/7196/223; bounds=0.000..180.000 x, -294.774..0.000 y
+page 11: ok; trim=1; scale=0.9746; len=4.59m; lines/draw/travel=5426/4935/163; bounds=0.000..180.000 x, -294.774..0.000 y
+page 12: ok; trim=1; scale=0.9746; len=5.20m; lines/draw/travel=5520/5011/169; bounds=0.000..180.000 x, -294.774..0.000 y
+preprocess: left_crop_20.5mm_only

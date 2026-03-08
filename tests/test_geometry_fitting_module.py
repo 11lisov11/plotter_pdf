@@ -73,8 +73,8 @@ class GeometryFittingModuleTests(unittest.TestCase):
             compute_pass_shift_fn=lambda *_: (0.0, 0.0, {}),
             logger=logs.append,
         )
-        self.assertEqual(out[0][0], (-100.0, 0.0))
-        self.assertEqual(out[0][1], (200.0, 100.0))
+        self.assertEqual(out[0][0], (0.0, 0.0))
+        self.assertEqual(out[0][1], (300.0, 100.0))
         self.assertTrue(any("Fit guard (1:1 mm)" in msg for msg in logs))
 
     def test_fit_applies_pass_shift_for_multi_pass(self) -> None:
