@@ -293,7 +293,7 @@ WORK_OFFSET_X_MM = 0.0
 # Positive "paper up" is negative Y in our coordinate system (Y goes 0 -> -280).
 # Total shift requested: +15mm up from original => -15mm in our Y coordinates.
 WORK_OFFSET_Y_MM = -15.0
-PAGE_MARGIN_LEFT_MM = 20.0
+PAGE_MARGIN_LEFT_MM = 20.5
 PAGE_MARGIN_RIGHT_MM = 5.0
 PAGE_MARGIN_TOP_MM = 10.0
 PAGE_MARGIN_BOTTOM_MM = 5.0

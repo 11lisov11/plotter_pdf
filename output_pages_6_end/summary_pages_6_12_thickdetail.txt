@@ -1,11 +1,11 @@
-﻿source: c:\plotter_pdf\variant5.pdf
+source: c:\plotter_pdf\variant5.pdf
 pages: 6..12
-mode: left_crop_20.0mm + thick_detail_multipass_only (frame/title-block excluded)
-page 6: ok, mp=40/68, draw=5.89m, lines=5072, draw_moves=4581, travel=163, bounds=0.000..180.000 x, -292.104..0.000 y
-page 7: ok, mp=85/143, draw=8.82m, lines=7422, draw_moves=6781, travel=213, bounds=0.000..180.000 x, -292.104..0.000 y
-page 8: ok, mp=82/136, draw=9.01m, lines=7505, draw_moves=6849, travel=218, bounds=0.000..180.000 x, -292.104..0.000 y
-page 9: ok, mp=106/166, draw=10.18m, lines=9229, draw_moves=8459, travel=256, bounds=0.000..180.000 x, -292.104..0.000 y
-page 10: ok, mp=129/200, draw=10.81m, lines=9057, draw_moves=8368, travel=229, bounds=0.000..180.000 x, -292.104..0.000 y
-page 11: ok, mp=48/83, draw=6.87m, lines=5840, draw_moves=5310, travel=176, bounds=0.000..180.000 x, -292.104..0.000 y
-page 12: ok, mp=54/89, draw=7.95m, lines=6133, draw_moves=5603, travel=176, bounds=0.000..180.000 x, -292.104..0.000 y
-
+mode: left_crop_20.5mm + thick_detail_multipass_only (frame/title-block excluded)
+extra: left upper side-column cleanup keeps lower-left table (ratio 0.68).
+page 6: ok, mp=27/46, draw=5.77m, lines=4975, draw_moves=4526, travel=149, bounds=0.000..180.000 x, -292.475..0.000 y, crop=x(20.5,206.1) y(10.0,293.1), left_cleanup=125/68, dedup_text=0
+page 7: ok, mp=72/121, draw=8.69m, lines=7441, draw_moves=6800, travel=213, bounds=0.000..180.000 x, -292.475..0.000 y, crop=x(20.5,206.1) y(10.0,293.1), left_cleanup=125/68, dedup_text=0
+page 8: ok, mp=69/114, draw=8.90m, lines=7477, draw_moves=6854, travel=207, bounds=0.000..180.000 x, -292.475..0.000 y, crop=x(20.5,206.1) y(10.0,293.1), left_cleanup=125/68, dedup_text=0
+page 9: ok, mp=93/144, draw=10.06m, lines=9266, draw_moves=8493, travel=257, bounds=0.000..180.000 x, -292.475..0.000 y, crop=x(20.5,206.1) y(10.0,293.1), left_cleanup=125/68, dedup_text=0
+page 10: ok, mp=116/178, draw=10.68m, lines=8979, draw_moves=8332, travel=215, bounds=0.000..180.000 x, -292.475..0.000 y, crop=x(20.5,206.1) y(10.0,293.1), left_cleanup=127/68, dedup_text=0
+page 11: ok, mp=35/61, draw=6.74m, lines=5815, draw_moves=5321, travel=164, bounds=0.000..180.000 x, -292.475..0.000 y, crop=x(20.5,206.1) y(10.0,293.1), left_cleanup=125/68, dedup_text=0
+page 12: ok, mp=41/67, draw=7.83m, lines=6083, draw_moves=5574, travel=169, bounds=0.000..180.000 x, -292.475..0.000 y, crop=x(20.5,206.1) y(10.0,293.1), left_cleanup=125/68, dedup_text=0

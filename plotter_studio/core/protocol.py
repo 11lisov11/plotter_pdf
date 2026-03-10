@@ -328,6 +328,189 @@ def _straighten_axis_aligned_polyline_mm(
     return pts
 
 
+def _point_segment_distance_mm(
+    px: float,
+    py: float,
+    ax: float,
+    ay: float,
+    bx: float,
+    by: float,
+) -> float:
+    vx = bx - ax
+    vy = by - ay
+    wx = px - ax
+    wy = py - ay
+    vv = (vx * vx) + (vy * vy)
+    if vv <= 1e-12:
+        return math.hypot(px - ax, py - ay)
+    t = ((wx * vx) + (wy * vy)) / vv
+    t = 0.0 if t < 0.0 else (1.0 if t > 1.0 else t)
+    qx = ax + (t * vx)
+    qy = ay + (t * vy)
+    return math.hypot(px - qx, py - qy)
+
+
+def _resample_polyline_mm(
+    poly: list[tuple[float, float]],
+    *,
+    target_points: int = 16,
+) -> list[tuple[float, float]]:
+    if len(poly) < 2:
+        return []
+    pts = [(float(x), float(y)) for x, y in poly]
+    seg_lens: list[float] = []
+    total = 0.0
+    for i in range(1, len(pts)):
+        ln = math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1])
+        seg_lens.append(ln)
+        total += ln
+    if total <= 1e-9:
+        return [pts[0], pts[-1]]
+
+    n = max(4, int(target_points))
+    out: list[tuple[float, float]] = []
+    step = total / float(n - 1)
+    cur_seg = 0
+    cur_pos = 0.0
+    acc = 0.0
+    for i in range(n):
+        target = min(total, i * step)
+        while cur_seg < len(seg_lens) and (acc + seg_lens[cur_seg]) < target:
+            acc += seg_lens[cur_seg]
+            cur_seg += 1
+            cur_pos = 0.0
+        if cur_seg >= len(seg_lens):
+            out.append(pts[-1])
+            continue
+        seg_len = max(1e-12, seg_lens[cur_seg])
+        a = pts[cur_seg]
+        b = pts[cur_seg + 1]
+        t = (target - acc) / seg_len
+        out.append((a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t))
+    return out
+
+
+def _polyline_distance_to_polyline_mm(
+    sample_poly: list[tuple[float, float]],
+    ref_poly: list[tuple[float, float]],
+) -> float:
+    if len(sample_poly) < 2 or len(ref_poly) < 2:
+        return float("inf")
+    total = 0.0
+    count = 0
+    for px, py in sample_poly:
+        best = float("inf")
+        for i in range(1, len(ref_poly)):
+            ax, ay = ref_poly[i - 1]
+            bx, by = ref_poly[i]
+            d = _point_segment_distance_mm(px, py, ax, ay, bx, by)
+            if d < best:
+                best = d
+        total += best
+        count += 1
+    if count <= 0:
+        return float("inf")
+    return total / float(count)
+
+
+def _dedup_near_text_polylines_mm(
+    polys: list[list[tuple[float, float]]],
+    *,
+    max_offset_mm: float = 0.11,
+) -> tuple[list[list[tuple[float, float]]], int]:
+    if len(polys) < 2:
+        return polys, 0
+
+    items: list[dict[str, object]] = []
+    for idx, poly in enumerate(polys):
+        if len(poly) < 2:
+            continue
+        pts = [(float(x), float(y)) for x, y in poly]
+        xs = [p[0] for p in pts]
+        ys = [p[1] for p in pts]
+        x0, x1 = min(xs), max(xs)
+        y0, y1 = min(ys), max(ys)
+        ln = 0.0
+        for i in range(1, len(pts)):
+            ln += math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1])
+        if ln < 0.30:
+            continue
+        items.append(
+            {
+                "idx": idx,
+                "poly": pts,
+                "bbox": (x0, x1, y0, y1),
+                "len": ln,
+                "pts": len(pts),
+            }
+        )
+    if len(items) < 2:
+        return polys, 0
+
+    removed: set[int] = set()
+    eps = float(max(0.03, max_offset_mm))
+    for i in range(len(items)):
+        a = items[i]
+        ia = int(a["idx"])  # type: ignore[arg-type]
+        if ia in removed:
+            continue
+        ax0, ax1, ay0, ay1 = a["bbox"]  # type: ignore[assignment]
+        alen = float(a["len"])  # type: ignore[arg-type]
+        apoly = a["poly"]  # type: ignore[assignment]
+        for j in range(i + 1, len(items)):
+            b = items[j]
+            ib = int(b["idx"])  # type: ignore[arg-type]
+            if ib in removed:
+                continue
+            bx0, bx1, by0, by1 = b["bbox"]  # type: ignore[assignment]
+            blen = float(b["len"])  # type: ignore[arg-type]
+            bpoly = b["poly"]  # type: ignore[assignment]
+
+            # Fast reject by bbox and length similarity.
+            if (ax1 + eps) < bx0 or (bx1 + eps) < ax0 or (ay1 + eps) < by0 or (by1 + eps) < ay0:
+                continue
+            if abs(alen - blen) > (0.45 * max(alen, blen)):
+                continue
+
+            as0 = apoly[0]
+            as1 = apoly[-1]
+            bs0 = bpoly[0]
+            bs1 = bpoly[-1]
+            d_same = math.hypot(as0[0] - bs0[0], as0[1] - bs0[1]) + math.hypot(as1[0] - bs1[0], as1[1] - bs1[1])
+            d_flip = math.hypot(as0[0] - bs1[0], as0[1] - bs1[1]) + math.hypot(as1[0] - bs0[0], as1[1] - bs0[1])
+            if min(d_same, d_flip) > 0.70:
+                continue
+
+            a_s = _resample_polyline_mm(apoly, target_points=14)
+            b_s = _resample_polyline_mm(bpoly, target_points=14)
+            if not a_s or not b_s:
+                continue
+            ab = _polyline_distance_to_polyline_mm(a_s, bpoly)
+            ba = _polyline_distance_to_polyline_mm(b_s, apoly)
+            mean_d = 0.5 * (ab + ba)
+            if mean_d > eps:
+                continue
+
+            # Remove lower-quality duplicate: shorter then fewer points.
+            if alen < blen:
+                removed.add(ia)
+                break
+            if blen < alen:
+                removed.add(ib)
+                continue
+            a_pts = int(a["pts"])  # type: ignore[arg-type]
+            b_pts = int(b["pts"])  # type: ignore[arg-type]
+            if a_pts <= b_pts:
+                removed.add(ia)
+                break
+            removed.add(ib)
+
+    if not removed:
+        return polys, 0
+    out = [poly for k, poly in enumerate(polys) if k not in removed]
+    return out, len(removed)
+
+
 def _estimate_polyline_thickness_px(poly: list[tuple[float, float]], dist_map) -> float:
     if not poly:
         return 0.0
@@ -388,6 +571,10 @@ def _is_detail_polyline_mm(
     *,
     page_w_mm: float,
     page_h_mm: float,
+    crop_left_mm: float = 0.0,
+    crop_right_mm: float = 0.0,
+    crop_top_mm: float = 0.0,
+    crop_bottom_mm: float = 0.0,
 ) -> bool:
     if len(poly) < 2:
         return False
@@ -405,6 +592,20 @@ def _is_detail_polyline_mm(
         return False
     if y0 <= edge_margin or y1 >= (float(page_h_mm) - edge_margin):
         return False
+
+    # Exclude crop-border frame strokes (after left/right/top/bottom content crop).
+    # These lines are part of the page frame/title block and must stay single-pass.
+    crop_x0 = max(0.0, float(crop_left_mm))
+    crop_x1 = max(crop_x0, float(page_w_mm) - max(0.0, float(crop_right_mm)))
+    crop_y0 = max(0.0, float(crop_top_mm))
+    crop_y1 = max(crop_y0, float(page_h_mm) - max(0.0, float(crop_bottom_mm)))
+    near_crop_eps = 1.8
+    if bw <= 1.2 and bh >= 18.0:
+        if abs(x0 - crop_x0) <= near_crop_eps or abs(x1 - crop_x1) <= near_crop_eps:
+            return False
+    if bh <= 1.2 and bw >= 18.0:
+        if abs(y0 - crop_y0) <= near_crop_eps or abs(y1 - crop_y1) <= near_crop_eps:
+            return False
 
     # Exclude bottom title-block/table region from multipass.
     if y1 >= (0.78 * float(page_h_mm)):
@@ -1047,6 +1248,32 @@ class BackendBridge:
             out.append(poly)
         return out, removed
 
+    def _filter_left_upper_column_text_polylines_px(
+        self,
+        text_polys: list[list[tuple[float, float]]],
+        *,
+        img_h: int,
+        img_w: int,
+        left_ratio: float = 0.148,
+        keep_bottom_from_ratio: float = 0.72,
+    ) -> tuple[list[list[tuple[float, float]]], int]:
+        if not text_polys:
+            return [], 0
+        x_cut = float(img_w) * float(max(0.06, min(0.28, left_ratio)))
+        y_keep_from = float(img_h) * float(max(0.50, min(0.92, keep_bottom_from_ratio)))
+        out: list[list[tuple[float, float]]] = []
+        removed = 0
+        for poly in text_polys:
+            b = self._polyline_bbox_px(poly)
+            if b is None:
+                continue
+            _x0, x1, y0, _y1 = b
+            if x1 <= x_cut and y0 < y_keep_from:
+                removed += 1
+                continue
+            out.append(poly)
+        return out, removed
+
     def _filter_outer_frame_polylines_px(
         self,
         polys: list[list[tuple[float, float]]],
@@ -1434,6 +1661,13 @@ class BackendBridge:
                 img_h=img_h,
                 img_w=img_w,
             )
+            filtered_text_px, removed_left_upper_text = self._filter_left_upper_column_text_polylines_px(
+                filtered_text_px,
+                img_h=img_h,
+                img_w=img_w,
+                left_ratio=0.148,
+                keep_bottom_from_ratio=0.68,
+            )
             cleaned_text_px: list[list[tuple[float, float]]] = []
             removed_text_backtracks = 0
             for poly in filtered_text_px:
@@ -1457,6 +1691,13 @@ class BackendBridge:
                 graphics_px,
                 img_h=img_h,
                 img_w=img_w,
+            )
+            graphics_px, removed_left_upper_graphics = self._filter_left_upper_column_text_polylines_px(
+                graphics_px,
+                img_h=img_h,
+                img_w=img_w,
+                left_ratio=0.145,
+                keep_bottom_from_ratio=0.68,
             )
             cleaned_graphics_px: list[list[tuple[float, float]]] = []
             removed_graphics_backtracks = 0
@@ -1489,6 +1730,10 @@ class BackendBridge:
                 log(f"Method3 cleanup: removed bottom-row text paths={removed_bottom_text}")
             if removed_bottom_graphics > 0:
                 log(f"Method3 cleanup: removed bottom-row graphics-glyph paths={removed_bottom_graphics}")
+            if removed_left_upper_text > 0:
+                log(f"Method3 cleanup: removed left-column text paths={removed_left_upper_text}")
+            if removed_left_upper_graphics > 0:
+                log(f"Method3 cleanup: removed left-column graphics-glyph paths={removed_left_upper_graphics}")
             if removed_text_backtracks > 0:
                 log(f"Method3 cleanup: collapsed text backtracks points={removed_text_backtracks}")
             if removed_graphics_backtracks > 0:
@@ -1508,6 +1753,9 @@ class BackendBridge:
                 p = [(float(x) * sx, float(y) * sy) for x, y in poly]
                 if len(p) >= 2 and backend.polyline_length(p) >= 0.25:
                     text_polys_mm.append(p)
+            text_polys_mm, removed_text_near_dup = _dedup_near_text_polylines_mm(text_polys_mm)
+            if removed_text_near_dup > 0:
+                log(f"Method3 cleanup: deduped near text strokes={removed_text_near_dup}")
             graphics_polys_mm: list[list[tuple[float, float]]] = []
             graphics_dist_map = None
             try:
@@ -1527,6 +1775,10 @@ class BackendBridge:
                         p,
                         page_w_mm=float(page_w_mm),
                         page_h_mm=float(page_h_mm),
+                        crop_left_mm=float(getattr(backend, "PAGE_MARGIN_LEFT_MM", 0.0)),
+                        crop_right_mm=float(getattr(backend, "PAGE_MARGIN_RIGHT_MM", 0.0)),
+                        crop_top_mm=float(getattr(backend, "PAGE_MARGIN_TOP_MM", 0.0)),
+                        crop_bottom_mm=float(getattr(backend, "PAGE_MARGIN_BOTTOM_MM", 0.0)),
                     ):
                         continue
                     thick_px = _estimate_polyline_thickness_px(poly, graphics_dist_map)
