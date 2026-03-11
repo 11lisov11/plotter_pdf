@@ -224,7 +224,7 @@ class FilePage(QWidget):
         adv.addWidget(self.exact_geometry_check)
 
         self.safe_travel_lift_check = QCheckBox(
-            "Безопасный подъём пера между контурами (меньше артефактов)",
+            "Полный безопасный подъём между контурами (медленнее)",
             self.advanced_box,
         )
         self.safe_travel_lift_check.toggled.connect(self._emit_render_settings_changed)
@@ -507,7 +507,7 @@ class FilePage(QWidget):
         quality: str,
         force_text_to_path: bool,
         exact_geometry_mode: bool,
-        safe_travel_lift: bool = True,
+        safe_travel_lift: bool = False,
         strict_one_to_one: bool = False,
         handwriting_enabled: bool = False,
         handwriting_font: str = "Marck Script",

@@ -39,8 +39,21 @@ def fit_polylines_to_area(
     usable_w = max(1.0, area_w - 2.0 * float(work_area_margin))
     usable_h = max(1.0, area_h - 2.0 * float(work_area_margin))
 
-    raw_scale = min(usable_w / w, usable_h / h)
-    fit_scale = raw_scale if allow_upscale_to_work_area else min(1.0, raw_scale)
+    cols = max(1, int(pass_cols))
+    rows = max(1, int(pass_rows))
+    multi_pass = cols > 1 or rows > 1
+    # In tiled mode, fit against the full stitched canvas size (all passes),
+    # not against a single window. This enables true left/right (or grid)
+    # split jobs without forcing heavy extra downscale.
+    fit_w_ref = (usable_w * float(cols)) if multi_pass else usable_w
+    fit_h_ref = (usable_h * float(rows)) if multi_pass else usable_h
+    raw_scale = min(fit_w_ref / w, fit_h_ref / h)
+    # Strict dimensional guard must never enlarge geometry above source 1:1 scale.
+    strict_guard_enabled = float(min_fit_scale_for_dimensional_draw) > 0.0
+    if strict_guard_enabled:
+        fit_scale = min(1.0, raw_scale)
+    else:
+        fit_scale = raw_scale if allow_upscale_to_work_area else min(1.0, raw_scale)
     use_dimensional_guard = exact_geometry_mode and fit_scale < float(min_fit_scale_for_dimensional_draw)
 
     if use_dimensional_guard:
@@ -72,7 +85,7 @@ def fit_polylines_to_area(
                     f"from ({min_x:.3f}, {min_y:.3f})-({max_x:.3f}, {max_y:.3f})"
                 )
 
-    if int(pass_cols) > 1 or int(pass_rows) > 1:
+    if multi_pass:
         src_w_eff = w * scale
         src_h_eff = h * scale
         shift_x, shift_y, info = compute_pass_shift_fn(src_w_eff, src_h_eff, usable_w, usable_h)

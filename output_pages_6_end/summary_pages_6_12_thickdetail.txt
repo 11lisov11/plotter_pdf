@@ -1,11 +1,10 @@
-source: c:\plotter_pdf\variant5.pdf
-pages: 6..12
-mode: left_crop_20.5mm + thick_detail_multipass_only (frame/title-block excluded)
-extra: left upper side-column cleanup keeps lower-left table (ratio 0.68).
-page 6: ok, mp=27/46, draw=5.77m, lines=4975, draw_moves=4526, travel=149, bounds=0.000..180.000 x, -292.475..0.000 y, crop=x(20.5,206.1) y(10.0,293.1), left_cleanup=125/68, dedup_text=0
-page 7: ok, mp=72/121, draw=8.69m, lines=7441, draw_moves=6800, travel=213, bounds=0.000..180.000 x, -292.475..0.000 y, crop=x(20.5,206.1) y(10.0,293.1), left_cleanup=125/68, dedup_text=0
-page 8: ok, mp=69/114, draw=8.90m, lines=7477, draw_moves=6854, travel=207, bounds=0.000..180.000 x, -292.475..0.000 y, crop=x(20.5,206.1) y(10.0,293.1), left_cleanup=125/68, dedup_text=0
-page 9: ok, mp=93/144, draw=10.06m, lines=9266, draw_moves=8493, travel=257, bounds=0.000..180.000 x, -292.475..0.000 y, crop=x(20.5,206.1) y(10.0,293.1), left_cleanup=125/68, dedup_text=0
-page 10: ok, mp=116/178, draw=10.68m, lines=8979, draw_moves=8332, travel=215, bounds=0.000..180.000 x, -292.475..0.000 y, crop=x(20.5,206.1) y(10.0,293.1), left_cleanup=127/68, dedup_text=0
-page 11: ok, mp=35/61, draw=6.74m, lines=5815, draw_moves=5321, travel=164, bounds=0.000..180.000 x, -292.475..0.000 y, crop=x(20.5,206.1) y(10.0,293.1), left_cleanup=125/68, dedup_text=0
-page 12: ok, mp=41/67, draw=7.83m, lines=6083, draw_moves=5574, travel=169, bounds=0.000..180.000 x, -292.475..0.000 y, crop=x(20.5,206.1) y(10.0,293.1), left_cleanup=125/68, dedup_text=0
+Pages 6..12: frame kept, inner drawing downscaled where dense (plus digit fix).
+Report: c:\plotter_pdf\_tmp\rebuild_6_12_inner_downscale\handwriting_acceptance_report.json
+
+page 6: bounds=0.000..180.000 x, -295.000..-15.000 y; draw=7.91 m; seg=5773; dup=0.00000; tiny=0.16092
+page 7: bounds=0.000..180.000 x, -295.000..-15.000 y; draw=12.27 m; seg=7912; dup=0.00025; tiny=0.15508
+page 8: bounds=0.000..180.000 x, -295.000..-15.000 y; draw=13.50 m; seg=8553; dup=0.00000; tiny=0.14977
+page 9: bounds=0.000..180.000 x, -295.000..-15.000 y; draw=13.76 m; seg=9589; dup=0.00010; tiny=0.14120
+page 10: bounds=0.000..180.000 x, -295.000..-15.000 y; draw=14.54 m; seg=9447; dup=0.00032; tiny=0.12088
+page 11: bounds=0.000..180.000 x, -295.000..-15.000 y; draw=9.05 m; seg=6130; dup=0.00082; tiny=0.14388
+page 12: bounds=0.000..180.000 x, -295.000..-15.000 y; draw=9.99 m; seg=6005; dup=0.00083; tiny=0.15171

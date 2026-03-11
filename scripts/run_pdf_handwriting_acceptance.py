@@ -161,9 +161,9 @@ def run_acceptance(
             image_contours_mode=image_contours_mode,
             source_page_index=int(page),
             source_all_pages=False,
-            exact_geometry_mode=False,
-            safe_travel_lift=True,
-            strict_one_to_one=False,
+            exact_geometry_mode=True,
+            safe_travel_lift=False,
+            strict_one_to_one=True,
             log=page_logs.append,
         )
         dt = time.perf_counter() - t0

@@ -201,10 +201,10 @@ PEN_FAST_Z_SOFT_UP_MM = 0.0
 # Be explicit: if user passes Z params via CLI, do not force pen-fast profile.
 Z_PROFILE_CLI_OVERRIDE = False
 # Inter-path lift distance from Z-down towards Z-up.
-Z_TRAVEL_LIFT_MM = 3.0
-# If enabled, XY travel always uses full Z_UP (safest, fewer accidental marks).
-# If disabled, uses reduced inter-path lift (faster, but riskier for weak return springs).
-SAFE_PEN_TRAVEL_UP = True
+# Drawing jobs with pencil should use a short lift for speed (target ~3-4 mm).
+Z_TRAVEL_LIFT_MM = 3.5
+# Full Z_UP travel between contours (mainly useful for pen/marker mode on uneven media).
+SAFE_PEN_TRAVEL_UP = False
 
 # Pen lift mode for GRBL output: 'z' (G0 Z..), or 'spindle' (M3/M5) for pen servo/servo via spindle.
 PEN_LIFT_MODE = "z"
@@ -463,8 +463,9 @@ SINGLE_STROKE_TEXT_CLUSTER_MAX_BBOX_MM = 13.0
 SINGLE_STROKE_TEXT_CLUSTER_GAP_MM = 0.20
 SINGLE_STROKE_TEXT_CLUSTER_MAX_ITEMS = 1500
 # Some converters emit text as stroke-only closed outlines (double contour).
-# Cluster such tiny outlines and centerline them too.
-SINGLE_STROKE_OUTLINE_TEXT_ENABLED = True
+# Keep this disabled by default: on technical drawings it can collapse narrow
+# glyph loops ("0", "8", degree mark) into single slashes.
+SINGLE_STROKE_OUTLINE_TEXT_ENABLED = False
 SINGLE_STROKE_OUTLINE_CLUSTER_MAX_BBOX_MM = 14.0
 SINGLE_STROKE_OUTLINE_COMPONENT_MAX_BBOX_MM = 22.0
 SINGLE_STROKE_OUTLINE_COMPONENT_MAX_AREA_MM2 = 320.0
@@ -8389,8 +8390,12 @@ def apply_penlift(
         z_soft_up_eff = float(PEN_FAST_Z_SOFT_UP_MM)
 
     travel_lift_mm = float(Z_TRAVEL_LIFT_MM)
-    if SAFE_PEN_TRAVEL_UP:
-        # Force full lift for every G0 travel to avoid accidental drag lines.
+    if TOOL_MODE == "pencil":
+        # Pencil plotting is much faster and still stable with a short travel lift.
+        # Keep lift inside requested operational band (3..4 mm).
+        travel_lift_mm = min(4.0, max(3.0, travel_lift_mm))
+    elif SAFE_PEN_TRAVEL_UP:
+        # Optional full-lift mode for pen/marker to minimize drag risk.
         # A tiny extra margin prevents edge cases with float rounding.
         travel_lift_mm = max(travel_lift_mm, abs(float(z_down) - float(Z_UP)) + 0.1)
     gcode_penlift_mod.run_penlift_postprocess(
@@ -8420,7 +8425,9 @@ def apply_penlift(
         stroke_z_jitter_enable=bool(PENCIL_STROKE_Z_JITTER_ENABLED),
         stroke_z_jitter_mm=float(PENCIL_STROKE_Z_JITTER_MM),
         stroke_z_jitter_seed=int(PENCIL_STROKE_Z_JITTER_SEED),
-        merge_short_travel_enable=bool(HANDWRITING_MERGE_SHORT_TRAVEL_ENABLE and (handwriting_mode or TOOL_MODE == "pen")),
+        # Short-travel merge is intended only for handwriting continuity.
+        # Enabling it for generic pen drawings creates parasitic connector strokes in technical text/tables.
+        merge_short_travel_enable=bool(HANDWRITING_MERGE_SHORT_TRAVEL_ENABLE and handwriting_mode),
         merge_short_travel_mm=float(HANDWRITING_MERGE_SHORT_TRAVEL_MM),
         merge_short_travel_feed=float(HANDWRITING_MERGE_SHORT_TRAVEL_FEED),
         run_cmd=run_cmd,

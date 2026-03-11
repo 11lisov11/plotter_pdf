@@ -68,7 +68,7 @@ class AppSettingsData:
     source_all_pages: bool = False
     image_contours_mode: str = "always"  # off | word_only | always
     exact_geometry_mode: bool = True
-    safe_travel_lift: bool = True
+    safe_travel_lift: bool = False
     strict_one_to_one: bool = False
     last_preview_svg: str = ""
 

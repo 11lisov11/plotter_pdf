@@ -74,6 +74,8 @@ def gcode_to_polylines(lines: list[str], *, z_down: float | None = None, z_up: f
     cur_z = 0.0
     abs_mode = True  # assume G90, but accept G91
     ijk_abs = False  # GRBL default is incremental IJK; we accept G90.1/G91.1
+    # Motion is modal in G-code: persist last G0/G1/G2/G3 if not repeated.
+    motion_mode = 0
 
     pen_down = False
     out: list[list[tuple[float, float]]] = []
@@ -134,9 +136,9 @@ def gcode_to_polylines(lines: list[str], *, z_down: float | None = None, z_up: f
             cur_z = z if abs_mode else (cur_z + z)
             _update_pen_state()
 
-        if motion_g is None:
-            continue
-        g = motion_g
+        if motion_g is not None:
+            motion_mode = motion_g
+        g = motion_mode
 
         # Determine target XY.
         tx = cur_x
