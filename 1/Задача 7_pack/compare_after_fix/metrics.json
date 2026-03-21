@@ -1,0 +1,41 @@
+{
+  "pack": "C:\\plotter_pdf\\1\\\u0417\u0430\u0434\u0430\u0447\u0430 7_pack",
+  "source_detail_polylines": 4736,
+  "current_detail_polylines": 2591,
+  "full": {
+    "iou": 0.899508,
+    "recall": 0.972404,
+    "precision": 0.923072,
+    "src_pixels": 280653,
+    "cur_pixels": 295652,
+    "intersection": 272908,
+    "union": 303397
+  },
+  "left_half": {
+    "iou": 0.930942,
+    "recall": 0.9799,
+    "precision": 0.949065,
+    "src_pixels": 190247,
+    "cur_pixels": 196428,
+    "intersection": 186423,
+    "union": 200252
+  },
+  "right_half": {
+    "iou": 0.83848,
+    "recall": 0.956629,
+    "precision": 0.871614,
+    "src_pixels": 90406,
+    "cur_pixels": 99224,
+    "intersection": 86485,
+    "union": 103145
+  },
+  "center_right": {
+    "iou": 0.837889,
+    "recall": 0.963353,
+    "precision": 0.865475,
+    "src_pixels": 91713,
+    "cur_pixels": 102085,
+    "intersection": 88352,
+    "union": 105446
+  }
+}

@@ -132,3 +132,25 @@ def compute_pass_shift(
     }
     return shift_x, shift_y, info
 
+
+def sheet_pass_rotation_deg(
+    *,
+    sheet_format: str,
+    pass_cols: int,
+    pass_rows: int,
+    pass_col: int,
+    pass_row: int,
+) -> int:
+    fmt = (sheet_format or "work").strip().lower()
+    cols = max(1, int(pass_cols))
+    rows = max(1, int(pass_rows))
+    col = min(max(1, int(pass_col)), cols)
+    row = min(max(1, int(pass_row)), rows)
+
+    # Canonical physical A3 workflow on the current machine:
+    # pass 01 is drawn normally, then the sheet is turned 180 degrees
+    # and pass 02 is generated in the same rotated orientation.
+    if fmt == "a3" and cols == 2 and rows == 1 and col == 2 and row == 1:
+        return 180
+    return 0
+

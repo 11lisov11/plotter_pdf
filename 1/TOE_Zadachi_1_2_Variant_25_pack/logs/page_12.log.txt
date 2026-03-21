@@ -1,0 +1,77 @@
+Text render mode: handwriting=on font='C:\plotter_pdf\data\fonts\BadScript-Regular.ttf'; image_contours=always
+Handwriting mode: Cyrillic text profile tokens=154, short=31%, digits=10%, long=56%, style=paragraph.
+Handwriting mode: Cyrillic detected, trying TTF single-line pipeline first ('C:\plotter_pdf\data\fonts\BadScript-Regular.ttf').
+TTF centerline postprocess: 5 -> 4 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '12' -> 4 stroke(s), thr=224, cand=8, font=BadScript-Regular.ttf, size=14.04
+TTF centerline postprocess: 147 -> 102 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '2. ОПРЕДЕЛИТЬ ДЕЙСТВУЮЩИЕ ЗН' -> 102 stroke(s), thr=128, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 89 -> 62 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'ТРИЧЕСКОЙ ЦЕПИ И НАПРЯЖЕНИЙ ' -> 62 stroke(s), thr=160, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 82 -> 55 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'ЗАЖИМАХ ВЕТВЕЙ ПРИЕМНИКА.' -> 55 stroke(s), thr=160, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 147 -> 86 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Согласно схеме, на рис 2.2 о' -> 86 stroke(s), thr=224, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 41 -> 21 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'мах ветвей приемника.' -> 21 stroke(s), thr=224, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 21 -> 14 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Рисунок 2.2' -> 14 stroke(s), thr=224, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 1 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '-' -> 1 stroke(s), thr=96, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 37 -> 19 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Расчетная схема цепи' -> 19 stroke(s), thr=192, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 159 -> 117 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '3. ОПРЕДЕЛИТЬ ПОКАЗАНИЯ ПРИБ' -> 117 stroke(s), thr=160, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 34 -> 24 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'ВАТТМЕТРА W.' -> 24 stroke(s), thr=32, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 146 -> 80 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Определяем показания измерит' -> 80 stroke(s), thr=224, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 30 -> 23 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'и напряжений.' -> 23 stroke(s), thr=224, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 154 -> 97 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '4. РАССЧИТАТЬ АКТИВНУЮ, РЕАК' -> 97 stroke(s), thr=128, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 142 -> 108 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'ПЛЕКСНОЙ ФОРМЕ, КОЭФФИЦИЕНТ ' -> 108 stroke(s), thr=128, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 50 -> 35 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'БАЛАНС МОЩНОСТЕЙ.' -> 35 stroke(s), thr=128, cand=8, font=BadScript-Regular.ttf, size=12.00
+Handwriting TTF centerline mode: replaced 16 text node(s), generated 848 stroke path(s) using 'BadScript-Regular.ttf'.
+Text nodes after stroke-font replacement: 36
+Handwriting mode: applied font 'C:\plotter_pdf\data\fonts\BadScript-Regular.ttf' to 36 text node(s).
+Text->path conversion #1: inkscape.exe --batch-process --actions=select-all;export-text-to-path --export-type=svg --export-overwrite --export-filename=C:\plotter_pdf\_tmp\tmpy6sqh0om\source.svg C:\plotter_pdf\_tmp\tmpy6sqh0om\source.svg
+Text converted to SVG paths.
+Text nodes after conversion: 0
+Extracting paths from SVG ...
+Image contour tracing: +149 path(s) from embedded raster.
+Image vectorization mode: centerline (added 149 path(s), simplify=0.34 mm).
+Image contour tracing: +114 path(s) from embedded raster.
+Image vectorization mode: centerline (added 114 path(s), simplify=0.34 mm).
+Image contour tracing: +153 path(s) from embedded raster.
+Image vectorization mode: centerline (added 153 path(s), simplify=0.34 mm).
+Image contour tracing: +45 path(s) from embedded raster.
+Image vectorization mode: centerline (added 45 path(s), simplify=0.34 mm).
+Image contour tracing: total +461 path(s).
+Raw geometry bounds: x(24.625, 11828655358.263) y(14.745, 84490646.367)
+SVG page: 210.016 x 297.011 mm
+Auto trim: no outer border detected.
+Page/content clip: kept 11645 visible segments, dropped 761 out-of-area segments.
+Applied content area crop: x(20.5,205.0) y(10.0,292.0) dropped segments=761
+Bounds after content margin crop: x(24.625, 191.375) y(14.745, 278.938)
+SVG geometry: paths=893, segments=11645.
+Source bounds: x(24.625, 191.375) y(14.745, 278.938)
+Fit to work area: scale=1.0598, translate=(-24.462,-310.627), from (24.625, 14.745)-(191.375, 278.938)
+Stitch: polylines 893 -> 862 (eps=0.080 mm, gap_eps=0.150 mm, angle<=20.0 deg)
+Reorder: 862 polylines ordered (nearest-end).
+Pencil naturalization: adjusted 665/862 stroke(s).
+Pencil naturalization segments: 11645 -> 7721
+Polyline optimization: 893 -> 862
+Segment counts: source=11645, fitted=11645, clipped=11645
+Drawable segments after clip: 11645 (100.0% of source)
+Prepared bounds: x(1.677, 178.363) y(-294.968, -15.010)
+Estimated draw length: 4.66 m
+Pencil mode: base_z=11.900, wear=0.000 mm, z_comp_start=0.000, z_down_start=11.900, dyn(rate=0.0100 mm/m, comp=1.000, slope=0.0100 Zmm/m, max=0.800), est_remaining_to_sharpen=120.0 m (wear=120.0, interval=inf)
+Applying pen-up / pen-down ...
+G-code stats: lines=10176, draw=9364, travel=270, bounds=0.000..178.363 x, -294.969..0.000 y
+Preflight: ok: lines=10176, draw=9364, travel=270, ratio=0.03
+Saved file stats: lines=10176, draw=9364, travel=270, bounds=0.000..178.363 x, -294.969..0.000 y
+Saved: C:\plotter_pdf\1\TOE_Zadachi_1_2_Variant_25_pack\pages\page_12.nc
+Preview SVG: C:\plotter_pdf\1\TOE_Zadachi_1_2_Variant_25_pack\pages\page_12.svg
+Preview PDF: C:\plotter_pdf\1\TOE_Zadachi_1_2_Variant_25_pack\pages\page_12.pdf

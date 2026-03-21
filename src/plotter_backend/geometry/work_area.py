@@ -70,47 +70,61 @@ def configure_active_work_area(
     if target_w <= 0.0 or target_h <= 0.0:
         raise ValueError("Sheet width/height must be > 0.")
 
-    active_w = min(target_w, base_w)
-    active_h = min(target_h, base_h)
-    if target_w > base_w or target_h > base_h:
-        if logger:
-            logger(
-                f"Sheet {target_w:.1f}x{target_h:.1f} mm is larger than workspace {base_w:.1f}x{base_h:.1f} mm. "
-                "Using workspace-sized active area (overflow must be tiled or clipped)."
-            )
-
     anc = (anchor or "center").strip().lower()
     if anc not in sheet_anchor_choices:
         raise ValueError(f"Unknown --sheet-anchor '{anchor}'.")
 
     if anc == "center":
-        x0 = base_min_x + (base_w - active_w) * 0.5
-        y0 = base_min_y + (base_h - active_h) * 0.5
+        sheet_x0 = base_min_x + (base_w - target_w) * 0.5
+        sheet_y0 = base_min_y + (base_h - target_h) * 0.5
     elif anc == "lower_left":
-        x0 = base_min_x
-        y0 = base_min_y
+        sheet_x0 = base_min_x
+        sheet_y0 = base_min_y
     elif anc == "upper_left":
-        x0 = base_min_x
-        y0 = base_max_y - active_h
+        sheet_x0 = base_min_x
+        sheet_y0 = base_max_y - target_h
     elif anc == "lower_right":
-        x0 = base_max_x - active_w
-        y0 = base_min_y
+        sheet_x0 = base_max_x - target_w
+        sheet_y0 = base_min_y
     else:  # upper_right
-        x0 = base_max_x - active_w
-        y0 = base_max_y - active_h
+        sheet_x0 = base_max_x - target_w
+        sheet_y0 = base_max_y - target_h
 
-    x0 += float(offset_x_mm)
-    y0 += float(offset_y_mm)
+    sheet_x0 += float(offset_x_mm)
+    sheet_y0 += float(offset_y_mm)
+    sheet_x1 = sheet_x0 + target_w
+    sheet_y1 = sheet_y0 + target_h
 
-    x0 = min(max(x0, base_min_x), base_max_x - active_w)
-    y0 = min(max(y0, base_min_y), base_max_y - active_h)
-    x1 = x0 + active_w
-    y1 = y0 + active_h
+    x0 = max(base_min_x, sheet_x0)
+    x1 = min(base_max_x, sheet_x1)
+    y0 = max(base_min_y, sheet_y0)
+    y1 = min(base_max_y, sheet_y1)
+    active_w = max(0.0, x1 - x0)
+    active_h = max(0.0, y1 - y0)
+
+    if active_w <= 1e-6 or active_h <= 1e-6:
+        raise ValueError(
+            f"Sheet placement has no overlap with workspace: "
+            f"sheet bounds x({sheet_x0:.3f},{sheet_x1:.3f}) y({sheet_y0:.3f},{sheet_y1:.3f})"
+        )
 
     if logger:
+        if target_w > base_w or target_h > base_h:
+            logger(
+                f"Sheet {target_w:.1f}x{target_h:.1f} mm is larger than workspace {base_w:.1f}x{base_h:.1f} mm. "
+                "Using the overlapped sheet/workspace window."
+            )
+        elif (
+            sheet_x0 < base_min_x
+            or sheet_x1 > base_max_x
+            or sheet_y0 < base_min_y
+            or sheet_y1 > base_max_y
+        ):
+            logger("Sheet placement extends outside workspace. Using the overlapped sheet/workspace window.")
         logger(
             f"Active area: {active_w:.1f}x{active_h:.1f} mm, "
             f"bounds x({x0:.3f},{x1:.3f}) y({y0:.3f},{y1:.3f}), "
+            f"sheet_bounds x({sheet_x0:.3f},{sheet_x1:.3f}) y({sheet_y0:.3f},{sheet_y1:.3f}), "
             f"sheet={fmt}, anchor={anc}, offset=({offset_x_mm:.2f},{offset_y_mm:.2f})"
         )
 

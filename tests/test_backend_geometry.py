@@ -45,6 +45,32 @@ class BackendGeometryTests(unittest.TestCase):
         finally:
             backend.PASS_COLS, backend.PASS_ROWS, backend.PASS_COL, backend.PASS_ROW = old
 
+    def test_transform_polylines_for_active_sheet_pass_rotates_a3_second_pass_180(self) -> None:
+        old_cfg = dict(backend.ACTIVE_SHEET_CONFIG)
+        old_pass = (backend.PASS_COLS, backend.PASS_ROWS, backend.PASS_COL, backend.PASS_ROW)
+        try:
+            backend.ACTIVE_SHEET_CONFIG = {
+                "sheet_format": "a3",
+                "sheet_width_mm": 420.0,
+                "sheet_height_mm": 297.0,
+                "anchor": "lower_left",
+                "offset_x_mm": 0.0,
+                "offset_y_mm": 0.0,
+            }
+            backend.PASS_COLS = 2
+            backend.PASS_ROWS = 1
+            backend.PASS_COL = 2
+            backend.PASS_ROW = 1
+            with mock.patch.object(backend, "work_area_bounds", return_value=(0.0, 180.0, -280.0, 0.0)):
+                out = backend.transform_polylines_for_active_sheet_pass(
+                    [[(0.0, -280.0), (180.0, 0.0)]],
+                    logger=None,
+                )
+            self.assertEqual(out, [[(180.0, 0.0), (0.0, -280.0)]])
+        finally:
+            backend.ACTIVE_SHEET_CONFIG = old_cfg
+            backend.PASS_COLS, backend.PASS_ROWS, backend.PASS_COL, backend.PASS_ROW = old_pass
+
     def test_plan_tiled_passes_reports_two_pass_scale(self) -> None:
         plan = backend.plan_tiled_passes_for_sheet(420.0, 297.0)
         self.assertIn("max_two_pass_scale", plan)
@@ -388,6 +414,32 @@ class BackendGeometryTests(unittest.TestCase):
             self.assertEqual(len(out), 2)
         finally:
             backend.HANDWRITING_WORD_JOIN_ENABLE = old_join_enable
+
+    def test_apply_penlift_force_full_lift_uses_full_z_up_travel(self) -> None:
+        old_tool_mode = backend.TOOL_MODE
+        old_safe = backend.SAFE_PEN_TRAVEL_UP
+        old_lift = backend.Z_TRAVEL_LIFT_MM
+        try:
+            backend.TOOL_MODE = "pen"
+            backend.SAFE_PEN_TRAVEL_UP = False
+            backend.Z_TRAVEL_LIFT_MM = 3.5
+            with tempfile.TemporaryDirectory() as td:
+                xy_path = Path(td) / "in.nc"
+                pen_path = Path(td) / "out.nc"
+                xy_path.write_text("G21\nG90\nG0 X0 Y0\n", encoding="utf-8")
+                captured: dict[str, object] = {}
+
+                def _fake_run(*_args, **kwargs):
+                    captured.update(kwargs)
+
+                with mock.patch.object(backend.gcode_penlift_mod, "run_penlift_postprocess", side_effect=_fake_run):
+                    backend.apply_penlift(xy_path, pen_path, z_down=11.9, force_full_lift=True)
+
+                self.assertAlmostEqual(float(captured["z_travel_lift_mm"]), 12.0, places=6)
+        finally:
+            backend.TOOL_MODE = old_tool_mode
+            backend.SAFE_PEN_TRAVEL_UP = old_safe
+            backend.Z_TRAVEL_LIFT_MM = old_lift
 
     def test_smooth_handwriting_polylines_preserves_endpoints(self) -> None:
         old_enabled = backend.HANDWRITING_SMOOTH_ENABLED

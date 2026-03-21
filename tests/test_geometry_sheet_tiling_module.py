@@ -97,7 +97,40 @@ class GeometrySheetTilingModuleTests(unittest.TestCase):
         self.assertAlmostEqual(shift_y_2, 0.0, places=6)
         self.assertAlmostEqual(shift_x_1, -shift_x_2, places=6)
 
+    def test_sheet_pass_rotation_deg_requires_180_for_a3_second_pass(self) -> None:
+        self.assertEqual(
+            tiling_mod.sheet_pass_rotation_deg(
+                sheet_format="a3",
+                pass_cols=2,
+                pass_rows=1,
+                pass_col=2,
+                pass_row=1,
+            ),
+            180,
+        )
+
+    def test_sheet_pass_rotation_deg_is_zero_for_other_passes(self) -> None:
+        self.assertEqual(
+            tiling_mod.sheet_pass_rotation_deg(
+                sheet_format="a3",
+                pass_cols=2,
+                pass_rows=1,
+                pass_col=1,
+                pass_row=1,
+            ),
+            0,
+        )
+        self.assertEqual(
+            tiling_mod.sheet_pass_rotation_deg(
+                sheet_format="a4",
+                pass_cols=2,
+                pass_rows=1,
+                pass_col=2,
+                pass_row=1,
+            ),
+            0,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
-

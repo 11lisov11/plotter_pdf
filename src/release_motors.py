@@ -2,6 +2,15 @@ import sys
 import time
 import argparse
 
+try:
+    from src.plotter_backend.machine.windows_bt_spp import build_serial_open_hint
+except Exception:
+    try:
+        from plotter_backend.machine.windows_bt_spp import build_serial_open_hint  # type: ignore
+    except Exception:
+        def build_serial_open_hint(_port: str, diagnostics=None) -> str:
+            return ""
+
 
 def _force_utf8_stdio() -> None:
     try:
@@ -52,6 +61,12 @@ def main(argv: list[str]) -> int:
         ser.open()
     except Exception as exc:
         print(f"Cannot open {port} @ {baud}: {exc}")
+        try:
+            hint = str(build_serial_open_hint(port) or "").strip()
+        except Exception:
+            hint = ""
+        if hint:
+            print(hint)
         print("Close UGS/any sender that is connected to the same COM port and retry.")
         return 1
 

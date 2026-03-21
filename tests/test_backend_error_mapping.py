@@ -32,6 +32,33 @@ class BackendErrorMappingTests(unittest.TestCase):
         self.assertFalse(ok)
         self.assertEqual(msg, "Error[RuntimeError]: mark build failed")
 
+    def test_run_corner_calibration_pipeline_forces_full_lift(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="plotter_err_map_cal_") as td:
+            root = Path(td)
+            captured: dict[str, object] = {}
+
+            def _fake_write_xy(path, _polys, _ft, _fd):
+                Path(path).write_text("G21\nG90\nG0 X0 Y0\nG1 X1 Y0\n", encoding="utf-8")
+
+            def _fake_penlift(_xy, pen, **kwargs):
+                captured.update(kwargs)
+                Path(pen).write_text("G0 Z0\nG0 X0 Y0\n", encoding="utf-8")
+
+            def _fake_finalize(_prepared, final):
+                Path(final).write_text("G0 Z0\n", encoding="utf-8")
+
+            with (
+                mock.patch.object(backend, "ensure_local_tmp_root", return_value=root),
+                mock.patch.object(backend, "build_area_corner_mark_polylines", return_value=[[(0.0, 0.0), (1.0, 0.0)]]),
+                mock.patch.object(backend, "clip_polylines_to_work_area", side_effect=lambda polys, logger=None: polys),
+                mock.patch.object(backend, "write_xy_gcode", side_effect=_fake_write_xy),
+                mock.patch.object(backend, "apply_penlift", side_effect=_fake_penlift),
+                mock.patch.object(backend, "make_final_with_preamble", side_effect=_fake_finalize),
+            ):
+                ok, msg = backend.run_corner_calibration_pipeline(lambda *_args: None, send_to_plotter=False)
+            self.assertTrue(ok, msg)
+            self.assertTrue(bool(captured.get("force_full_lift")))
+
     def test_run_pipeline_surfaces_conversion_error_class(self) -> None:
         with tempfile.TemporaryDirectory(prefix="plotter_err_map_conv_") as td:
             root = Path(td)

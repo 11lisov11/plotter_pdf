@@ -1,0 +1,166 @@
+Text render mode: handwriting=on font='C:\plotter_pdf\data\fonts\BadScript-Regular.ttf'; image_contours=always
+Handwriting mode: Cyrillic text profile tokens=392, short=40%, digits=16%, long=41%, style=paragraph.
+Handwriting mode: Cyrillic detected, trying TTF single-line pipeline first ('C:\plotter_pdf\data\fonts\BadScript-Regular.ttf').
+TTF centerline postprocess: 3 -> 3 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '1' -> 3 stroke(s), thr=224, cand=8, font=BadScript-Regular.ttf, size=14.04
+TTF centerline postprocess: 65 -> 47 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'РАСЧЕТ ЦЕПИ ПОСТОЯННОГО ТОКА' -> 47 stroke(s), thr=128, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 136 -> 81 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Целью работы является расчёт' -> 81 stroke(s), thr=192, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 56 -> 43 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'стоянного тока приведена на ' -> 43 stroke(s), thr=192, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 25 -> 17 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Рисунок 1.1' -> 17 stroke(s), thr=160, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 1 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '-' -> 1 stroke(s), thr=96, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 51 -> 25 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Схема электрической цепи' -> 25 stroke(s), thr=224, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 74 -> 49 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Числовые данные приведены в ' -> 49 stroke(s), thr=32, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 25 -> 14 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Таблица 1.1' -> 14 stroke(s), thr=64, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 2 -> 2 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'J0' -> 2 stroke(s), thr=64, cand=8, font=BadScript-Regular.ttf, size=9.96
+TTF centerline postprocess: 5 -> 4 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'E1' -> 4 stroke(s), thr=64, cand=8, font=BadScript-Regular.ttf, size=9.96
+TTF centerline postprocess: 4 -> 3 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'E2' -> 3 stroke(s), thr=160, cand=8, font=BadScript-Regular.ttf, size=9.96
+TTF centerline postprocess: 4 -> 4 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'E3' -> 4 stroke(s), thr=128, cand=8, font=BadScript-Regular.ttf, size=9.96
+TTF centerline postprocess: 5 -> 4 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'E4' -> 4 stroke(s), thr=224, cand=8, font=BadScript-Regular.ttf, size=9.96
+TTF centerline postprocess: 5 -> 5 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'G0' -> 5 stroke(s), thr=128, cand=8, font=BadScript-Regular.ttf, size=9.96
+TTF centerline postprocess: 6 -> 5 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'R1' -> 5 stroke(s), thr=224, cand=8, font=BadScript-Regular.ttf, size=9.96
+TTF centerline postprocess: 5 -> 3 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'R2' -> 3 stroke(s), thr=32, cand=8, font=BadScript-Regular.ttf, size=9.96
+TTF centerline postprocess: 5 -> 4 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'R3' -> 4 stroke(s), thr=32, cand=8, font=BadScript-Regular.ttf, size=9.96
+TTF centerline postprocess: 5 -> 4 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'R4' -> 4 stroke(s), thr=32, cand=8, font=BadScript-Regular.ttf, size=9.96
+TTF centerline postprocess: 5 -> 4 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'R5' -> 4 stroke(s), thr=32, cand=8, font=BadScript-Regular.ttf, size=9.96
+TTF centerline postprocess: 4 -> 4 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'R6' -> 4 stroke(s), thr=32, cand=8, font=BadScript-Regular.ttf, size=9.96
+TTF centerline postprocess: 6 -> 3 stroke(s) (eps=0.12, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'А' -> 3 stroke(s), thr=32, cand=8, font=BadScript-Regular.ttf, size=9.96
+TTF centerline postprocess: 5 -> 2 stroke(s) (eps=0.12, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'В' -> 2 stroke(s), thr=192, cand=8, font=BadScript-Regular.ttf, size=9.96
+TTF centerline postprocess: 5 -> 2 stroke(s) (eps=0.12, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'В' -> 2 stroke(s), thr=192, cand=8, font=BadScript-Regular.ttf, size=9.96
+TTF centerline postprocess: 5 -> 2 stroke(s) (eps=0.12, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'В' -> 2 stroke(s), thr=192, cand=8, font=BadScript-Regular.ttf, size=9.96
+TTF centerline postprocess: 5 -> 2 stroke(s) (eps=0.12, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'В' -> 2 stroke(s), thr=192, cand=8, font=BadScript-Regular.ttf, size=9.96
+TTF centerline postprocess: 4 -> 3 stroke(s) (eps=0.12, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'См' -> 3 stroke(s), thr=192, cand=8, font=BadScript-Regular.ttf, size=9.96
+TTF centerline postprocess: 4 -> 3 stroke(s) (eps=0.12, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Ом' -> 3 stroke(s), thr=192, cand=8, font=BadScript-Regular.ttf, size=9.96
+TTF centerline postprocess: 4 -> 3 stroke(s) (eps=0.12, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Ом' -> 3 stroke(s), thr=192, cand=8, font=BadScript-Regular.ttf, size=9.96
+TTF centerline postprocess: 4 -> 3 stroke(s) (eps=0.12, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Ом' -> 3 stroke(s), thr=192, cand=8, font=BadScript-Regular.ttf, size=9.96
+TTF centerline postprocess: 4 -> 3 stroke(s) (eps=0.12, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Ом' -> 3 stroke(s), thr=192, cand=8, font=BadScript-Regular.ttf, size=9.96
+TTF centerline postprocess: 4 -> 3 stroke(s) (eps=0.12, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Ом' -> 3 stroke(s), thr=192, cand=8, font=BadScript-Regular.ttf, size=9.96
+TTF centerline postprocess: 4 -> 3 stroke(s) (eps=0.12, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Ом' -> 3 stroke(s), thr=192, cand=8, font=BadScript-Regular.ttf, size=9.96
+TTF centerline postprocess: 5 -> 4 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '12' -> 4 stroke(s), thr=160, cand=8, font=BadScript-Regular.ttf, size=9.96
+TTF centerline postprocess: 6 -> 6 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '150' -> 6 stroke(s), thr=160, cand=8, font=BadScript-Regular.ttf, size=9.96
+TTF centerline postprocess: 6 -> 6 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '150' -> 6 stroke(s), thr=160, cand=8, font=BadScript-Regular.ttf, size=9.96
+TTF centerline postprocess: 7 -> 6 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '140' -> 6 stroke(s), thr=160, cand=8, font=BadScript-Regular.ttf, size=9.96
+TTF centerline postprocess: 7 -> 6 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '140' -> 6 stroke(s), thr=160, cand=8, font=BadScript-Regular.ttf, size=9.96
+TTF centerline postprocess: 4 -> 3 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '0.4' -> 3 stroke(s), thr=224, cand=8, font=BadScript-Regular.ttf, size=9.96
+TTF centerline postprocess: 3 -> 3 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '20' -> 3 stroke(s), thr=224, cand=8, font=BadScript-Regular.ttf, size=9.96
+TTF centerline postprocess: 5 -> 5 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '15' -> 5 stroke(s), thr=160, cand=8, font=BadScript-Regular.ttf, size=9.96
+TTF centerline postprocess: 4 -> 4 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '10' -> 4 stroke(s), thr=64, cand=8, font=BadScript-Regular.ttf, size=9.96
+TTF centerline postprocess: 1 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '8' -> 1 stroke(s), thr=128, cand=8, font=BadScript-Regular.ttf, size=9.96
+TTF centerline postprocess: 1 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '6' -> 1 stroke(s), thr=64, cand=8, font=BadScript-Regular.ttf, size=9.96
+TTF centerline postprocess: 1 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '8' -> 1 stroke(s), thr=128, cand=8, font=BadScript-Regular.ttf, size=9.96
+TTF centerline postprocess: 18 -> 11 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Требуется:' -> 11 stroke(s), thr=32, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 151 -> 104 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '1. Начертить граф цепи, дере' -> 104 stroke(s), thr=192, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 49 -> 28 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'быть не менее количества узл' -> 28 stroke(s), thr=192, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 92 -> 64 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'уменьшенного на единицу. Сос' -> 64 stroke(s), thr=192, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 31 -> 17 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'матрицы цепи.' -> 17 stroke(s), thr=192, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 100 -> 63 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '2. Рассчитать токи во всех в' -> 63 stroke(s), thr=192, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 138 -> 94 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '3. Рассчитать токи во всех в' -> 94 stroke(s), thr=192, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 15 -> 12 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'чета по п.2.' -> 12 stroke(s), thr=192, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 58 -> 41 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '4. Рассчитать показания воль' -> 41 stroke(s), thr=192, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 45 -> 30 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '5. Проверить баланс мощности' -> 30 stroke(s), thr=192, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 151 -> 90 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '6. Рассчитать значения потен' -> 90 stroke(s), thr=192, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 143 -> 89 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'построить потенциальную диаг' -> 89 stroke(s), thr=224, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 80 -> 55 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '7. Рассчитать значение тока ' -> 55 stroke(s), thr=192, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 72 -> 47 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'преподавателем методом эквив' -> 47 stroke(s), thr=224, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 22 -> 16 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'точника тока.' -> 16 stroke(s), thr=192, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 150 -> 93 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '8. Рассчитать значение тока ' -> 93 stroke(s), thr=192, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 22 -> 17 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'точника ЭДС.' -> 17 stroke(s), thr=128, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 142 -> 103 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '1 НАЧЕРТИТЬ ГРАФ ЦЕПИ, ДЕРЕВ' -> 103 stroke(s), thr=128, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 143 -> 95 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'ВЬЕВ И ДОПОЛНЕНИЙ ДОЛЖНО БЫТ' -> 95 stroke(s), thr=128, cand=8, font=BadScript-Regular.ttf, size=12.00
+Handwriting TTF centerline mode: replaced 64 text node(s), generated 1473 stroke path(s) using 'BadScript-Regular.ttf'.
+Text nodes after stroke-font replacement: 106
+Handwriting mode: applied font 'C:\plotter_pdf\data\fonts\BadScript-Regular.ttf' to 106 text node(s).
+Text->path conversion #1: inkscape.exe --batch-process --actions=select-all;export-text-to-path --export-type=svg --export-overwrite --export-filename=C:\plotter_pdf\_tmp\tmpvpd8xx48\source.svg C:\plotter_pdf\_tmp\tmpvpd8xx48\source.svg
+Text converted to SVG paths.
+Text nodes after conversion: 0
+Extracting paths from SVG ...
+Image contour tracing: +142 path(s) from embedded raster.
+Image vectorization mode: centerline (added 142 path(s), simplify=0.34 mm).
+Image contour tracing: total +142 path(s).
+Raw geometry bounds: x(24.629, 192.271) y(14.774, 278.870)
+SVG page: 210.016 x 297.011 mm
+Auto trim: no outer border detected.
+Applied content area crop: x(20.5,205.0) y(10.0,292.0) dropped segments=0
+Bounds after content margin crop: x(24.629, 192.271) y(14.774, 278.870)
+SVG geometry: paths=1754, segments=24011.
+Source bounds: x(24.629, 192.271) y(14.774, 278.870)
+Fit to work area: scale=1.0602, translate=(-24.981,-310.664), from (24.629, 14.774)-(192.271, 278.870)
+Stitch: polylines 1754 -> 1660 (eps=0.080 mm, gap_eps=0.150 mm, angle<=20.0 deg)
+Reorder: 1660 polylines ordered (nearest-end).
+Pencil naturalization: adjusted 1184/1660 stroke(s).
+Pencil naturalization segments: 24010 -> 15031
+Polyline optimization: 1754 -> 1660
+Segment counts: source=24011, fitted=24011, clipped=24011
+Drawable segments after clip: 24011 (100.0% of source)
+Prepared bounds: x(1.159, 178.803) y(-295.000, -15.000)
+Estimated draw length: 8.51 m
+Pencil mode: base_z=11.900, wear=0.000 mm, z_comp_start=0.000, z_down_start=11.900, dyn(rate=0.0100 mm/m, comp=1.000, slope=0.0100 Zmm/m, max=0.800), est_remaining_to_sharpen=120.0 m (wear=120.0, interval=inf)
+Applying pen-up / pen-down ...
+G-code stats: lines=19184, draw=17883, travel=433, bounds=0.000..178.803 x, -295.000..0.000 y
+Preflight: ok: lines=19184, draw=17883, travel=433, ratio=0.02
+Saved file stats: lines=19184, draw=17883, travel=433, bounds=0.000..178.803 x, -295.000..0.000 y
+Saved: C:\plotter_pdf\1\TOE_Zadachi_1_2_Variant_25_pack\pages\page_01.nc
+Preview SVG: C:\plotter_pdf\1\TOE_Zadachi_1_2_Variant_25_pack\pages\page_01.svg
+Preview PDF: C:\plotter_pdf\1\TOE_Zadachi_1_2_Variant_25_pack\pages\page_01.pdf

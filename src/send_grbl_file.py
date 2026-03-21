@@ -4,6 +4,15 @@ from pathlib import Path
 import argparse
 from collections import deque
 
+try:
+    from src.plotter_backend.machine.windows_bt_spp import build_serial_open_hint
+except Exception:
+    try:
+        from plotter_backend.machine.windows_bt_spp import build_serial_open_hint  # type: ignore
+    except Exception:
+        def build_serial_open_hint(_port: str, diagnostics=None) -> str:
+            return ""
+
 
 def _force_utf8_stdio() -> None:
     try:
@@ -70,7 +79,15 @@ def open_grbl(port: str, baud: int):
             pass
         ser.open()
     except SerialException as exc:
-        raise RuntimeError(f"Cannot open {port} @ {baud}: {exc}") from exc
+        hint = ""
+        try:
+            hint = str(build_serial_open_hint(port) or "").strip()
+        except Exception:
+            hint = ""
+        message = f"Cannot open {port} @ {baud}: {exc}"
+        if hint and hint not in message:
+            message = f"{message}\n{hint}"
+        raise RuntimeError(message) from exc
     time.sleep(0.2)
     ser.reset_input_buffer()
     ser.reset_output_buffer()

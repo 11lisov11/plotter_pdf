@@ -27,6 +27,15 @@ except Exception:  # pragma: no cover - fallback for non-package layouts
             pass
 
 try:
+    from src.plotter_backend.machine.windows_bt_spp import build_serial_open_hint
+except Exception:  # pragma: no cover - fallback for non-package layouts
+    try:
+        from plotter_backend.machine.windows_bt_spp import build_serial_open_hint  # type: ignore
+    except Exception:  # pragma: no cover - defensive fallback
+        def build_serial_open_hint(_port: str, diagnostics=None) -> str:
+            return ""
+
+try:
     import fitz  # type: ignore
 except Exception:
     fitz = None
@@ -54,6 +63,27 @@ def _format_user_exception(exc: Exception, *, prefix: str = "") -> str:
     if prefix:
         return f"{prefix} ({base})"
     return base
+
+
+def _format_internal_exception(prefix: str, exc: Exception) -> str:
+    return f"{prefix} ({type(exc).__name__}): {exc}"
+
+
+def _append_serial_open_hint(message: str, *, com_port: str) -> str:
+    base = str(message or "").strip()
+    port = str(com_port or "").strip()
+    haystack = f"{base}\n{port}".lower()
+    if not any(token in haystack for token in ("com", "serial", "port", "bluetooth", "rfcomm", "cannot open")):
+        return base
+    try:
+        hint = str(build_serial_open_hint(port) or "").strip()
+    except Exception:
+        hint = ""
+    if not hint:
+        return base
+    if hint in base:
+        return base
+    return f"{base}\n{hint}" if base else hint
 
 
 def normalize_render_mode(mode: Optional[str]) -> str:
@@ -619,6 +649,12 @@ def _is_detail_polyline_mm(
     return True
 
 
+def _allow_method3_detail_thick_multipass(backend) -> tuple[bool, str]:
+    if bool(getattr(backend, "EXACT_GEOMETRY_MODE", False)):
+        return False, "exact_geometry_mode"
+    return True, "enabled"
+
+
 METHOD3_DETAIL_DOWNSCALE = 0.9728
 METHOD3_DETAIL_TRIGGER_RATIO_W = 0.82
 METHOD3_DETAIL_TRIGGER_RATIO_H = 0.70
@@ -709,6 +745,115 @@ def _downscale_method3_detail_zone_mm(
         "scale": float(s),
         "after_w": float(bw * s),
         "after_h": float(bh * s),
+    }
+
+
+def _compose_method3_multipass_hybrid_canvas_mm(
+    polys_mm: list[list[tuple[float, float]]],
+    *,
+    page_w_mm: float,
+    page_h_mm: float,
+    crop_left_mm: float,
+    crop_right_mm: float,
+    crop_top_mm: float,
+    crop_bottom_mm: float,
+    target_w_mm: float,
+    target_h_mm: float,
+) -> tuple[list[list[tuple[float, float]]], int, dict[str, float | bool | str]]:
+    if not polys_mm:
+        return polys_mm, 0, {"applied": False, "reason": "empty"}
+
+    all_x = [float(x) for poly in polys_mm for x, _y in poly]
+    all_y = [float(y) for poly in polys_mm for _x, y in poly]
+    if not all_x or not all_y:
+        return polys_mm, 0, {"applied": False, "reason": "empty"}
+
+    src_x0 = min(all_x)
+    src_x1 = max(all_x)
+    src_y0 = min(all_y)
+    src_y1 = max(all_y)
+    src_w = max(1e-9, float(src_x1 - src_x0))
+    src_h = max(1e-9, float(src_y1 - src_y0))
+
+    detail_flags: list[bool] = []
+    detail_pts: list[tuple[float, float]] = []
+    for poly in polys_mm:
+        is_detail = _is_detail_polyline_mm(
+            poly,
+            page_w_mm=float(page_w_mm),
+            page_h_mm=float(page_h_mm),
+            crop_left_mm=float(crop_left_mm),
+            crop_right_mm=float(crop_right_mm),
+            crop_top_mm=float(crop_top_mm),
+            crop_bottom_mm=float(crop_bottom_mm),
+        )
+        detail_flags.append(is_detail)
+        if is_detail:
+            for x, y in poly:
+                detail_pts.append((float(x), float(y)))
+
+    if not detail_pts:
+        return polys_mm, 0, {"applied": False, "reason": "no_detail"}
+
+    dx = [p[0] for p in detail_pts]
+    dy = [p[1] for p in detail_pts]
+    detail_x0 = min(dx)
+    detail_x1 = max(dx)
+    detail_y0 = min(dy)
+    detail_y1 = max(dy)
+    detail_w = max(0.0, float(detail_x1 - detail_x0))
+    detail_h = max(0.0, float(detail_y1 - detail_y0))
+    if detail_w <= 1e-6 or detail_h <= 1e-6:
+        return polys_mm, 0, {"applied": False, "reason": "degenerate_detail"}
+
+    max_overflow_mm = 0.75
+    if detail_w > (float(target_w_mm) + max_overflow_mm) or detail_h > (float(target_h_mm) + max_overflow_mm):
+        return polys_mm, 0, {
+            "applied": False,
+            "reason": "detail_does_not_fit_1to1",
+            "detail_w": float(detail_w),
+            "detail_h": float(detail_h),
+            "target_w": float(target_w_mm),
+            "target_h": float(target_h_mm),
+        }
+
+    frame_scale_x = float(target_w_mm) / float(src_w)
+    frame_scale_y = float(target_h_mm) / float(src_h)
+    transformed: list[list[tuple[float, float]]] = []
+    detail_paths = 0
+    frame_paths = 0
+    for poly, is_detail in zip(polys_mm, detail_flags):
+        out_poly: list[tuple[float, float]] = []
+        for x, y in poly:
+            if is_detail:
+                nx = float(x) - float(src_x0)
+                ny = float(y) - float(src_y0)
+            else:
+                nx = (float(x) - float(src_x0)) * float(frame_scale_x)
+                ny = (float(y) - float(src_y0)) * float(frame_scale_y)
+            nx = max(0.0, min(float(target_w_mm), nx))
+            ny = max(0.0, min(float(target_h_mm), ny))
+            out_poly.append((nx, ny))
+        if len(out_poly) >= 2:
+            transformed.append(out_poly)
+            if is_detail:
+                detail_paths += 1
+            else:
+                frame_paths += 1
+
+    return transformed, detail_paths, {
+        "applied": True,
+        "frame_scale_x": float(frame_scale_x),
+        "frame_scale_y": float(frame_scale_y),
+        "detail_scale": 1.0,
+        "detail_w": float(detail_w),
+        "detail_h": float(detail_h),
+        "src_w": float(src_w),
+        "src_h": float(src_h),
+        "target_w": float(target_w_mm),
+        "target_h": float(target_h_mm),
+        "detail_paths": int(detail_paths),
+        "frame_paths": int(frame_paths),
     }
 
 
@@ -2735,6 +2880,11 @@ class BackendBridge:
                     "Method3 cleanup: removed outer-frame paths="
                     f"{removed_text_frame + removed_graphics_frame}"
                 )
+            if not filtered_text_px and not graphics_px and not vector_graphics_mm and text_centerline_px:
+                restored_text_px = [list(poly) for poly in text_centerline_px if len(poly) >= 2]
+                if restored_text_px:
+                    filtered_text_px = restored_text_px
+                    log("Method3 cleanup fallback: restored raw centerline text paths after aggressive filtering.")
             if not filtered_text_px and not graphics_px and not vector_graphics_mm:
                 return False, "Method3 centerline produced no paths."
 
@@ -2755,6 +2905,7 @@ class BackendBridge:
                 graphics_dist_map = backend.cv2.distanceTransform(mask_u8, backend.cv2.DIST_L2, 3)
             except Exception:
                 graphics_dist_map = None
+            allow_detail_thick_multipass, multipass_reason = _allow_method3_detail_thick_multipass(backend)
             detail_thick = 0
             detail_extra_passes = 0
             if vector_graphics_mm:
@@ -2762,45 +2913,46 @@ class BackendBridge:
                     if len(p) < 2 or backend.polyline_length(p) < 0.25:
                         continue
                     graphics_polys_mm.append(p)
-                for p, width_mm in vector_thick_meta:
-                    if len(p) < 2 or backend.polyline_length(p) < 0.25:
-                        continue
-                    if not _is_detail_polyline_mm(
-                        p,
-                        page_w_mm=float(page_w_mm),
-                        page_h_mm=float(page_h_mm),
-                        crop_left_mm=float(getattr(backend, "PAGE_MARGIN_LEFT_MM", 0.0)),
-                        crop_right_mm=float(getattr(backend, "PAGE_MARGIN_RIGHT_MM", 0.0)),
-                        crop_top_mm=float(getattr(backend, "PAGE_MARGIN_TOP_MM", 0.0)),
-                        crop_bottom_mm=float(getattr(backend, "PAGE_MARGIN_BOTTOM_MM", 0.0)),
-                    ):
-                        continue
-                    passes = 1
-                    if float(width_mm) >= 0.52:
-                        passes = 2
-                    if passes <= 1:
-                        continue
-                    detail_thick += 1
-                    if passes == 2:
-                        p2 = list(p)
-                        if len(p2) >= 2 and backend.polyline_length(p2) >= 0.25:
-                            graphics_polys_mm.append(p2)
-                            detail_extra_passes += 1
-                    else:
-                        p2 = list(p)
-                        p3 = list(p)
-                        if len(p2) >= 2 and backend.polyline_length(p2) >= 0.25:
-                            graphics_polys_mm.append(p2)
-                            detail_extra_passes += 1
-                        if len(p3) >= 2 and backend.polyline_length(p3) >= 0.25:
-                            graphics_polys_mm.append(p3)
-                            detail_extra_passes += 1
+                if allow_detail_thick_multipass:
+                    for p, width_mm in vector_thick_meta:
+                        if len(p) < 2 or backend.polyline_length(p) < 0.25:
+                            continue
+                        if not _is_detail_polyline_mm(
+                            p,
+                            page_w_mm=float(page_w_mm),
+                            page_h_mm=float(page_h_mm),
+                            crop_left_mm=float(getattr(backend, "PAGE_MARGIN_LEFT_MM", 0.0)),
+                            crop_right_mm=float(getattr(backend, "PAGE_MARGIN_RIGHT_MM", 0.0)),
+                            crop_top_mm=float(getattr(backend, "PAGE_MARGIN_TOP_MM", 0.0)),
+                            crop_bottom_mm=float(getattr(backend, "PAGE_MARGIN_BOTTOM_MM", 0.0)),
+                        ):
+                            continue
+                        passes = 1
+                        if float(width_mm) >= 0.52:
+                            passes = 2
+                        if passes <= 1:
+                            continue
+                        detail_thick += 1
+                        if passes == 2:
+                            p2 = list(p)
+                            if len(p2) >= 2 and backend.polyline_length(p2) >= 0.25:
+                                graphics_polys_mm.append(p2)
+                                detail_extra_passes += 1
+                        else:
+                            p2 = list(p)
+                            p3 = list(p)
+                            if len(p2) >= 2 and backend.polyline_length(p2) >= 0.25:
+                                graphics_polys_mm.append(p2)
+                                detail_extra_passes += 1
+                            if len(p3) >= 2 and backend.polyline_length(p3) >= 0.25:
+                                graphics_polys_mm.append(p3)
+                                detail_extra_passes += 1
             else:
                 for poly in graphics_px:
                     p = [(float(x) * sx, float(y) * sy) for x, y in poly]
                     if len(p) >= 2 and backend.polyline_length(p) >= 0.25:
                         graphics_polys_mm.append(p)
-                        if graphics_dist_map is None:
+                        if graphics_dist_map is None or not allow_detail_thick_multipass:
                             continue
                         if not _is_detail_polyline_mm(
                             p,
@@ -2842,6 +2994,11 @@ class BackendBridge:
                 log(
                     "Method3 detail thick-lines multipass: "
                     f"candidates={detail_thick}, extra_passes={detail_extra_passes}"
+                )
+            elif not allow_detail_thick_multipass and vector_thick_meta:
+                log(
+                    "Method3 detail thick-lines multipass: "
+                    f"skipped reason={multipass_reason}, candidates={len(vector_thick_meta)}"
                 )
 
             filled_accents_mm = self._extract_pdf_filled_micro_strokes_mm(
@@ -2943,6 +3100,47 @@ class BackendBridge:
                         f" -> {float(detail_scale_info.get('after_w', 0.0)):.2f}x{float(detail_scale_info.get('after_h', 0.0)):.2f} mm"
                     )
 
+            output_page_w_mm = float(page_w_mm)
+            output_page_h_mm = float(page_h_mm)
+            active_sheet_cfg = dict(getattr(backend, "ACTIVE_SHEET_CONFIG", {}) or {})
+            active_sheet_fmt = str(active_sheet_cfg.get("sheet_format") or "work").strip().lower()
+            active_pass_cols = max(1, int(getattr(backend, "PASS_COLS", 1)))
+            active_pass_rows = max(1, int(getattr(backend, "PASS_ROWS", 1)))
+            if active_sheet_fmt == "a3" and active_pass_cols == 2 and active_pass_rows == 1:
+                area_min_x, area_max_x, area_min_y, area_max_y = backend.work_area_bounds()
+                hybrid_target_w = max(1.0, float(area_max_x - area_min_x) * float(active_pass_cols))
+                hybrid_target_h = max(1.0, float(area_max_y - area_min_y) * float(active_pass_rows))
+                hybrid_polys_mm, hybrid_detail_paths, hybrid_info = _compose_method3_multipass_hybrid_canvas_mm(
+                    polys_mm,
+                    page_w_mm=float(page_w_mm),
+                    page_h_mm=float(page_h_mm),
+                    crop_left_mm=float(getattr(backend, "PAGE_MARGIN_LEFT_MM", 0.0)),
+                    crop_right_mm=float(getattr(backend, "PAGE_MARGIN_RIGHT_MM", 0.0)),
+                    crop_top_mm=float(getattr(backend, "PAGE_MARGIN_TOP_MM", 0.0)),
+                    crop_bottom_mm=float(getattr(backend, "PAGE_MARGIN_BOTTOM_MM", 0.0)),
+                    target_w_mm=float(hybrid_target_w),
+                    target_h_mm=float(hybrid_target_h),
+                )
+                if bool(hybrid_info.get("applied")) and hybrid_detail_paths > 0:
+                    polys_mm = hybrid_polys_mm
+                    output_page_w_mm = float(hybrid_target_w)
+                    output_page_h_mm = float(hybrid_target_h)
+                    log(
+                        "Method3 cleanup: A3 two-pass hybrid canvas "
+                        f"detail=1:1 paths={hybrid_detail_paths}, "
+                        f"detail_bbox={float(hybrid_info.get('detail_w', 0.0)):.2f}x{float(hybrid_info.get('detail_h', 0.0)):.2f} mm, "
+                        f"frame_scale_x={float(hybrid_info.get('frame_scale_x', 1.0)):.4f}, "
+                        f"frame_scale_y={float(hybrid_info.get('frame_scale_y', 1.0)):.4f}, "
+                        f"target={output_page_w_mm:.2f}x{output_page_h_mm:.2f} mm"
+                    )
+                else:
+                    log(
+                        "Method3 cleanup: skipped A3 two-pass hybrid canvas "
+                        f"reason={hybrid_info.get('reason', 'unknown')}, "
+                        f"detail_bbox={float(hybrid_info.get('detail_w', 0.0)):.2f}x{float(hybrid_info.get('detail_h', 0.0)):.2f} mm, "
+                        f"target={float(hybrid_info.get('target_w', hybrid_target_w)):.2f}x{float(hybrid_info.get('target_h', hybrid_target_h)):.2f} mm"
+                    )
+
             pre_prune_segments = sum(max(0, len(poly) - 1) for poly in polys_mm)
             min_seg_mm = 0.03 if used_pdf_vector_graphics else 0.08
             pruned_polys_mm: list[list[tuple[float, float]]] = []
@@ -2991,9 +3189,21 @@ class BackendBridge:
                 row_tol_mm=float(getattr(backend, "DRAW_ORDER_LINE_TOL_MM", 3.0)),
             )
             if not polys_mm:
+                raw_fallback_mm: list[list[tuple[float, float]]] = []
+                for poly in text_centerline_px:
+                    p = [(float(x) * sx, float(y) * sy) for x, y in poly]
+                    if len(p) >= 2 and backend.polyline_length(p) >= 0.25:
+                        raw_fallback_mm.append(p)
+                if raw_fallback_mm:
+                    polys_mm = self._order_polylines_line_lr(
+                        raw_fallback_mm,
+                        row_tol_mm=float(getattr(backend, "DRAW_ORDER_LINE_TOL_MM", 3.0)),
+                    )
+                    log("Method3 cleanup fallback: restored raw centerline geometry after empty final cleanup.")
+            if not polys_mm:
                 return False, "No usable centerline polylines after cleanup."
 
-            self._write_method3_svg(output_svg, polys_mm, page_w_mm=page_w_mm, page_h_mm=page_h_mm)
+            self._write_method3_svg(output_svg, polys_mm, page_w_mm=output_page_w_mm, page_h_mm=output_page_h_mm)
             cmd_pdf = [
                 backend.find_inkscape(),
                 str(output_svg),
@@ -3281,7 +3491,7 @@ class BackendBridge:
         if ok:
             log(f"Connected to {com_port}.")
             return True, text or "ok"
-        return False, text
+        return False, _append_serial_open_hint(str(text or ""), com_port=com_port)
 
     def emergency_stop(self, com_port: str, baud: str, log: LogFn) -> tuple[bool, str]:
         backend = self._backend()
@@ -3294,7 +3504,10 @@ class BackendBridge:
                 read_tail=True,
             )
         except Exception as exc:
-            return False, _format_user_exception(exc, prefix="Emergency stop failed")
+            return False, _append_serial_open_hint(
+                _format_user_exception(exc, prefix="Emergency stop failed"),
+                com_port=com_port,
+            )
         if ok:
             log("Аварийная остановка отправлена.")
         return ok, text
@@ -3318,7 +3531,10 @@ class BackendBridge:
                 read_tail=read_tail,
             )
         except Exception as exc:
-            return False, _format_user_exception(exc, prefix="Manual command execution failed")
+            return False, _append_serial_open_hint(
+                _format_user_exception(exc, prefix="Manual command execution failed"),
+                com_port=com_port,
+            )
 
     @contextmanager
     def _track_backend_subprocess(self, ctx: OperationContext) -> Iterator[None]:

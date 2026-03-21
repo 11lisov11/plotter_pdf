@@ -494,6 +494,14 @@ SHEET_PRESETS_MM = {
 }
 SHEET_ANCHOR_CHOICES = {"center", "lower_left", "upper_left", "lower_right", "upper_right"}
 ACTIVE_WORK_AREA_BOUNDS: Optional[Tuple[float, float, float, float]] = None
+ACTIVE_SHEET_CONFIG: dict[str, object] = {
+    "sheet_format": "work",
+    "sheet_width_mm": None,
+    "sheet_height_mm": None,
+    "anchor": "center",
+    "offset_x_mm": 0.0,
+    "offset_y_mm": 0.0,
+}
 # Multi-pass window selection (for large sheets split across several passes).
 PASS_COLS = 1
 PASS_ROWS = 1
@@ -6527,6 +6535,7 @@ def configure_active_work_area(
     logger=print,
 ) -> None:
     global ACTIVE_WORK_AREA_BOUNDS
+    global ACTIVE_SHEET_CONFIG
     ACTIVE_WORK_AREA_BOUNDS = geometry_work_area_mod.configure_active_work_area(
         sheet_format=sheet_format,
         sheet_width_mm=sheet_width_mm,
@@ -6539,6 +6548,14 @@ def configure_active_work_area(
         sheet_anchor_choices=SHEET_ANCHOR_CHOICES,
         logger=logger,
     )
+    ACTIVE_SHEET_CONFIG = {
+        "sheet_format": str((sheet_format or "work")).strip().lower() or "work",
+        "sheet_width_mm": None if sheet_width_mm is None else float(sheet_width_mm),
+        "sheet_height_mm": None if sheet_height_mm is None else float(sheet_height_mm),
+        "anchor": str((anchor or "center")).strip().lower() or "center",
+        "offset_x_mm": float(offset_x_mm),
+        "offset_y_mm": float(offset_y_mm),
+    }
 
 
 def plan_tiled_passes_for_sheet(sheet_w_mm: float, sheet_h_mm: float) -> dict:
@@ -6587,6 +6604,47 @@ def compute_pass_shift(
         pass_col=int(PASS_COL),
         pass_row=int(PASS_ROW),
     )
+
+
+def active_sheet_pass_rotation_deg() -> int:
+    return geometry_sheet_tiling_mod.sheet_pass_rotation_deg(
+        sheet_format=str(ACTIVE_SHEET_CONFIG.get("sheet_format") or "work"),
+        pass_cols=int(PASS_COLS),
+        pass_rows=int(PASS_ROWS),
+        pass_col=int(PASS_COL),
+        pass_row=int(PASS_ROW),
+    )
+
+
+def transform_polylines_for_active_sheet_pass(
+    polylines: List[List[Tuple[float, float]]],
+    logger=print,
+) -> List[List[Tuple[float, float]]]:
+    rotation_deg = int(active_sheet_pass_rotation_deg()) % 360
+    if not polylines or rotation_deg == 0:
+        return polylines
+
+    min_x, max_x, min_y, max_y = work_area_bounds()
+    sum_x = min_x + max_x
+    sum_y = min_y + max_y
+
+    if rotation_deg != 180:
+        if logger:
+            logger(f"Warning: unsupported sheet pass rotation {rotation_deg} deg; leaving geometry unchanged.")
+        return polylines
+
+    rotated = [
+        [(sum_x - float(x), sum_y - float(y)) for x, y in poly]
+        for poly in polylines
+    ]
+    if logger:
+        logger(
+            "Sheet pass transform: "
+            f"rotating geometry by 180 deg for {ACTIVE_SHEET_CONFIG.get('sheet_format')} "
+            f"pass {int(PASS_COL)}/{int(PASS_COLS)} x {int(PASS_ROW)}/{int(PASS_ROWS)} "
+            f"around active area center ({(min_x + max_x) * 0.5:.3f},{(min_y + max_y) * 0.5:.3f})."
+        )
+    return rotated
 
 
 def clamp_to_work_area(
@@ -8178,8 +8236,12 @@ def build_area_frame_polylines() -> List[List[Tuple[float, float]]]:
     ]
 
 
-def build_area_corner_mark_polylines(mark_size: float = 2.0) -> List[List[Tuple[float, float]]]:
-    min_x, max_x, min_y, max_y = work_area_bounds()
+def _build_corner_mark_polylines_for_bounds(
+    bounds: Tuple[float, float, float, float],
+    *,
+    mark_size: float,
+) -> List[List[Tuple[float, float]]]:
+    min_x, max_x, min_y, max_y = bounds
     x_left = min_x
     x_right = max_x
     y_top = min_y
@@ -8206,6 +8268,42 @@ def build_area_corner_mark_polylines(mark_size: float = 2.0) -> List[List[Tuple[
         marks.append([(cx, cy), (cx + dir_x * dx, cy)])
         marks.append([(cx, cy), (cx, cy + dir_y * dx)])
     return marks
+
+
+def build_active_area_corner_mark_polylines(mark_size: float = 2.0) -> List[List[Tuple[float, float]]]:
+    return _build_corner_mark_polylines_for_bounds(work_area_bounds(), mark_size=mark_size)
+
+
+def build_a4_corner_mark_polylines(mark_size: float = 2.0) -> List[List[Tuple[float, float]]]:
+    return build_active_area_corner_mark_polylines(mark_size=mark_size)
+
+
+def build_a3_corner_mark_polylines(mark_size: float = 2.0) -> List[List[Tuple[float, float]]]:
+    return build_active_area_corner_mark_polylines(mark_size=mark_size)
+
+
+def active_calibration_profile_name() -> str:
+    fmt = str(ACTIVE_SHEET_CONFIG.get("sheet_format") or "work").strip().lower()
+    if fmt == "a4":
+        return "a4"
+    if fmt == "a3":
+        if int(PASS_COLS) > 1 or int(PASS_ROWS) > 1:
+            return f"a3_pass_{min(max(1, int(PASS_COL)), max(1, int(PASS_COLS)))}"
+        return "a3"
+    if fmt == "custom":
+        return "custom"
+    if fmt == "notebook":
+        return "notebook"
+    return "work"
+
+
+def build_area_corner_mark_polylines(mark_size: float = 2.0) -> List[List[Tuple[float, float]]]:
+    fmt = str(ACTIVE_SHEET_CONFIG.get("sheet_format") or "work").strip().lower()
+    if fmt == "a4":
+        return build_a4_corner_mark_polylines(mark_size=mark_size)
+    if fmt == "a3":
+        return build_a3_corner_mark_polylines(mark_size=mark_size)
+    return build_active_area_corner_mark_polylines(mark_size=mark_size)
 
 
 def build_snake_hatch_polyline(
@@ -8368,6 +8466,7 @@ def apply_penlift(
     dynamic_base_z_down: Optional[float] = None,
     dynamic_initial_wear_mm: float = 0.0,
     handwriting_mode: bool = False,
+    force_full_lift: bool = False,
 ) -> None:
     script = ROOT_DIR / "src" / "penlift_postprocess.py"
     z_delay_down_eff = float(Z_DELAY_DOWN)
@@ -8394,7 +8493,7 @@ def apply_penlift(
         # Pencil plotting is much faster and still stable with a short travel lift.
         # Keep lift inside requested operational band (3..4 mm).
         travel_lift_mm = min(4.0, max(3.0, travel_lift_mm))
-    elif SAFE_PEN_TRAVEL_UP:
+    elif force_full_lift or SAFE_PEN_TRAVEL_UP:
         # Optional full-lift mode for pen/marker to minimize drag risk.
         # A tiny extra margin prevents edge cases with float rounding.
         travel_lift_mm = max(travel_lift_mm, abs(float(z_down) - float(Z_UP)) + 0.1)
@@ -9186,6 +9285,7 @@ def run_pipeline(
             min_x, max_x, min_y, max_y = bounds_polylines(polylines)
             log(f"Source bounds: x({min_x:.3f}, {max_x:.3f}) y({min_y:.3f}, {max_y:.3f})")
             polylines = fit_polylines_to_area(polylines, min_x, max_x, min_y, max_y, logger=log)
+            polylines = transform_polylines_for_active_sheet_pass(polylines, logger=log)
             fit_segments = sum(max(0, len(p) - 1) for p in polylines)
             polylines = clip_polylines_to_work_area(polylines, logger=log)
             if not polylines:
@@ -9457,7 +9557,7 @@ def run_frame_pipeline(
             frame = clip_polylines_to_work_area(frame, logger=log)
             write_xy_gcode(xy_path, frame, FEED_TRAVEL, FEED_DRAW)
             log("Applying pen-up / pen-down ...")
-            apply_penlift(xy_path, pen_path)
+            apply_penlift(xy_path, pen_path, force_full_lift=True)
             make_final_with_preamble(pen_path, final_path)
             if send_to_plotter:
                 send_to_grbl(final_path, com, baud, log, sleep_after=True)
@@ -9481,6 +9581,15 @@ def run_corner_calibration_pipeline(
     mark_size: float = 2.0,
 ) -> Tuple[bool, str]:
     try:
+        log(
+            "Calibration profile: "
+            f"{active_calibration_profile_name()}, "
+            f"sheet={ACTIVE_SHEET_CONFIG.get('sheet_format')}, "
+            f"anchor={ACTIVE_SHEET_CONFIG.get('anchor')}, "
+            f"offset=({float(ACTIVE_SHEET_CONFIG.get('offset_x_mm') or 0.0):.2f},"
+            f"{float(ACTIVE_SHEET_CONFIG.get('offset_y_mm') or 0.0):.2f}), "
+            f"pass={int(PASS_COL)}/{int(PASS_COLS)} x {int(PASS_ROW)}/{int(PASS_ROWS)}"
+        )
         marks = build_area_corner_mark_polylines(mark_size=mark_size)
         if not marks:
             return False, "Invalid work area limits."
@@ -9500,7 +9609,7 @@ def run_corner_calibration_pipeline(
 
             write_xy_gcode(xy_path, all_paths, FEED_TRAVEL, FEED_DRAW)
             log("Applying pen-up / pen-down ...")
-            apply_penlift(xy_path, pen_path)
+            apply_penlift(xy_path, pen_path, force_full_lift=True)
             make_final_with_preamble(pen_path, final_path)
 
             if send_to_plotter:

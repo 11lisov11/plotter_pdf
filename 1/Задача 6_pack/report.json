@@ -1,0 +1,82 @@
+{
+  "source_pdf": "C:\\plotter_pdf\\1\\Задача 6.pdf",
+  "kind": "drawing",
+  "page_count": 1,
+  "page_size_mm": [
+    211.074,
+    298.111
+  ],
+  "a3_two_pass": false,
+  "items": [
+    {
+      "variant": "a4_hybrid_frame",
+      "ok": true,
+      "message": "Done: prepared file saved to C:\\plotter_pdf\\1\\Задача 6_pack\\_candidates\\a4_hybrid_frame.nc",
+      "logs": [
+        "Source pages: 1, selected: 1",
+        "Method3 centerline: threshold=32, candidates=9, paths=765",
+        "Method3 PDF vector graphics: drawings=174, paths=626, thick_paths=116",
+        "Method3 layer split: text_paths=629, graphics_source=pdf_vector, graphics_paths=594",
+        "Method3 cleanup: restored overlap text paths=6",
+        "Method3 cleanup: removed bottom-row text paths=3",
+        "Method3 cleanup: removed left-column text paths=124",
+        "Method3 cleanup: removed left-column graphics-glyph paths=24",
+        "Method3 cleanup: removed outer-frame paths=9",
+        "Method3 detail thick-lines multipass: candidates=46, extra_passes=46",
+        "Method3 filled accents: paths=19, segments=362",
+        "Method3 cleanup: removed legacy left-strip border lines=12",
+        "Method3 cleanup: removed left-of-frame text leftovers=143",
+        "Method3 cleanup: hard-clipped geometry left of frame x<20.50 mm: paths=32",
+        "Method3 cleanup: restored left vertical frame line.",
+        "Method3 cleanup: removed tiny bottom artifacts=67",
+        "Method3 micro-segment prune: segments=5393->5392, min=0.03 mm",
+        "--- hybrid fit: detail=1:1, frame=fit-to-work-area ---",
+        "Text render mode: handwriting=on font='Marck Script'; image_contours=off",
+        "Extracting paths from SVG ...",
+        "Raw geometry bounds: x(0.000, 180.000) y(0.000, 280.000)",
+        "SVG page: 180.000 x 280.000 mm",
+        "Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).",
+        "SVG geometry: paths=805, segments=5372.",
+        "Source bounds: x(0.000, 180.000) y(0.000, 280.000)",
+        "Fit to work area: scale=1.0000, translate=(0.000,-295.000), from (0.000, 0.000)-(180.000, 280.000)",
+        "Segment dedup: dropped 519/5372 retraced segments (9.7%), kept=4853, eps=0.010 mm",
+        "Stitch: polylines 824 -> 798 (eps=0.030 mm, gap_eps=0.030 mm, angle<=14.0 deg)",
+        "Reorder: 798 polylines ordered (line_lr, row_tol=3.00 mm).",
+        "Handwriting fallback: skipping word-merge/smoothing for contour-only text source.",
+        "Polyline optimization: 824 -> 798",
+        "Segment counts: source=5372, fitted=5372, clipped=5372",
+        "Drawable segments after clip: 5372 (100.0% of source)",
+        "Prepared bounds: x(0.000, 180.000) y(-295.000, -15.000)",
+        "Estimated draw length: 11.27 m",
+        "Applying pen-up / pen-down ...",
+        "G-code stats: lines=6330, draw=5976, travel=340, bounds=0.000..180.000 x, -295.000..0.000 y",
+        "Preflight: ok: lines=6330, draw=5976, travel=340, ratio=0.06",
+        "Saved file stats: lines=6330, draw=5976, travel=340, bounds=0.000..180.000 x, -295.000..0.000 y",
+        "Saved: C:\\plotter_pdf\\1\\Задача 6_pack\\_candidates\\a4_hybrid_frame.nc",
+        "Preview SVG: C:\\plotter_pdf\\1\\Задача 6_pack\\_candidates\\a4_hybrid_frame.svg",
+        "Preview PDF: C:\\plotter_pdf\\1\\Задача 6_pack\\_candidates\\a4_hybrid_frame.pdf"
+      ],
+      "fit_scale": 1.0,
+      "clipping_warning": false,
+      "layout_similarity": 0.933571,
+      "metrics": {
+        "draw_length_mm": 11939.296,
+        "segments_total": 5308,
+        "segments_duplicate": 2,
+        "bounds": {
+          "x_min": 0.0,
+          "x_max": 180.0,
+          "y_min": -295.0,
+          "y_max": -15.0
+        }
+      },
+      "svg": "C:\\plotter_pdf\\1\\Задача 6_pack\\_candidates\\a4_hybrid_frame.svg",
+      "pdf": "C:\\plotter_pdf\\1\\Задача 6_pack\\_candidates\\a4_hybrid_frame.pdf",
+      "nc": "C:\\plotter_pdf\\1\\Задача 6_pack\\_candidates\\a4_hybrid_frame.nc",
+      "gcode": "C:\\plotter_pdf\\1\\Задача 6_pack\\_candidates\\a4_hybrid_frame.gcode",
+      "notes": "detail_scale=1.0; frame_scale_x=0.9728; frame_scale_y=0.9754; detail_bbox=157.12x222.99 mm; left_strip_removed=True; outer_border_removed=True"
+    }
+  ],
+  "selected_variant": "a4_hybrid_frame",
+  "selected_layout_similarity": 0.933571
+}

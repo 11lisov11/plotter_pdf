@@ -1,0 +1,99 @@
+Text render mode: handwriting=on font='C:\plotter_pdf\data\fonts\Caveat-wght.ttf'; image_contours=always
+Handwriting mode: Cyrillic text profile tokens=142, short=46%, digits=35%, long=42%, style=paragraph.
+Handwriting mode: Cyrillic detected, trying TTF single-line pipeline first ('C:\plotter_pdf\data\fonts\Caveat-wght.ttf').
+TTF centerline postprocess: 2 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '2' -> 1 stroke(s), thr=128, cand=8, font=Caveat-wght.ttf, size=14.04
+TTF centerline postprocess: 101 -> 79 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'УМЕНЬШЕННОГО НА ЕДИНИЦУ. СОС' -> 79 stroke(s), thr=64, cand=8, font=Caveat-wght.ttf, size=12.00
+TTF centerline postprocess: 19 -> 16 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'РИЦЫ ЦЕПИ.' -> 16 stroke(s), thr=64, cand=8, font=Caveat-wght.ttf, size=12.00
+TTF centerline postprocess: 102 -> 63 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Нарисуем граф, соответствующ' -> 63 stroke(s), thr=128, cand=8, font=Caveat-wght.ttf, size=12.00
+TTF centerline postprocess: 18 -> 15 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Рисунок 1.2' -> 15 stroke(s), thr=128, cand=8, font=Caveat-wght.ttf, size=12.00
+TTF centerline postprocess: 1 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '-' -> 1 stroke(s), thr=224, cand=8, font=Caveat-wght.ttf, size=12.00
+TTF centerline postprocess: 47 -> 32 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Ориентированный граф цепи' -> 32 stroke(s), thr=64, cand=8, font=Caveat-wght.ttf, size=12.00
+TTF centerline postprocess: 88 -> 69 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Данному графу соответствуют ' -> 69 stroke(s), thr=128, cand=8, font=Caveat-wght.ttf, size=12.00
+TTF centerline postprocess: 1 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '-' -> 1 stroke(s), thr=224, cand=8, font=Caveat-wght.ttf, size=12.00
+TTF centerline postprocess: 4 -> 4 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '1.5)' -> 4 stroke(s), thr=224, cand=8, font=Caveat-wght.ttf, size=12.00
+TTF centerline postprocess: 19 -> 12 stroke(s) (eps=0.13, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Рисунок 1.3' -> 12 stroke(s), thr=160, cand=8, font=Caveat-wght.ttf, size=11.04
+TTF centerline postprocess: 19 -> 12 stroke(s) (eps=0.13, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Рисунок 1.4' -> 12 stroke(s), thr=160, cand=8, font=Caveat-wght.ttf, size=11.04
+TTF centerline postprocess: 18 -> 11 stroke(s) (eps=0.13, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Рисунок 1.5' -> 11 stroke(s), thr=160, cand=8, font=Caveat-wght.ttf, size=11.04
+TTF centerline postprocess: 59 -> 48 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Дополнения к этим деревьям (' -> 48 stroke(s), thr=128, cand=8, font=Caveat-wght.ttf, size=12.00
+TTF centerline postprocess: 1 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '-' -> 1 stroke(s), thr=224, cand=8, font=Caveat-wght.ttf, size=12.00
+TTF centerline postprocess: 4 -> 4 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '1.8):' -> 4 stroke(s), thr=96, cand=8, font=Caveat-wght.ttf, size=12.00
+TTF centerline postprocess: 18 -> 12 stroke(s) (eps=0.13, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Рисунок 1.6' -> 12 stroke(s), thr=160, cand=8, font=Caveat-wght.ttf, size=11.04
+TTF centerline postprocess: 20 -> 12 stroke(s) (eps=0.13, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Рисунок 1.7' -> 12 stroke(s), thr=160, cand=8, font=Caveat-wght.ttf, size=11.04
+TTF centerline postprocess: 18 -> 12 stroke(s) (eps=0.13, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Рисунок 1.8' -> 12 stroke(s), thr=160, cand=8, font=Caveat-wght.ttf, size=11.04
+TTF centerline postprocess: 108 -> 67 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Для выбранного дерева состав' -> 67 stroke(s), thr=64, cand=8, font=Caveat-wght.ttf, size=12.00
+TTF centerline postprocess: 52 -> 30 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Составим матрицу соединений.' -> 30 stroke(s), thr=96, cand=8, font=Caveat-wght.ttf, size=12.00
+Handwriting TTF centerline mode: replaced 21 text node(s), generated 502 stroke path(s) using 'Caveat-wght.ttf'.
+Text nodes after stroke-font replacement: 52
+Handwriting mode: applied font 'C:\plotter_pdf\data\fonts\Caveat-wght.ttf' to 52 text node(s).
+Text->path conversion #1: inkscape.exe --batch-process --actions=select-all;export-text-to-path --export-type=svg --export-overwrite --export-filename=C:\plotter_pdf\_tmp\tmpyp0z_vns\source.svg C:\plotter_pdf\_tmp\tmpyp0z_vns\source.svg
+Text converted to SVG paths.
+Text nodes after conversion: 0
+Extracting paths from SVG ...
+Image contour tracing: +97 path(s) from embedded raster.
+Image vectorization mode: centerline (added 97 path(s), simplify=0.34 mm).
+Image contour tracing: +91 path(s) from embedded raster.
+Image vectorization mode: centerline (added 91 path(s), simplify=0.34 mm).
+Image contour tracing: +92 path(s) from embedded raster.
+Image vectorization mode: centerline (added 92 path(s), simplify=0.34 mm).
+Image contour tracing: +13 path(s) from embedded raster.
+Image vectorization mode: centerline (added 13 path(s), simplify=0.34 mm).
+Image contour tracing: +2 path(s) from embedded raster.
+Image vectorization mode: centerline (added 2 path(s), simplify=0.34 mm).
+Image contour tracing: +3 path(s) from embedded raster.
+Image vectorization mode: centerline (added 3 path(s), simplify=0.34 mm).
+Image contour tracing: +3 path(s) from embedded raster.
+Image vectorization mode: centerline (added 3 path(s), simplify=0.34 mm).
+Image contour tracing: +4 path(s) from embedded raster.
+Image vectorization mode: centerline (added 4 path(s), simplify=0.34 mm).
+Image contour tracing: +2 path(s) from embedded raster.
+Image vectorization mode: centerline (added 2 path(s), simplify=0.34 mm).
+Image contour tracing: +2 path(s) from embedded raster.
+Image vectorization mode: centerline (added 2 path(s), simplify=0.34 mm).
+Image contour tracing: total +309 path(s).
+Raw geometry bounds: x(25.879, 7702208154.827) y(14.778, 81668425.327)
+SVG page: 210.016 x 297.011 mm
+Auto trim: no outer border detected.
+Page/content clip: kept 6386 visible segments, dropped 480 out-of-area segments.
+Applied content area crop: x(20.5,205.0) y(10.0,292.0) dropped segments=480
+Bounds after content margin crop: x(25.879, 192.215) y(14.778, 241.058)
+SVG geometry: paths=531, segments=6386.
+Source bounds: x(25.879, 192.215) y(14.778, 241.058)
+Fit to work area: scale=1.0821, translate=(-28.005,-293.427), from (25.879, 14.778)-(192.215, 241.058)
+Stitch: polylines 531 -> 527 (eps=0.080 mm, gap_eps=0.150 mm, angle<=20.0 deg)
+Reorder: 527 polylines ordered (nearest-end).
+Pencil naturalization: adjusted 328/527 stroke(s).
+Pencil naturalization segments: 6386 -> 3901
+Polyline optimization: 531 -> 527
+Segment counts: source=6386, fitted=6386, clipped=6386
+Drawable segments after clip: 6386 (100.0% of source)
+Prepared bounds: x(0.000, 180.000) y(-277.338, -32.566)
+Estimated draw length: 2.13 m
+Pencil mode: base_z=11.900, wear=0.000 mm, z_comp_start=0.000, z_down_start=11.900, dyn(rate=0.0100 mm/m, comp=1.000, slope=0.0100 Zmm/m, max=0.800), est_remaining_to_sharpen=120.0 m (wear=120.0, interval=inf)
+Applying pen-up / pen-down ...
+G-code stats: lines=5083, draw=4739, travel=114, bounds=0.000..180.000 x, -277.338..0.000 y
+Preflight: ok: lines=5083, draw=4739, travel=114, ratio=0.02
+Saved file stats: lines=5083, draw=4739, travel=114, bounds=0.000..180.000 x, -277.338..0.000 y
+Saved: C:\plotter_pdf\1\TOE_Zadachi_1_2_Variant_26_pack\pages\page_02.nc
+Preview SVG: C:\plotter_pdf\1\TOE_Zadachi_1_2_Variant_26_pack\pages\page_02.svg
+Preview PDF: C:\plotter_pdf\1\TOE_Zadachi_1_2_Variant_26_pack\pages\page_02.pdf

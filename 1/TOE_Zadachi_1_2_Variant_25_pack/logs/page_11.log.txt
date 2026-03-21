@@ -1,0 +1,69 @@
+Text render mode: handwriting=on font='C:\plotter_pdf\data\fonts\BadScript-Regular.ttf'; image_contours=always
+Handwriting mode: Cyrillic text profile tokens=56, short=11%, digits=4%, long=82%, style=paragraph.
+Handwriting mode: Cyrillic detected, trying TTF single-line pipeline first ('C:\plotter_pdf\data\fonts\BadScript-Regular.ttf').
+TTF centerline postprocess: 6 -> 5 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '11' -> 5 stroke(s), thr=224, cand=8, font=BadScript-Regular.ttf, size=14.04
+TTF centerline postprocess: 107 -> 60 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Рассчитаем эквивалентные соп' -> 60 stroke(s), thr=224, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 143 -> 93 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Находим эквивалентное сопрот' -> 93 stroke(s), thr=224, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 49 -> 25 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Определяем значения токов:' -> 25 stroke(s), thr=224, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 90 -> 66 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Выполняем проверку расчётов ' -> 66 stroke(s), thr=192, cand=8, font=BadScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 108 -> 55 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Фиксируем комплексные напряж' -> 55 stroke(s), thr=224, cand=8, font=BadScript-Regular.ttf, size=12.00
+Handwriting TTF centerline mode: replaced 6 text node(s), generated 304 stroke path(s) using 'BadScript-Regular.ttf'.
+Text nodes after stroke-font replacement: 76
+Handwriting mode: applied font 'C:\plotter_pdf\data\fonts\BadScript-Regular.ttf' to 76 text node(s).
+Text->path conversion #1: inkscape.exe --batch-process --actions=select-all;export-text-to-path --export-type=svg --export-overwrite --export-filename=C:\plotter_pdf\_tmp\tmplm7pwt05\source.svg C:\plotter_pdf\_tmp\tmplm7pwt05\source.svg
+Text converted to SVG paths.
+Text nodes after conversion: 0
+Extracting paths from SVG ...
+Image contour tracing: +123 path(s) from embedded raster.
+Image vectorization mode: centerline (added 123 path(s), simplify=0.34 mm).
+Image contour tracing: +200 path(s) from embedded raster.
+Image vectorization mode: centerline (added 200 path(s), simplify=0.34 mm).
+Image contour tracing: +190 path(s) from embedded raster.
+Image vectorization mode: centerline (added 190 path(s), simplify=0.34 mm).
+Image contour tracing: +179 path(s) from embedded raster.
+Image vectorization mode: centerline (added 179 path(s), simplify=0.34 mm).
+Image contour tracing: +199 path(s) from embedded raster.
+Image vectorization mode: centerline (added 199 path(s), simplify=0.34 mm).
+Image contour tracing: +105 path(s) from embedded raster.
+Image vectorization mode: centerline (added 105 path(s), simplify=0.34 mm).
+Image contour tracing: +78 path(s) from embedded raster.
+Image vectorization mode: centerline (added 78 path(s), simplify=0.34 mm).
+Image contour tracing: +206 path(s) from embedded raster.
+Image vectorization mode: centerline (added 206 path(s), simplify=0.34 mm).
+Image contour tracing: +216 path(s) from embedded raster.
+Image vectorization mode: centerline (added 216 path(s), simplify=0.34 mm).
+Image contour tracing: +190 path(s) from embedded raster.
+Image vectorization mode: centerline (added 190 path(s), simplify=0.34 mm).
+Image contour tracing: total +1686 path(s).
+Raw geometry bounds: x(30.074, 15150767866.500) y(14.774, 1155348791.056)
+SVG page: 210.016 x 297.011 mm
+Auto trim: no outer border detected.
+Page/content clip: kept 5255 visible segments, dropped 3168 out-of-area segments.
+Applied content area crop: x(20.5,205.0) y(10.0,292.0) dropped segments=3168
+Bounds after content margin crop: x(37.661, 205.016) y(14.774, 292.011)
+SVG geometry: paths=312, segments=5255.
+Source bounds: x(37.661, 205.016) y(14.774, 292.011)
+Fit to work area: scale=1.0100, translate=(-32.548,-309.922), from (37.661, 14.774)-(205.016, 292.011)
+Stitch: polylines 312 -> 307 (eps=0.080 mm, gap_eps=0.150 mm, angle<=20.0 deg)
+Reorder: 307 polylines ordered (nearest-end).
+Pencil naturalization: adjusted 200/307 stroke(s).
+Pencil naturalization segments: 5255 -> 2957
+Polyline optimization: 312 -> 307
+Segment counts: source=5255, fitted=5255, clipped=5255
+Drawable segments after clip: 5255 (100.0% of source)
+Prepared bounds: x(5.488, 174.512) y(-295.000, -15.000)
+Estimated draw length: 1.89 m
+Pencil mode: base_z=11.900, wear=0.000 mm, z_comp_start=0.000, z_down_start=11.900, dyn(rate=0.0100 mm/m, comp=1.000, slope=0.0100 Zmm/m, max=0.800), est_remaining_to_sharpen=120.0 m (wear=120.0, interval=inf)
+Applying pen-up / pen-down ...
+G-code stats: lines=3666, draw=3454, travel=70, bounds=0.000..174.512 x, -295.000..0.000 y
+Preflight: ok: lines=3666, draw=3454, travel=70, ratio=0.02
+Saved file stats: lines=3666, draw=3454, travel=70, bounds=0.000..174.512 x, -295.000..0.000 y
+Saved: C:\plotter_pdf\1\TOE_Zadachi_1_2_Variant_25_pack\pages\page_11.nc
+Preview SVG: C:\plotter_pdf\1\TOE_Zadachi_1_2_Variant_25_pack\pages\page_11.svg
+Preview PDF: C:\plotter_pdf\1\TOE_Zadachi_1_2_Variant_25_pack\pages\page_11.pdf

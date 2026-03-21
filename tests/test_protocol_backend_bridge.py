@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+import plotter_studio.core.protocol as protocol_mod
 from plotter_studio.core.protocol import BackendBridge
 from src import plotter_pdf_drawer as backend_mod
 from src.plotter_backend.errors import ToolDependencyError
@@ -21,6 +22,41 @@ class _Port:
 
 
 class ProtocolBackendBridgeTests(unittest.TestCase):
+    def test_allow_method3_detail_thick_multipass_respects_exact_geometry_mode(self) -> None:
+        backend = type("_Backend", (), {"EXACT_GEOMETRY_MODE": True})()
+        allow, reason = protocol_mod._allow_method3_detail_thick_multipass(backend)
+        self.assertFalse(allow)
+        self.assertEqual(reason, "exact_geometry_mode")
+
+    def test_compose_method3_multipass_hybrid_canvas_keeps_detail_one_to_one(self) -> None:
+        polys = [
+            [(20.5, 5.5), (415.5, 5.5)],
+            [(415.5, 5.5), (415.5, 292.5)],
+            [(20.5, 5.5), (20.5, 292.5)],
+            [(20.5, 292.5), (415.5, 292.5)],
+            [(20.5, 5.5), (380.3, 5.5), (380.3, 231.9), (20.5, 231.9), (20.5, 5.5)],
+        ]
+        out, detail_paths, info = protocol_mod._compose_method3_multipass_hybrid_canvas_mm(
+            polys,
+            page_w_mm=421.096,
+            page_h_mm=298.148,
+            crop_left_mm=0.0,
+            crop_right_mm=0.0,
+            crop_top_mm=0.0,
+            crop_bottom_mm=0.0,
+            target_w_mm=360.0,
+            target_h_mm=280.0,
+        )
+        self.assertTrue(bool(info.get("applied")))
+        self.assertEqual(detail_paths, 1)
+        detail_poly = out[-1]
+        xs = [p[0] for p in detail_poly]
+        ys = [p[1] for p in detail_poly]
+        self.assertAlmostEqual(max(xs) - min(xs), 359.8, places=3)
+        self.assertAlmostEqual(max(ys) - min(ys), 226.4, places=3)
+        self.assertAlmostEqual(float(out[0][0][0]), 0.0, places=6)
+        self.assertAlmostEqual(float(out[0][-1][0]), 360.0, places=6)
+
     def test_backend_raises_when_script_is_missing_and_import_fails(self) -> None:
         with tempfile.TemporaryDirectory(prefix="plotter_proto_backend_missing_") as td:
             root = Path(td)

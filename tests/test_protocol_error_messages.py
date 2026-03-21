@@ -24,6 +24,10 @@ class _ResetFailBackend:
         raise RuntimeError("state file locked")
 
 
+class _ProbeBackend:
+    pass
+
+
 class ProtocolErrorMessageTests(unittest.TestCase):
     def test_resolve_method3_source_pdf_includes_exception_class(self) -> None:
         with tempfile.TemporaryDirectory(prefix="plotter_proto_err_") as td:
@@ -77,6 +81,25 @@ class ProtocolErrorMessageTests(unittest.TestCase):
         self.assertFalse(ok)
         self.assertIn("RuntimeError", msg)
         self.assertIn("state file locked", msg)
+
+    def test_probe_connection_appends_bluetooth_hint(self) -> None:
+        bridge = BackendBridge(Path.cwd())
+        with mock.patch.object(bridge, "_backend", return_value=_ProbeBackend()):
+            with mock.patch.object(
+                bridge,
+                "_run_manual_commands_with_timeout",
+                return_value=(False, "Cannot open COM11 @ 115200: OSError(22, device missing)"),
+            ):
+                with mock.patch(
+                    "plotter_studio.core.protocol.build_serial_open_hint",
+                    return_value="Bluetooth SPP hint: COM11 is a ghost port. Use COM6 now.",
+                ):
+                    ok, msg = bridge.probe_connection("COM11", "115200", lambda *_args: None)
+
+        self.assertFalse(ok)
+        self.assertIn("Cannot open COM11", msg)
+        self.assertIn("ghost port", msg)
+        self.assertIn("COM6", msg)
 
 
 if __name__ == "__main__":

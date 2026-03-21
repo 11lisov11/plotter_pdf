@@ -21,7 +21,13 @@ from .path_processing import (
     poly_inside_bbox,
 )
 from .polyline import bounds_polylines, points_distance, polyline_length, total_draw_length_mm, translate_polylines
-from .sheet_tiling import compute_pass_shift, plan_tiled_passes_for_sheet, resolve_sheet_size_mm, tile_window_start
+from .sheet_tiling import (
+    compute_pass_shift,
+    plan_tiled_passes_for_sheet,
+    resolve_sheet_size_mm,
+    sheet_pass_rotation_deg,
+    tile_window_start,
+)
 from .simplify import path_is_closed, point_line_distance, rdp_simplify_polyline, simplify_polyline
 from .svg_path import arc_to_polyline, cubic_approx, parse_path_tokens, quadratic_approx
 from .transform import mat_apply, mat_mul, parse_points, parse_transform, transform_points
@@ -62,6 +68,7 @@ __all__ = [
     "compute_pass_shift",
     "plan_tiled_passes_for_sheet",
     "resolve_sheet_size_mm",
+    "sheet_pass_rotation_deg",
     "simplify_polyline",
     "quadratic_approx",
     "solve_3x3",

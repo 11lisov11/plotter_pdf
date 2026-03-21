@@ -1,0 +1,53 @@
+Text render mode: handwriting=on font='C:\plotter_pdf\data\fonts\MarckScript-Regular.ttf'; image_contours=always
+Handwriting mode: Cyrillic text profile tokens=32, short=38%, digits=31%, long=44%, style=paragraph.
+Handwriting mode: Cyrillic detected, trying TTF single-line pipeline first ('C:\plotter_pdf\data\fonts\MarckScript-Regular.ttf').
+TTF centerline postprocess: 3 -> 3 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '10' -> 3 stroke(s), thr=128, cand=8, font=MarckScript-Regular.ttf, size=14.04
+TTF centerline postprocess: 23 -> 16 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Рисунок 1.14' -> 16 stroke(s), thr=32, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 155 -> 86 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'После преобразований получае' -> 86 stroke(s), thr=192, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 21 -> 14 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Рисунок 1.15' -> 14 stroke(s), thr=32, cand=8, font=MarckScript-Regular.ttf, size=12.00
+Handwriting TTF centerline mode: replaced 4 text node(s), generated 119 stroke path(s) using 'MarckScript-Regular.ttf'.
+Text nodes after stroke-font replacement: 24
+Handwriting mode: applied font 'C:\plotter_pdf\data\fonts\MarckScript-Regular.ttf' to 24 text node(s).
+Text->path conversion #1: inkscape.exe --batch-process --actions=select-all;export-text-to-path --export-type=svg --export-overwrite --export-filename=C:\plotter_pdf\_tmp\tmpvbwx0gaz\source.svg C:\plotter_pdf\_tmp\tmpvbwx0gaz\source.svg
+Text converted to SVG paths.
+Text nodes after conversion: 0
+Extracting paths from SVG ...
+Image contour tracing: +110 path(s) from embedded raster.
+Image vectorization mode: centerline (added 110 path(s), simplify=0.34 mm).
+Image contour tracing: +41 path(s) from embedded raster.
+Image vectorization mode: centerline (added 41 path(s), simplify=0.34 mm).
+Image contour tracing: +23 path(s) from embedded raster.
+Image vectorization mode: centerline (added 23 path(s), simplify=0.34 mm).
+Image contour tracing: +23 path(s) from embedded raster.
+Image vectorization mode: centerline (added 23 path(s), simplify=0.34 mm).
+Image contour tracing: total +197 path(s).
+Raw geometry bounds: x(38.090, 3647021522.984) y(14.810, 929570868.784)
+SVG page: 210.016 x 297.011 mm
+Auto trim: no outer border detected.
+Page/content clip: kept 1982 visible segments, dropped 293 out-of-area segments.
+Applied content area crop: x(20.5,205.0) y(10.0,292.0) dropped segments=293
+Bounds after content margin crop: x(38.090, 190.433) y(14.810, 248.699)
+SVG geometry: paths=165, segments=1982.
+Source bounds: x(38.090, 190.433) y(14.810, 248.699)
+Fit to work area: scale=1.1815, translate=(-45.006,-310.674), from (38.090, 14.810)-(190.433, 248.699)
+Stitch: polylines 165 -> 147 (eps=0.080 mm, gap_eps=0.150 mm, angle<=20.0 deg)
+Reorder: 147 polylines ordered (nearest-end).
+Pencil naturalization: adjusted 115/147 stroke(s).
+Pencil naturalization segments: 1982 -> 1321
+Polyline optimization: 165 -> 147
+Segment counts: source=1982, fitted=1982, clipped=1982
+Drawable segments after clip: 1982 (100.0% of source)
+Prepared bounds: x(0.065, 180.000) y(-293.176, -16.937)
+Estimated draw length: 1.49 m
+Pencil mode: base_z=11.900, wear=0.000 mm, z_comp_start=0.000, z_down_start=11.900, dyn(rate=0.0100 mm/m, comp=1.000, slope=0.0100 Zmm/m, max=0.800), est_remaining_to_sharpen=120.0 m (wear=120.0, interval=inf)
+Applying pen-up / pen-down ...
+G-code stats: lines=1785, draw=1615, travel=56, bounds=0.000..180.000 x, -293.176..0.000 y
+Preflight: ok: lines=1785, draw=1615, travel=56, ratio=0.03
+Saved file stats: lines=1785, draw=1615, travel=56, bounds=0.000..180.000 x, -293.176..0.000 y
+Saved: C:\plotter_pdf\1\TOE_Zadachi_1_2_Variant_14_pack\pages\page_10.nc
+Preview SVG: C:\plotter_pdf\1\TOE_Zadachi_1_2_Variant_14_pack\pages\page_10.svg
+Preview PDF: C:\plotter_pdf\1\TOE_Zadachi_1_2_Variant_14_pack\pages\page_10.pdf

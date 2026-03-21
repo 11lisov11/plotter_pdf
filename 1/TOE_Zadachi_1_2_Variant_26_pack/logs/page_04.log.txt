@@ -1,0 +1,65 @@
+Text render mode: handwriting=on font='C:\plotter_pdf\data\fonts\Caveat-wght.ttf'; image_contours=always
+Handwriting mode: Cyrillic text profile tokens=44, short=23%, digits=14%, long=50%, style=paragraph.
+Handwriting mode: Cyrillic detected, trying TTF single-line pipeline first ('C:\plotter_pdf\data\fonts\Caveat-wght.ttf').
+TTF centerline postprocess: 2 -> 2 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '4' -> 2 stroke(s), thr=96, cand=8, font=Caveat-wght.ttf, size=14.04
+TTF centerline postprocess: 18 -> 15 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Рисунок 1.9' -> 15 stroke(s), thr=128, cand=8, font=Caveat-wght.ttf, size=12.00
+TTF centerline postprocess: 1 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '-' -> 1 stroke(s), thr=224, cand=8, font=Caveat-wght.ttf, size=12.00
+TTF centerline postprocess: 46 -> 26 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Исходная схема для расчета' -> 26 stroke(s), thr=96, cand=8, font=Caveat-wght.ttf, size=12.00
+TTF centerline postprocess: 116 -> 69 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Потенциалы узлов можно найти' -> 69 stroke(s), thr=96, cand=8, font=Caveat-wght.ttf, size=12.00
+TTF centerline postprocess: 36 -> 25 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'После расчёта получим:' -> 25 stroke(s), thr=96, cand=8, font=Caveat-wght.ttf, size=12.00
+TTF centerline postprocess: 38 -> 27 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Определяем токи ветвей:' -> 27 stroke(s), thr=32, cand=8, font=Caveat-wght.ttf, size=12.00
+Handwriting TTF centerline mode: replaced 7 text node(s), generated 165 stroke path(s) using 'Caveat-wght.ttf'.
+Text nodes after stroke-font replacement: 52
+Handwriting mode: applied font 'C:\plotter_pdf\data\fonts\Caveat-wght.ttf' to 52 text node(s).
+Text->path conversion #1: inkscape.exe --batch-process --actions=select-all;export-text-to-path --export-type=svg --export-overwrite --export-filename=C:\plotter_pdf\_tmp\tmpbwkf5z_t\source.svg C:\plotter_pdf\_tmp\tmpbwkf5z_t\source.svg
+Text converted to SVG paths.
+Text nodes after conversion: 0
+Extracting paths from SVG ...
+Image contour tracing: +105 path(s) from embedded raster.
+Image vectorization mode: centerline (added 105 path(s), simplify=0.34 mm).
+Image contour tracing: +22 path(s) from embedded raster.
+Image vectorization mode: centerline (added 22 path(s), simplify=0.34 mm).
+Image contour tracing: +50 path(s) from embedded raster.
+Image vectorization mode: centerline (added 50 path(s), simplify=0.34 mm).
+Image contour tracing: +51 path(s) from embedded raster.
+Image vectorization mode: centerline (added 51 path(s), simplify=0.34 mm).
+Image contour tracing: +50 path(s) from embedded raster.
+Image vectorization mode: centerline (added 50 path(s), simplify=0.34 mm).
+Image contour tracing: +169 path(s) from embedded raster.
+Image vectorization mode: centerline (added 169 path(s), simplify=0.34 mm).
+Image contour tracing: +61 path(s) from embedded raster.
+Image vectorization mode: centerline (added 61 path(s), simplify=0.34 mm).
+Image contour tracing: total +508 path(s).
+Raw geometry bounds: x(38.385, 10018902270.112) y(14.563, 1255890812.830)
+SVG page: 210.016 x 297.011 mm
+Auto trim: no outer border detected.
+Page/content clip: kept 2456 visible segments, dropped 780 out-of-area segments.
+Applied content area crop: x(20.5,205.0) y(10.0,292.0) dropped segments=780
+Bounds after content margin crop: x(38.385, 205.016) y(14.563, 292.011)
+SVG geometry: paths=278, segments=2456.
+Source bounds: x(38.385, 205.016) y(14.563, 292.011)
+Fit to work area: scale=1.0092, translate=(-32.820,-309.697), from (38.385, 14.563)-(205.016, 292.011)
+Stitch: polylines 278 -> 237 (eps=0.080 mm, gap_eps=0.150 mm, angle<=20.0 deg)
+Reorder: 237 polylines ordered (nearest-end).
+Pencil naturalization: adjusted 170/237 stroke(s).
+Pencil naturalization segments: 2455 -> 1700
+Polyline optimization: 278 -> 237
+Segment counts: source=2456, fitted=2456, clipped=2456
+Drawable segments after clip: 2456 (100.0% of source)
+Prepared bounds: x(5.918, 174.082) y(-295.000, -15.000)
+Estimated draw length: 3.22 m
+Pencil mode: base_z=11.900, wear=0.000 mm, z_comp_start=0.000, z_down_start=11.900, dyn(rate=0.0100 mm/m, comp=1.000, slope=0.0100 Zmm/m, max=0.800), est_remaining_to_sharpen=120.0 m (wear=120.0, interval=inf)
+Applying pen-up / pen-down ...
+G-code stats: lines=2473, draw=2192, travel=93, bounds=0.000..174.082 x, -295.000..0.000 y
+Preflight: ok: lines=2473, draw=2192, travel=93, ratio=0.04
+Saved file stats: lines=2473, draw=2192, travel=93, bounds=0.000..174.082 x, -295.000..0.000 y
+Saved: C:\plotter_pdf\1\TOE_Zadachi_1_2_Variant_26_pack\pages\page_04.nc
+Preview SVG: C:\plotter_pdf\1\TOE_Zadachi_1_2_Variant_26_pack\pages\page_04.svg
+Preview PDF: C:\plotter_pdf\1\TOE_Zadachi_1_2_Variant_26_pack\pages\page_04.pdf

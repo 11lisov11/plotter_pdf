@@ -1,0 +1,73 @@
+Text render mode: handwriting=on font='C:\plotter_pdf\data\fonts\MarckScript-Regular.ttf'; image_contours=always
+Handwriting mode: Cyrillic text profile tokens=84, short=24%, digits=10%, long=62%, style=paragraph.
+Handwriting mode: Cyrillic detected, trying TTF single-line pipeline first ('C:\plotter_pdf\data\fonts\MarckScript-Regular.ttf').
+TTF centerline postprocess: 1 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '6' -> 1 stroke(s), thr=64, cand=8, font=MarckScript-Regular.ttf, size=14.04
+TTF centerline postprocess: 21 -> 15 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Рисунок 1.10' -> 15 stroke(s), thr=32, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 1 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '-' -> 1 stroke(s), thr=160, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 76 -> 51 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Схема для контурного предста' -> 51 stroke(s), thr=192, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 143 -> 91 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Уравнения для нахождения кон' -> 91 stroke(s), thr=96, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 103 -> 72 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'После подстановки получаем з' -> 72 stroke(s), thr=96, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 67 -> 46 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Проверяем восстановление ток' -> 46 stroke(s), thr=96, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 95 -> 52 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '4. РАССЧИТАТЬ ПОКАЗАНИЯ ВОЛЬ' -> 52 stroke(s), thr=160, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 30 -> 15 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Для определения' -> 15 stroke(s), thr=96, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 125 -> 76 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'показаний вольтметров состав' -> 76 stroke(s), thr=192, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 18 -> 13 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Кирхгофа.' -> 13 stroke(s), thr=96, cand=8, font=MarckScript-Regular.ttf, size=12.00
+Handwriting TTF centerline mode: replaced 11 text node(s), generated 433 stroke path(s) using 'MarckScript-Regular.ttf'.
+Text nodes after stroke-font replacement: 42
+Handwriting mode: applied font 'C:\plotter_pdf\data\fonts\MarckScript-Regular.ttf' to 42 text node(s).
+Text->path conversion #1: inkscape.exe --batch-process --actions=select-all;export-text-to-path --export-type=svg --export-overwrite --export-filename=C:\plotter_pdf\_tmp\tmp3_o0xnbf\source.svg C:\plotter_pdf\_tmp\tmp3_o0xnbf\source.svg
+Text converted to SVG paths.
+Text nodes after conversion: 0
+Extracting paths from SVG ...
+Image contour tracing: +93 path(s) from embedded raster.
+Image vectorization mode: centerline (added 93 path(s), simplify=0.34 mm).
+Image contour tracing: +94 path(s) from embedded raster.
+Image vectorization mode: centerline (added 94 path(s), simplify=0.34 mm).
+Image contour tracing: +93 path(s) from embedded raster.
+Image vectorization mode: centerline (added 93 path(s), simplify=0.34 mm).
+Image contour tracing: +93 path(s) from embedded raster.
+Image vectorization mode: centerline (added 93 path(s), simplify=0.34 mm).
+Image contour tracing: +208 path(s) from embedded raster.
+Image vectorization mode: centerline (added 208 path(s), simplify=0.34 mm).
+Image contour tracing: +44 path(s) from embedded raster.
+Image vectorization mode: centerline (added 44 path(s), simplify=0.34 mm).
+Image contour tracing: +138 path(s) from embedded raster.
+Image vectorization mode: centerline (added 138 path(s), simplify=0.34 mm).
+Image contour tracing: total +763 path(s).
+Raw geometry bounds: x(25.556, 15744493924.842) y(14.810, 81668375.149)
+SVG page: 210.016 x 297.011 mm
+Auto trim: no outer border detected.
+Page/content clip: kept 7122 visible segments, dropped 1104 out-of-area segments.
+Applied content area crop: x(20.5,205.0) y(10.0,292.0) dropped segments=1104
+Bounds after content margin crop: x(25.556, 191.527) y(14.810, 246.397)
+SVG geometry: paths=571, segments=7122.
+Source bounds: x(25.556, 191.527) y(14.810, 246.397)
+Fit to work area: scale=1.0845, translate=(-27.717,-296.643), from (25.556, 14.810)-(191.527, 246.397)
+Stitch: polylines 571 -> 533 (eps=0.080 mm, gap_eps=0.150 mm, angle<=20.0 deg)
+Reorder: 533 polylines ordered (nearest-end).
+Pencil naturalization: adjusted 410/533 stroke(s).
+Pencil naturalization segments: 7122 -> 4396
+Polyline optimization: 571 -> 533
+Segment counts: source=7122, fitted=7122, clipped=7122
+Drawable segments after clip: 7122 (100.0% of source)
+Prepared bounds: x(0.133, 179.981) y(-280.582, -29.418)
+Estimated draw length: 2.70 m
+Pencil mode: base_z=11.900, wear=0.000 mm, z_comp_start=0.000, z_down_start=11.900, dyn(rate=0.0100 mm/m, comp=1.000, slope=0.0100 Zmm/m, max=0.800), est_remaining_to_sharpen=120.0 m (wear=120.0, interval=inf)
+Applying pen-up / pen-down ...
+G-code stats: lines=5996, draw=5445, travel=183, bounds=0.000..179.981 x, -280.582..0.000 y
+Preflight: ok: lines=5996, draw=5445, travel=183, ratio=0.03
+Saved file stats: lines=5996, draw=5445, travel=183, bounds=0.000..179.981 x, -280.582..0.000 y
+Saved: C:\plotter_pdf\1\TOE_Zadachi_1_2_Variant_14_pack\pages\page_06.nc
+Preview SVG: C:\plotter_pdf\1\TOE_Zadachi_1_2_Variant_14_pack\pages\page_06.svg
+Preview PDF: C:\plotter_pdf\1\TOE_Zadachi_1_2_Variant_14_pack\pages\page_06.pdf
