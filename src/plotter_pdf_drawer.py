@@ -20,7 +20,6 @@ import unicodedata
 from datetime import datetime, timezone
 from dataclasses import dataclass
 from pathlib import Path
-from queue import Queue, Empty
 from typing import Dict, Iterable, List, Optional, Tuple
 from urllib.parse import unquote, urlparse
 from xml.etree import ElementTree as ET
@@ -43,11 +42,9 @@ except Exception:
     ImageFont = None
     ImageOps = None
 
-import tkinter as tk
-from tkinter import filedialog, messagebox, scrolledtext
-
 try:
     from src.plotter_backend.converters import cad_converter as cad_converter_mod
+    from src.plotter_backend import cli_entry as cli_entry_mod
     from src.plotter_backend.converters import pdf_converter as pdf_converter_mod
     from src.plotter_backend.converters import word_converter as word_converter_mod
     from src.plotter_backend.errors import BackendError, ConversionError, SerialTransportError, ToolDependencyError
@@ -70,6 +67,7 @@ try:
     from src.plotter_backend.machine import grbl_sender as grbl_sender_mod
     from src.plotter_backend.machine import manual_commands as manual_commands_mod
 except Exception:
+    from plotter_backend import cli_entry as cli_entry_mod
     from plotter_backend.converters import cad_converter as cad_converter_mod
     from plotter_backend.converters import pdf_converter as pdf_converter_mod
     from plotter_backend.converters import word_converter as word_converter_mod
@@ -6616,35 +6614,65 @@ def active_sheet_pass_rotation_deg() -> int:
     )
 
 
+def active_sheet_pass_post_translation_mm() -> Tuple[float, float]:
+    return geometry_sheet_tiling_mod.sheet_pass_post_translation_mm(
+        sheet_format=str(ACTIVE_SHEET_CONFIG.get("sheet_format") or "work"),
+        pass_cols=int(PASS_COLS),
+        pass_rows=int(PASS_ROWS),
+        pass_col=int(PASS_COL),
+        pass_row=int(PASS_ROW),
+    )
+
+
 def transform_polylines_for_active_sheet_pass(
     polylines: List[List[Tuple[float, float]]],
     logger=print,
 ) -> List[List[Tuple[float, float]]]:
     rotation_deg = int(active_sheet_pass_rotation_deg()) % 360
-    if not polylines or rotation_deg == 0:
+    shift_x_mm, shift_y_mm = active_sheet_pass_post_translation_mm()
+    if not polylines or (rotation_deg == 0 and abs(shift_x_mm) <= 1e-9 and abs(shift_y_mm) <= 1e-9):
         return polylines
 
     min_x, max_x, min_y, max_y = work_area_bounds()
     sum_x = min_x + max_x
     sum_y = min_y + max_y
 
-    if rotation_deg != 180:
-        if logger:
-            logger(f"Warning: unsupported sheet pass rotation {rotation_deg} deg; leaving geometry unchanged.")
-        return polylines
-
-    rotated = [
-        [(sum_x - float(x), sum_y - float(y)) for x, y in poly]
+    transformed = [
+        [(float(x), float(y)) for x, y in poly]
         for poly in polylines
     ]
-    if logger:
-        logger(
-            "Sheet pass transform: "
-            f"rotating geometry by 180 deg for {ACTIVE_SHEET_CONFIG.get('sheet_format')} "
-            f"pass {int(PASS_COL)}/{int(PASS_COLS)} x {int(PASS_ROW)}/{int(PASS_ROWS)} "
-            f"around active area center ({(min_x + max_x) * 0.5:.3f},{(min_y + max_y) * 0.5:.3f})."
-        )
-    return rotated
+
+    if rotation_deg not in {0, 180}:
+        if logger:
+            logger(f"Warning: unsupported sheet pass rotation {rotation_deg} deg; leaving geometry unchanged.")
+        return transformed
+
+    if rotation_deg == 180:
+        transformed = [
+            [(sum_x - float(x), sum_y - float(y)) for x, y in poly]
+            for poly in transformed
+        ]
+        if logger:
+            logger(
+                "Sheet pass transform: "
+                f"rotating geometry by 180 deg for {ACTIVE_SHEET_CONFIG.get('sheet_format')} "
+                f"pass {int(PASS_COL)}/{int(PASS_COLS)} x {int(PASS_ROW)}/{int(PASS_ROWS)} "
+                f"around active area center ({(min_x + max_x) * 0.5:.3f},{(min_y + max_y) * 0.5:.3f})."
+            )
+
+    if abs(shift_x_mm) > 1e-9 or abs(shift_y_mm) > 1e-9:
+        transformed = [
+            [(float(x) + float(shift_x_mm), float(y) + float(shift_y_mm)) for x, y in poly]
+            for poly in transformed
+        ]
+        if logger:
+            logger(
+                "Sheet pass transform: "
+                f"translating geometry by ({float(shift_x_mm):.3f},{float(shift_y_mm):.3f}) mm "
+                f"for {ACTIVE_SHEET_CONFIG.get('sheet_format')} "
+                f"pass {int(PASS_COL)}/{int(PASS_COLS)} x {int(PASS_ROW)}/{int(PASS_ROWS)}."
+            )
+    return transformed
 
 
 def clamp_to_work_area(
@@ -9899,1285 +9927,55 @@ def grbl_send_manual_commands(
         tail_read_bytes=tail_read_bytes,
     )
 
+SUPPORTED_INPUT_EXTENSIONS = cli_entry_mod.SUPPORTED_INPUT_EXTENSIONS
 
-class PlotterApp:
-    def __init__(self):
-        apply_quality_profile(DEFAULT_QUALITY_PROFILE)
-        try:
-            apply_pencil_profile(load_pencil_profile())
-        except Exception:
-            pass
 
-        self.root = tk.Tk()
-        self.root.title("Plotter Studio")
-        self.root.geometry("1200x760")
-        self.root.minsize(1040, 640)
-        self.root.option_add("*Font", "{Segoe UI} 10")
+class _CliBackendProxy:
+    def __getattr__(self, name: str):
+        return globals()[name]
 
-        self.theme = {
-            "bg": "#181a1f",
-            "panel": "#23262f",
-            "panel_alt": "#1f222a",
-            "text": "#e5e7eb",
-            "muted_text": "#9ca3af",
-            "disabled_text": "#6b7280",
-            "input_bg": "#111827",
-            "button_bg": "#2a2f3a",
-            "button_active": "#343a46",
-            "border": "#353b48",
-            "accent": "#3b82f6",
-            "accent_hover": "#2563eb",
-            "danger": "#ef4444",
-            "danger_hover": "#dc2626",
-            "success": "#059669",
-            "success_hover": "#047857",
-            "log_bg": "#0f1117",
-            "banner_ok_bg": "#0f3d33",
-            "banner_ok_fg": "#d1fae5",
-            "banner_alert_bg": "#612020",
-            "banner_alert_fg": "#ffffff",
-            "chip_bg": "#111827",
-            "chip_fg": "#cbd5e1",
-        }
-        self.root.configure(bg=self.theme["bg"])
 
-        self.queue: Queue[str] = Queue()
-        self.busy = False
-        self.selected_input: Optional[Path] = None
-        self._unread_logs = 0
-        self.console_visible = False
+_CLI_BACKEND = _CliBackendProxy()
 
-        self.com_var = tk.StringVar(value=detect_com_port())
-        self.file_var = tk.StringVar(value="")
-        self.sheet_var = tk.StringVar(value="a4")
-        self.tool_var = tk.StringVar(value="pencil")
-        self.calibrate_before_draw_var = tk.BooleanVar(value=True)
-        self.notebook_w_var = tk.StringVar(value=f"{DEFAULT_NOTEBOOK_WIDTH_MM:.1f}")
-        self.notebook_h_var = tk.StringVar(value=f"{DEFAULT_NOTEBOOK_HEIGHT_MM:.1f}")
-        self.z_step_var = tk.StringVar(value="5.0")
-        self.z_feed_var = tk.StringVar(value="140")
 
-        self._build_ui()
+def _optional_path_arg(value: Optional[str]) -> Optional[Path]:
+    return cli_entry_mod.optional_path_arg(value)
 
-        self._controls = [
-            self.refresh_com_btn,
-            self.sharpen_btn,
-            self.calibrate_btn,
-            self.frame_btn,
-            self.pick_btn,
-            self.draw_btn,
-            self.wear_test_btn,
-            self.pen_down_btn,
-            self.pen_up_btn,
-            self.release_btn,
-            self.com_entry,
-            self.file_entry,
-            self.notebook_w_entry,
-            self.notebook_h_entry,
-            self.z_step_entry,
-            self.z_feed_entry,
-            self.calibrate_check,
-            self.tool_menu,
-            self.sheet_menu,
-            self.console_toggle_btn,
-        ]
 
-        self._add_log("Готово. Выберите файл и нажмите 'Нарисовать'.")
-        self._add_log(f"Drawing profile: {quality_state()}")
-        self._refresh_pencil_banner()
-        self._set_console_visible(False)
-        self.root.after(100, self._flush_log)
+def _should_exit_after_pencil_maintenance(args, *, did_pencil_command: bool) -> bool:
+    return cli_entry_mod.should_exit_after_pencil_maintenance(args, did_pencil_command=did_pencil_command)
 
-    def _style_label(self, label: tk.Label, *, muted: bool = False, panel: Optional[str] = None):
-        label.config(
-            bg=panel or self.theme["panel"],
-            fg=self.theme["muted_text"] if muted else self.theme["text"],
-        )
 
-    def _style_entry(self, entry: tk.Entry):
-        entry.config(
-            bg=self.theme["input_bg"],
-            fg=self.theme["text"],
-            insertbackground=self.theme["text"],
-            relief="flat",
-            bd=0,
-            highlightthickness=1,
-            highlightbackground=self.theme["border"],
-            highlightcolor=self.theme["accent"],
-            disabledbackground=self.theme["input_bg"],
-            disabledforeground=self.theme["disabled_text"],
-        )
+def _has_cli_action(args) -> bool:
+    return cli_entry_mod.has_cli_action(args)
 
-    def _style_button(self, button: tk.Button, *, accent: bool = False, danger: bool = False, success: bool = False):
-        bg = self.theme["button_bg"]
-        active = self.theme["button_active"]
-        fg = self.theme["text"]
-        if accent:
-            bg = self.theme["accent"]
-            active = self.theme["accent_hover"]
-            fg = "#ffffff"
-        elif danger:
-            bg = self.theme["danger"]
-            active = self.theme["danger_hover"]
-            fg = "#ffffff"
-        elif success:
-            bg = self.theme["success"]
-            active = self.theme["success_hover"]
-            fg = "#ffffff"
-        button.config(
-            bg=bg,
-            fg=fg,
-            activebackground=active,
-            activeforeground=fg,
-            relief="flat",
-            bd=0,
-            padx=10,
-            pady=6,
-            highlightthickness=1,
-            highlightbackground=self.theme["border"],
-            highlightcolor=self.theme["accent"],
-            disabledforeground=self.theme["disabled_text"],
-            cursor="hand2",
-        )
 
-    def _style_option_menu(self, option_menu: tk.OptionMenu):
-        option_menu.config(
-            bg=self.theme["button_bg"],
-            fg=self.theme["text"],
-            activebackground=self.theme["button_active"],
-            activeforeground=self.theme["text"],
-            relief="flat",
-            bd=0,
-            padx=8,
-            pady=4,
-            highlightthickness=1,
-            highlightbackground=self.theme["border"],
-            highlightcolor=self.theme["accent"],
-            disabledforeground=self.theme["disabled_text"],
-            cursor="hand2",
-        )
-        try:
-            menu = option_menu.nametowidget(option_menu.menuname)
-            menu.config(
-                bg=self.theme["panel"],
-                fg=self.theme["text"],
-                activebackground=self.theme["accent"],
-                activeforeground="#ffffff",
-                relief="flat",
-                bd=0,
-            )
-        except Exception:
-            pass
+def build_cli_parser() -> argparse.ArgumentParser:
+    return cli_entry_mod.build_cli_parser(_CLI_BACKEND)
 
-    def _card(self, parent: tk.Widget, title: str, subtitle: Optional[str] = None) -> tk.Frame:
-        card = tk.Frame(
-            parent,
-            bg=self.theme["panel"],
-            highlightthickness=1,
-            highlightbackground=self.theme["border"],
-            highlightcolor=self.theme["border"],
-            padx=12,
-            pady=10,
-        )
-        card.pack(fill="x", pady=(0, 10))
-        title_lbl = tk.Label(
-            card,
-            text=title,
-            bg=self.theme["panel"],
-            fg=self.theme["text"],
-            font=("Segoe UI Semibold", 11),
-            anchor="w",
-        )
-        title_lbl.pack(fill="x")
-        if subtitle:
-            subtitle_lbl = tk.Label(
-                card,
-                text=subtitle,
-                bg=self.theme["panel"],
-                fg=self.theme["muted_text"],
-                font=("Segoe UI", 9),
-                anchor="w",
-            )
-            subtitle_lbl.pack(fill="x", pady=(2, 8))
-        body = tk.Frame(card, bg=self.theme["panel"])
-        body.pack(fill="x")
-        return body
 
-    def _build_ui(self):
-        shell = tk.Frame(self.root, bg=self.theme["bg"], padx=12, pady=12)
-        shell.pack(fill="both", expand=True)
+def _apply_cli_runtime_overrides(args) -> None:
+    cli_entry_mod.apply_cli_runtime_overrides(_CLI_BACKEND, args)
 
-        header = tk.Frame(
-            shell,
-            bg=self.theme["panel_alt"],
-            highlightthickness=1,
-            highlightbackground=self.theme["border"],
-            highlightcolor=self.theme["border"],
-            padx=14,
-            pady=10,
-        )
-        header.pack(fill="x", pady=(0, 12))
-        left_head = tk.Frame(header, bg=self.theme["panel_alt"])
-        left_head.pack(side="left", fill="x", expand=True)
-        tk.Label(
-            left_head,
-            text="Plotter Studio",
-            bg=self.theme["panel_alt"],
-            fg=self.theme["text"],
-            font=("Segoe UI Semibold", 16),
-        ).pack(anchor="w")
-        tk.Label(
-            left_head,
-            text="Минималистичный контроль плоттера: калибровка, подготовка файла и рисование в один поток.",
-            bg=self.theme["panel_alt"],
-            fg=self.theme["muted_text"],
-            font=("Segoe UI", 9),
-        ).pack(anchor="w", pady=(2, 0))
 
-        self.status_chip = tk.Label(
-            header,
-            text="Готово",
-            bg=self.theme["chip_bg"],
-            fg=self.theme["chip_fg"],
-            font=("Segoe UI Semibold", 10),
-            padx=12,
-            pady=6,
-            highlightthickness=1,
-            highlightbackground=self.theme["border"],
-            highlightcolor=self.theme["border"],
-        )
-        self.status_chip.pack(side="right")
-        self.status = self.status_chip
+def _run_cli_pencil_maintenance(args) -> Tuple[bool, Optional[int]]:
+    return cli_entry_mod.run_cli_pencil_maintenance(_CLI_BACKEND, args)
 
-        content = tk.Frame(shell, bg=self.theme["bg"])
-        content.pack(fill="both", expand=True)
 
-        left_col = tk.Frame(content, bg=self.theme["bg"], width=470)
-        left_col.pack(side="left", fill="y")
-        left_col.pack_propagate(False)
+def _configure_cli_sheet_state(args) -> Tuple[Optional[int], Optional[Tuple[float, float]]]:
+    return cli_entry_mod.configure_cli_sheet_state(_CLI_BACKEND, args)
 
-        right_col = tk.Frame(content, bg=self.theme["bg"])
-        right_col.pack(side="left", fill="both", expand=True, padx=(12, 0))
 
-        conn_body = self._card(left_col, "Подключение", "Порт, инструмент и текущее состояние.")
-        conn_row = tk.Frame(conn_body, bg=self.theme["panel"])
-        conn_row.pack(fill="x")
-        tk.Label(conn_row, text="COM", bg=self.theme["panel"], fg=self.theme["muted_text"]).pack(side="left")
-        self.com_entry = tk.Entry(conn_row, textvariable=self.com_var, width=10)
-        self.com_entry.pack(side="left", padx=(6, 6))
-        self.refresh_com_btn = tk.Button(conn_row, text="Обновить", command=self._refresh_com)
-        self.refresh_com_btn.pack(side="left", padx=(0, 8))
-        tk.Label(conn_row, text="Инструмент", bg=self.theme["panel"], fg=self.theme["muted_text"]).pack(side="left", padx=(4, 6))
-        self.tool_menu = tk.OptionMenu(conn_row, self.tool_var, "pen", "pencil")
-        self.tool_menu.pack(side="left")
+def _apply_cli_quality_profile(args) -> Optional[int]:
+    return cli_entry_mod.apply_cli_quality_profile(_CLI_BACKEND, args)
 
-        work_body = self._card(left_col, "Рабочая область", "Формат листа и калибровка.")
-        work_row0 = tk.Frame(work_body, bg=self.theme["panel"])
-        work_row0.pack(fill="x")
-        tk.Label(work_row0, text="Формат", bg=self.theme["panel"], fg=self.theme["muted_text"]).pack(side="left")
-        self.sheet_menu = tk.OptionMenu(work_row0, self.sheet_var, "work", "a4", "a3", "notebook")
-        self.sheet_menu.pack(side="left", padx=(6, 12))
-        tk.Label(work_row0, text="W", bg=self.theme["panel"], fg=self.theme["muted_text"]).pack(side="left")
-        self.notebook_w_entry = tk.Entry(work_row0, textvariable=self.notebook_w_var, width=7)
-        self.notebook_w_entry.pack(side="left", padx=(4, 8))
-        tk.Label(work_row0, text="H", bg=self.theme["panel"], fg=self.theme["muted_text"]).pack(side="left")
-        self.notebook_h_entry = tk.Entry(work_row0, textvariable=self.notebook_h_var, width=7)
-        self.notebook_h_entry.pack(side="left", padx=(4, 0))
 
-        self.calibrate_check = tk.Checkbutton(
-            work_body,
-            text="Выполнить калибровку перед рисованием",
-            variable=self.calibrate_before_draw_var,
-            onvalue=True,
-            offvalue=False,
-            bg=self.theme["panel"],
-            fg=self.theme["text"],
-            activebackground=self.theme["panel"],
-            activeforeground=self.theme["text"],
-            selectcolor=self.theme["input_bg"],
-            relief="flat",
-            bd=0,
-            highlightthickness=0,
-        )
-        self.calibrate_check.pack(fill="x", pady=(10, 8))
-        work_row1 = tk.Frame(work_body, bg=self.theme["panel"])
-        work_row1.pack(fill="x")
-        self.calibrate_btn = tk.Button(work_row1, text="Калибровка 4 угла", command=self._run_corner_calibration)
-        self.calibrate_btn.pack(side="left")
-        self.frame_btn = tk.Button(work_row1, text="Рамка активной зоны", command=self._draw_area_frame)
-        self.frame_btn.pack(side="left", padx=(8, 0))
+def _run_cli_action(args, parser: argparse.ArgumentParser, *, com: str) -> int:
+    return cli_entry_mod.run_cli_action(_CLI_BACKEND, args, parser, com=com)
 
-        file_body = self._card(left_col, "Файл", "Выбери файл, подготовь траекторию и отправь на плоттер.")
-        self.file_entry = tk.Entry(file_body, textvariable=self.file_var)
-        self.file_entry.pack(fill="x")
-        file_row = tk.Frame(file_body, bg=self.theme["panel"])
-        file_row.pack(fill="x", pady=(10, 0))
-        self.pick_btn = tk.Button(file_row, text="Выбрать файл", command=self._pick_file)
-        self.pick_btn.pack(side="left")
-        self.draw_btn = tk.Button(file_row, text="Нарисовать", command=self._draw_selected)
-        self.draw_btn.pack(side="left", padx=(8, 0))
-        self.wear_test_btn = tk.Button(file_row, text="Тест износа", command=self._run_wear_test)
-        self.wear_test_btn.pack(side="left", padx=(8, 0))
 
-        pen_body = self._card(left_col, "Перо и моторы", "Ручное управление осью Z и отпуск удержания.")
-        pen_row0 = tk.Frame(pen_body, bg=self.theme["panel"])
-        pen_row0.pack(fill="x")
-        tk.Label(pen_row0, text="Шаг Z (мм)", bg=self.theme["panel"], fg=self.theme["muted_text"]).pack(side="left")
-        self.z_step_entry = tk.Entry(pen_row0, textvariable=self.z_step_var, width=7)
-        self.z_step_entry.pack(side="left", padx=(6, 10))
-        tk.Label(pen_row0, text="Feed Z", bg=self.theme["panel"], fg=self.theme["muted_text"]).pack(side="left")
-        self.z_feed_entry = tk.Entry(pen_row0, textvariable=self.z_feed_var, width=7)
-        self.z_feed_entry.pack(side="left", padx=(6, 0))
-        pen_row1 = tk.Frame(pen_body, bg=self.theme["panel"])
-        pen_row1.pack(fill="x", pady=(10, 0))
-        self.pen_down_btn = tk.Button(pen_row1, text="Опустить перо", command=lambda: self._manual_pen_step(True))
-        self.pen_down_btn.pack(side="left")
-        self.pen_up_btn = tk.Button(pen_row1, text="Поднять перо", command=lambda: self._manual_pen_step(False))
-        self.pen_up_btn.pack(side="left", padx=(8, 0))
-        self.release_btn = tk.Button(pen_row1, text="Отпустить моторы", command=self._release_motors)
-        self.release_btn.pack(side="left", padx=(8, 0))
-
-        pencil_body = self._card(left_col, "Карандаш", "Контроль износа и напоминание о заточке.")
-        self.sharpen_btn = tk.Button(pencil_body, text="Заточил карандаш", command=self._mark_sharpened)
-        self.sharpen_btn.pack(side="left")
-        self.sharpen_banner = tk.Label(
-            pencil_body,
-            text="ЗАТОЧИ КАРАНДАШ",
-            font=("Segoe UI Semibold", 11),
-            anchor="center",
-            pady=6,
-            padx=12,
-        )
-        self.sharpen_banner.pack(side="left", fill="x", expand=True, padx=(10, 0))
-
-        workflow = self._card(
-            right_col,
-            "Поток работы",
-            "1) Выбери формат и COM -> 2) Калибровка (опционально) -> 3) Файл -> 4) Нарисовать",
-        )
-        self.workflow_hint = tk.Label(
-            workflow,
-            text=(
-                "Совет: держи консоль свернутой для компактного интерфейса.\n"
-                "При ошибке подключения открой консоль и проверь последние сообщения."
-            ),
-            bg=self.theme["panel"],
-            fg=self.theme["muted_text"],
-            justify="left",
-            anchor="w",
-        )
-        self.workflow_hint.pack(fill="x")
-
-        console_outer = tk.Frame(
-            right_col,
-            bg=self.theme["panel"],
-            highlightthickness=1,
-            highlightbackground=self.theme["border"],
-            highlightcolor=self.theme["border"],
-            padx=12,
-            pady=10,
-        )
-        console_outer.pack(fill="both", expand=True)
-        top_console = tk.Frame(console_outer, bg=self.theme["panel"])
-        top_console.pack(fill="x")
-        tk.Label(
-            top_console,
-            text="Console",
-            bg=self.theme["panel"],
-            fg=self.theme["text"],
-            font=("Segoe UI Semibold", 11),
-        ).pack(side="left")
-        self.console_toggle_btn = tk.Button(top_console, text="▶ Показать лог", command=self._toggle_console)
-        self.console_toggle_btn.pack(side="right")
-
-        self.console_body = tk.Frame(console_outer, bg=self.theme["panel"])
-        self.log = scrolledtext.ScrolledText(
-            self.console_body,
-            height=22,
-            font=("Consolas", 10),
-            wrap="none",
-            padx=8,
-            pady=8,
-        )
-        self.log.pack(fill="both", expand=True, pady=(10, 0))
-
-        self._style_entry(self.com_entry)
-        self._style_entry(self.notebook_w_entry)
-        self._style_entry(self.notebook_h_entry)
-        self._style_entry(self.file_entry)
-        self._style_entry(self.z_step_entry)
-        self._style_entry(self.z_feed_entry)
-        self._style_option_menu(self.tool_menu)
-        self._style_option_menu(self.sheet_menu)
-        self._style_button(self.refresh_com_btn)
-        self._style_button(self.calibrate_btn, success=True)
-        self._style_button(self.frame_btn)
-        self._style_button(self.pick_btn)
-        self._style_button(self.draw_btn, accent=True)
-        self._style_button(self.wear_test_btn)
-        self._style_button(self.pen_down_btn)
-        self._style_button(self.pen_up_btn)
-        self._style_button(self.release_btn, danger=True)
-        self._style_button(self.sharpen_btn, success=True)
-        self._style_button(self.console_toggle_btn)
-        self.log.config(
-            bg=self.theme["log_bg"],
-            fg=self.theme["text"],
-            insertbackground=self.theme["text"],
-            relief="flat",
-            bd=0,
-            highlightthickness=1,
-            highlightbackground=self.theme["border"],
-            highlightcolor=self.theme["accent"],
-        )
-        self.sharpen_banner.config(
-            bg=self.theme["banner_alert_bg"],
-            fg=self.theme["banner_alert_fg"],
-            highlightthickness=1,
-            highlightbackground=self.theme["border"],
-            highlightcolor=self.theme["border"],
-        )
-
-    def _add_log(self, msg: str):
-        self.queue.put(msg)
-
-    def _set_console_visible(self, visible: bool):
-        self.console_visible = bool(visible)
-        if self.console_visible:
-            self.console_body.pack(fill="both", expand=True)
-            self._unread_logs = 0
-        else:
-            self.console_body.pack_forget()
-        self._update_console_toggle()
-
-    def _update_console_toggle(self):
-        arrow = "▼" if self.console_visible else "▶"
-        unread = f" ({self._unread_logs})" if (not self.console_visible and self._unread_logs > 0) else ""
-        self.console_toggle_btn.config(text=f"{arrow} {'Скрыть лог' if self.console_visible else 'Показать лог'}{unread}")
-
-    def _toggle_console(self):
-        self._set_console_visible(not self.console_visible)
-
-    def _flush_log(self):
-        has_new = False
-        try:
-            while True:
-                msg = self.queue.get_nowait()
-                has_new = True
-                if not self.console_visible:
-                    self._unread_logs += 1
-                self.log.insert("end", f"{msg}\n")
-                self.log.see("end")
-        except Empty:
-            pass
-        if has_new and not self.console_visible:
-            self._update_console_toggle()
-        self.root.after(100, self._flush_log)
-
-    def _set_status(self, msg: str):
-        msg_l = (msg or "").lower()
-        bg = self.theme["chip_bg"]
-        fg = self.theme["chip_fg"]
-        if "error" in msg_l or "failed" in msg_l:
-            bg = self.theme["danger"]
-            fg = "#ffffff"
-        elif "готово" in msg_l or "done" in msg_l:
-            bg = self.theme["success"]
-            fg = "#ffffff"
-        elif "..." in msg or "рисование" in msg_l or "калибров" in msg_l:
-            bg = self.theme["accent"]
-            fg = "#ffffff"
-        self.status.config(text=msg, bg=bg, fg=fg)
-
-    def _set_controls_enabled(self, enabled: bool):
-        state = "normal" if enabled else "disabled"
-        for w in self._controls:
-            try:
-                w.config(state=state)
-            except Exception:
-                pass
-
-    def _start_background(self, status: str, worker, *args):
-        if self.busy:
-            return
-        self.busy = True
-        self._set_controls_enabled(False)
-        self._set_status(status)
-        threading.Thread(target=worker, args=args, daemon=True).start()
-
-    def _finish(self, ok: bool, msg: Optional[str] = None, *, popup: bool = False):
-        self.busy = False
-        self._set_controls_enabled(True)
-        self._refresh_pencil_banner()
-        if msg:
-            self._add_log(msg)
-            self._set_status(msg)
-        else:
-            self._set_status("Готово")
-
-        if popup and msg:
-            if ok:
-                messagebox.showinfo("Done", msg)
-            else:
-                messagebox.showerror("Error", msg)
-
-    def _current_com(self) -> str:
-        val = (self.com_var.get() or "").strip()
-        if val:
-            return val
-        detected = detect_com_port()
-        self.com_var.set(detected)
-        return detected
-
-    def _refresh_com(self):
-        detected = detect_com_port(self._current_com())
-        self.com_var.set(detected)
-        self._add_log(f"COM detected: {detected}")
-        self._set_status(f"COM: {detected}")
-
-    def _pick_file(self):
-        if self.busy:
-            return
-        path = filedialog.askopenfilename(
-            filetypes=[
-                ("Supported", "*.pdf *.svg *.frw *.cdw *.doc *.docx"),
-                ("PDF", "*.pdf"),
-                ("SVG", "*.svg"),
-                ("COMPAS FRW", "*.frw"),
-                ("COMPAS CDW", "*.cdw"),
-                ("Word DOC", "*.doc"),
-                ("Word DOCX", "*.docx"),
-            ],
-            title="Выберите файл для рисования",
-        )
-        if not path:
-            return
-        self.selected_input = Path(path)
-        self.file_var.set(str(self.selected_input))
-        self._add_log(f"Selected file: {self.selected_input}")
-        self._set_status("Файл выбран")
-
-    def _parse_float_var(self, var: tk.StringVar, default_value: float) -> float:
-        try:
-            return float((var.get() or "").replace(",", "."))
-        except Exception:
-            return float(default_value)
-
-    def _sheet_config_from_ui(self) -> dict:
-        fmt = (self.sheet_var.get() or "work").strip().lower()
-        if fmt not in {"work", "a4", "a3", "notebook"}:
-            fmt = "work"
-
-        width = None
-        height = None
-        if fmt == "notebook":
-            width = max(10.0, self._parse_float_var(self.notebook_w_var, DEFAULT_NOTEBOOK_WIDTH_MM))
-            height = max(10.0, self._parse_float_var(self.notebook_h_var, DEFAULT_NOTEBOOK_HEIGHT_MM))
-
-        return {
-            "sheet_format": fmt,
-            "sheet_width_mm": width,
-            "sheet_height_mm": height,
-            "anchor": "lower_left",
-            "offset_x_mm": 0.0,
-            "offset_y_mm": 0.0,
-        }
-
-    def _apply_sheet_from_ui(self, logger):
-        cfg = self._sheet_config_from_ui()
-        configure_active_work_area(
-            sheet_format=cfg["sheet_format"],
-            sheet_width_mm=cfg["sheet_width_mm"],
-            sheet_height_mm=cfg["sheet_height_mm"],
-            anchor=cfg["anchor"],
-            offset_x_mm=cfg["offset_x_mm"],
-            offset_y_mm=cfg["offset_y_mm"],
-            logger=logger,
-        )
-
-    def _apply_tool_from_ui(self):
-        global TOOL_MODE
-        tool = (self.tool_var.get() or "pen").strip().lower()
-        if tool not in {"pen", "pencil"}:
-            tool = "pen"
-        TOOL_MODE = tool
-
-    def _refresh_pencil_banner(self):
-        try:
-            apply_pencil_profile(load_pencil_profile())
-            state = load_pencil_state()
-            rem_best, rem_wear, rem_interval = pencil_remaining_to_sharpen_m(state)
-            wear_now = float(state.get("estimated_wear_mm", 0.0) or 0.0)
-            alert = wear_now >= PENCIL_REMIND_WEAR_MM or (math.isfinite(rem_best) and rem_best <= 0.0)
-            if alert:
-                txt = "ЗАТОЧИ КАРАНДАШ"
-                self.sharpen_banner.config(
-                    text=txt,
-                    fg=self.theme["banner_alert_fg"],
-                    bg=self.theme["banner_alert_bg"],
-                )
-            else:
-                rem_txt = "inf" if not math.isfinite(rem_best) else f"{rem_best:.1f} м"
-                txt = f"Карандаш OK. До заточки: {rem_txt}"
-                self.sharpen_banner.config(
-                    text=txt,
-                    fg=self.theme["banner_ok_fg"],
-                    bg=self.theme["banner_ok_bg"],
-                )
-            self._add_log(
-                "Pencil status: "
-                f"wear={wear_now:.3f} mm, remaining={('inf' if not math.isfinite(rem_best) else f'{rem_best:.2f}')}, "
-                f"wear_rule={('inf' if not math.isfinite(rem_wear) else f'{rem_wear:.2f}')}, "
-                f"interval_rule={('inf' if not math.isfinite(rem_interval) else f'{rem_interval:.2f}')}"
-            )
-        except Exception as exc:
-            self.sharpen_banner.config(
-                text="Проверка карандаша недоступна",
-                fg="#ffffff",
-                bg="#374151",
-            )
-            self._add_log(_format_internal_exception("Pencil banner update failed", exc))
-
-    def _mark_sharpened(self):
-        if self.busy:
-            return
-        reset_pencil_state_after_sharpen(self._add_log, reason="gui")
-        self._refresh_pencil_banner()
-        self._set_status("Карандаш отмечен как заточенный.")
-
-    def _run_corner_calibration(self):
-        self._start_background("Калибровка 4 углов...", self._corner_calibration_worker)
-
-    def _corner_calibration_worker(self):
-        try:
-            self._apply_sheet_from_ui(self._add_log)
-            ok, msg = run_corner_calibration_pipeline(
-                self._add_log,
-                com=self._current_com(),
-                baud=DEFAULT_BAUD,
-                send_to_plotter=True,
-                mark_size=2.0,
-            )
-        except Exception as exc:
-            ok, msg = False, _format_backend_exception(exc)
-        self.root.after(0, lambda: self._finish(ok, msg, popup=False))
-
-    def _draw_area_frame(self):
-        self._start_background("Рисование рамки зоны...", self._frame_worker)
-
-    def _frame_worker(self):
-        try:
-            self._apply_sheet_from_ui(self._add_log)
-            ok, msg = run_frame_pipeline(
-                self._add_log,
-                com=self._current_com(),
-                baud=DEFAULT_BAUD,
-                send_to_plotter=True,
-            )
-        except Exception as exc:
-            ok, msg = False, _format_backend_exception(exc)
-        self.root.after(0, lambda: self._finish(ok, msg, popup=False))
-
-    def _draw_selected(self):
-        if self.busy:
-            return
-        if self.selected_input is None:
-            self._pick_file()
-            if self.selected_input is None:
-                return
-        self._start_background("Подготовка и рисование...", self._draw_worker, self.selected_input)
-
-    def _draw_worker(self, input_path: Path):
-        try:
-            self._apply_tool_from_ui()
-            self._apply_sheet_from_ui(self._add_log)
-            ok, msg = run_pipeline_with_corner_calibration(
-                input_path,
-                self._add_log,
-                com=self._current_com(),
-                baud=DEFAULT_BAUD,
-                send_to_plotter=True,
-                output_path=None,
-                skip_calibration=not bool(self.calibrate_before_draw_var.get()),
-                skip_confirmation=True,
-                corner_mark_size=2.0,
-                feed_travel=FEED_TRAVEL,
-                feed_draw=FEED_DRAW,
-                auto_resume=True,
-            )
-        except Exception as exc:
-            ok, msg = False, _format_backend_exception(exc)
-        self.root.after(0, lambda: self._finish(ok, msg, popup=True))
-
-    def _run_wear_test(self):
-        self._start_background("Тест износа (квадраты)...", self._wear_test_worker)
-
-    def _wear_test_worker(self):
-        try:
-            self.tool_var.set("pencil")
-            self._apply_tool_from_ui()
-            self._apply_sheet_from_ui(self._add_log)
-            ok, msg = run_pencil_wear_test_pipeline(
-                self._add_log,
-                com=self._current_com(),
-                baud=DEFAULT_BAUD,
-                send_to_plotter=True,
-                output_path=None,
-                feed_travel=FEED_TRAVEL,
-                feed_draw=FEED_DRAW,
-                auto_resume=True,
-                levels=8,
-                cols=2,
-                hatch_step_mm=1.0,
-                hatch_loops=1,
-                margin_mm=8.0,
-                gap_mm=6.0,
-            )
-        except Exception as exc:
-            ok, msg = False, _format_backend_exception(exc)
-        self.root.after(0, lambda: self._finish(ok, msg, popup=True))
-
-    def _manual_pen_step(self, down: bool):
-        if self.busy:
-            return
-        step = max(0.1, self._parse_float_var(self.z_step_var, 5.0))
-        feed = max(20.0, self._parse_float_var(self.z_feed_var, 140.0))
-        down_sign = 1.0 if (float(PENCIL_BASE_Z_DOWN) - float(Z_UP)) >= 0.0 else -1.0
-        delta = down_sign * step if down else -down_sign * step
-        action = "Опускание пера..." if down else "Подъем пера..."
-        done = f"Done: {'перо опущено' if down else 'перо поднято'} на {step:.2f} мм."
-        cmds = [
-            "$X",
-            "$1=255",
-            "G21",
-            "G91",
-            f"G1 Z{delta:.3f} F{feed:.1f}",
-            "G90",
-            "?",
-        ]
-        self._start_background(action, self._manual_worker, cmds, done)
-
-    def _release_motors(self):
-        if self.busy:
-            return
-        cmds = ["$X", "M5", "$1=0", "?"]
-        self._start_background("Отпуск моторов...", self._manual_worker, cmds, "Done: моторы отпущены.")
-
-    def _manual_worker(self, commands: List[str], done_message: str):
-        ok, out = grbl_send_manual_commands(
-            self._current_com(),
-            DEFAULT_BAUD,
-            commands,
-            soft_reset_first=True,
-            read_tail=True,
-        )
-        if out:
-            for line in out.splitlines():
-                self._add_log(line)
-        msg = done_message if ok else f"Manual command failed: {out}"
-        self.root.after(0, lambda: self._finish(ok, msg, popup=not ok))
-
-    def run(self):
-        self.root.mainloop()
-
-def main():
-    _force_utf8_stdio()
-    global MIN_FIT_SCALE_FOR_DIMENSIONAL_DRAW
-    global TOOL_MODE
-    global PENCIL_BASE_Z_DOWN
-    global PENCIL_WEAR_MM_PER_M
-    global PENCIL_Z_COMP_MM_PER_WEAR_MM
-    global PENCIL_MAX_COMP_MM
-    global PENCIL_REMIND_WEAR_MM
-    global PENCIL_SHARPEN_INTERVAL_M
-    global Z_DELAY_DOWN
-    global Z_DELAY_UP
-    global Z_FEED_DOWN_APPROACH
-    global Z_FEED_DOWN_TOUCH
-    global Z_FEED_UP
-    global Z_FEED_UP_FINAL
-    global Z_SOFT_DOWN_MM
-    global Z_SOFT_UP_MM
-    global Z_TRAVEL_LIFT_MM
-    global SAFE_PEN_TRAVEL_UP
-    global Z_PROFILE_CLI_OVERRIDE
-    global DRAW_ORDER_MODE
-    global DRAW_ORDER_LINE_TOL_MM
-    global HANDWRITING_TEXT_ENABLED
-    global HANDWRITING_FONT_FAMILY
-    global HANDWRITING_CYRILLIC_FONT_FAMILY
-    global HANDWRITING_DIRECT_VECTOR_TEXT_ENABLED
-    global HANDWRITING_SINGLELINE_TTF_BACKEND
-    global IMAGE_CONTOUR_MODE
-    global IMAGE_CONTOUR_ENABLED
-    global IMAGE_CONTOUR_WORD_ONLY
-    global PASS_COLS
-    global PASS_ROWS
-    global PASS_COL
-    global PASS_ROW
-
-    parser = argparse.ArgumentParser(description="PDF/SVG/FRW/CDW/DOC/DOCX -> Plotter converter")
-    parser.add_argument("input", nargs="?", help="Path to PDF, SVG, FRW, CDW, DOC or DOCX file")
-    parser.add_argument("--frame", action="store_true", help="Draw work area frame")
-    parser.add_argument("--calibrate-corners", action="store_true", help="Draw 4 corner marks for calibration")
-    parser.add_argument("--com", default=None, help="COM port (default detect)")
-    parser.add_argument("--baud", default=DEFAULT_BAUD, help="Baud rate")
-    parser.add_argument("--dry-run", action="store_true", help="Generate G-code and save file without sending to plotter")
-    parser.add_argument("--preview", action="store_true", help="Generate G-code and do not send to plotter")
-    parser.add_argument("--open-preview", action="store_true", help="Open prepared G-code in default viewer")
-    parser.add_argument("--output", default=None, help="Output file when --dry-run is set")
-    parser.add_argument("--feed-travel", type=float, default=FEED_TRAVEL, help=f"Feed for rapid moves (default {FEED_TRAVEL})")
-    parser.add_argument("--feed-draw", type=float, default=FEED_DRAW, help=f"Feed for drawing moves (default {FEED_DRAW})")
-    parser.add_argument("--z-delay-down", type=float, default=None, help=f"Pen-down settle delay seconds (default {Z_DELAY_DOWN})")
-    parser.add_argument("--z-delay-up", type=float, default=None, help=f"Pen-up settle delay seconds (default {Z_DELAY_UP})")
-    parser.add_argument("--z-feed-down-approach", type=float, default=None, help=f"Z feed for approach before touch (default {Z_FEED_DOWN_APPROACH})")
-    parser.add_argument("--z-feed-down-touch", type=float, default=None, help=f"Z feed for final touch-down (default {Z_FEED_DOWN_TOUCH})")
-    parser.add_argument("--z-feed-up", type=float, default=None, help=f"Z feed for main lift (default {Z_FEED_UP})")
-    parser.add_argument("--z-feed-up-final", type=float, default=None, help=f"Z feed for final near-top lift (default {Z_FEED_UP_FINAL})")
-    parser.add_argument("--z-soft-down-mm", type=float, default=None, help=f"Slow final distance before Z-down (default {Z_SOFT_DOWN_MM})")
-    parser.add_argument("--z-soft-up-mm", type=float, default=None, help=f"Slow final distance before Z-up (default {Z_SOFT_UP_MM})")
-    parser.add_argument(
-        "--z-travel-lift-mm",
-        type=float,
-        default=None,
-        help=f"Inter-path lift distance from Z-down towards Z-up (default {Z_TRAVEL_LIFT_MM})",
-    )
-    parser.add_argument(
-        "--safe-travel-up",
-        action=argparse.BooleanOptionalAction,
-        default=None,
-        help="Always lift to full Z_UP before every G0 travel move (recommended for clean technical drawings).",
-    )
-    parser.add_argument("--skip-calibration", action="store_true", help="Skip 4-corner calibration before drawing")
-    parser.add_argument("--skip-calibration-confirmation", action="store_true", help="Do not ask confirmation after calibration")
-    parser.add_argument(
-        "--auto-resume",
-        action=argparse.BooleanOptionalAction,
-        default=True,
-        help="Auto-resume from current position if the sender aborts (best effort).",
-    )
-    parser.add_argument("--corner-mark-size", type=float, default=2.0, help="Corner mark size in mm")
-    parser.add_argument(
-        "--quality",
-        default=DEFAULT_QUALITY_PROFILE,
-        choices=["fast", "normal", "high"],
-        help="Geometry quality profile: fast/normal/high",
-    )
-    parser.add_argument(
-        "--draw-order",
-        default=DRAW_ORDER_MODE,
-        choices=["auto", "nearest", "source", "line_lr"],
-        help="Polyline order mode: auto, nearest (fastest), source (as in file), line_lr (top->bottom, left->right).",
-    )
-    parser.add_argument(
-        "--draw-order-line-tol-mm",
-        type=float,
-        default=DRAW_ORDER_LINE_TOL_MM,
-        help="Row clustering tolerance for --draw-order line_lr (mm).",
-    )
-    parser.add_argument("--curve-segment-mm", type=float, default=None, help="Override curve approximation step size")
-    parser.add_argument("--arc-segment-mm", type=float, default=None, help="Override arc approximation step size")
-    parser.add_argument("--collinear-eps", type=float, default=None, help="Override collinear simplification epsilon")
-    parser.add_argument("--rdp-eps", type=float, default=None, help="RDP simplify epsilon (mm) for G1-only polylines (0 disables)")
-    parser.add_argument("--arc-fit-tol", type=float, default=None, help="Max radial error (mm) to replace polyline by G2/G3 arc")
-    parser.add_argument("--line-fit-tol", type=float, default=None, help="Max deviation (mm) to replace polyline by a single line")
-    parser.add_argument("--no-simplify", action="store_true", help="Disable polyline simplification")
-    parser.add_argument("--no-rdp", action="store_true", help="Disable RDP polyline simplification (keep raw segments)")
-    parser.add_argument("--no-arcs", action="store_true", help="Disable emitting G2/G3 arcs (use only G1)")
-    parser.add_argument(
-        "--strict-1to1",
-        action="store_true",
-        help=(
-            "Preserve 1:1 mm dimensions when fit-to-area would shrink geometry too much. "
-            "May clip geometry that does not fit the configured work area."
-        ),
-    )
-    parser.add_argument(
-        "--sheet-format",
-        default="work",
-        choices=["work", "a4", "a3", "notebook", "custom"],
-        help="Active sheet profile inside workspace.",
-    )
-    parser.add_argument("--sheet-width-mm", type=float, default=None, help="Sheet width override (mm).")
-    parser.add_argument("--sheet-height-mm", type=float, default=None, help="Sheet height override (mm).")
-    parser.add_argument(
-        "--sheet-anchor",
-        default="center",
-        choices=["center", "lower_left", "upper_left", "lower_right", "upper_right"],
-        help="How to place smaller sheet area inside machine workspace.",
-    )
-    parser.add_argument("--sheet-offset-x-mm", type=float, default=0.0, help="Shift active sheet area in X (mm).")
-    parser.add_argument("--sheet-offset-y-mm", type=float, default=0.0, help="Shift active sheet area in Y (mm).")
-    parser.add_argument("--plan-sheet", action="store_true", help="Print pass plan for selected sheet and continue.")
-    parser.add_argument("--pass-cols", type=int, default=1, help="How many passes along X for current sheet.")
-    parser.add_argument("--pass-rows", type=int, default=1, help="How many passes along Y for current sheet.")
-    parser.add_argument("--pass-col", type=int, default=1, help="Current pass column index (1-based).")
-    parser.add_argument("--pass-row", type=int, default=1, help="Current pass row index (1-based).")
-    parser.add_argument("--auto-pass-grid", action="store_true", help="Auto-select pass grid from sheet size and active area.")
-    parser.add_argument("--tool", default="pen", choices=["pen", "pencil"], help="Drawing tool mode.")
-    parser.add_argument("--pencil-base-z-down", type=float, default=None, help="Base Z_DOWN for pencil mode.")
-    parser.add_argument("--pencil-wear-mm-per-m", type=float, default=None, help="Estimated HB wear (mm per 1 meter draw).")
-    parser.add_argument("--pencil-z-comp-per-wear", type=float, default=None, help="Extra Z mm per 1 mm estimated wear.")
-    parser.add_argument("--pencil-max-comp-mm", type=float, default=None, help="Max automatic Z compensation for pencil wear.")
-    parser.add_argument("--pencil-remind-wear-mm", type=float, default=None, help="Wear threshold for sharpen reminder.")
-    parser.add_argument("--pencil-sharpen-interval-m", type=float, default=None, help="Length-based sharpen interval in meters (0 disables).")
-    parser.add_argument("--pencil-sharpened", action="store_true", help="Reset accumulated pencil wear state.")
-    parser.add_argument("--pencil-status", action="store_true", help="Print current pencil profile/state and exit.")
-    parser.add_argument(
-        "--pencil-calibrate-from-last-test-stage",
-        type=int,
-        default=None,
-        help="Use last wear-test report and stage number (last acceptable block) to auto-tune wear rate/sharpen interval.",
-    )
-    parser.add_argument(
-        "--pencil-calibrate-first-bad-stage",
-        type=int,
-        default=0,
-        help="Optional first unacceptable stage for auto calibration.",
-    )
-    parser.add_argument(
-        "--pencil-calibrate-safety-factor",
-        type=float,
-        default=0.90,
-        help="Safety factor for derived sharpen interval from calibration stage (0.5..0.99).",
-    )
-    parser.add_argument("--pencil-wear-test", action="store_true", help="Draw dense hatched test blocks to calibrate pencil wear.")
-    parser.add_argument("--pencil-wear-test-levels", type=int, default=8, help="Number of wear-test blocks.")
-    parser.add_argument("--pencil-wear-test-cols", type=int, default=2, help="How many block columns for wear-test.")
-    parser.add_argument("--pencil-wear-test-hatch-step-mm", type=float, default=1.0, help="Wear-test hatch spacing (mm).")
-    parser.add_argument("--pencil-wear-test-loops", type=int, default=1, help="Cross-hatch loop count per wear-test block.")
-    parser.add_argument("--pencil-wear-test-margin-mm", type=float, default=8.0, help="Wear-test margin from active area borders (mm).")
-    parser.add_argument("--pencil-wear-test-gap-mm", type=float, default=6.0, help="Wear-test gap between blocks (mm).")
-    parser.add_argument(
-        "--force-text-to-path",
-        action="store_true",
-        default=None,
-        help="Always convert text nodes to paths (stronger glyph output)",
-    )
-    parser.add_argument(
-        "--handwriting",
-        action=argparse.BooleanOptionalAction,
-        default=None,
-        help="Enable handwriting font replacement for text before vectorization.",
-    )
-    parser.add_argument(
-        "--handwriting-font",
-        default=None,
-        help="Font family for handwriting mode (example: Marck Script).",
-    )
-    parser.add_argument(
-        "--handwriting-direct-vector",
-        action=argparse.BooleanOptionalAction,
-        default=None,
-        help="Prefer direct vector stroke-font conversion for text (no raster/skeleton stage).",
-    )
-    parser.add_argument(
-        "--handwriting-centerline-backend",
-        choices=["auto", "skeleton", "autotrace3"],
-        default=None,
-        help="Centerline backend for TTF handwriting mode: auto | skeleton | autotrace3.",
-    )
-    parser.add_argument(
-        "--image-contours-mode",
-        choices=["off", "word_only", "always"],
-        default=None,
-        help="Raster contour extraction mode: off | word_only | always.",
-    )
-    args = parser.parse_args()
-    if args.no_rdp:
-        args.rdp_eps = 0.0
-    if args.feed_travel <= 0 or args.feed_draw <= 0:
-        print("Invalid feed: --feed-travel and --feed-draw must be > 0")
-        return 1
-    # Load persistent pencil profile first, then allow CLI overrides below.
-    profile_from_file = load_pencil_profile()
-    apply_pencil_profile(profile_from_file)
-    MIN_FIT_SCALE_FOR_DIMENSIONAL_DRAW = 0.98 if args.strict_1to1 else 0.0
-    TOOL_MODE = (args.tool or "pen").strip().lower()
-    DRAW_ORDER_MODE = (args.draw_order or DRAW_ORDER_MODE).strip().lower()
-    DRAW_ORDER_LINE_TOL_MM = max(0.2, float(args.draw_order_line_tol_mm))
-    Z_PROFILE_CLI_OVERRIDE = any(
-        v is not None
-        for v in (
-            args.z_delay_down,
-            args.z_delay_up,
-            args.z_feed_down_approach,
-            args.z_feed_down_touch,
-            args.z_feed_up,
-            args.z_feed_up_final,
-            args.z_soft_down_mm,
-            args.z_soft_up_mm,
-            args.z_travel_lift_mm,
-        )
-    )
-    PASS_COLS = max(1, int(args.pass_cols))
-    PASS_ROWS = max(1, int(args.pass_rows))
-    PASS_COL = min(max(1, int(args.pass_col)), PASS_COLS)
-    PASS_ROW = min(max(1, int(args.pass_row)), PASS_ROWS)
-
-    if args.pencil_base_z_down is not None:
-        PENCIL_BASE_Z_DOWN = float(args.pencil_base_z_down)
-    if args.pencil_wear_mm_per_m is not None:
-        PENCIL_WEAR_MM_PER_M = max(0.0, float(args.pencil_wear_mm_per_m))
-    if args.pencil_z_comp_per_wear is not None:
-        PENCIL_Z_COMP_MM_PER_WEAR_MM = max(0.0, float(args.pencil_z_comp_per_wear))
-    if args.pencil_max_comp_mm is not None:
-        PENCIL_MAX_COMP_MM = max(0.0, float(args.pencil_max_comp_mm))
-    if args.pencil_remind_wear_mm is not None:
-        PENCIL_REMIND_WEAR_MM = max(0.0, float(args.pencil_remind_wear_mm))
-    if args.pencil_sharpen_interval_m is not None:
-        PENCIL_SHARPEN_INTERVAL_M = max(0.0, float(args.pencil_sharpen_interval_m))
-
-    if args.z_delay_down is not None:
-        Z_DELAY_DOWN = max(0.0, float(args.z_delay_down))
-    if args.z_delay_up is not None:
-        Z_DELAY_UP = max(0.0, float(args.z_delay_up))
-    if args.z_feed_down_approach is not None:
-        Z_FEED_DOWN_APPROACH = max(1.0, float(args.z_feed_down_approach))
-    if args.z_feed_down_touch is not None:
-        Z_FEED_DOWN_TOUCH = max(1.0, float(args.z_feed_down_touch))
-    if args.z_feed_up is not None:
-        Z_FEED_UP = max(1.0, float(args.z_feed_up))
-    if args.z_feed_up_final is not None:
-        Z_FEED_UP_FINAL = max(1.0, float(args.z_feed_up_final))
-    if args.z_soft_down_mm is not None:
-        Z_SOFT_DOWN_MM = max(0.0, float(args.z_soft_down_mm))
-    if args.z_soft_up_mm is not None:
-        Z_SOFT_UP_MM = max(0.0, float(args.z_soft_up_mm))
-    if args.z_travel_lift_mm is not None:
-        Z_TRAVEL_LIFT_MM = max(0.0, float(args.z_travel_lift_mm))
-    if args.safe_travel_up is not None:
-        SAFE_PEN_TRAVEL_UP = bool(args.safe_travel_up)
-    if args.handwriting is not None:
-        HANDWRITING_TEXT_ENABLED = bool(args.handwriting)
-    if args.handwriting_font is not None and str(args.handwriting_font).strip():
-        normalized_hw = normalize_handwriting_font_name(args.handwriting_font)
-        HANDWRITING_FONT_FAMILY = normalized_hw
-        # Keep one explicit CLI font for both Latin and Cyrillic selection paths.
-        HANDWRITING_CYRILLIC_FONT_FAMILY = normalized_hw
-    if args.handwriting_direct_vector is not None:
-        HANDWRITING_DIRECT_VECTOR_TEXT_ENABLED = bool(args.handwriting_direct_vector)
-    if args.handwriting_centerline_backend is not None:
-        HANDWRITING_SINGLELINE_TTF_BACKEND = _normalize_singleline_ttf_backend(args.handwriting_centerline_backend)
-    if args.image_contours_mode is not None:
-        IMAGE_CONTOUR_MODE = normalize_image_contour_mode(args.image_contours_mode)
-        IMAGE_CONTOUR_ENABLED = IMAGE_CONTOUR_MODE != "off"
-        IMAGE_CONTOUR_WORD_ONLY = IMAGE_CONTOUR_MODE == "word_only"
-
-    pencil_profile_overrides = any(
-        v is not None
-        for v in (
-            args.pencil_base_z_down,
-            args.pencil_wear_mm_per_m,
-            args.pencil_z_comp_per_wear,
-            args.pencil_max_comp_mm,
-            args.pencil_remind_wear_mm,
-            args.pencil_sharpen_interval_m,
-        )
-    )
-    if pencil_profile_overrides:
-        profile_to_save = load_pencil_profile()
-        profile_to_save.update(build_pencil_profile_snapshot())
-        profile_to_save["updated_at_utc"] = _now_iso_utc()
-        profile_to_save["source"] = "cli_override"
-        save_pencil_profile(profile_to_save)
-        print(f"Pencil profile saved: {PENCIL_PROFILE_PATH}")
-
-    did_pencil_command = False
-    if args.pencil_sharpened:
-        reset_pencil_state_after_sharpen(print, reason="cli")
-        did_pencil_command = True
-
-    if args.pencil_calibrate_from_last_test_stage is not None:
-        ok, msg = calibrate_pencil_wear_from_last_test(
-            last_good_stage=int(args.pencil_calibrate_from_last_test_stage),
-            first_bad_stage=max(0, int(args.pencil_calibrate_first_bad_stage or 0)),
-            safety_factor=float(args.pencil_calibrate_safety_factor),
-            logger=lambda _msg: None,
-        )
-        print(msg)
-        if not ok:
-            return 1
-        did_pencil_command = True
-
-    if args.pencil_status:
-        show_pencil_status(print)
-        did_pencil_command = True
-
-    if (
-        did_pencil_command
-        and not args.frame
-        and not args.calibrate_corners
-        and not args.pencil_wear_test
-        and not args.input
-        and not args.plan_sheet
-    ):
-        return 0
-
-    try:
-        configure_active_work_area(
-            sheet_format=args.sheet_format,
-            sheet_width_mm=args.sheet_width_mm,
-            sheet_height_mm=args.sheet_height_mm,
-            anchor=args.sheet_anchor,
-            offset_x_mm=args.sheet_offset_x_mm,
-            offset_y_mm=args.sheet_offset_y_mm,
-            logger=print,
-        )
-    except ValueError as exc:
-        print(_format_internal_exception("Invalid sheet configuration", exc))
-        return 1
-
-    try:
-        sheet_w_mm, sheet_h_mm = resolve_sheet_size_mm(
-            sheet_format=args.sheet_format,
-            sheet_width_mm=args.sheet_width_mm,
-            sheet_height_mm=args.sheet_height_mm,
-        )
-    except ValueError as exc:
-        print(_format_internal_exception("Invalid sheet size", exc))
-        return 1
-
-    if args.auto_pass_grid:
-        plan_auto = plan_tiled_passes_for_sheet(sheet_w_mm, sheet_h_mm)
-        PASS_COLS = max(1, int(plan_auto["nx"]))
-        PASS_ROWS = max(1, int(plan_auto["ny"]))
-        PASS_COL = min(max(1, int(args.pass_col)), PASS_COLS)
-        PASS_ROW = min(max(1, int(args.pass_row)), PASS_ROWS)
-        print(
-            f"Auto pass grid: {PASS_COLS} x {PASS_ROWS} "
-            f"(current pass col={PASS_COL}, row={PASS_ROW}, rotated={'yes' if plan_auto['rotated'] else 'no'})"
-        )
-    elif PASS_COL != int(args.pass_col) or PASS_ROW != int(args.pass_row):
-        print(
-            f"Pass index clamped to available grid: "
-            f"col={PASS_COL}/{PASS_COLS}, row={PASS_ROW}/{PASS_ROWS}"
-        )
-
-    if args.plan_sheet:
-        plan = plan_tiled_passes_for_sheet(sheet_w_mm, sheet_h_mm)
-        min_x, max_x, min_y, max_y = work_area_bounds()
-        print(
-            f"Sheet plan ({args.sheet_format}): {sheet_w_mm:.1f} x {sheet_h_mm:.1f} mm, "
-            f"active bounds x({min_x:.3f},{max_x:.3f}) y({min_y:.3f},{max_y:.3f})"
-        )
-        print(
-            f"1:1 pass grid needed: {plan['nx']} x {plan['ny']} = {plan['passes']} "
-            f"(rotated={'yes' if plan['rotated'] else 'no'})"
-        )
-        if int(plan["passes"]) > 2:
-            print(
-                "Two-pass 1:1 is impossible for this sheet on current area. "
-                f"Max two-pass scale ~= {float(plan['max_two_pass_scale']):.3f}."
-            )
-        print(f"Current selected pass: col={PASS_COL}/{PASS_COLS}, row={PASS_ROW}/{PASS_ROWS}")
-
-    com = detect_com_port(args.com)
-    try:
-        apply_quality_profile(
-            quality=args.quality,
-            curve_segment_mm=args.curve_segment_mm,
-            arc_segment_mm=args.arc_segment_mm,
-            collinear_eps=args.collinear_eps,
-            rdp_simplify_eps_mm=args.rdp_eps,
-            arc_fit_tol_mm=args.arc_fit_tol,
-            line_fit_tol_mm=args.line_fit_tol,
-            disable_simplify=args.no_simplify,
-            disable_arcs=args.no_arcs,
-            force_text_to_path=args.force_text_to_path,
-        )
-    except ValueError as exc:
-        print(_format_internal_exception("Invalid quality configuration", exc))
-        return 1
-    print(f"Drawing profile: {quality_state()}")
-    if args.plan_sheet and not args.frame and not args.calibrate_corners and not args.pencil_wear_test and not args.input:
-        return 0
-
-    if args.frame:
-        ok, msg = run_frame_pipeline(
-            print,
-            com=com,
-            baud=args.baud,
-            send_to_plotter=not args.dry_run,
-            output_path=Path(args.output) if args.output else None,
-        )
-        print(msg)
-        return 0 if ok else 1
-
-    if args.calibrate_corners:
-        ok, msg = run_corner_calibration_pipeline(
-            print,
-            com=com,
-            baud=args.baud,
-            send_to_plotter=not args.dry_run,
-            output_path=Path(args.output) if args.output else None,
-            mark_size=args.corner_mark_size,
-        )
-        print(msg)
-        return 0 if ok else 1
-
-    if args.pencil_wear_test:
-        ok, msg = run_pencil_wear_test_pipeline(
-            print,
-            com=com,
-            baud=args.baud,
-            send_to_plotter=not args.dry_run,
-            output_path=Path(args.output) if args.output else None,
-            feed_travel=args.feed_travel,
-            feed_draw=args.feed_draw,
-            auto_resume=bool(args.auto_resume),
-            levels=args.pencil_wear_test_levels,
-            cols=args.pencil_wear_test_cols,
-            hatch_step_mm=args.pencil_wear_test_hatch_step_mm,
-            hatch_loops=args.pencil_wear_test_loops,
-            margin_mm=args.pencil_wear_test_margin_mm,
-            gap_mm=args.pencil_wear_test_gap_mm,
-        )
-        print(msg)
-        return 0 if ok else 1
-
-    if args.input:
-        input_path = Path(args.input)
-        if not input_path.exists():
-            print(f"Input not found: {input_path}")
-            return 2
-        if input_path.suffix.lower() not in {".pdf", ".svg", ".frw", ".cdw", ".doc", ".docx"}:
-            print(f"Unsupported file type: {input_path.suffix}. Use .pdf, .svg, .frw, .cdw, .doc or .docx.")
-            return 3
-
-        send_to_plotter = not (args.dry_run or args.preview)
-        output_target = Path(args.output) if args.output else None
-        ok, msg = run_pipeline_with_corner_calibration(
-            input_path,
-            print,
-            com=com,
-            baud=args.baud,
-            send_to_plotter=send_to_plotter,
-            output_path=output_target,
-            skip_calibration=args.skip_calibration,
-            skip_confirmation=args.skip_calibration_confirmation or args.dry_run or args.preview,
-            corner_mark_size=args.corner_mark_size,
-            feed_travel=args.feed_travel,
-            feed_draw=args.feed_draw,
-            auto_resume=bool(args.auto_resume),
-        )
-        if ok and args.preview:
-            output_guess = output_target or input_path.with_name(f"{input_path.stem}_prepared.nc")
-            trim_guess = output_target.with_suffix(".svg") if output_target is not None else output_guess.with_name(f"{input_path.stem}_trimmed.svg")
-            if output_guess.exists():
-                if args.open_preview:
-                    open_with_default_viewer(output_guess)
-                print(f"Preview ready: {output_guess}")
-            if trim_guess.exists():
-                if args.open_preview:
-                    open_with_default_viewer(trim_guess)
-                print(f"Trim preview ready: {trim_guess}")
-        print(msg)
-        return 0 if ok else 1
-
-    app = PlotterApp()
-    app.run()
-    return 0
+def main(argv: Optional[List[str]] = None):
+    return cli_entry_mod.run_cli_main(_CLI_BACKEND, argv)
 
 
 if __name__ == "__main__":

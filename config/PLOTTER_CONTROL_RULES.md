@@ -132,10 +132,12 @@ $1=0
 - `pass_01`: draw in normal sheet orientation.
 - `pass_02`: physically rotate the sheet by `180°` before fixing it for the second run.
 - The generated geometry for `pass_02` must also be rotated by `180°` around the active area center.
+- After that rotation, `pass_02` geometry must be translated by `Y +4.0 mm` relative to machine home.
 - Do not replace this with only horizontal or only vertical mirroring. The required transform is full `180°` rotation.
 - Canonical rule for agents/scripts/programs:
   - if `sheet_format=a3`, `pass_cols=2`, `pass_rows=1`, `pass_col=2`, `pass_row=1`
   - then apply `rotate 180°` to the pass geometry before clipping/G-code generation.
+  - then apply `translate (0, +4.0 mm)` to the already rotated geometry.
 ## 12) Bluetooth SPP recovery
 
 - Working wired fallback: `COM6`

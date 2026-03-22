@@ -25,6 +25,7 @@ from .sheet_tiling import (
     compute_pass_shift,
     plan_tiled_passes_for_sheet,
     resolve_sheet_size_mm,
+    sheet_pass_post_translation_mm,
     sheet_pass_rotation_deg,
     tile_window_start,
 )
@@ -68,6 +69,7 @@ __all__ = [
     "compute_pass_shift",
     "plan_tiled_passes_for_sheet",
     "resolve_sheet_size_mm",
+    "sheet_pass_post_translation_mm",
     "sheet_pass_rotation_deg",
     "simplify_polyline",
     "quadratic_approx",

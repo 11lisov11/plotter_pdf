@@ -3623,7 +3623,7 @@ class BackendBridge:
         all_pages = bool(source_all_pages)
         backend.HANDWRITING_FONT_FAMILY = selected_hw_font
         backend.HANDWRITING_CYRILLIC_FONT_FAMILY = _select_cyrillic_handwriting_font(backend, selected_hw_font)
-        # Lock handwriting pipeline to method #3 for stable single-line output in GUI mode.
+        # Lock handwriting pipeline to method #3 for stable single-line output in batch/CLI mode.
         backend.HANDWRITING_SINGLELINE_TTF_BACKEND = "autotrace3"
         backend.HANDWRITING_DIRECT_VECTOR_TEXT_ENABLED = True
         mode = str((image_contours_mode or "always").strip().lower())
@@ -3632,7 +3632,7 @@ class BackendBridge:
         backend.IMAGE_CONTOUR_MODE = mode
         backend.IMAGE_CONTOUR_ENABLED = mode != "off"
         backend.IMAGE_CONTOUR_WORD_ONLY = mode == "word_only"
-        # Keep PDF import fully non-interactive in GUI mode:
+        # Keep PDF import fully non-interactive in batch/CLI mode:
         # avoid launching Inkscape PDF importer (it can show modal import options dialog).
         backend.USE_INKSCAPE_PDF_IMPORT = False
         backend.apply_quality_profile(
@@ -3847,7 +3847,7 @@ class BackendBridge:
         all_pages = bool(source_all_pages)
         backend.HANDWRITING_FONT_FAMILY = selected_hw_font
         backend.HANDWRITING_CYRILLIC_FONT_FAMILY = _select_cyrillic_handwriting_font(backend, selected_hw_font)
-        # Lock handwriting pipeline to method #3 for stable single-line output in GUI mode.
+        # Lock handwriting pipeline to method #3 for stable single-line output in batch/CLI mode.
         backend.HANDWRITING_SINGLELINE_TTF_BACKEND = "autotrace3"
         backend.HANDWRITING_DIRECT_VECTOR_TEXT_ENABLED = True
         mode = str((image_contours_mode or "always").strip().lower())
@@ -3856,7 +3856,7 @@ class BackendBridge:
         backend.IMAGE_CONTOUR_MODE = mode
         backend.IMAGE_CONTOUR_ENABLED = mode != "off"
         backend.IMAGE_CONTOUR_WORD_ONLY = mode == "word_only"
-        # Keep PDF import fully non-interactive in GUI mode:
+        # Keep PDF import fully non-interactive in batch/CLI mode:
         # avoid launching Inkscape PDF importer (it can show modal import options dialog).
         backend.USE_INKSCAPE_PDF_IMPORT = False
         backend.apply_quality_profile(

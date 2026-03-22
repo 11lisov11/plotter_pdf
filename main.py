@@ -1,4 +1,4 @@
-from plotter_studio.main import main
+from src.cli_main import main
 
 
 if __name__ == "__main__":

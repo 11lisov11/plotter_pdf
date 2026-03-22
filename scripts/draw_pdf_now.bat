@@ -28,5 +28,5 @@ if "%~1"=="" (
   exit /b 1
 )
 
-%PYTHON% "%ROOT%\src\plotter_pdf_drawer.py" "%~1"
+%PYTHON% "%ROOT%\src\plotter_pdf_drawer.py" %*
 exit /b %errorlevel%

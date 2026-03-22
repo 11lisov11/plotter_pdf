@@ -100,8 +100,8 @@ def send_to_grbl(
         raise ToolDependencyError("send_grbl_file.py not found")
 
     def _load_sender_module():
-        # In frozen builds, launching sys.executable opens PlotterStudio.exe.
-        # Run sender in-process to avoid recursive GUI spawn.
+        # In frozen/embedded runs, launching sys.executable may reopen the wrapper.
+        # Run sender in-process to avoid recursive launcher spawn.
         module_name = "_plotter_sender_inline"
         existing = sys.modules.get(module_name)
         if existing is not None:

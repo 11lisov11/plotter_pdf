@@ -154,3 +154,25 @@ def sheet_pass_rotation_deg(
         return 180
     return 0
 
+
+def sheet_pass_post_translation_mm(
+    *,
+    sheet_format: str,
+    pass_cols: int,
+    pass_rows: int,
+    pass_col: int,
+    pass_row: int,
+) -> Tuple[float, float]:
+    fmt = (sheet_format or "work").strip().lower()
+    cols = max(1, int(pass_cols))
+    rows = max(1, int(pass_rows))
+    col = min(max(1, int(pass_col)), cols)
+    row = min(max(1, int(pass_row)), rows)
+
+    # Canonical physical A3 workflow on the current machine:
+    # after the 180 deg sheet flip, the second pass must be drawn
+    # 4 mm higher relative to the machine home point.
+    if fmt == "a3" and cols == 2 and rows == 1 and col == 2 and row == 1:
+        return 0.0, 4.0
+    return 0.0, 0.0
+

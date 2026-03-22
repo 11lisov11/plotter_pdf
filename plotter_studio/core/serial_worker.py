@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import json
 import queue
@@ -7,9 +7,20 @@ import traceback
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Any, Callable, Optional
 
-from PySide6.QtCore import QThread, Signal
+
+class Signal:
+    def __init__(self) -> None:
+        self._subscribers: list[Callable[..., Any]] = []
+
+    def connect(self, callback: Callable[..., Any]) -> None:
+        if callable(callback):
+            self._subscribers.append(callback)
+
+    def emit(self, *args: Any, **kwargs: Any) -> None:
+        for callback in list(self._subscribers):
+            callback(*args, **kwargs)
 
 
 class OperationCanceledError(RuntimeError):
@@ -24,7 +35,7 @@ class WorkerOperation:
 
 
 class OperationContext:
-    def __init__(self, worker: "SerialWorker", op_id: str) -> None:
+    def __init__(self, worker: "SerialWorker | Any", op_id: str) -> None:
         self._worker = worker
         self._op_id = str(op_id or "").strip() or "op-unknown"
 
@@ -41,7 +52,7 @@ class OperationContext:
 
     def check_canceled(self) -> None:
         if self.cancel_event.is_set():
-            raise OperationCanceledError("РћРїРµСЂР°С†РёСЏ РѕС‚РјРµРЅРµРЅР° РїРѕР»СЊР·РѕРІР°С‚РµР»РµРј.")
+            raise OperationCanceledError("Операция отменена пользователем.")
 
     def set_active_process(self, proc) -> None:
         self._worker.set_active_process(proc)
@@ -53,19 +64,32 @@ class OperationContext:
         self._worker.progress.emit(value, text)
 
 
-class SerialWorker(QThread):
-    operation_started = Signal(str, str)  # op_id, title
-    operation_finished = Signal(str, bool, str)  # op_id, ok, message
-    busy_changed = Signal(bool)
-    progress = Signal(int, str)  # value 0..100, message
-    log_line = Signal(str)
-
+class SerialWorker:
     def __init__(self) -> None:
-        super().__init__()
+        self.operation_started = Signal()
+        self.operation_finished = Signal()
+        self.busy_changed = Signal()
+        self.progress = Signal()
+        self.log_line = Signal()
+
         self._queue: queue.Queue[Optional[WorkerOperation]] = queue.Queue()
         self._active_process = None
         self._active_lock = threading.Lock()
         self.cancel_event = threading.Event()
+        self._thread: Optional[threading.Thread] = None
+
+    def start(self) -> None:
+        if self._thread is not None and self._thread.is_alive():
+            return
+        self._thread = threading.Thread(target=self.run, name="serial-worker", daemon=True)
+        self._thread.start()
+
+    def wait(self, timeout_ms: Optional[int] = None) -> bool:
+        if self._thread is None:
+            return True
+        timeout_s = None if timeout_ms is None else max(0.0, float(timeout_ms) / 1000.0)
+        self._thread.join(timeout_s)
+        return not self._thread.is_alive()
 
     def enqueue(self, operation: WorkerOperation) -> None:
         self._queue.put(operation)
@@ -115,7 +139,6 @@ class SerialWorker(QThread):
             target = diagnostics_dir / f"{op.op_id}.json"
             target.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
         except Exception:
-            # Diagnostics output must never break worker lifecycle.
             pass
 
     def run(self) -> None:
@@ -137,7 +160,7 @@ class SerialWorker(QThread):
                 ok, message = op.handler(context)
                 if context.is_canceled():
                     ok = False
-                    message = "РћРїРµСЂР°С†РёСЏ РѕС‚РјРµРЅРµРЅР° РїРѕР»СЊР·РѕРІР°С‚РµР»РµРј."
+                    message = "Операция отменена пользователем."
             except OperationCanceledError as exc:
                 ok = False
                 message = str(exc)

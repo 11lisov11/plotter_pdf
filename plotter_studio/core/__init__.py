@@ -1,11 +1,11 @@
-from .plotter_controller import PlotterController
-from .protocol import SheetConfig
-from .settings import AppSettingsData, SettingsStore
+from .protocol import BackendBridge, SheetConfig
+from .serial_worker import OperationContext, SerialWorker, WorkerOperation
 
 __all__ = [
-    "AppSettingsData",
-    "PlotterController",
-    "SettingsStore",
+    "BackendBridge",
+    "OperationContext",
+    "SerialWorker",
     "SheetConfig",
+    "WorkerOperation",
 ]
 
