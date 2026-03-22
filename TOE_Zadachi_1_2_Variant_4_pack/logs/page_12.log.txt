@@ -1,0 +1,7 @@
+reused existing candidate artifacts
+selected_primary_font=Neucha
+selected_font=Neucha
+selected_variant=contours_off
+selected_contours=off
+selected_score=0.995195
+quality_gate=accepted=False; dup_ok=True; tiny_ok=False

@@ -1,0 +1,41 @@
+{
+  "source_pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_4.pdf",
+  "selected_primary_font": "Neucha",
+  "fonts_evaluated": [
+    {
+      "font_label": "Marck Script",
+      "pages_ok": 17,
+      "avg_layout_similarity": 0.955255,
+      "min_layout_similarity": 0.933821,
+      "avg_score": 0.959868,
+      "doc_score": 0.978545
+    },
+    {
+      "font_label": "Bad Script",
+      "pages_ok": 17,
+      "avg_layout_similarity": 0.952694,
+      "min_layout_similarity": 0.909855,
+      "avg_score": 0.959217,
+      "doc_score": 0.977414
+    },
+    {
+      "font_label": "Caveat",
+      "pages_ok": 17,
+      "avg_layout_similarity": 0.957425,
+      "min_layout_similarity": 0.935804,
+      "avg_score": 0.962073,
+      "doc_score": 0.980789
+    },
+    {
+      "font_label": "Neucha",
+      "pages_ok": 17,
+      "avg_layout_similarity": 0.958006,
+      "min_layout_similarity": 0.93473,
+      "avg_score": 0.970402,
+      "doc_score": 0.989097
+    }
+  ],
+  "pages_ok": 17,
+  "page_count": 17,
+  "elapsed_s": 48.344
+}

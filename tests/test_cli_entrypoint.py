@@ -9,6 +9,16 @@ from src import plotter_pdf_drawer as backend
 
 
 class CliEntrypointTests(unittest.TestCase):
+    def test_cli_backend_proxy_writes_back_to_module_globals(self) -> None:
+        original = backend.PENCIL_BASE_Z_DOWN
+        try:
+            proxy = backend._CliBackendProxy()
+            proxy.PENCIL_BASE_Z_DOWN = 7.5
+            self.assertEqual(backend.PENCIL_BASE_Z_DOWN, 7.5)
+            self.assertEqual(proxy.PENCIL_BASE_Z_DOWN, 7.5)
+        finally:
+            backend.PENCIL_BASE_Z_DOWN = original
+
     def test_should_exit_after_pencil_maintenance_only_when_no_other_actions(self) -> None:
         args = mock.Mock(
             frame=False,

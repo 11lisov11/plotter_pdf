@@ -16,7 +16,6 @@ import time
 import os
 import base64
 import ctypes
-import unicodedata
 from datetime import datetime, timezone
 from dataclasses import dataclass
 from pathlib import Path
@@ -45,6 +44,14 @@ except Exception:
 try:
     from src.plotter_backend.converters import cad_converter as cad_converter_mod
     from src.plotter_backend import cli_entry as cli_entry_mod
+    from src.plotter_backend import common_utils as common_utils_mod
+    from src.plotter_backend import discovery as discovery_mod
+    from src.plotter_backend import handwriting_text_utils as handwriting_text_utils_mod
+    from src.plotter_backend import pencil_state as pencil_state_mod
+    from src.plotter_backend import process_utils as process_utils_mod
+    from src.plotter_backend import runtime_utils as runtime_utils_mod
+    from src.plotter_backend import svg_filter_utils as svg_filter_utils_mod
+    from src.plotter_backend import svg_text_utils as svg_text_utils_mod
     from src.plotter_backend.converters import pdf_converter as pdf_converter_mod
     from src.plotter_backend.converters import word_converter as word_converter_mod
     from src.plotter_backend.errors import BackendError, ConversionError, SerialTransportError, ToolDependencyError
@@ -65,9 +72,18 @@ try:
     from src.plotter_backend.gcode import preflight as gcode_preflight_mod
     from src.plotter_backend.gcode import stats as gcode_stats_mod
     from src.plotter_backend.machine import grbl_sender as grbl_sender_mod
+    from src.plotter_backend.machine import grbl_probe as grbl_probe_mod
     from src.plotter_backend.machine import manual_commands as manual_commands_mod
 except Exception:
     from plotter_backend import cli_entry as cli_entry_mod
+    from plotter_backend import common_utils as common_utils_mod
+    from plotter_backend import discovery as discovery_mod
+    from plotter_backend import handwriting_text_utils as handwriting_text_utils_mod
+    from plotter_backend import pencil_state as pencil_state_mod
+    from plotter_backend import process_utils as process_utils_mod
+    from plotter_backend import runtime_utils as runtime_utils_mod
+    from plotter_backend import svg_filter_utils as svg_filter_utils_mod
+    from plotter_backend import svg_text_utils as svg_text_utils_mod
     from plotter_backend.converters import cad_converter as cad_converter_mod
     from plotter_backend.converters import pdf_converter as pdf_converter_mod
     from plotter_backend.converters import word_converter as word_converter_mod
@@ -89,78 +105,34 @@ except Exception:
     from plotter_backend.gcode import preflight as gcode_preflight_mod
     from plotter_backend.gcode import stats as gcode_stats_mod
     from plotter_backend.machine import grbl_sender as grbl_sender_mod
+    from plotter_backend.machine import grbl_probe as grbl_probe_mod
     from plotter_backend.machine import manual_commands as manual_commands_mod
 
 CYRILLIC_TEXT_RE = re.compile(r"[\u0400-\u04FF\u0500-\u052F]")
 
 
 def _force_utf8_stdio() -> None:
-    try:
-        if hasattr(sys.stdout, "reconfigure"):
-            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-        if hasattr(sys.stderr, "reconfigure"):
-            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
+    common_utils_mod.force_utf8_stdio(sys_module=sys)
 
 
 def _strip_unpaired_surrogates(text: str, replacement: str = " ") -> str:
-    if not text:
-        return ""
-    repl = replacement if replacement is not None else ""
-    out: List[str] = []
-    for ch in str(text):
-        code = ord(ch)
-        if 0xD800 <= code <= 0xDFFF:
-            out.append(repl)
-        else:
-            out.append(ch)
-    return "".join(out)
+    return common_utils_mod.strip_unpaired_surrogates(text, replacement=replacement)
 
 
 def _safe_log_text(value: object) -> str:
-    try:
-        text = _strip_unpaired_surrogates(str(value), replacement="?")
-    except Exception:
-        text = "<log-format-error>"
-    try:
-        # Keep printable UTF-8, escape any remaining problematic chars.
-        return text.encode("utf-8", errors="backslashreplace").decode("utf-8", errors="replace")
-    except Exception:
-        try:
-            return text.encode("ascii", errors="backslashreplace").decode("ascii", errors="replace")
-        except Exception:
-            return "<log-encode-error>"
+    return common_utils_mod.safe_log_text(value)
 
 
 def _safe_logger(logger):
-    if not callable(logger):
-        return lambda _msg: None
-
-    def _emit(msg: object) -> None:
-        text = _safe_log_text(msg)
-        try:
-            logger(text)
-        except Exception:
-            # Logging should never break conversion logic.
-            pass
-
-    return _emit
+    return common_utils_mod.safe_logger(logger)
 
 
 def _resolve_bundle_root() -> Path:
-    meipass = getattr(sys, "_MEIPASS", "")
-    if meipass:
-        return Path(str(meipass)).resolve()
-    return Path(__file__).resolve().parent.parent
+    return common_utils_mod.resolve_bundle_root(file_path=__file__, sys_module=sys)
 
 
 def _resolve_work_root(bundle_root: Path) -> Path:
-    # In PyInstaller --onefile mode, keep runtime artifacts near the executable
-    # instead of transient extraction directory (%TEMP%\\_MEI...).
-    if getattr(sys, "frozen", False):
-        return Path(sys.executable).resolve().parent
-    return bundle_root
+    return common_utils_mod.resolve_work_root(bundle_root, sys_module=sys)
 
 
 ROOT_DIR = _resolve_bundle_root()
@@ -583,409 +555,101 @@ class PathItem:
 
 
 def load_axis_profile() -> None:
-    defaults = {
-        "axis": {
-            "invert_x": False,
-            "invert_y": False,
-        },
-        "meaning": {
-            "x_positive": "right",
-            "y_positive": "down",
-            "notes": "Default plotter profile: X+ = right, Y+ = down.",
-        },
-    }
+    class _GlobalsProxy:
+        def __getattr__(self, name: str):
+            return globals()[name]
 
-    global AXIS_INVERT_X, AXIS_INVERT_Y
-    data = defaults
-    for profile_path in [AXIS_PROFILE_PATH, AXIS_PROFILE_FALLBACK_PATH]:
-        if not profile_path.exists():
-            continue
-        try:
-            loaded = json.loads(profile_path.read_text(encoding="utf-8"))
-            if isinstance(loaded, dict):
-                data = {**defaults, **loaded}
-                # merge nested maps explicitly
-                if "axis" in loaded and isinstance(loaded["axis"], dict):
-                    axis = data["axis"]
-                    axis.update(loaded["axis"])
-                    data["axis"] = axis
-                break
-        except Exception:
-            # Keep defaults for safety; no throw.
-            data = defaults
+        def __setattr__(self, name: str, value) -> None:
+            globals()[name] = value
 
-    axis = data.get("axis", {})
-    AXIS_INVERT_X = bool(axis.get("invert_x", False))
-    AXIS_INVERT_Y = bool(axis.get("invert_y", False))
+    common_utils_mod.load_axis_profile(_GlobalsProxy())
 
 
 load_axis_profile()
 
 
 def tag_name(tag: str) -> str:
-    return TAG_RE.sub(r"\1", tag) if "}" in tag else tag
+    return common_utils_mod.tag_name(tag, tag_re=TAG_RE)
 
 
 def parse_floats(text: str) -> List[float]:
-    return [float(v) for v in FLOAT_RE.findall(text)]
+    return common_utils_mod.parse_floats(text, float_re=FLOAT_RE)
 
 
 def parse_length(value: str) -> Optional[Tuple[float, str]]:
-    m = LENGTH_RE.match(value.strip())
-    if not m:
-        return None
-    return float(m.group(1)), m.group(2).lower() if m.group(2) else "px"
+    return common_utils_mod.parse_length(value, length_re=LENGTH_RE)
 
 
 TEXT_NODE_TAGS = {"text", "tspan", "textpath", "flowroot", "flowpara", "flowspan"}
 
 
 def unit_to_mm(value: float, unit: str) -> float:
-    if unit in {"px", ""}:
-        return value * 25.4 / 96.0
-    if unit == "mm":
-        return value
-    if unit == "cm":
-        return value * 10.0
-    if unit == "in":
-        return value * 25.4
-    if unit == "pt":
-        return value * 25.4 / 72.0
-    if unit == "pc":
-        return value * 25.4 / 6.0
-    return value
+    return common_utils_mod.unit_to_mm(value, unit)
 
 
 def run_cmd(cmd: List[str], cwd: Optional[Path] = None, timeout_s: Optional[float] = None) -> Tuple[int, str, str]:
-    run_kwargs = {"shell": False}
-    if sys.platform.startswith("win") and hasattr(subprocess, "CREATE_NO_WINDOW"):
-        run_kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
-
-    def _is_inkscape_pdf_call(argv: List[str]) -> bool:
-        if not argv:
-            return False
-        exe = Path(str(argv[0])).name.lower()
-        if "inkscape" not in exe:
-            return False
-        return any(str(part).lower().endswith(".pdf") for part in argv[1:])
-
-    def _auto_accept_inkscape_pdf_import_dialog(proc: subprocess.Popen) -> None:
-        if not sys.platform.startswith("win"):
-            return
-        if not INKSCAPE_AUTO_ACCEPT_PDF_IMPORT_DIALOG:
-            return
-        if not proc or proc.poll() is not None:
-            return
-
-        user32 = ctypes.windll.user32  # type: ignore[attr-defined]
-        WM_COMMAND = 0x0111
-        IDOK = 1
-        WM_KEYDOWN = 0x0100
-        WM_KEYUP = 0x0101
-        VK_RETURN = 0x0D
-        BM_CLICK = 0x00F5
-
-        enum_windows = user32.EnumWindows
-        is_window_visible = user32.IsWindowVisible
-        get_window_text_length = user32.GetWindowTextLengthW
-        get_window_text = user32.GetWindowTextW
-        get_window_thread_process_id = user32.GetWindowThreadProcessId
-        post_message = user32.PostMessageW
-        enum_child_windows = user32.EnumChildWindows
-        send_message = user32.SendMessageW
-        set_foreground_window = user32.SetForegroundWindow
-
-        title_tokens = tuple(t.lower() for t in INKSCAPE_PDF_IMPORT_DIALOG_TITLES if t)
-        deadline = time.time() + max(2.0, float(INKSCAPE_PDF_IMPORT_DIALOG_TIMEOUT_S))
-
-        def _window_title(hwnd: int) -> str:
-            if not is_window_visible(hwnd):
-                return ""
-            length = int(get_window_text_length(hwnd))
-            if length <= 0:
-                return ""
-            buf = ctypes.create_unicode_buffer(length + 1)
-            get_window_text(hwnd, buf, length + 1)
-            return str(buf.value or "")
-
-        while proc.poll() is None and time.time() < deadline:
-            found_hwnd = 0
-
-            @ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p)
-            def _enum_cb(hwnd, _lparam):
-                nonlocal found_hwnd
-                if found_hwnd:
-                    return False
-                title = _window_title(hwnd)
-                if not title:
-                    return True
-                low = title.lower()
-                if not any(token in low for token in title_tokens):
-                    return True
-                pid = ctypes.c_ulong(0)
-                get_window_thread_process_id(hwnd, ctypes.byref(pid))
-                if int(pid.value) != int(proc.pid):
-                    return True
-                found_hwnd = int(hwnd)
-                return False
-
-            try:
-                enum_windows(_enum_cb, 0)
-            except Exception:
-                time.sleep(0.15)
-                continue
-
-            if found_hwnd:
-                try:
-                    set_foreground_window(found_hwnd)
-                except Exception:
-                    pass
-                try:
-                    post_message(found_hwnd, WM_COMMAND, IDOK, 0)
-                except Exception:
-                    pass
-
-                clicked = {"ok": False}
-
-                @ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p)
-                def _child_cb(child, _lparam):
-                    if clicked["ok"]:
-                        return False
-                    tlen = int(get_window_text_length(child))
-                    if tlen <= 0:
-                        return True
-                    tbuf = ctypes.create_unicode_buffer(tlen + 1)
-                    get_window_text(child, tbuf, tlen + 1)
-                    txt = str(tbuf.value or "").strip().lower()
-                    if txt in {"ok", "ок"}:
-                        try:
-                            send_message(child, BM_CLICK, 0, 0)
-                            clicked["ok"] = True
-                            return False
-                        except Exception:
-                            return True
-                    return True
-
-                try:
-                    enum_child_windows(found_hwnd, _child_cb, 0)
-                except Exception:
-                    pass
-                try:
-                    post_message(found_hwnd, WM_KEYDOWN, VK_RETURN, 0)
-                    post_message(found_hwnd, WM_KEYUP, VK_RETURN, 0)
-                except Exception:
-                    pass
-            time.sleep(0.15)
-
-    if _is_inkscape_pdf_call(cmd) and INKSCAPE_PDF_DIALOG_WATCHER_ENABLED:
-        proc = subprocess.Popen(
-            cmd,
-            cwd=str(cwd) if cwd is not None else None,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            **run_kwargs,
-        )
-        watcher = threading.Thread(
-            target=_auto_accept_inkscape_pdf_import_dialog,
-            args=(proc,),
-            daemon=True,
-        )
-        watcher.start()
-        try:
-            out, err = proc.communicate(timeout=timeout_s)
-        except subprocess.TimeoutExpired:
-            try:
-                proc.kill()
-            except Exception:
-                pass
-            out, err = proc.communicate()
-            raise
-        return int(proc.returncode or 0), out, err
-
-    result = subprocess.run(
+    return process_utils_mod.run_cmd(
         cmd,
-        cwd=str(cwd) if cwd is not None else None,
-        capture_output=True,
-        text=True,
-        check=False,
-        encoding="utf-8",
-        errors="replace",
-        timeout=timeout_s,
-        **run_kwargs,
+        cwd=cwd,
+        timeout_s=timeout_s,
+        platform=sys.platform,
+        subprocess_module=subprocess,
+        threading_module=threading,
+        ctypes_module=ctypes,
+        time_module=time,
+        inkscape_auto_accept_pdf_import_dialog=bool(INKSCAPE_AUTO_ACCEPT_PDF_IMPORT_DIALOG),
+        inkscape_pdf_dialog_watcher_enabled=bool(INKSCAPE_PDF_DIALOG_WATCHER_ENABLED),
+        inkscape_pdf_import_dialog_titles=tuple(INKSCAPE_PDF_IMPORT_DIALOG_TITLES),
+        inkscape_pdf_import_dialog_timeout_s=float(INKSCAPE_PDF_IMPORT_DIALOG_TIMEOUT_S),
     )
-    return result.returncode, result.stdout, result.stderr
 
 
 def format_duration_hms(seconds: float) -> str:
-    s = max(0.0, float(seconds))
-    total = int(round(s))
-    h = total // 3600
-    m = (total % 3600) // 60
-    sec = total % 60
-    if h > 0:
-        return f"{h:02d}:{m:02d}:{sec:02d}"
-    return f"{m:02d}:{sec:02d}"
+    return runtime_utils_mod.format_duration_hms(seconds)
 
 
 def load_pencil_state() -> dict:
-    state = {
-        "total_draw_m": 0.0,
-        "estimated_wear_mm": 0.0,
-        "jobs_done": 0,
-        "last_draw_m": 0.0,
-    }
-    try:
-        if PENCIL_STATE_PATH.exists():
-            loaded = json.loads(PENCIL_STATE_PATH.read_text(encoding="utf-8"))
-            if isinstance(loaded, dict):
-                state.update(loaded)
-    except Exception:
-        pass
-
-    try:
-        state["total_draw_m"] = float(state.get("total_draw_m", 0.0) or 0.0)
-        state["estimated_wear_mm"] = float(state.get("estimated_wear_mm", 0.0) or 0.0)
-        state["jobs_done"] = int(state.get("jobs_done", 0) or 0)
-        state["last_draw_m"] = float(state.get("last_draw_m", 0.0) or 0.0)
-    except Exception:
-        state = {
-            "total_draw_m": 0.0,
-            "estimated_wear_mm": 0.0,
-            "jobs_done": 0,
-            "last_draw_m": 0.0,
-        }
-    return state
+    return pencil_state_mod.load_pencil_state(_CLI_BACKEND)
 
 
 def save_pencil_state(state: dict) -> None:
-    PENCIL_STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
-    PENCIL_STATE_PATH.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
+    pencil_state_mod.save_pencil_state(_CLI_BACKEND, state)
 
 
 def load_pencil_profile() -> dict:
-    profile = {
-        "base_z_down": float(PENCIL_BASE_Z_DOWN),
-        "wear_mm_per_m": float(PENCIL_WEAR_MM_PER_M),
-        "z_comp_per_wear": float(PENCIL_Z_COMP_MM_PER_WEAR_MM),
-        "max_comp_mm": float(PENCIL_MAX_COMP_MM),
-        "remind_wear_mm": float(PENCIL_REMIND_WEAR_MM),
-        "sharpen_interval_m": float(PENCIL_SHARPEN_INTERVAL_M),
-        "sharpen_count": 0,
-        "last_sharpen_iso_utc": "",
-        "source": "defaults",
-    }
-    try:
-        if PENCIL_PROFILE_PATH.exists():
-            loaded = json.loads(PENCIL_PROFILE_PATH.read_text(encoding="utf-8"))
-            if isinstance(loaded, dict):
-                profile.update(loaded)
-                profile["source"] = "file"
-    except Exception:
-        pass
-
-    try:
-        profile["base_z_down"] = float(profile.get("base_z_down", PENCIL_BASE_Z_DOWN) or PENCIL_BASE_Z_DOWN)
-        profile["wear_mm_per_m"] = max(0.0, float(profile.get("wear_mm_per_m", PENCIL_WEAR_MM_PER_M) or PENCIL_WEAR_MM_PER_M))
-        profile["z_comp_per_wear"] = max(0.0, float(profile.get("z_comp_per_wear", PENCIL_Z_COMP_MM_PER_WEAR_MM) or PENCIL_Z_COMP_MM_PER_WEAR_MM))
-        profile["max_comp_mm"] = max(0.0, float(profile.get("max_comp_mm", PENCIL_MAX_COMP_MM) or PENCIL_MAX_COMP_MM))
-        profile["remind_wear_mm"] = max(0.0, float(profile.get("remind_wear_mm", PENCIL_REMIND_WEAR_MM) or PENCIL_REMIND_WEAR_MM))
-        profile["sharpen_interval_m"] = max(0.0, float(profile.get("sharpen_interval_m", PENCIL_SHARPEN_INTERVAL_M) or PENCIL_SHARPEN_INTERVAL_M))
-        profile["sharpen_count"] = max(0, int(profile.get("sharpen_count", 0) or 0))
-        profile["last_sharpen_iso_utc"] = str(profile.get("last_sharpen_iso_utc", "") or "")
-    except Exception:
-        profile = {
-            "base_z_down": float(PENCIL_BASE_Z_DOWN),
-            "wear_mm_per_m": float(PENCIL_WEAR_MM_PER_M),
-            "z_comp_per_wear": float(PENCIL_Z_COMP_MM_PER_WEAR_MM),
-            "max_comp_mm": float(PENCIL_MAX_COMP_MM),
-            "remind_wear_mm": float(PENCIL_REMIND_WEAR_MM),
-            "sharpen_interval_m": float(PENCIL_SHARPEN_INTERVAL_M),
-            "sharpen_count": 0,
-            "last_sharpen_iso_utc": "",
-            "source": "defaults",
-        }
-    return profile
+    return pencil_state_mod.load_pencil_profile(_CLI_BACKEND)
 
 
 def save_pencil_profile(profile: dict) -> None:
-    PENCIL_PROFILE_PATH.parent.mkdir(parents=True, exist_ok=True)
-    PENCIL_PROFILE_PATH.write_text(json.dumps(profile, ensure_ascii=False, indent=2), encoding="utf-8")
+    pencil_state_mod.save_pencil_profile(_CLI_BACKEND, profile)
 
 
 def apply_pencil_profile(profile: dict) -> None:
-    global PENCIL_BASE_Z_DOWN
-    global PENCIL_WEAR_MM_PER_M
-    global PENCIL_Z_COMP_MM_PER_WEAR_MM
-    global PENCIL_MAX_COMP_MM
-    global PENCIL_REMIND_WEAR_MM
-    global PENCIL_SHARPEN_INTERVAL_M
-    PENCIL_BASE_Z_DOWN = float(profile.get("base_z_down", PENCIL_BASE_Z_DOWN))
-    PENCIL_WEAR_MM_PER_M = max(0.0, float(profile.get("wear_mm_per_m", PENCIL_WEAR_MM_PER_M)))
-    PENCIL_Z_COMP_MM_PER_WEAR_MM = max(0.0, float(profile.get("z_comp_per_wear", PENCIL_Z_COMP_MM_PER_WEAR_MM)))
-    PENCIL_MAX_COMP_MM = max(0.0, float(profile.get("max_comp_mm", PENCIL_MAX_COMP_MM)))
-    PENCIL_REMIND_WEAR_MM = max(0.0, float(profile.get("remind_wear_mm", PENCIL_REMIND_WEAR_MM)))
-    PENCIL_SHARPEN_INTERVAL_M = max(0.0, float(profile.get("sharpen_interval_m", PENCIL_SHARPEN_INTERVAL_M)))
+    pencil_state_mod.apply_pencil_profile(_CLI_BACKEND, profile)
 
 
 def build_pencil_profile_snapshot() -> dict:
-    return {
-        "base_z_down": float(PENCIL_BASE_Z_DOWN),
-        "wear_mm_per_m": float(PENCIL_WEAR_MM_PER_M),
-        "z_comp_per_wear": float(PENCIL_Z_COMP_MM_PER_WEAR_MM),
-        "max_comp_mm": float(PENCIL_MAX_COMP_MM),
-        "remind_wear_mm": float(PENCIL_REMIND_WEAR_MM),
-        "sharpen_interval_m": float(PENCIL_SHARPEN_INTERVAL_M),
-    }
+    return pencil_state_mod.build_pencil_profile_snapshot(_CLI_BACKEND)
 
 
 def save_last_wear_test_report(report: dict) -> None:
-    PENCIL_WEAR_TEST_LAST_PATH.parent.mkdir(parents=True, exist_ok=True)
-    PENCIL_WEAR_TEST_LAST_PATH.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    pencil_state_mod.save_last_wear_test_report(_CLI_BACKEND, report)
 
 
 def load_last_wear_test_report() -> Optional[dict]:
-    try:
-        if not PENCIL_WEAR_TEST_LAST_PATH.exists():
-            return None
-        loaded = json.loads(PENCIL_WEAR_TEST_LAST_PATH.read_text(encoding="utf-8"))
-        if isinstance(loaded, dict):
-            return loaded
-    except Exception:
-        pass
-    return None
+    return pencil_state_mod.load_last_wear_test_report(_CLI_BACKEND)
 
 
 def _now_iso_utc() -> str:
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+    return pencil_state_mod._now_iso_utc()
 
 
 def reset_pencil_state_after_sharpen(logger=print, *, reason: str = "manual") -> None:
-    reset_state = {
-        "total_draw_m": 0.0,
-        "estimated_wear_mm": 0.0,
-        "jobs_done": 0,
-        "last_draw_m": 0.0,
-    }
-    save_pencil_state(reset_state)
-    profile = load_pencil_profile()
-    profile["sharpen_count"] = max(0, int(profile.get("sharpen_count", 0) or 0)) + 1
-    profile["last_sharpen_iso_utc"] = _now_iso_utc()
-    profile["last_sharpen_reason"] = str(reason or "manual")
-    save_pencil_profile(profile)
-    logger("Pencil state reset: wear=0.0 mm, draw=0.0 m (sharpen event recorded).")
+    pencil_state_mod.reset_pencil_state_after_sharpen(_CLI_BACKEND, logger, reason=reason)
 
 
 def pencil_remaining_to_sharpen_m(state: dict) -> Tuple[float, float, float]:
-    by_wear = pencil_remaining_draw_m(state)
-    by_interval = float("inf")
-    if PENCIL_SHARPEN_INTERVAL_M > 1e-9:
-        done_m = max(0.0, float(state.get("total_draw_m", 0.0) or 0.0))
-        by_interval = max(0.0, float(PENCIL_SHARPEN_INTERVAL_M) - done_m)
-    best = min(by_wear, by_interval)
-    return best, by_wear, by_interval
+    return pencil_state_mod.pencil_remaining_to_sharpen_m(_CLI_BACKEND, state)
 
 
 def calibrate_pencil_wear_from_last_test(
@@ -995,270 +659,75 @@ def calibrate_pencil_wear_from_last_test(
     safety_factor: float = 0.90,
     logger=print,
 ) -> Tuple[bool, str]:
-    report = load_last_wear_test_report()
-    if not report:
-        return False, f"No wear-test report found: {PENCIL_WEAR_TEST_LAST_PATH}"
-    stages = report.get("stage_stats")
-    if not isinstance(stages, list) or not stages:
-        return False, "Invalid wear-test report: missing stage_stats."
-
-    by_stage = {}
-    for st in stages:
-        try:
-            idx = int(st.get("stage", 0))
-            by_stage[idx] = st
-        except Exception:
-            continue
-    if last_good_stage not in by_stage:
-        return False, f"Stage {last_good_stage} not found in last report."
-    if first_bad_stage and first_bad_stage not in by_stage:
-        return False, f"Stage {first_bad_stage} not found in last report."
-
-    good_cum_m = max(0.0, float(by_stage[last_good_stage].get("cum_mm", 0.0) or 0.0) / 1000.0)
-    if good_cum_m <= 1e-9:
-        return False, "Invalid cumulative draw length for selected stage."
-
-    threshold_m = good_cum_m
-    if first_bad_stage > 0:
-        bad_cum_m = max(0.0, float(by_stage[first_bad_stage].get("cum_mm", 0.0) or 0.0) / 1000.0)
-        if bad_cum_m > good_cum_m:
-            threshold_m = (good_cum_m + bad_cum_m) * 0.5
-    safety = min(max(0.50, float(safety_factor)), 0.99)
-    sharpen_interval_m = max(0.20, threshold_m * safety)
-
-    profile = load_pencil_profile()
-    profile.update(build_pencil_profile_snapshot())
-    remind_wear = max(0.05, float(PENCIL_REMIND_WEAR_MM))
-    wear_rate = max(1e-6, remind_wear / max(1e-6, threshold_m))
-
-    profile["wear_mm_per_m"] = float(wear_rate)
-    profile["sharpen_interval_m"] = float(sharpen_interval_m)
-    profile["last_calibration"] = {
-        "at_utc": _now_iso_utc(),
-        "report_path": str(PENCIL_WEAR_TEST_LAST_PATH),
-        "last_good_stage": int(last_good_stage),
-        "first_bad_stage": int(first_bad_stage) if first_bad_stage > 0 else None,
-        "good_cum_m": float(good_cum_m),
-        "threshold_m": float(threshold_m),
-        "safety_factor": float(safety),
-        "derived_wear_mm_per_m": float(wear_rate),
-        "derived_sharpen_interval_m": float(sharpen_interval_m),
-    }
-    save_pencil_profile(profile)
-    apply_pencil_profile(profile)
-
-    msg = (
-        f"Pencil calibration saved: wear_mm_per_m={wear_rate:.5f}, "
-        f"sharpen_interval_m={sharpen_interval_m:.2f}, "
-        f"threshold_m={threshold_m:.2f} (good_stage={last_good_stage}"
+    return pencil_state_mod.calibrate_pencil_wear_from_last_test(
+        _CLI_BACKEND,
+        last_good_stage=last_good_stage,
+        first_bad_stage=first_bad_stage,
+        safety_factor=safety_factor,
+        logger=logger,
     )
-    if first_bad_stage > 0:
-        msg += f", bad_stage={first_bad_stage}"
-    msg += ")."
-    logger(msg)
-    return True, msg
 
 
 def show_pencil_status(logger=print) -> None:
-    state = load_pencil_state()
-    profile = load_pencil_profile()
-    apply_pencil_profile(profile)
-    rem_best, rem_wear, rem_interval = pencil_remaining_to_sharpen_m(state)
-    rem_best_txt = "inf" if not math.isfinite(rem_best) else f"{rem_best:.2f}"
-    rem_wear_txt = "inf" if not math.isfinite(rem_wear) else f"{rem_wear:.2f}"
-    rem_interval_txt = "inf" if not math.isfinite(rem_interval) else f"{rem_interval:.2f}"
-    logger(
-        "Pencil status: "
-        f"base_z={PENCIL_BASE_Z_DOWN:.3f}, wear_rate={PENCIL_WEAR_MM_PER_M:.5f} mm/m, "
-        f"z_comp={PENCIL_Z_COMP_MM_PER_WEAR_MM:.3f}, max_comp={PENCIL_MAX_COMP_MM:.3f}, "
-        f"remind_wear={PENCIL_REMIND_WEAR_MM:.3f}, sharpen_interval_m={PENCIL_SHARPEN_INTERVAL_M:.2f}"
-    )
-    logger(
-        "State: "
-        f"draw_total={float(state.get('total_draw_m', 0.0) or 0.0):.2f} m, "
-        f"wear={float(state.get('estimated_wear_mm', 0.0) or 0.0):.3f} mm, jobs={int(state.get('jobs_done', 0) or 0)}"
-    )
-    logger(
-        f"Remaining before sharpen: {rem_best_txt} m (wear-rule={rem_wear_txt}, interval-rule={rem_interval_txt})."
-    )
+    pencil_state_mod.show_pencil_status(_CLI_BACKEND, logger)
 
 
 def pencil_effective_z_down(base_z_down: float, state: dict) -> Tuple[float, float]:
-    wear = max(0.0, float(state.get("estimated_wear_mm", 0.0) or 0.0))
-    comp = min(PENCIL_MAX_COMP_MM, wear * PENCIL_Z_COMP_MM_PER_WEAR_MM)
-    return base_z_down + comp, comp
+    return pencil_state_mod.pencil_effective_z_down(_CLI_BACKEND, base_z_down, state)
 
 
 def apply_pencil_wear_update(state: dict, draw_length_mm: float) -> dict:
-    draw_m = max(0.0, float(draw_length_mm)) / 1000.0
-    wear_add = draw_m * max(0.0, float(PENCIL_WEAR_MM_PER_M))
-    state["total_draw_m"] = float(state.get("total_draw_m", 0.0) or 0.0) + draw_m
-    state["estimated_wear_mm"] = float(state.get("estimated_wear_mm", 0.0) or 0.0) + wear_add
-    state["jobs_done"] = int(state.get("jobs_done", 0) or 0) + 1
-    state["last_draw_m"] = draw_m
-    return state
+    return pencil_state_mod.apply_pencil_wear_update(_CLI_BACKEND, state, draw_length_mm)
 
 
 def pencil_remaining_draw_m(state: dict) -> float:
-    wear_now = max(0.0, float(state.get("estimated_wear_mm", 0.0) or 0.0))
-    wear_left = max(0.0, float(PENCIL_REMIND_WEAR_MM) - wear_now)
-    rate = max(0.0, float(PENCIL_WEAR_MM_PER_M))
-    if rate <= 1e-12:
-        return float("inf")
-    return wear_left / rate
+    return pencil_state_mod.pencil_remaining_draw_m(_CLI_BACKEND, state)
 
 
 def find_inkscape() -> str:
-    for candidate in INKSCAPE_CANDIDATES:
-        found = shutil.which(candidate)
-        if found:
-            return str(Path(found))
-        if Path(candidate).is_file():
-            return str(Path(candidate))
-    raise ToolDependencyError("Inkscape not found. Install and add it to PATH.")
+    return discovery_mod.find_inkscape(
+        INKSCAPE_CANDIDATES,
+        which=shutil.which,
+        dependency_error_cls=ToolDependencyError,
+    )
 
 
 def find_pdftocairo() -> str:
-    for candidate in PDFTOCAIRO_CANDIDATES:
-        found = shutil.which(candidate)
-        if found:
-            return str(Path(found))
-        if Path(candidate).is_file():
-            return str(Path(candidate))
-    raise ToolDependencyError("pdftocairo not found.")
+    return discovery_mod.find_pdftocairo(
+        PDFTOCAIRO_CANDIDATES,
+        which=shutil.which,
+        dependency_error_cls=ToolDependencyError,
+    )
 
 
 def find_pdftotext() -> str:
-    for candidate in PDFTOTEXT_CANDIDATES:
-        found = shutil.which(candidate)
-        if found:
-            return str(Path(found))
-        if Path(candidate).is_file():
-            return str(Path(candidate))
-    # Common case: pdftocairo is discoverable and pdftotext sits in the same Poppler bin.
-    try:
-        cairo = Path(find_pdftocairo())
-        siblings = [
-            cairo.with_name("pdftotext.exe"),
-            cairo.with_name("pdftotext"),
-        ]
-        for cand in siblings:
-            if cand.is_file():
-                return str(cand)
-    except Exception:
-        pass
-    raise ToolDependencyError("pdftotext not found.")
+    return discovery_mod.find_pdftotext(
+        PDFTOTEXT_CANDIDATES,
+        find_pdftocairo=find_pdftocairo,
+        which=shutil.which,
+        dependency_error_cls=ToolDependencyError,
+    )
 
 
 def pdf_text_questionmark_metrics(pdf_path: Path, logger=print) -> Optional[Tuple[float, int, int]]:
-    """Return (ratio, qmark_count, text_len) from pdftotext output, or None if unavailable."""
-    try:
-        exe = find_pdftotext()
-    except Exception:
-        return None
-
-    with tempfile.TemporaryDirectory(dir=str(ensure_local_tmp_root()), ignore_cleanup_errors=True) as td:
-        txt_path = Path(td) / "text.txt"
-        cmd = [exe, "-q", "-enc", "UTF-8", str(pdf_path), str(txt_path)]
-        rc, out, err = run_cmd(cmd, timeout_s=25.0)
-        if rc != 0 or not txt_path.exists():
-            block = (out + "\n" + err).strip()
-            if block:
-                logger(f"pdftotext warning: {block[:300]}")
-            return None
-        try:
-            text = txt_path.read_text(encoding="utf-8", errors="replace")
-        except Exception:
-            return None
-
-    if not text:
-        return None
-
-    qmarks = text.count("?")
-    qmarks += text.count("\ufffd")
-    meaningful = sum(1 for ch in text if not ch.isspace())
-    if meaningful <= 0:
-        return None
-    ratio = float(qmarks) / float(meaningful)
-    return ratio, qmarks, meaningful
+    return discovery_mod.pdf_text_questionmark_metrics(
+        pdf_path,
+        find_pdftotext=find_pdftotext,
+        run_cmd=run_cmd,
+        ensure_local_tmp_root=ensure_local_tmp_root,
+        logger=logger,
+    )
 
 
 def detect_com_port(preferred: Optional[str] = None) -> str:
-    try:
-        import serial  # type: ignore
-        import serial.tools.list_ports  # type: ignore
-    except Exception:
-        return preferred or DEFAULT_COM_PORT
-
-    ports = list(serial.tools.list_ports.comports())
-    if not ports:
-        return preferred or DEFAULT_COM_PORT
-
-    available = {p.device.upper(): p.device for p in ports if p.device}
-
-    def _com_num(device: str) -> int:
-        m = re.match(r"COM(\d+)$", device.upper())
-        if not m:
-            return 10**9
-        try:
-            return int(m.group(1))
-        except Exception:
-            return 10**9
-
-    def _is_writable(device: str) -> bool:
-        try:
-            s = serial.Serial(device, 115200, timeout=0.2, write_timeout=0.2)
-            s.close()
-            return True
-        except Exception:
-            return False
-
-    # Explicit preference always wins if available.
-    if preferred:
-        p = available.get(preferred.upper())
-        if p:
-            return p
-
-    # Auto mode: prefer active Bluetooth SPP ports.
-    bt_ports = []
-    for p in ports:
-        text = " ".join(
-            [
-                str(getattr(p, "description", "") or ""),
-                str(getattr(p, "manufacturer", "") or ""),
-                str(getattr(p, "hwid", "") or ""),
-            ]
-        ).lower()
-        if "bluetooth" in text or "rfcomm" in text or "bthenum" in text:
-            bt_ports.append(p.device)
-    for dev in sorted(set(bt_ports), key=_com_num):
-        if _is_writable(dev):
-            return dev
-
-    # Fallback preference order for USB/known ports.
-    candidates = ["COM6", "COM5", "COM4", "COM3", "COM7", "COM8", "COM9", "COM10"]
-    for candidate in candidates:
-        dev = available.get(candidate)
-        if dev:
-            return dev
-
-    # Last resort: first available by COM number.
-    devices = sorted((p.device for p in ports if p.device), key=_com_num)
-    if devices:
-        return devices[0]
-    return preferred or DEFAULT_COM_PORT
+    return discovery_mod.detect_com_port(
+        preferred,
+        default_port=DEFAULT_COM_PORT,
+    )
 
 
 def get_inkscape_version(exe: str) -> Tuple[int, int, int]:
-    rc, out, err = run_cmd([exe, "--version"], timeout_s=10.0)
-    text = (out + "\n" + err).strip()
-    m = re.search(r"Inkscape\s*v?(\d+)\.(\d+)(?:\.(\d+))?", text, re.IGNORECASE)
-    if not m:
-        return 1, 0, 0
-    major = int(m.group(1))
-    minor = int(m.group(2))
-    patch = int(m.group(3) or 0)
-    return major, minor, patch
+    return discovery_mod.get_inkscape_version(exe, run_cmd=run_cmd)
 
 def mat_mul(m1: Tuple[float, float, float, float, float, float], m2: Tuple[float, float, float, float, float, float]):
     return geometry_transform_mod.mat_mul(m1, m2)
@@ -1273,27 +742,12 @@ def parse_transform(value: str) -> Tuple[float, float, float, float, float, floa
 
 
 def infer_scale(root: ET.Element) -> float:
-    viewbox = root.attrib.get("viewBox") or root.attrib.get("viewbox")
-    width = root.attrib.get("width", "100")
-    height = root.attrib.get("height", "100")
-
-    if not viewbox:
-        return 1.0
-    vb = VIEWBOX_RE.match(viewbox.strip())
-    if not vb:
-        return 1.0
-    vb_w = float(vb.group(3))
-    vb_h = float(vb.group(4))
-
-    w_info = parse_length(width)
-    h_info = parse_length(height)
-    if w_info and h_info and vb_w and vb_h:
-        w_mm = unit_to_mm(w_info[0], w_info[1])
-        h_mm = unit_to_mm(h_info[0], h_info[1])
-        sx = w_mm / vb_w
-        sy = h_mm / vb_h
-        return (sx + sy) * 0.5
-    return 1.0
+    return svg_filter_utils_mod.infer_scale(
+        root,
+        viewbox_re=VIEWBOX_RE,
+        parse_length=parse_length,
+        unit_to_mm=unit_to_mm,
+    )
 
 
 def parse_path_tokens(path_d: str) -> Iterable[Tuple[str, List[float]]]:
@@ -1322,57 +776,30 @@ def arc_to_polyline(p0, rx, ry, angle_deg, large_arc, sweep, p1, step=0.35) -> L
 
 
 def apply_style_filter(style: Optional[dict], tag: str, element: Optional[ET.Element] = None) -> bool:
-    if tag != "path":
-        return True
-
-    stroke = style_value(style, element, "stroke")
-    fill = style_value(style, element, "fill")
-
-    explicit_stroke = "stroke" in style
-    explicit_fill = "fill" in style
-    if element is not None:
-        explicit_stroke = explicit_stroke or ("stroke" in element.attrib)
-        explicit_fill = explicit_fill or ("fill" in element.attrib)
-
-    if explicit_stroke and explicit_fill and is_none_style(stroke) and is_none_style(fill):
-        return False
-
-    # For path without explicit style, rely on SVG defaults (black fill).
-    # Keep geometry to avoid dropping converted text that comes without explicit style attrs.
-    return True
+    return svg_filter_utils_mod.apply_style_filter(
+        style,
+        tag,
+        element,
+        style_value=style_value,
+        is_none_style=is_none_style,
+    )
 
 
 def read_style_dict(style: Optional[str]) -> dict:
-    if not style:
-        return {}
-    return {k.strip().lower(): v.strip().lower() for k, _, v in (part.partition(":") for part in style.split(";")) if k.strip()}
+    return svg_text_utils_mod.read_style_dict(style)
 
 
 def get_href(element: ET.Element) -> Optional[str]:
-    href = element.attrib.get("href")
-    if not href:
-        href = element.attrib.get("xlink:href")
-    if not href:
-        href = element.attrib.get(f"{{{XLINK_NS}}}href")
-    if not href:
-        return None
-    if href.startswith("#"):
-        return href[1:]
-    return href
+    return svg_text_utils_mod.get_href(element)
 
 
 def _length_to_user_units(raw: str, scale_to_mm: float) -> Optional[float]:
-    info = parse_length(str(raw or "").strip())
-    if info is None:
-        return None
-    value, unit = info
-    if unit in {"", "px"}:
-        return float(value)
-    # Keep extraction in SVG user units; later we multiply by scale_to_mm.
-    mm = unit_to_mm(float(value), unit)
-    if abs(scale_to_mm) <= 1e-12:
-        return float(value)
-    return float(mm / scale_to_mm)
+    return svg_filter_utils_mod.length_to_user_units(
+        raw,
+        scale_to_mm,
+        parse_length=parse_length,
+        unit_to_mm=unit_to_mm,
+    )
 
 
 def _decode_image_from_svg_href(href: str, svg_dir: Path) -> Optional["np.ndarray"]:
@@ -1817,77 +1244,23 @@ def extract_image_contour_items(
 
 
 def parse_color_to_rgb_like(value: str) -> Optional[Tuple[float, float, float, float]]:
-    if not value:
-        return None
-    v = value.strip().lower()
-    if v in {"none", "transparent"}:
-        return None
-    if v in {"white", "#fff", "#ffffff"}:
-        return 1.0, 1.0, 1.0, 1.0
-    if v.startswith("#") and len(v) == 7:
-        try:
-            r = int(v[1:3], 16) / 255.0
-            g = int(v[3:5], 16) / 255.0
-            b = int(v[5:7], 16) / 255.0
-            return r, g, b, 1.0
-        except Exception:
-            return None
-    if v.startswith("rgb"):
-        m = re.match(r"rgba?\(([^)]+)\)", v)
-        if not m:
-            return None
-        parts = [p.strip() for p in m.group(1).split(",")]
-        if len(parts) < 3:
-            return None
-        try:
-            is_pct = "%" in parts[0] or "%" in parts[1] or "%" in parts[2]
-            nums = [float(p.rstrip("%")) for p in parts[:3]]
-            if is_pct:
-                return (nums[0] / 100.0, nums[1] / 100.0, nums[2] / 100.0, 1.0)
-            return (nums[0] / 255.0, nums[1] / 255.0, nums[2] / 255.0, 1.0)
-        except Exception:
-            return None
-    return None
+    return svg_text_utils_mod.parse_color_to_rgb_like(value)
 
 
 def svg_has_text_nodes(svg_path: Path) -> bool:
-    try:
-        root = ET.parse(svg_path).getroot()
-        return any(tag_name(node.tag).lower() in TEXT_NODE_TAGS for node in root.iter())
-    except Exception:
-        return False
+    return svg_text_utils_mod.svg_has_text_nodes(svg_path, tag_name=tag_name)
 
 
 def svg_text_node_count(svg_path: Path) -> int:
-    try:
-        root = ET.parse(svg_path).getroot()
-        return sum(1 for node in root.iter() if tag_name(node.tag).lower() in TEXT_NODE_TAGS)
-    except Exception:
-        return 0
+    return svg_text_utils_mod.svg_text_node_count(svg_path, tag_name=tag_name)
 
 
 def _read_style_dict_preserve(style: Optional[str]) -> dict:
-    if not style:
-        return {}
-    out: dict = {}
-    for part in style.split(";"):
-        key, _, value = part.partition(":")
-        key_s = key.strip()
-        if not key_s:
-            continue
-        out[key_s] = value.strip()
-    return out
+    return svg_text_utils_mod.read_style_dict_preserve(style)
 
 
 def _style_dict_to_string(style: dict) -> str:
-    parts: List[str] = []
-    for key, value in style.items():
-        k = str(key).strip()
-        v = str(value).strip()
-        if not k:
-            continue
-        parts.append(f"{k}:{v}")
-    return ";".join(parts)
+    return svg_text_utils_mod.style_dict_to_string(style)
 
 
 def normalize_handwriting_font_name(font_name: Optional[str]) -> str:
@@ -2318,182 +1691,40 @@ def _get_cached_handwriting_pil_font(ttf_path: Path, font_px: int):
 
 
 def _split_text_tokens_keep_spaces(text: str) -> List[str]:
-    if not text:
-        return []
-    return re.findall(r"\S+|\s+", text, flags=re.UNICODE)
-
-
-_HANDWRITING_TEXT_NORMALIZE_TRANSLATIONS = {
-    # Superscripts -> explicit baseline notation to avoid disappearing tiny glyphs.
-    ord("⁰"): "^0",
-    ord("¹"): "^1",
-    ord("²"): "^2",
-    ord("³"): "^3",
-    ord("⁴"): "^4",
-    ord("⁵"): "^5",
-    ord("⁶"): "^6",
-    ord("⁷"): "^7",
-    ord("⁸"): "^8",
-    ord("⁹"): "^9",
-    # Subscripts -> explicit notation.
-    ord("₀"): "_0",
-    ord("₁"): "_1",
-    ord("₂"): "_2",
-    ord("₃"): "_3",
-    ord("₄"): "_4",
-    ord("₅"): "_5",
-    ord("₆"): "_6",
-    ord("₇"): "_7",
-    ord("₈"): "_8",
-    ord("₉"): "_9",
-    # Common math dashes/symbols.
-    ord("−"): "-",
-    ord("–"): "-",
-    ord("—"): "-",
-    ord("×"): "x",
-    ord("⋅"): "*",
-    ord("·"): ".",
-    ord("ˆ"): "^",
-}
-
-_HANDWRITING_MATH_SYMBOL_RE = re.compile(r"[\u2190-\u22FF\u27C0-\u27EF\u2980-\u2AFF\uE000-\uF8FF]")
-_HANDWRITING_MATH_FONT_HINTS = (
-    "cambria math",
-    "cambriamath",
-    "stix math",
-    "xits math",
-    "latin modern math",
-    "tex gyre",
-    "asana math",
-)
-_HANDWRITING_GREEK_ASCII_FALLBACK = {
-    "α": "a",
-    "β": "b",
-    "γ": "g",
-    "δ": "d",
-    "ε": "e",
-    "ζ": "z",
-    "η": "n",
-    "θ": "th",
-    "ι": "i",
-    "κ": "k",
-    "λ": "l",
-    "μ": "m",
-    "ν": "n",
-    "ξ": "x",
-    "ο": "o",
-    "π": "p",
-    "ρ": "p",
-    "σ": "s",
-    "τ": "t",
-    "υ": "u",
-    "φ": "f",
-    "χ": "x",
-    "ψ": "ps",
-    "ω": "w",
-    "Α": "A",
-    "Β": "B",
-    "Γ": "G",
-    "Δ": "D",
-    "Ε": "E",
-    "Ζ": "Z",
-    "Η": "H",
-    "Θ": "TH",
-    "Ι": "I",
-    "Κ": "K",
-    "Λ": "L",
-    "Μ": "M",
-    "Ν": "N",
-    "Ξ": "X",
-    "Ο": "O",
-    "Π": "P",
-    "Ρ": "P",
-    "Σ": "S",
-    "Τ": "T",
-    "Υ": "Y",
-    "Φ": "F",
-    "Χ": "X",
-    "Ψ": "PS",
-    "Ω": "W",
-}
+    return handwriting_text_utils_mod.split_text_tokens_keep_spaces(text)
 
 
 def _normalize_handwriting_text_token(text: str) -> str:
-    if not text:
-        return text
-    normalized = _strip_unpaired_surrogates(text, replacement=" ")
-    normalized = normalized.translate(_HANDWRITING_TEXT_NORMALIZE_TRANSLATIONS)
-    out_chars: List[str] = []
-    for ch in normalized:
-        cp = ord(ch)
-        # Recover mathematical alphanumeric symbols from broken U+D4xx imports
-        # and normalize them to plain Latin/Greek for stable single-stroke output.
-        if 0xD400 <= cp <= 0xD7FF:
-            try:
-                expanded = unicodedata.normalize("NFKD", chr(cp + 0x10000))
-            except Exception:
-                expanded = " "
-        elif 0x1D400 <= cp <= 0x1D7FF:
-            try:
-                expanded = unicodedata.normalize("NFKD", ch)
-            except Exception:
-                expanded = " "
-        else:
-            expanded = ch
-
-        for part in (expanded or " "):
-            if part in _HANDWRITING_GREEK_ASCII_FALLBACK:
-                out_chars.append(_HANDWRITING_GREEK_ASCII_FALLBACK[part])
-                continue
-            if part == "\u00A0":
-                out_chars.append(" ")
-                continue
-            cat = unicodedata.category(part)
-            if cat in {"Cc", "Cs", "Co", "Cn"}:
-                out_chars.append(" ")
-                continue
-            out_chars.append(part)
-    return "".join(out_chars)
+    return handwriting_text_utils_mod.normalize_handwriting_text_token(
+        text,
+        strip_unpaired_surrogates=_strip_unpaired_surrogates,
+    )
 
 
 def _style_prefers_native_vector(style: Optional[dict]) -> bool:
-    # Keep disabled by default: math/cambria glyphs are normalized and rendered
-    # through the same centerline pipeline for consistent single-stroke output.
-    return False
+    return handwriting_text_utils_mod.style_prefers_native_vector(style)
 
 
 def _text_contains_formula_script(text: str) -> bool:
-    for ch in text:
-        cp = ord(ch)
-        if 0x0370 <= cp <= 0x03FF:  # Greek
-            return True
-        if 0x1D400 <= cp <= 0x1D7FF:  # Math Alphanumeric Symbols
-            return True
-        if 0xD400 <= cp <= 0xD7FF:  # Broken imported math symbols
-            return True
-    return False
+    return handwriting_text_utils_mod.text_contains_formula_script(text)
 
 
 def _text_prefers_native_vector(text: str) -> bool:
-    src = _strip_unpaired_surrogates(text or "", replacement=" ")
-    if not src:
-        return False
-    # Keep native text only for obviously broken/private-use symbolic fragments.
-    # Everything else should pass through the same handwriting centerline path.
-    letters = sum(1 for ch in src if ch.isalpha())
-    digits = sum(1 for ch in src if ch.isdigit())
-    private_use = sum(1 for ch in src if 0xE000 <= ord(ch) <= 0xF8FF)
-    broken_math = sum(1 for ch in src if 0xD400 <= ord(ch) <= 0xD7FF)
-    replacement = src.count("\uFFFD")
-    if (private_use + broken_math + replacement) >= 3 and letters <= 2 and digits <= 2:
-        return True
-    return False
+    return handwriting_text_utils_mod.text_prefers_native_vector(
+        text,
+        strip_unpaired_surrogates=_strip_unpaired_surrogates,
+    )
 
 
 def _handwriting_min_line_step_mm(font_size: float, text: str = "") -> float:
-    fs = max(1.0, float(font_size))
-    factor = float(HANDWRITING_LINE_STEP_FACTOR_CYR) if _text_contains_cyrillic(text or "") else float(HANDWRITING_LINE_STEP_FACTOR)
-    return max(fs * factor, fs + float(HANDWRITING_LINE_STEP_EXTRA_MM))
+    return handwriting_text_utils_mod.handwriting_min_line_step_mm(
+        font_size,
+        text,
+        text_contains_cyrillic=_text_contains_cyrillic,
+        line_step_factor=HANDWRITING_LINE_STEP_FACTOR,
+        line_step_factor_cyr=HANDWRITING_LINE_STEP_FACTOR_CYR,
+        line_step_extra_mm=HANDWRITING_LINE_STEP_EXTRA_MM,
+    )
 
 
 def _adjust_handwriting_tspan_dy(
@@ -2503,127 +1734,41 @@ def _adjust_handwriting_tspan_dy(
     text: str,
     is_first_visible_line: bool,
 ) -> float:
-    if not HANDWRITING_AUTO_LINE_SPACING_ENABLED:
-        return float(dy)
-    d = float(dy)
-    if is_first_visible_line and abs(d) <= 1e-9:
-        return d
-    min_step = _handwriting_min_line_step_mm(font_size, text)
-    if d >= 0.0:
-        return max(d, min_step)
-    return min(d, -min_step)
+    return handwriting_text_utils_mod.adjust_handwriting_tspan_dy(
+        dy,
+        font_size=font_size,
+        text=text,
+        is_first_visible_line=is_first_visible_line,
+        auto_line_spacing_enabled=HANDWRITING_AUTO_LINE_SPACING_ENABLED,
+        handwriting_min_line_step_fn=_handwriting_min_line_step_mm,
+    )
 
 
 def _merge_svg_text_style(parent_style: dict, node: ET.Element) -> dict:
-    merged = dict(parent_style)
-    merged.update(_read_style_dict_preserve(node.attrib.get("style")))
-    for key in (
-        "fill",
-        "stroke",
-        "font-size",
-        "font-family",
-        "-inkscape-font-specification",
-        "font",
-        "display",
-        "visibility",
-        "opacity",
-        "fill-opacity",
-        "stroke-opacity",
-    ):
-        if key in node.attrib:
-            merged[key] = str(node.attrib.get(key, "")).strip()
-    return merged
+    return handwriting_text_utils_mod.merge_svg_text_style(
+        parent_style,
+        node,
+        read_style_dict_preserve=_read_style_dict_preserve,
+    )
 
 
 def _sanitize_svg_text_node_for_vector(node: ET.Element) -> bool:
-    def _sanitize_local(text: Optional[str]) -> Tuple[Optional[str], bool]:
-        if text is None:
-            return None, False
-        normalized = _normalize_handwriting_text_token(text)
-        return normalized, (normalized != text)
-
-    changed = False
-
-    new_text, c = _sanitize_local(node.text)
-    if c:
-        node.text = new_text
-        changed = True
-
-    for child in list(node):
-        child_changed = _sanitize_svg_text_node_for_vector(child)
-        if child_changed:
-            changed = True
-        new_tail, c_tail = _sanitize_local(child.tail)
-        if c_tail:
-            child.tail = new_tail
-            changed = True
-
-    return changed
+    return handwriting_text_utils_mod.sanitize_svg_text_node_for_vector(
+        node,
+        normalize_handwriting_text_token_fn=_normalize_handwriting_text_token,
+    )
 
 
 def _svg_text_node_is_visible(style: Optional[dict], node: Optional[ET.Element] = None) -> bool:
-    st = style or {}
-
-    def _pick_style_val(key: str) -> str:
-        v = st.get(key)
-        if v is not None and str(v).strip() != "":
-            return str(v).strip()
-        if node is not None:
-            return str(node.attrib.get(key, "")).strip()
-        return ""
-
-    display = _pick_style_val("display").lower()
-    if display == "none":
-        return False
-
-    visibility = _pick_style_val("visibility").lower()
-    if visibility in {"hidden", "collapse"}:
-        return False
-
-    opacity = _parse_svg_number(_pick_style_val("opacity"), default=1.0)
-    if opacity <= 1e-6:
-        return False
-
-    fill = _pick_style_val("fill").lower()
-    stroke = _pick_style_val("stroke").lower()
-    fill_none = fill in {"", "none", "transparent"}
-    stroke_none = stroke in {"", "none", "transparent"}
-
-    fill_opacity = _parse_svg_number(_pick_style_val("fill-opacity"), default=1.0)
-    stroke_opacity = _parse_svg_number(_pick_style_val("stroke-opacity"), default=1.0)
-
-    if fill_none and stroke_none:
-        # If neither color is specified at all, SVG defaults to black fill.
-        if "fill" not in st and "stroke" not in st and (node is None or ("fill" not in node.attrib and "stroke" not in node.attrib)):
-            return True
-        return False
-
-    if (fill_none or fill_opacity <= 1e-6) and (stroke_none or stroke_opacity <= 1e-6):
-        return False
-
-    return True
+    return handwriting_text_utils_mod.svg_text_node_is_visible(
+        style,
+        node,
+        parse_svg_number=_parse_svg_number,
+    )
 
 
 def _pick_svg_text_stroke_color(style: Optional[dict]) -> Optional[str]:
-    st = style or {}
-    stroke_raw = str(st.get("stroke", "")).strip()
-    fill_raw = str(st.get("fill", "")).strip()
-    stroke = stroke_raw.lower()
-    fill = fill_raw.lower()
-    stroke_none = stroke in {"", "none", "transparent"}
-    fill_none = fill in {"", "none", "transparent"}
-
-    if not stroke_none:
-        return stroke_raw
-    if not fill_none:
-        return fill_raw
-
-    # Explicit none/transparent should stay invisible.
-    if ("stroke" in st and stroke_none) or ("fill" in st and fill_none):
-        return None
-
-    # No explicit paint specified: default visible black fill in SVG.
-    return "#000000"
+    return handwriting_text_utils_mod.pick_svg_text_stroke_color(style)
 
 
 def _collect_native_row_text_node_ids(root: ET.Element, *, row_tol: float = 1.4) -> set[int]:
@@ -4017,185 +3162,49 @@ def apply_handwriting_font(svg_path: Path, font_name: str, logger) -> int:
 
 
 def _parse_svg_number(value: Optional[str], default: float = 0.0) -> float:
-    if value is None:
-        return default
-    s = str(value).strip()
-    if not s:
-        return default
-    token = s.replace(",", " ").split()[0]
-    token = re.sub(r"[^0-9eE+\-\.]", "", token)
-    try:
-        return float(token)
-    except Exception:
-        return default
+    return svg_text_utils_mod.parse_svg_number(value, default=default)
 
 
 def _parse_svg_number_list(value: Optional[str]) -> List[float]:
-    if value is None:
-        return []
-    src = str(value).replace(",", " ").strip()
-    if not src:
-        return []
-    out: List[float] = []
-    for tok in src.split():
-        t = re.sub(r"[^0-9eE+\-\.]", "", tok)
-        if not t:
-            continue
-        try:
-            out.append(float(t))
-        except Exception:
-            continue
-    return out
+    return svg_text_utils_mod.parse_svg_number_list(value)
 
 
 def _extract_svg_text_plain(node: ET.Element) -> str:
-    raw = _strip_unpaired_surrogates("".join(node.itertext()), replacement=" ")
-    if not raw:
-        return ""
-
-    def _repair_cp1251_single_byte(text: str) -> str:
-        # Some PDF/SVG exports keep Cyrillic as single-byte cp1251 chars rendered
-        # as Latin-1 (e.g. Е -> Å, З -> Ç). Repair those codepoints per-char.
-        out_chars: List[str] = []
-        changed = False
-        for ch in text:
-            code = ord(ch)
-            if CYRILLIC_TEXT_RE.search(ch):
-                out_chars.append(ch)
-                continue
-            if code in {0xA8, 0xB8} or (0xC0 <= code <= 0xFF):
-                repaired = ""
-                try:
-                    repaired = bytes([code]).decode("cp1251")
-                except Exception:
-                    repaired = ""
-                if repaired and len(repaired) == 1 and CYRILLIC_TEXT_RE.search(repaired):
-                    out_chars.append(repaired)
-                    changed = True
-                    continue
-            out_chars.append(ch)
-        if not changed:
-            return text
-        return "".join(out_chars)
-
-    if not CYRILLIC_TEXT_RE.search(raw):
-        raw = _repair_cp1251_single_byte(raw)
-    if not CYRILLIC_TEXT_RE.search(raw):
-        if any(tok in raw for tok in ("Р", "С", "Ð", "Ñ")):
-            for src_enc in ("cp1251", "latin1"):
-                try:
-                    repaired = raw.encode(src_enc, errors="strict").decode("utf-8", errors="strict")
-                except Exception:
-                    continue
-                if CYRILLIC_TEXT_RE.search(repaired):
-                    raw = repaired
-                    break
-    # Preserve explicit line breaks while normalizing excessive spaces.
-    lines = []
-    for ln in raw.replace("\r\n", "\n").replace("\r", "\n").split("\n"):
-        lines.append(re.sub(r"[ \t]+", " ", ln).strip())
-    return "\n".join(ln for ln in lines if ln)
+    return svg_text_utils_mod.extract_svg_text_plain(node, strip_unpaired_surrogates=_strip_unpaired_surrogates)
 
 
 def _text_contains_cyrillic(text: str) -> bool:
-    return bool(CYRILLIC_TEXT_RE.search(text or ""))
+    return svg_text_utils_mod.text_contains_cyrillic(text)
 
 
 def svg_has_cyrillic_text_nodes(svg_path: Path) -> bool:
-    try:
-        root = ET.parse(svg_path).getroot()
-    except Exception:
-        return False
-    for node in root.iter():
-        if tag_name(node.tag).lower() not in TEXT_NODE_TAGS:
-            continue
-        if _text_contains_cyrillic("".join(node.itertext())):
-            return True
-    return False
+    return svg_text_utils_mod.svg_has_cyrillic_text_nodes(svg_path, tag_name=tag_name)
 
 
 def _analyze_svg_text_profile(svg_path: Path) -> Dict[str, object]:
-    """Estimate text style to choose RU handwriting pipeline.
-
-    Technical drawings usually contain many short and numeric tokens.
-    Paragraph-like notes contain more medium/long words.
-    """
-    profile: Dict[str, object] = {
-        "tokens": 0,
-        "short_ratio": 0.0,
-        "digit_ratio": 0.0,
-        "long_ratio": 0.0,
-        "technical_like": False,
-    }
-    try:
-        root = ET.parse(svg_path).getroot()
-    except Exception:
-        return profile
-
-    tokens: List[str] = []
-    token_re = re.compile(r"[0-9A-Za-z\u0400-\u04FFЁё]+")
-    for node in root.iter():
-        if tag_name(node.tag).lower() not in TEXT_NODE_TAGS:
-            continue
-        text = _extract_svg_text_plain(node)
-        if not text:
-            continue
-        for tok in token_re.findall(text):
-            t = tok.strip()
-            if t:
-                tokens.append(t)
-
-    total = len(tokens)
-    if total <= 0:
-        return profile
-
-    short = sum(1 for t in tokens if len(t) <= 3)
-    long = sum(1 for t in tokens if len(t) >= 6)
-    digit = sum(1 for t in tokens if re.fullmatch(r"\d+", t))
-
-    short_ratio = short / float(total)
-    long_ratio = long / float(total)
-    digit_ratio = digit / float(total)
-    technical_like = (
-        (total >= 18 and short_ratio >= 0.62 and (digit_ratio >= 0.18 or long_ratio <= 0.18))
-        or (total >= 12 and short_ratio >= 0.72 and long_ratio <= 0.12)
+    return handwriting_text_utils_mod.analyze_svg_text_profile(
+        svg_path,
+        tag_name=tag_name,
+        text_node_tags=TEXT_NODE_TAGS,
+        extract_svg_text_plain=_extract_svg_text_plain,
     )
-
-    profile["tokens"] = total
-    profile["short_ratio"] = short_ratio
-    profile["digit_ratio"] = digit_ratio
-    profile["long_ratio"] = long_ratio
-    profile["technical_like"] = technical_like
-    return profile
 
 
 def _pick_hershey_font_name(font_name: str) -> str:
-    requested = (font_name or "").strip().lower()
-    if not requested:
-        return HANDWRITING_STROKE_FONT_NAME
-    # Keep mapping simple and deterministic.
-    if any(k in requested for k in ("script", "cursive", "hand")):
-        return "cursive"
-    if any(k in requested for k in ("mono", "console", "type")):
-        return "futural"
-    return HANDWRITING_STROKE_FONT_NAME
+    return handwriting_text_utils_mod.pick_hershey_font_name(
+        font_name,
+        handwriting_stroke_font_name=HANDWRITING_STROKE_FONT_NAME,
+    )
 
 
 def _pick_hershey_font_name_for_text(font_name: str, text: str) -> str:
-    if _text_contains_cyrillic(text):
-        requested = (font_name or "").strip().lower()
-        default_cyr = (HANDWRITING_STROKE_CYR_FONT_NAME or "cyrilc_1").strip().lower()
-        if any(k in requested for k in ("mono", "console", "type")):
-            # Technical/monospace intent -> simpler Cyrillic stroke set.
-            return "cyrillic"
-        if "cyr" in requested:
-            if any(k in requested for k in ("1", "script", "cursive", "hand")):
-                return "cyrilc_1"
-            return "cyrillic"
-        if any(k in requested for k in ("script", "cursive", "hand")):
-            return default_cyr
-        return default_cyr
-    return _pick_hershey_font_name(font_name)
+    return handwriting_text_utils_mod.pick_hershey_font_name_for_text(
+        font_name,
+        text,
+        text_contains_cyrillic=_text_contains_cyrillic,
+        pick_hershey_font_name_fn=_pick_hershey_font_name,
+        handwriting_stroke_cyr_font_name=HANDWRITING_STROKE_CYR_FONT_NAME,
+    )
 
 
 def _hershey_segments_to_polylines(
@@ -4960,159 +3969,65 @@ def convert_svg_text_to_paths(svg_path: Path, logger, *, text_only: bool = False
 
 
 def style_value(style: dict, element: ET.Element, key: str) -> str:
-    value = style.get(key)
-    if value is not None:
-        return value.strip().lower()
-    return element.attrib.get(key, "").strip().lower()
+    return svg_text_utils_mod.style_value(style, element, key)
 
 
 def is_none_style(value: Optional[str]) -> bool:
-    return value in (None, "", "none", "transparent")
+    return svg_text_utils_mod.is_none_style(value)
 
 
 def parse_style_flags(style: dict, element: ET.Element, tag: str) -> Tuple[bool, bool]:
-    # Returns tuple (has_stroke, has_fill)
-    if is_pure_white_shape(style, element):
-        return False, False
-
-    has_stroke = False
-    has_fill = False
-    if tag == "line":
-        stroke = style_value(style, element, "stroke")
-        has_stroke = not is_none_style(stroke)
-        fill_val = style_value(style, element, "fill")
-        has_fill = not is_none_style(fill_val) and fill_val not in {"", "none"}
-        return has_stroke, has_fill
-
-    stroke = style_value(style, element, "stroke")
-    fill = style_value(style, element, "fill")
-    explicit_stroke = "stroke" in style or "stroke" in element.attrib
-    explicit_fill = "fill" in style or "fill" in element.attrib
-
-    if tag in {"rect", "polygon", "polyline", "circle", "ellipse", "path"}:
-        has_stroke = not is_none_style(stroke) if explicit_stroke else False
-        # If fill is not explicitly set, keep SVG default geometry behavior:
-        # shape primitives and paths are considered filled.
-        if explicit_fill:
-            has_fill = not is_none_style(fill)
-        else:
-            has_fill = True
-    else:
-        has_stroke = not is_none_style(stroke) if explicit_stroke else False
-        if explicit_fill:
-            has_fill = not is_none_style(fill)
-        else:
-            has_fill = not is_none_style(fill)
-
-    # Explicit stroke/fill attributes set to none should not create geometry.
-    if explicit_stroke and explicit_fill and not has_stroke and not has_fill:
-        return False, False
-
-    # For geometry primitives, if both attributes are absent (no explicit style),
-    # keep default drawable behavior for paths/shapes.
-    if not explicit_stroke and not explicit_fill and tag in {"line", "polyline", "polygon", "rect", "circle", "ellipse", "path"}:
-        if tag == "line":
-            has_stroke = True
-    return has_stroke, has_fill
+    return svg_text_utils_mod.parse_style_flags(
+        style,
+        element,
+        tag,
+        is_pure_white_shape=is_pure_white_shape,
+    )
 
 
 def is_nearly_white_fill(elem: ET.Element) -> bool:
-    style = read_style_dict(elem.attrib.get("style"))
-    fill = style.get("fill", elem.attrib.get("fill", "")).strip().lower()
-    if not fill:
-        return False
-    rgb = parse_color_to_rgb_like(fill)
-    if rgb is None:
-        return False
-    r, g, b, _ = rgb
-    if min(r, g, b) < float(BACKGROUND_FILL_MIN_CHANNEL):
-        return False
-    opacity = style.get("fill-opacity", elem.attrib.get("fill-opacity", "1")).strip()
-    try:
-        if float(opacity) < float(BACKGROUND_FILL_MIN_OPACITY):
-            return False
-    except Exception:
-        pass
-    return True
+    return svg_filter_utils_mod.is_nearly_white_fill(
+        elem,
+        read_style_dict=read_style_dict,
+        parse_color_to_rgb_like=parse_color_to_rgb_like,
+        background_fill_min_channel=BACKGROUND_FILL_MIN_CHANNEL,
+        background_fill_min_opacity=BACKGROUND_FILL_MIN_OPACITY,
+    )
 
 
 def is_pure_white_shape(style: dict, element: ET.Element) -> bool:
-    fill = style.get("fill", element.attrib.get("fill", "")).strip().lower()
-    stroke = style.get("stroke", element.attrib.get("stroke", "")).strip().lower()
-
-    stroke_none = is_none_style(stroke)
-    fill_none = is_none_style(fill)
-    if fill_none and stroke_none:
-        return False
-
-    fill_is_white = False
-    stroke_is_white = False
-    if fill and not fill_none:
-        fill_rgb = parse_color_to_rgb_like(fill)
-        fill_is_white = fill_rgb is not None and min(fill_rgb[:3]) >= 0.99
-    if stroke and not stroke_none:
-        stroke_rgb = parse_color_to_rgb_like(stroke)
-        stroke_is_white = stroke_rgb is not None and min(stroke_rgb[:3]) >= 0.99
-
-    if fill_is_white and (stroke_none or stroke_is_white):
-        return True
-    if stroke_is_white and fill_none:
-        return True
-    if stroke_is_white and fill_is_white:
-        return True
-
-    return False
+    return svg_filter_utils_mod.is_pure_white_shape(
+        style,
+        element,
+        is_none_style=is_none_style,
+        parse_color_to_rgb_like=parse_color_to_rgb_like,
+    )
 
 
 def is_axis_aligned_rectangle(poly: List[Tuple[float, float]]) -> bool:
-    if len(poly) != 5 or poly[0] != poly[-1]:
-        return False
-    pts = poly[:-1]
-    if len({pt for pt in pts}) != 4:
-        return False
-    xs = {round(p[0], 5) for p in pts}
-    ys = {round(p[1], 5) for p in pts}
-    if len(xs) != 2 or len(ys) != 2:
-        return False
-    for i in range(4):
-        x1, y1 = pts[i]
-        x2, y2 = pts[(i + 1) % 4]
-        if abs(x1 - x2) > 1e-6 and abs(y1 - y2) > 1e-6:
-            return False
-    return True
+    return svg_filter_utils_mod.is_axis_aligned_rectangle(poly)
 
 
 def root_page_size_mm(root: ET.Element) -> Tuple[float, float]:
-    width = parse_length(root.attrib.get("width", "0"))
-    height = parse_length(root.attrib.get("height", "0"))
-    if width and height:
-        return unit_to_mm(width[0], width[1]), unit_to_mm(height[0], height[1])
-
-    vb = root.attrib.get("viewBox") or root.attrib.get("viewbox")
-    if vb:
-        m = VIEWBOX_RE.match(vb.strip())
-        if m:
-            return float(m.group(3)), float(m.group(4))
-    return 0.0, 0.0
+    return svg_filter_utils_mod.root_page_size_mm(
+        root,
+        parse_length=parse_length,
+        unit_to_mm=unit_to_mm,
+        viewbox_re=VIEWBOX_RE,
+    )
 
 
 def is_full_page_white_fill_rect(poly: List[Tuple[float, float]], elem: ET.Element, page_w: float, page_h: float) -> bool:
-    if not is_axis_aligned_rectangle(poly):
-        return False
-    if tag_name(elem.tag) not in {"path", "rect", "polygon"}:
-        return False
-    if not is_nearly_white_fill(elem):
-        return False
-    style = read_style_dict(elem.attrib.get("style"))
-    stroke = (style.get("stroke") or elem.attrib.get("stroke") or "").strip().lower()
-    if stroke not in {"", "none"}:
-        return False
-    if abs(page_w) < 1e-6 or abs(page_h) < 1e-6:
-        return False
-    xs = [p[0] for p in poly]
-    ys = [p[1] for p in poly]
-    area_ratio = ((max(xs) - min(xs)) * (max(ys) - min(ys))) / (page_w * page_h)
-    return 0.95 <= area_ratio <= 1.05
+    return svg_filter_utils_mod.is_full_page_white_fill_rect(
+        poly,
+        elem,
+        page_w,
+        page_h,
+        is_axis_aligned_rectangle=is_axis_aligned_rectangle,
+        tag_name=tag_name,
+        is_nearly_white_fill=is_nearly_white_fill,
+        read_style_dict=read_style_dict,
+    )
 
 
 def point_line_distance(point: Tuple[float, float], line_a: Tuple[float, float], line_b: Tuple[float, float]) -> float:
@@ -8876,18 +7791,7 @@ def _wait_for_nonempty_file(path: Path, timeout_s: float = 15.0, poll_s: float =
 
 
 def _wait_until_path_unlocked(path: Path, timeout_s: float = 8.0, poll_s: float = 0.20) -> bool:
-    deadline = time.time() + max(0.2, float(timeout_s))
-    poll = max(0.05, float(poll_s))
-    while time.time() < deadline:
-        try:
-            if not path.exists():
-                return True
-            with path.open("rb"):
-                pass
-            return True
-        except Exception:
-            time.sleep(poll)
-    return False
+    return runtime_utils_mod.wait_until_path_unlocked(path, timeout_s=timeout_s, poll_s=poll_s)
 
 
 def _kompas_print_to_pdf(input_path: Path, output_pdf: Path, logger) -> None:
@@ -8926,149 +7830,31 @@ def make_final_with_preamble(prepared_gcode: Path, final_gcode: Path) -> None:
 
 
 def _open_serial_no_reset(port: str, baud: int, *, timeout_s: float = 1.0):
-    # IMPORTANT: Many GRBL boards reset on DTR when opening the port.
-    # Open serial the same way as src/send_grbl_file.py to avoid losing coordinates mid-job.
-    import serial  # pyserial
-
-    ser = serial.Serial()
-    ser.port = port
-    ser.baudrate = int(baud)
-    ser.timeout = float(timeout_s)
-    try:
-        ser.dtr = False
-        ser.rts = False
-    except Exception:
-        pass
-    ser.open()
-    time.sleep(0.2)
-    try:
-        ser.reset_input_buffer()
-        ser.reset_output_buffer()
-    except Exception:
-        pass
-    return ser
+    return grbl_probe_mod.open_serial_no_reset(port, baud, timeout_s=timeout_s)
 
 
 def _grbl_readline_ascii(ser) -> str:
-    try:
-        raw = ser.readline()
-    except Exception:
-        return ""
-    if not raw:
-        return ""
-    return raw.decode("ascii", errors="replace").strip()
+    return grbl_probe_mod.grbl_readline_ascii(ser)
 
 
 def _grbl_status_line(ser, *, timeout_s: float = 0.8) -> str:
-    try:
-        ser.write(b"?")
-        ser.flush()
-    except Exception:
-        return ""
-    t0 = time.time()
-    while time.time() - t0 < timeout_s:
-        s = _grbl_readline_ascii(ser)
-        if s.startswith("<") and s.endswith(">"):
-            return s
-    return ""
+    return grbl_probe_mod.grbl_status_line(_CLI_BACKEND, ser, timeout_s=timeout_s)
 
 
 def _parse_grbl_triplet(tag: str, text: str) -> Optional[Tuple[float, float, float]]:
-    m = re.search(rf"{re.escape(tag)}:([^|>]+)", text)
-    if not m:
-        return None
-    parts = m.group(1).split(",")
-    if len(parts) < 3:
-        return None
-    try:
-        return (float(parts[0]), float(parts[1]), float(parts[2]))
-    except Exception:
-        return None
+    return grbl_probe_mod.parse_grbl_triplet(tag, text)
 
 
 def _grbl_query_offsets(ser) -> Tuple[Tuple[float, float, float], Tuple[float, float, float]]:
-    # Returns (G54, G92)
-    try:
-        ser.write(b"$#\n")
-        ser.flush()
-    except Exception:
-        return (0.0, 0.0, 0.0), (0.0, 0.0, 0.0)
-    t0 = time.time()
-    buf: List[str] = []
-    while time.time() - t0 < 1.5:
-        s = _grbl_readline_ascii(ser)
-        if not s:
-            continue
-        buf.append(s)
-        if s == "ok" or s.startswith("error:") or s.startswith("ALARM:"):
-            break
-    joined = "\n".join(buf)
-
-    def _parse_bracket(tag: str) -> Tuple[float, float, float]:
-        m = re.search(rf"\\[{re.escape(tag)}:([^\\]]+)\\]", joined)
-        if not m:
-            return (0.0, 0.0, 0.0)
-        parts = m.group(1).split(",")
-        try:
-            vals = [float(p) for p in parts[:3]]
-        except Exception:
-            return (0.0, 0.0, 0.0)
-        while len(vals) < 3:
-            vals.append(0.0)
-        return (vals[0], vals[1], vals[2])
-
-    return _parse_bracket("G54"), _parse_bracket("G92")
+    return grbl_probe_mod.grbl_query_offsets(_CLI_BACKEND, ser)
 
 
 def grbl_wait_for_idle(port: str, baud: str, logger, *, timeout_s: float = 600.0) -> None:
-    try:
-        ser = _open_serial_no_reset(port, int(baud), timeout_s=0.5)
-    except Exception as exc:
-        raise SerialTransportError(f"Cannot open GRBL serial ({type(exc).__name__}: {exc})") from exc
-    try:
-        t0 = time.time()
-        last_log = 0.0
-        while True:
-            if time.time() - t0 > timeout_s:
-                raise SerialTransportError("Timeout waiting for GRBL to become Idle.")
-            st = _grbl_status_line(ser, timeout_s=0.8)
-            if st.startswith("<Idle|"):
-                return
-            if time.time() - last_log > 2.0 and st:
-                logger(st)
-                last_log = time.time()
-            time.sleep(0.25)
-    finally:
-        try:
-            ser.close()
-        except Exception:
-            pass
+    grbl_probe_mod.grbl_wait_for_idle(_CLI_BACKEND, port, baud, logger, timeout_s=timeout_s)
 
 
 def grbl_get_wpos_xyz(port: str, baud: str) -> Tuple[float, float, float]:
-    # Prefer WPos if present; else compute from MPos and WCO/($#).
-    try:
-        ser = _open_serial_no_reset(port, int(baud), timeout_s=0.8)
-    except Exception as exc:
-        raise SerialTransportError(f"Cannot open GRBL serial ({type(exc).__name__}: {exc})") from exc
-    try:
-        st = _grbl_status_line(ser, timeout_s=0.8)
-        wpos = _parse_grbl_triplet("WPos", st) if st else None
-        if wpos is not None:
-            return wpos
-        mpos = _parse_grbl_triplet("MPos", st) if st else None
-        if mpos is None:
-            raise SerialTransportError(f"Cannot read GRBL position (status='{st}').")
-        wco = _parse_grbl_triplet("WCO", st) if st else None
-        if wco is None:
-            g54, g92 = _grbl_query_offsets(ser)
-            wco = (g54[0] + g92[0], g54[1] + g92[1], g54[2] + g92[2])
-        return (mpos[0] - wco[0], mpos[1] - wco[1], mpos[2] - wco[2])
-    finally:
-        try:
-            ser.close()
-        except Exception:
-            pass
+    return grbl_probe_mod.grbl_get_wpos_xyz(_CLI_BACKEND, port, baud)
 
 
 def _gcode_find_nearest_g0_xy_line(gcode_file: Path, *, x: float, y: float) -> int:
@@ -9512,7 +8298,7 @@ def _format_backend_exception(exc: Exception) -> str:
 
 
 def _format_internal_exception(prefix: str, exc: Exception) -> str:
-    return f"{prefix} ({type(exc).__name__}): {exc}"
+    return runtime_utils_mod.format_internal_exception(prefix, exc)
 
 
 def _ask_confirmation_in_console(prompt: str = "Continue drawing?") -> bool:
@@ -9883,17 +8669,16 @@ def warn_if_text_nodes_left(svg_path: Path, logger) -> None:
 
 
 def open_with_default_viewer(path: Path, logger=print) -> None:
-    try:
-        os.startfile(str(path))
-        logger(f"Opened preview: {path}")
-    except Exception as exc:
-        logger(_format_internal_exception("Cannot open preview automatically", exc))
+    process_utils_mod.open_with_default_viewer(
+        path,
+        logger=logger,
+        startfile=getattr(os, "startfile", None),
+        format_internal_exception=_format_internal_exception,
+    )
 
 
 def ensure_local_tmp_root() -> Path:
-    # Sandbox-friendly temp location (system temp can be non-writable in restricted environments).
-    LOCAL_TMP_ROOT.mkdir(parents=True, exist_ok=True)
-    return LOCAL_TMP_ROOT
+    return runtime_utils_mod.ensure_local_tmp_root(LOCAL_TMP_ROOT)
 
 
 def grbl_send_manual_commands(
@@ -9933,6 +8718,9 @@ SUPPORTED_INPUT_EXTENSIONS = cli_entry_mod.SUPPORTED_INPUT_EXTENSIONS
 class _CliBackendProxy:
     def __getattr__(self, name: str):
         return globals()[name]
+
+    def __setattr__(self, name: str, value) -> None:
+        globals()[name] = value
 
 
 _CLI_BACKEND = _CliBackendProxy()
