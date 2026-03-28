@@ -388,6 +388,21 @@ IMAGE_CONTOUR_HANDWRITING_MIN_PATH_MM = 2.3
 IMAGE_CONTOUR_CENTERLINE_MIN_COMPONENT_PX = 14
 IMAGE_CONTOUR_CENTERLINE_RDP_PX = 0.90
 IMAGE_CONTOUR_CENTERLINE_MAX_PATHS_PER_IMAGE = 2200
+IMAGE_CONTOUR_LINEART_AUTOTRACE = True
+IMAGE_CONTOUR_LINEART_DARK_RATIO_MAX = 0.34
+IMAGE_CONTOUR_LINEART_INK_FILL_MAX = 0.58
+IMAGE_CONTOUR_FORMULA_ASPECT_MIN = 5.0
+IMAGE_CONTOUR_FORMULA_MAX_HEIGHT_PX = 180
+IMAGE_CONTOUR_FORMULA_MIN_PATH_MM = 0.22
+IMAGE_CONTOUR_FORMULA_SIMPLIFY_MM = 0.045
+IMAGE_CONTOUR_FORMULA_TINY_BBOX_MM = 0.18
+IMAGE_CONTOUR_FORMULA_MIN_COMPONENT_PX = 2
+IMAGE_CONTOUR_FORMULA_RDP_PX = 0.42
+IMAGE_CONTOUR_LINEART_MIN_PATH_MM = 0.45
+IMAGE_CONTOUR_LINEART_SIMPLIFY_MM = 0.080
+IMAGE_CONTOUR_LINEART_TINY_BBOX_MM = 0.35
+IMAGE_CONTOUR_LINEART_MIN_COMPONENT_PX = 3
+IMAGE_CONTOUR_LINEART_RDP_PX = 0.60
 # Raster tone hatch for embedded images (notes/photos/screenshots):
 # emit sparse horizontal hatch segments in dark regions.
 IMAGE_TONE_HATCH_ENABLED = True
@@ -537,10 +552,19 @@ INKSCAPE_PDF_IMPORT_DIALOG_TITLES = (
 INKSCAPE_PDF_IMPORT_DIALOG_TIMEOUT_S = 45.0
 
 CMD_END_RE = re.compile(r"[MmLlHhVvCcSsQqTtAaZz]")
-FLOAT_RE = re.compile(r"[+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?")
+FLOAT_RE = re.compile(r"[+-]?(?:(?:\d+\.\d*)|(?:\.\d+)|(?:\d+))(?:[eE][+-]?\d+)?")
 TRANSFORM_RE = re.compile(r"(\w+)\(([^)]*)\)")
 TAG_RE = re.compile(r".*}\s*(.*)")
-VIEWBOX_RE = re.compile(r"\s*(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)[,\s]+(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)[,\s]+(\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)[,\s]+(\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)")
+VIEWBOX_RE = re.compile(
+    r"\s*"
+    r"([+-]?(?:(?:\d+\.\d*)|(?:\.\d+)|(?:\d+))(?:[eE][+-]?\d+)?)"
+    r"[,\s]+"
+    r"([+-]?(?:(?:\d+\.\d*)|(?:\.\d+)|(?:\d+))(?:[eE][+-]?\d+)?)"
+    r"[,\s]+"
+    r"([+-]?(?:(?:\d+\.\d*)|(?:\.\d+)|(?:\d+))(?:[eE][+-]?\d+)?)"
+    r"[,\s]+"
+    r"([+-]?(?:(?:\d+\.\d*)|(?:\.\d+)|(?:\d+))(?:[eE][+-]?\d+)?)"
+)
 LENGTH_RE = re.compile(r"^\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)([a-zA-Z%]*)\s*$")
 XLINK_NS = "http://www.w3.org/1999/xlink"
 
@@ -843,6 +867,161 @@ def _decode_image_from_svg_href(href: str, svg_dir: Path) -> Optional["np.ndarra
     return None
 
 
+def _embedded_image_to_gray_alpha(img: "np.ndarray") -> Tuple[Optional["np.ndarray"], Optional["np.ndarray"]]:
+    if cv2 is None or np is None or img is None:
+        return None, None
+    try:
+        if len(img.shape) == 2:
+            return img, None
+        if img.shape[2] == 4:
+            alpha = img[:, :, 3]
+            bgr = img[:, :, :3]
+            gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
+            return gray, alpha
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        return gray, None
+    except Exception:
+        return None, None
+
+
+def _analyze_embedded_image_profile(img: "np.ndarray") -> Dict[str, object]:
+    default = {
+        "kind": "generic",
+        "line_art": False,
+        "formula_like": False,
+        "dark_ratio": 0.0,
+        "ink_fill_ratio": 1.0,
+        "aspect_ratio": 1.0,
+        "width_px": 0,
+        "height_px": 0,
+    }
+    gray, alpha = _embedded_image_to_gray_alpha(img)
+    if gray is None or np is None or cv2 is None:
+        return default
+
+    try:
+        h_px, w_px = gray.shape[:2]
+        if h_px <= 0 or w_px <= 0:
+            return default
+        work = cv2.GaussianBlur(gray, (3, 3), 0)
+        _, mask = cv2.threshold(work, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+        if alpha is not None and int(np.max(alpha)) > 0:
+            _, alpha_mask = cv2.threshold(alpha, 10, 255, cv2.THRESH_BINARY)
+            mask = cv2.bitwise_and(mask, alpha_mask)
+        dark = (mask > 0)
+        total_px = max(1, int(dark.size))
+        dark_px = int(np.count_nonzero(dark))
+        dark_ratio = float(dark_px) / float(total_px)
+        ys, xs = np.nonzero(dark)
+        bbox_fill = 1.0
+        if len(xs) > 0 and len(ys) > 0:
+            bbox_w = int(xs.max() - xs.min() + 1)
+            bbox_h = int(ys.max() - ys.min() + 1)
+            bbox_area = max(1, bbox_w * bbox_h)
+            bbox_fill = float(dark_px) / float(bbox_area)
+        aspect = float(w_px) / float(max(1, h_px))
+        line_art = (
+            dark_ratio > 0.0
+            and dark_ratio <= float(IMAGE_CONTOUR_LINEART_DARK_RATIO_MAX)
+            and bbox_fill <= float(IMAGE_CONTOUR_LINEART_INK_FILL_MAX)
+        )
+        formula_like = bool(
+            line_art
+            and aspect >= float(IMAGE_CONTOUR_FORMULA_ASPECT_MIN)
+            and h_px <= int(IMAGE_CONTOUR_FORMULA_MAX_HEIGHT_PX)
+        )
+        return {
+            "kind": "formula" if formula_like else ("lineart" if line_art else "generic"),
+            "line_art": bool(line_art),
+            "formula_like": bool(formula_like),
+            "dark_ratio": float(dark_ratio),
+            "ink_fill_ratio": float(bbox_fill),
+            "aspect_ratio": float(aspect),
+            "width_px": int(w_px),
+            "height_px": int(h_px),
+        }
+    except Exception:
+        return default
+
+
+def _extract_image_centerline_paths_px_autotrace(
+    img: "np.ndarray",
+    *,
+    min_component_px: int,
+    min_path_px: float,
+    max_paths: int,
+    curve_step_px: float,
+    rdp_px: float,
+    close_kernel: Tuple[int, int],
+) -> List[List[Tuple[float, float]]]:
+    if cv2 is None or np is None or img is None:
+        return []
+    autotrace_exe = _resolve_autotrace_executable()
+    if autotrace_exe is None:
+        return []
+
+    gray, alpha = _embedded_image_to_gray_alpha(img)
+    if gray is None:
+        return []
+
+    try:
+        gray = cv2.GaussianBlur(gray, (3, 3), 0)
+        _, mask = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+        if alpha is not None and int(np.max(alpha)) > 0:
+            _, alpha_mask = cv2.threshold(alpha, 10, 255, cv2.THRESH_BINARY)
+            mask = cv2.bitwise_and(mask, alpha_mask)
+        kx = max(1, int(close_kernel[0]))
+        ky = max(1, int(close_kernel[1]))
+        kernel = np.ones((ky, kx), dtype=np.uint8)
+        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=1)
+        comp = (mask > 0).astype(np.uint8)
+        if int(np.count_nonzero(comp)) <= 0:
+            return []
+        min_comp = max(1, int(min_component_px))
+        if min_comp > 1:
+            num, labels, stats, _ = cv2.connectedComponentsWithStats(comp, connectivity=8)
+            cleaned = np.zeros_like(comp, dtype=np.uint8)
+            for i in range(1, int(num)):
+                if int(stats[i, cv2.CC_STAT_AREA]) >= min_comp:
+                    cleaned[labels == i] = 1
+            comp = cleaned
+        if int(np.count_nonzero(comp)) <= 0:
+            return []
+        binary = np.where(comp > 0, 0, 255).astype(np.uint8)
+        raw = _run_autotrace_centerline_on_binary(
+            binary,
+            autotrace_exe=autotrace_exe,
+            error_threshold=float(HANDWRITING_SINGLELINE_TTF_AUTOTRACE_ERROR_THRESHOLD),
+            filter_iterations=int(HANDWRITING_SINGLELINE_TTF_AUTOTRACE_FILTER_ITERATIONS),
+            curve_step_px=float(curve_step_px),
+        )
+    except Exception:
+        return []
+
+    if not raw:
+        return []
+
+    out: List[List[Tuple[float, float]]] = []
+    cap = max(1, int(max_paths))
+    min_len_px = max(0.0, float(min_path_px))
+    simplify_eps_px = max(0.10, min(1.1, float(curve_step_px) * 0.28))
+    rdp_eps_px = max(0.0, float(rdp_px))
+    for poly in raw:
+        if len(poly) < 2:
+            continue
+        clean = simplify_polyline(poly, eps=simplify_eps_px)
+        if len(clean) >= 3 and rdp_eps_px > 0.0:
+            clean = rdp_simplify_polyline(clean, eps=max(0.08, rdp_eps_px * 0.35))
+        if len(clean) < 2:
+            continue
+        if polyline_length(clean) < min_len_px:
+            continue
+        out.append(clean)
+        if len(out) >= cap:
+            break
+    return out
+
+
 def _extract_image_centerline_paths_px(
     img: "np.ndarray",
     *,
@@ -1090,30 +1269,73 @@ def extract_image_contour_items(
                     mm_per_px_x = w_mm / max(1.0, float(w_px - 1))
                     mm_per_px_y = h_mm / max(1.0, float(h_px - 1))
                     mm_per_px = max(mm_per_px_x, mm_per_px_y)
+                    profile = _analyze_embedded_image_profile(img)
+                    profile_kind = str(profile.get("kind", "generic"))
                     min_path_mm = max(
                         float(IMAGE_CONTOUR_MIN_PATH_MM),
                         float(IMAGE_CONTOUR_HANDWRITING_MIN_PATH_MM) if HANDWRITING_TEXT_ENABLED else 0.0,
                     )
-                    min_path_px = max(1.0, min_path_mm / max(1e-9, mm_per_px))
                     simplify_eps_mm = max(float(IMAGE_CONTOUR_MM_SIMPLIFY_EPS), mm_per_px * 0.95)
                     tiny_bbox_mm = 1.10 if HANDWRITING_TEXT_ENABLED else 0.65
+                    center_min_component_px = int(IMAGE_CONTOUR_CENTERLINE_MIN_COMPONENT_PX)
+                    center_rdp_px = float(IMAGE_CONTOUR_CENTERLINE_RDP_PX)
+                    center_curve_step_px = float(HANDWRITING_SINGLELINE_TTF_AUTOTRACE_CURVE_STEP_PX)
+                    post_rdp_eps_mm = 0.16
+                    prefer_autotrace = False
+
+                    if HANDWRITING_TEXT_ENABLED and bool(profile.get("line_art", False)):
+                        prefer_autotrace = bool(IMAGE_CONTOUR_LINEART_AUTOTRACE)
+                        if profile_kind == "formula":
+                            min_path_mm = min(min_path_mm, float(IMAGE_CONTOUR_FORMULA_MIN_PATH_MM))
+                            simplify_eps_mm = min(simplify_eps_mm, float(IMAGE_CONTOUR_FORMULA_SIMPLIFY_MM))
+                            tiny_bbox_mm = min(tiny_bbox_mm, float(IMAGE_CONTOUR_FORMULA_TINY_BBOX_MM))
+                            center_min_component_px = min(center_min_component_px, int(IMAGE_CONTOUR_FORMULA_MIN_COMPONENT_PX))
+                            center_rdp_px = min(center_rdp_px, float(IMAGE_CONTOUR_FORMULA_RDP_PX))
+                            center_curve_step_px = min(center_curve_step_px, 0.50)
+                            post_rdp_eps_mm = 0.06
+                        else:
+                            min_path_mm = min(min_path_mm, float(IMAGE_CONTOUR_LINEART_MIN_PATH_MM))
+                            simplify_eps_mm = min(simplify_eps_mm, float(IMAGE_CONTOUR_LINEART_SIMPLIFY_MM))
+                            tiny_bbox_mm = min(tiny_bbox_mm, float(IMAGE_CONTOUR_LINEART_TINY_BBOX_MM))
+                            center_min_component_px = min(center_min_component_px, int(IMAGE_CONTOUR_LINEART_MIN_COMPONENT_PX))
+                            center_rdp_px = min(center_rdp_px, float(IMAGE_CONTOUR_LINEART_RDP_PX))
+                            center_curve_step_px = min(center_curve_step_px, 0.60)
+                            post_rdp_eps_mm = 0.10
+                    min_path_px = max(0.25, min_path_mm / max(1e-9, mm_per_px))
 
                     mode = (IMAGE_CONTOUR_VECTORIZE_MODE or "centerline").strip().lower()
                     if mode not in {"edge", "centerline", "auto"}:
                         mode = "centerline"
+                    if HANDWRITING_TEXT_ENABLED and profile_kind == "formula":
+                        # Printed formulas survive badly after centerline skeletonization:
+                        # symbols fragment into unreadable "maze" strokes. Prefer edge
+                        # contours for formula-like raster blocks so equations stay legible.
+                        mode = "edge"
 
                     px_centerlines: List[List[Tuple[float, float]]] = []
                     if mode in {"centerline", "auto"}:
                         center_cap = int(IMAGE_CONTOUR_CENTERLINE_MAX_PATHS_PER_IMAGE)
                         if HANDWRITING_TEXT_ENABLED:
                             center_cap = min(center_cap, 1100)
-                        px_centerlines = _extract_image_centerline_paths_px(
-                            img,
-                            min_component_px=int(IMAGE_CONTOUR_CENTERLINE_MIN_COMPONENT_PX),
-                            min_path_px=min_path_px,
-                            max_paths=center_cap,
-                            rdp_px=float(IMAGE_CONTOUR_CENTERLINE_RDP_PX),
-                        )
+                        if HANDWRITING_TEXT_ENABLED and prefer_autotrace:
+                            close_kernel = (3, 1) if profile_kind == "formula" else (2, 2)
+                            px_centerlines = _extract_image_centerline_paths_px_autotrace(
+                                img,
+                                min_component_px=center_min_component_px,
+                                min_path_px=min_path_px,
+                                max_paths=center_cap,
+                                curve_step_px=center_curve_step_px,
+                                rdp_px=center_rdp_px,
+                                close_kernel=close_kernel,
+                            )
+                        if not px_centerlines:
+                            px_centerlines = _extract_image_centerline_paths_px(
+                                img,
+                                min_component_px=center_min_component_px,
+                                min_path_px=min_path_px,
+                                max_paths=center_cap,
+                                rdp_px=center_rdp_px,
+                            )
 
                     px_edge_polys: List[List[Tuple[float, float]]] = []
                     if mode == "edge" or (mode == "auto" and not px_centerlines):
@@ -1133,7 +1355,7 @@ def extract_image_contour_items(
                             mm_poly.append((tx * scale, ty * scale))
                         mm_poly = simplify_polyline(mm_poly, eps=simplify_eps_mm)
                         if len(mm_poly) >= 3:
-                            mm_poly = rdp_simplify_polyline(mm_poly, eps=max(0.16, simplify_eps_mm * 1.35))
+                            mm_poly = rdp_simplify_polyline(mm_poly, eps=max(post_rdp_eps_mm, simplify_eps_mm * 1.15))
                         if len(mm_poly) < 2:
                             continue
                         xs = [p[0] for p in mm_poly]

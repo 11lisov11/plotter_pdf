@@ -5,37 +5,23 @@
     {
       "font_label": "Marck Script",
       "pages_ok": 17,
-      "avg_layout_similarity": 0.955255,
-      "min_layout_similarity": 0.933821,
-      "avg_score": 0.959868,
-      "doc_score": 0.978545
-    },
-    {
-      "font_label": "Bad Script",
-      "pages_ok": 17,
-      "avg_layout_similarity": 0.952694,
-      "min_layout_similarity": 0.909855,
-      "avg_score": 0.959217,
-      "doc_score": 0.977414
-    },
-    {
-      "font_label": "Caveat",
-      "pages_ok": 17,
-      "avg_layout_similarity": 0.957425,
-      "min_layout_similarity": 0.935804,
-      "avg_score": 0.962073,
-      "doc_score": 0.980789
+      "avg_layout_similarity": 0.954208,
+      "min_layout_similarity": 0.935131,
+      "avg_score": 1.065941,
+      "doc_score": 1.084644
     },
     {
       "font_label": "Neucha",
       "pages_ok": 17,
-      "avg_layout_similarity": 0.958006,
-      "min_layout_similarity": 0.93473,
-      "avg_score": 0.970402,
-      "doc_score": 0.989097
+      "avg_layout_similarity": 0.956741,
+      "min_layout_similarity": 0.933692,
+      "avg_score": 1.120817,
+      "doc_score": 1.139491
     }
   ],
   "pages_ok": 17,
   "page_count": 17,
-  "elapsed_s": 48.344
+  "elapsed_s": 1774718620.1526575,
+  "avg_layout_similarity": 0.965989,
+  "min_layout_similarity": 0.946582
 }

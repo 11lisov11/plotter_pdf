@@ -4,8 +4,11 @@ import tempfile
 import unittest
 from unittest import mock
 from pathlib import Path
+import base64
+import io
 
 from src import plotter_pdf_drawer as backend
+from PIL import Image
 
 
 class BackendGeometryTests(unittest.TestCase):
@@ -146,6 +149,106 @@ class BackendGeometryTests(unittest.TestCase):
             backend.IMAGE_TONE_HATCH_ENABLED = old_enabled
             backend.IMAGE_TONE_HATCH_WORD_ONLY = old_word_only
             backend.IMAGE_CONTOUR_MODE = old_mode
+
+    def test_analyze_embedded_image_profile_detects_formula_like_raster(self) -> None:
+        if backend.np is None:
+            self.skipTest("numpy unavailable")
+        img = backend.np.full((48, 420, 3), 255, dtype=backend.np.uint8)
+        img[10:12, 20:380] = 0
+        img[14:30, 60:64] = 0
+        img[14:30, 180:184] = 0
+        img[14:30, 300:304] = 0
+        profile = backend._analyze_embedded_image_profile(img)
+        self.assertEqual(profile.get("kind"), "formula")
+        self.assertTrue(bool(profile.get("line_art")))
+        self.assertTrue(bool(profile.get("formula_like")))
+
+    def test_extract_image_contour_items_handles_leading_decimal_matrix_transform(self) -> None:
+        if backend.cv2 is None or backend.np is None:
+            self.skipTest("opencv/numpy unavailable")
+
+        image = Image.new("RGB", (20, 10), "white")
+        for x in range(2, 18):
+            image.putpixel((x, 5), (0, 0, 0))
+        buf = io.BytesIO()
+        image.save(buf, format="PNG")
+        png_b64 = base64.b64encode(buf.getvalue()).decode("ascii")
+        svg = f"""<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="100mm" height="50mm" viewBox="0 0 100 50">
+  <g transform="matrix(.5,0,0,.5,10,5)">
+    <image width="20" height="10" xlink:href="data:image/png;base64,{png_b64}"/>
+  </g>
+</svg>
+"""
+        old_enabled = backend.IMAGE_CONTOUR_ENABLED
+        old_mode = backend.IMAGE_CONTOUR_MODE
+        old_handwriting = backend.HANDWRITING_TEXT_ENABLED
+        try:
+            backend.IMAGE_CONTOUR_ENABLED = True
+            backend.IMAGE_CONTOUR_MODE = "always"
+            backend.HANDWRITING_TEXT_ENABLED = True
+            with tempfile.TemporaryDirectory() as td:
+                path = Path(td) / "sample.svg"
+                path.write_text(svg, encoding="utf-8")
+                items = backend.extract_image_contour_items(path, logger=lambda *_: None)
+            self.assertTrue(items)
+            bounds = backend.bounds_path_items(items)
+            self.assertIsNotNone(bounds)
+            min_x, max_x, min_y, max_y = bounds
+            self.assertLess(max_x, 30.0)
+            self.assertLess(max_y, 20.0)
+            self.assertGreaterEqual(min_x, 9.0)
+            self.assertGreaterEqual(min_y, 4.0)
+        finally:
+            backend.IMAGE_CONTOUR_ENABLED = old_enabled
+            backend.IMAGE_CONTOUR_MODE = old_mode
+            backend.HANDWRITING_TEXT_ENABLED = old_handwriting
+
+    def test_extract_image_contour_items_prefers_edge_mode_for_formula_like_raster(self) -> None:
+        image = Image.new("RGB", (4, 4), "white")
+        image.putpixel((1, 1), (0, 0, 0))
+        buf = io.BytesIO()
+        image.save(buf, format="PNG")
+        png_b64 = base64.b64encode(buf.getvalue()).decode("ascii")
+        svg = f"""<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="10mm" height="10mm" viewBox="0 0 10 10">
+  <image width="4" height="4" xlink:href="data:image/png;base64,{png_b64}"/>
+</svg>
+"""
+        old_enabled = backend.IMAGE_CONTOUR_ENABLED
+        old_mode = backend.IMAGE_CONTOUR_MODE
+        old_handwriting = backend.HANDWRITING_TEXT_ENABLED
+        try:
+            backend.IMAGE_CONTOUR_ENABLED = True
+            backend.IMAGE_CONTOUR_MODE = "always"
+            backend.HANDWRITING_TEXT_ENABLED = True
+            with tempfile.TemporaryDirectory() as td:
+                path = Path(td) / "sample.svg"
+                path.write_text(svg, encoding="utf-8")
+                with (
+                    mock.patch.object(
+                        backend,
+                        "_analyze_embedded_image_profile",
+                        return_value={"kind": "formula", "line_art": True, "formula_like": True},
+                    ),
+                    mock.patch.object(backend, "_extract_image_centerline_paths_px", return_value=[]),
+                    mock.patch.object(backend, "_extract_image_centerline_paths_px_autotrace", return_value=[]),
+                    mock.patch.object(
+                        backend,
+                        "_extract_image_edge_contours_px",
+                        return_value=[[(0.0, 0.0), (3.0, 0.0), (3.0, 3.0), (0.0, 3.0)]],
+                    ) as edge_mock,
+                ):
+                    items = backend.extract_image_contour_items(path, logger=lambda *_: None)
+            self.assertTrue(edge_mock.called)
+            self.assertTrue(items)
+            self.assertTrue(items[0].closed)
+        finally:
+            backend.IMAGE_CONTOUR_ENABLED = old_enabled
+            backend.IMAGE_CONTOUR_MODE = old_mode
+            backend.HANDWRITING_TEXT_ENABLED = old_handwriting
 
     def test_cluster_small_fill_items_for_single_stroke_groups_nested_contours(self) -> None:
         items = [

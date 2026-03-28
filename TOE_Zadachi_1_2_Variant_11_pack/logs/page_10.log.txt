@@ -1,0 +1,79 @@
+Text render mode: handwriting=on font='C:\plotter_pdf\data\fonts\Neucha.ttf'; image_contours=always
+Handwriting mode: Cyrillic text profile tokens=76, short=32%, digits=18%, long=47%, style=paragraph.
+Handwriting mode: Cyrillic detected, trying TTF single-line pipeline first ('C:\plotter_pdf\data\fonts\Neucha.ttf').
+TTF centerline postprocess: 3 -> 3 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '10' -> 3 stroke(s), thr=160, cand=8, font=Neucha.ttf, size=14.04
+TTF centerline postprocess: 22 -> 20 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Рисунок 1.14' -> 20 stroke(s), thr=160, cand=8, font=Neucha.ttf, size=12.00
+TTF centerline postprocess: 1 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '-' -> 1 stroke(s), thr=160, cand=8, font=Neucha.ttf, size=12.00
+TTF centerline postprocess: 84 -> 50 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Схема при подавленных незави' -> 50 stroke(s), thr=64, cand=8, font=Neucha.ttf, size=12.00
+TTF centerline postprocess: 17 -> 9 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '2) Найдем' -> 9 stroke(s), thr=128, cand=8, font=Neucha.ttf, size=12.00
+TTF centerline postprocess: 56 -> 36 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'эквивалентное сопротивление ' -> 36 stroke(s), thr=129, cand=8, font=Neucha.ttf, size=12.00
+TTF centerline postprocess: 127 -> 76 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'После преобразований получае' -> 76 stroke(s), thr=64, cand=8, font=Neucha.ttf, size=12.00
+TTF centerline postprocess: 20 -> 15 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Рисунок 1.15' -> 15 stroke(s), thr=224, cand=8, font=Neucha.ttf, size=12.00
+TTF centerline postprocess: 1 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '-' -> 1 stroke(s), thr=160, cand=8, font=Neucha.ttf, size=12.00
+TTF centerline postprocess: 54 -> 36 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Преобразованная расчетная сх' -> 36 stroke(s), thr=96, cand=8, font=Neucha.ttf, size=12.00
+TTF centerline postprocess: 94 -> 55 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '3) Найдем ток I1 по схеме эк' -> 55 stroke(s), thr=129, cand=8, font=Neucha.ttf, size=12.00
+Handwriting TTF centerline mode: replaced 11 text node(s), generated 302 stroke path(s) using 'Neucha.ttf'.
+Text nodes after stroke-font replacement: 34
+Handwriting mode: applied font 'C:\plotter_pdf\data\fonts\Neucha.ttf' to 34 text node(s).
+Text->path conversion #1: inkscape.exe --batch-process --actions=select-all;export-text-to-path --export-type=svg --export-overwrite --export-filename=C:\plotter_pdf\_tmp\tmpfu8ojhvd\source.svg C:\plotter_pdf\_tmp\tmpfu8ojhvd\source.svg
+Text converted to SVG paths.
+Text nodes after conversion: 0
+Extracting paths from SVG ...
+Image contour tracing: +81 path(s) from embedded raster.
+Image vectorization mode: centerline (added 81 path(s), simplify=0.34 mm).
+Image contour tracing: +51 path(s) from embedded raster.
+Image vectorization mode: centerline (added 51 path(s), simplify=0.34 mm).
+Image contour tracing: +55 path(s) from embedded raster.
+Image vectorization mode: centerline (added 55 path(s), simplify=0.34 mm).
+Image contour tracing: +44 path(s) from embedded raster.
+Image vectorization mode: centerline (added 44 path(s), simplify=0.34 mm).
+Image contour tracing: +101 path(s) from embedded raster.
+Image vectorization mode: centerline (added 101 path(s), simplify=0.34 mm).
+Image contour tracing: +27 path(s) from embedded raster.
+Image vectorization mode: centerline (added 27 path(s), simplify=0.08 mm).
+Image contour tracing: +29 path(s) from embedded raster.
+Image vectorization mode: centerline (added 29 path(s), simplify=0.08 mm).
+Image contour tracing: total +388 path(s).
+Raw geometry bounds: x(36.305, 191.195) y(13.777, 238.058)
+SVG page: 210.016 x 297.011 mm
+Auto trim: no outer border detected.
+Applied content area crop: x(20.5,205.0) y(10.0,292.0) dropped segments=0
+Bounds after content margin crop: x(36.305, 191.195) y(13.777, 238.058)
+SVG geometry: paths=690, segments=5247.
+Source bounds: x(36.305, 191.195) y(13.777, 238.058)
+Fit to work area: scale=1.1621, translate=(-42.190,-301.331), from (36.305, 13.777)-(191.195, 238.058)
+Stitch: polylines 690 -> 618 (eps=0.080 mm, gap_eps=0.150 mm, angle<=20.0 deg)
+Reorder: 618 polylines ordered (nearest-end).
+Pencil naturalization: adjusted 492/618 stroke(s).
+Pencil naturalization segments: 5247 -> 4952
+Polyline optimization: 690 -> 618
+Segment counts: source=5247, fitted=5247, clipped=5247
+Drawable segments after clip: 5247 (100.0% of source)
+Prepared bounds: x(0.000, 179.965) y(-285.315, -24.633)
+Estimated draw length: 3.93 m
+Pencil mode: base_z=11.900, wear=0.000 mm, z_comp_start=0.000, z_down_start=11.900, dyn(rate=0.0100 mm/m, comp=1.000, slope=0.0100 Zmm/m, max=0.800), est_remaining_to_sharpen=120.0 m (wear=120.0, interval=inf)
+Applying pen-up / pen-down ...
+G-code stats: lines=6769, draw=6119, travel=216, bounds=0.000..179.965 x, -285.315..0.000 y
+Preflight: ok: lines=6769, draw=6119, travel=216, ratio=0.04
+Saved file stats: lines=6769, draw=6119, travel=216, bounds=0.000..179.965 x, -285.315..0.000 y
+Saved: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_11_pack\_candidates\page_10\neucha\page_10.nc
+Preview SVG: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_11_pack\_candidates\page_10\neucha\page_10.svg
+Preview PDF: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_11_pack\_candidates\page_10\neucha\page_10.pdf
+source_profile=images=12; texts=28; paths=36
+selected_primary_font=Neucha
+selected_font=Neucha
+selected_variant=always
+selected_contours=always
+selected_score=1.327150
+quality_gate=accepted=True; dup_ok=True; tiny_ok=True; mask_iou_ok=True

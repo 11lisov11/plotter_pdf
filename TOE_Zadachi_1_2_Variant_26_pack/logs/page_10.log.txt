@@ -1,0 +1,35 @@
+Render mode: handwriting; ExactGeometry=off; Handwriting=on
+Sheet 210.0x297.0 mm is larger than workspace 180.0x280.0 mm. Using the overlapped sheet/workspace window.
+Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-295.000,-15.000), sheet_bounds x(0.000,210.000) y(-295.000,2.000), sheet=a4, anchor=lower_left, offset=(0.00,0.00)
+Method3 page preview: pages=1..1, body_font='C:\plotter_pdf\data\fonts\Neucha.ttf', formula_font='Times New Roman'.
+Source pages: 1, selected: 1
+Method3 centerline: threshold=32, candidates=9, paths=628
+Method3 cleanup: removed left-column text paths=19
+Method3 micro-segment prune: segments=5682->5471, min=0.08 mm
+Text render mode: handwriting=on font='C:\plotter_pdf\data\fonts\Neucha.ttf'; image_contours=always
+Extracting paths from SVG ...
+Raw geometry bounds: x(28.908, 191.304) y(13.250, 75.232)
+SVG page: 210.034 x 297.059 mm
+Auto trim: no outer border detected.
+SVG geometry: paths=560, segments=5471.
+Source bounds: x(28.908, 191.304) y(13.250, 75.232)
+Fit to work area: scale=1.1084, translate=(-32.041,-204.037), from (28.908, 13.250)-(191.304, 75.232)
+Reorder: source order preserved (560 polylines).
+Handwriting fallback: skipping word-merge/smoothing for contour-only text source.
+Segment counts: source=5471, fitted=5471, clipped=5471
+Drawable segments after clip: 5471 (100.0% of source)
+Prepared bounds: x(0.000, 180.000) y(-189.351, -120.649)
+Estimated draw length: 1.80 m
+Pencil mode: base_z=11.900, wear=0.000 mm, z_comp_start=0.000, z_down_start=11.900, dyn(rate=0.0100 mm/m, comp=1.000, slope=0.0100 Zmm/m, max=0.800), est_remaining_to_sharpen=120.0 m (wear=120.0, interval=inf)
+Applying pen-up / pen-down ...
+G-code stats: lines=6788, draw=6393, travel=131, bounds=0.000..180.000 x, -189.351..0.000 y
+Preflight: ok: lines=6788, draw=6393, travel=131, ratio=0.02
+Saved file stats: lines=6788, draw=6393, travel=131, bounds=0.000..180.000 x, -189.351..0.000 y
+Saved: C:\plotter_pdf\_tmp\latest_preview.nc
+source_profile=images=4; texts=16; paths=19
+selected_primary_font=Neucha
+selected_font=Neucha
+selected_variant=raster_safe
+selected_contours=always
+selected_score=1.250630
+quality_gate=accepted=False; dup_ok=True; tiny_ok=False; mask_iou_ok=True

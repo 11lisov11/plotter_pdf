@@ -313,7 +313,7 @@ def _rewrite_pdf_page_text_to_handwritten_pdf(
     page_index: int,
     font_path: Path,
     out_pdf: Path,
-    render_dpi: int = 300,
+    render_dpi: int = 450,
 ) -> None:
     doc = fitz.open(source_pdf)
     page = doc[page_index]
@@ -423,7 +423,7 @@ def _prepare_toe_raster_fallback(
             "pdf": str(pdf_path),
             "nc": str(nc_path),
             "gcode": str(gcode_path),
-            "notes": "fallback=raster_rewrite",
+            "notes": "fallback=raster_rewrite_handdraw",
         }
 
 

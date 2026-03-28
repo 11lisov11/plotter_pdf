@@ -1,7 +1,8 @@
 reused existing candidate artifacts
+source_profile=images=5; texts=18; paths=22
 selected_primary_font=Neucha
 selected_font=Neucha
 selected_variant=always
 selected_contours=always
-selected_score=1.016977
-quality_gate=accepted=True; dup_ok=True; tiny_ok=True
+selected_score=1.387298
+quality_gate=accepted=True; dup_ok=True; tiny_ok=True; mask_iou_ok=True

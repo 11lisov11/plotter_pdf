@@ -7,7 +7,7 @@ from typing import List, Sequence, Tuple
 Transform = Tuple[float, float, float, float, float, float]
 Point = Tuple[float, float]
 
-_FLOAT_RE = re.compile(r"[+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?")
+_FLOAT_RE = re.compile(r"[+-]?(?:(?:\d+\.\d*)|(?:\.\d+)|(?:\d+))(?:[eE][+-]?\d+)?")
 _TRANSFORM_RE = re.compile(r"(\w+)\(([^)]*)\)")
 
 

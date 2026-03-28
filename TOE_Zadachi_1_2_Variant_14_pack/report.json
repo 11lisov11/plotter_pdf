@@ -1,0 +1,3401 @@
+{
+  "source_pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14.pdf",
+  "package_dir": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack",
+  "kind": "toe_handwriting",
+  "page_count": 18,
+  "fonts_evaluated": [
+    {
+      "font_label": "Neucha",
+      "pages_ok": 18,
+      "avg_layout_similarity": 0.960176,
+      "min_layout_similarity": 0.932406,
+      "avg_score": 1.207447,
+      "doc_score": 1.226095
+    }
+  ],
+  "selected_primary_font": "Neucha",
+  "generated_at_epoch": 1774724215.1018593,
+  "items": [
+    {
+      "page_index": 1,
+      "selected_font": "Neucha",
+      "selected_variant": "always",
+      "selected_contours_mode": "always",
+      "selected_layout_similarity": 0.948521,
+      "selected_score": 0.984107,
+      "selected_quality_gate": {
+        "max_duplicate_ratio": 0.002,
+        "max_tiny_ratio": 0.015,
+        "mask_iou_min": 0.0,
+        "duplicate_ratio_ok": true,
+        "tiny_ratio_ok": true,
+        "mask_iou_ok": true,
+        "accepted": true
+      },
+      "selected_overlay_metrics": {
+        "mask_iou": 0.490265,
+        "mask_recall": 0.570079,
+        "mask_precision": 0.777865
+      },
+      "source_profile": {
+        "image_count": 1,
+        "text_count": 131,
+        "path_count": 362,
+        "image_heavy": false
+      },
+      "candidates": [
+        {
+          "item": "page_01",
+          "ok": true,
+          "message": "reused existing candidate",
+          "logs": [
+            "reused existing candidate artifacts"
+          ],
+          "font_label": "Neucha",
+          "font_path": "C:\\plotter_pdf\\data\\fonts\\Neucha.ttf",
+          "layout_similarity": 0.948521,
+          "metrics": {
+            "draw_length_mm": 9168.699,
+            "segments_total": 13338,
+            "segments_duplicate": 0,
+            "bounds": {
+              "x_min": 0.0686,
+              "x_max": 179.8528,
+              "y_min": -294.897,
+              "y_max": -15.0
+            }
+          },
+          "svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_01\\neucha\\page_01.svg",
+          "pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_01\\neucha\\page_01.pdf",
+          "nc": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_01\\neucha\\page_01.nc",
+          "gcode": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_01\\neucha\\page_01.gcode",
+          "notes": "reused_existing",
+          "font_slug": "neucha",
+          "variant_label": "always",
+          "image_contours_mode": "always",
+          "page_index": 1,
+          "source_image_count": 1,
+          "source_text_count": 131,
+          "source_path_count": 362,
+          "quality_metrics": {
+            "polylines": 351,
+            "segments_total": 13338,
+            "segments_duplicate": 0,
+            "segments_duplicate_ratio": 0.0,
+            "segments_tiny_lt_0_12mm": 165,
+            "segments_tiny_ratio": 0.012370670265407108,
+            "segments_short_lt_0_25mm": 956,
+            "segments_short_ratio": 0.07167491378017694,
+            "draw_length_mm": 9168.698720208069,
+            "bounds": {
+              "x_min": 0.0686,
+              "x_max": 179.8528,
+              "y_min": -294.897,
+              "y_max": -15.0
+            }
+          },
+          "overlay_metrics": {
+            "mask_iou": 0.490265,
+            "mask_recall": 0.570079,
+            "mask_precision": 0.777865
+          },
+          "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_01\\neucha\\page_01_overlay.png",
+          "quality_gate": {
+            "max_duplicate_ratio": 0.002,
+            "max_tiny_ratio": 0.015,
+            "mask_iou_min": 0.0,
+            "duplicate_ratio_ok": true,
+            "tiny_ratio_ok": true,
+            "mask_iou_ok": true,
+            "accepted": true
+          },
+          "score": 0.984107
+        },
+        {
+          "item": "page_01",
+          "ok": true,
+          "message": "reused existing candidate",
+          "logs": [
+            "reused existing candidate artifacts"
+          ],
+          "font_label": "Neucha",
+          "font_path": "C:\\plotter_pdf\\data\\fonts\\Neucha.ttf",
+          "layout_similarity": 0.941541,
+          "metrics": {
+            "draw_length_mm": 7598.132,
+            "segments_total": 12303,
+            "segments_duplicate": 0,
+            "bounds": {
+              "x_min": 0.0705,
+              "x_max": 179.8528,
+              "y_min": -294.897,
+              "y_max": -15.0
+            }
+          },
+          "svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_01\\neucha__contours_off\\page_01.svg",
+          "pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_01\\neucha__contours_off\\page_01.pdf",
+          "nc": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_01\\neucha__contours_off\\page_01.nc",
+          "gcode": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_01\\neucha__contours_off\\page_01.gcode",
+          "notes": "reused_existing",
+          "font_slug": "neucha",
+          "variant_label": "contours_off",
+          "image_contours_mode": "off",
+          "page_index": 1,
+          "source_image_count": 1,
+          "source_text_count": 131,
+          "source_path_count": 362,
+          "quality_metrics": {
+            "polylines": 291,
+            "segments_total": 12303,
+            "segments_duplicate": 0,
+            "segments_duplicate_ratio": 0.0,
+            "segments_tiny_lt_0_12mm": 170,
+            "segments_tiny_ratio": 0.013817768024059172,
+            "segments_short_lt_0_25mm": 942,
+            "segments_short_ratio": 0.07656669105096318,
+            "draw_length_mm": 7598.132057412941,
+            "bounds": {
+              "x_min": 0.0705,
+              "x_max": 179.8528,
+              "y_min": -294.897,
+              "y_max": -15.0
+            }
+          },
+          "overlay_metrics": {
+            "mask_iou": 0.37006,
+            "mask_recall": 0.429798,
+            "mask_precision": 0.72696
+          },
+          "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_01\\neucha__contours_off\\page_01_overlay.png",
+          "quality_gate": {
+            "max_duplicate_ratio": 0.002,
+            "max_tiny_ratio": 0.015,
+            "mask_iou_min": 0.0,
+            "duplicate_ratio_ok": true,
+            "tiny_ratio_ok": true,
+            "mask_iou_ok": true,
+            "accepted": true
+          },
+          "score": 0.967191
+        }
+      ]
+    },
+    {
+      "page_index": 2,
+      "selected_font": "Neucha",
+      "selected_variant": "always",
+      "selected_contours_mode": "always",
+      "selected_layout_similarity": 0.972264,
+      "selected_score": 1.314551,
+      "selected_quality_gate": {
+        "max_duplicate_ratio": 0.002,
+        "max_tiny_ratio": 0.015,
+        "mask_iou_min": 0.1,
+        "duplicate_ratio_ok": true,
+        "tiny_ratio_ok": true,
+        "mask_iou_ok": true,
+        "accepted": true
+      },
+      "selected_overlay_metrics": {
+        "mask_iou": 0.373279,
+        "mask_recall": 0.456591,
+        "mask_precision": 0.671676
+      },
+      "source_profile": {
+        "image_count": 7,
+        "text_count": 36,
+        "path_count": 53,
+        "image_heavy": true
+      },
+      "candidates": [
+        {
+          "item": "page_02",
+          "ok": true,
+          "message": "reused existing candidate",
+          "logs": [
+            "reused existing candidate artifacts"
+          ],
+          "font_label": "Neucha",
+          "font_path": "C:\\plotter_pdf\\data\\fonts\\Neucha.ttf",
+          "layout_similarity": 0.972264,
+          "metrics": {
+            "draw_length_mm": 4138.477,
+            "segments_total": 5140,
+            "segments_duplicate": 0,
+            "bounds": {
+              "x_min": 0.4211,
+              "x_max": 179.5572,
+              "y_min": -294.9745,
+              "y_max": -15.0
+            }
+          },
+          "svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_02\\neucha\\page_02.svg",
+          "pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_02\\neucha\\page_02.pdf",
+          "nc": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_02\\neucha\\page_02.nc",
+          "gcode": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_02\\neucha\\page_02.gcode",
+          "notes": "reused_existing",
+          "font_slug": "neucha",
+          "variant_label": "always",
+          "image_contours_mode": "always",
+          "page_index": 2,
+          "source_image_count": 7,
+          "source_text_count": 36,
+          "source_path_count": 53,
+          "quality_metrics": {
+            "polylines": 220,
+            "segments_total": 5140,
+            "segments_duplicate": 0,
+            "segments_duplicate_ratio": 0.0,
+            "segments_tiny_lt_0_12mm": 52,
+            "segments_tiny_ratio": 0.010116731517509728,
+            "segments_short_lt_0_25mm": 288,
+            "segments_short_ratio": 0.05603112840466926,
+            "draw_length_mm": 4138.477468880621,
+            "bounds": {
+              "x_min": 0.4211,
+              "x_max": 179.5572,
+              "y_min": -294.9745,
+              "y_max": -15.0
+            }
+          },
+          "overlay_metrics": {
+            "mask_iou": 0.373279,
+            "mask_recall": 0.456591,
+            "mask_precision": 0.671676
+          },
+          "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_02\\neucha\\page_02_overlay.png",
+          "quality_gate": {
+            "max_duplicate_ratio": 0.002,
+            "max_tiny_ratio": 0.015,
+            "mask_iou_min": 0.1,
+            "duplicate_ratio_ok": true,
+            "tiny_ratio_ok": true,
+            "mask_iou_ok": true,
+            "accepted": true
+          },
+          "score": 1.314551
+        },
+        {
+          "ok": true,
+          "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_vector.pdf",
+          "logs": [
+            "Render mode: handwriting; ExactGeometry=off; Handwriting=on",
+            "Sheet 210.0x297.0 mm is larger than workspace 180.0x280.0 mm. Using the overlapped sheet/workspace window.",
+            "Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-295.000,-15.000), sheet_bounds x(0.000,210.000) y(-295.000,2.000), sheet=a4, anchor=lower_left, offset=(0.00,0.00)",
+            "Method3 page preview: pages=1..1, body_font='C:\\plotter_pdf\\data\\fonts\\Neucha.ttf', formula_font='Times New Roman'.",
+            "Source pages: 1, selected: 1",
+            "Method3 centerline: threshold=192, candidates=9, paths=1237",
+            "Method3 graphics centerline: paths=62",
+            "Method3 layer split: text_paths=1210, graphics_centerline=62, graphics_outline=49, graphics_accents=15",
+            "Method3 cleanup: removed left-column text paths=19",
+            "Method3 detail thick-lines multipass: candidates=36, extra_passes=71",
+            "Method3 micro-segment prune: segments=12233->11783, min=0.08 mm",
+            "Text render mode: handwriting=on font='C:\\plotter_pdf\\data\\fonts\\Neucha.ttf'; image_contours=always",
+            "Extracting paths from SVG ...",
+            "Raw geometry bounds: x(30.001, 191.678) y(13.238, 274.381)",
+            "SVG page: 210.034 x 297.059 mm",
+            "Auto trim: no outer border detected.",
+            "SVG geometry: paths=992, segments=11764.",
+            "Source bounds: x(30.001, 191.678) y(13.238, 274.381)",
+            "Fit to work area: scale=1.0722, translate=(-28.844,-309.194), from (30.001, 13.238)-(191.678, 274.381)",
+            "Segment dedup: dropped 10/11764 retraced segments (0.1%), kept=11754, eps=0.010 mm",
+            "Reorder: source order preserved (996 polylines).",
+            "Handwriting fallback: skipping word-merge/smoothing for contour-only text source.",
+            "Segment counts: source=11764, fitted=11764, clipped=11764",
+            "Drawable segments after clip: 11764 (100.0% of source)",
+            "Prepared bounds: x(3.324, 176.676) y(-295.000, -15.000)",
+            "Estimated draw length: 6.35 m",
+            "Pencil mode: base_z=11.900, wear=0.000 mm, z_comp_start=0.000, z_down_start=11.900, dyn(rate=0.0100 mm/m, comp=1.000, slope=0.0100 Zmm/m, max=0.800), est_remaining_to_sharpen=120.0 m (wear=120.0, interval=inf)",
+            "Applying pen-up / pen-down ...",
+            "G-code stats: lines=15039, draw=13870, travel=389, bounds=0.000..176.676 x, -295.000..0.000 y",
+            "Preflight: ok: lines=15039, draw=13870, travel=389, ratio=0.03",
+            "Saved file stats: lines=15039, draw=13870, travel=389, bounds=0.000..176.676 x, -295.000..0.000 y",
+            "Saved: C:\\plotter_pdf\\_tmp\\latest_preview.nc"
+          ],
+          "font_label": "Neucha",
+          "font_path": "C:\\plotter_pdf\\data\\fonts\\Neucha.ttf",
+          "layout_similarity": 0.963522,
+          "metrics": {
+            "draw_length_mm": 7233.633,
+            "segments_total": 12338,
+            "segments_duplicate": 8,
+            "bounds": {
+              "x_min": 3.324,
+              "x_max": 176.676,
+              "y_min": -295.0,
+              "y_max": -15.0
+            }
+          },
+          "svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_02\\neucha__raster_safe\\page_02__fallback_candidate.svg",
+          "pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_02\\neucha__raster_safe\\page_02__fallback_candidate.pdf",
+          "nc": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_02\\neucha__raster_safe\\page_02__fallback_candidate.nc",
+          "gcode": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_02\\neucha__raster_safe\\page_02__fallback_candidate.gcode",
+          "notes": "fallback=raster_rewrite_handdraw; variant=raster_safe",
+          "font_slug": "neucha",
+          "variant_label": "raster_safe",
+          "image_contours_mode": "always",
+          "page_index": 2,
+          "source_image_count": 7,
+          "source_text_count": 36,
+          "source_path_count": 53,
+          "quality_metrics": {
+            "polylines": 383,
+            "segments_total": 12338,
+            "segments_duplicate": 8,
+            "segments_duplicate_ratio": 0.000648403306856865,
+            "segments_tiny_lt_0_12mm": 1414,
+            "segments_tiny_ratio": 0.11460528448695088,
+            "segments_short_lt_0_25mm": 6344,
+            "segments_short_ratio": 0.5141838223374939,
+            "draw_length_mm": 7233.632969196447,
+            "bounds": {
+              "x_min": 3.324,
+              "x_max": 176.676,
+              "y_min": -295.0,
+              "y_max": -15.0
+            }
+          },
+          "overlay_metrics": {
+            "mask_iou": 0.221165,
+            "mask_recall": 0.3299,
+            "mask_precision": 0.401561
+          },
+          "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_02\\neucha__raster_safe\\page_02_overlay.png",
+          "quality_gate": {
+            "max_duplicate_ratio": 0.002,
+            "max_tiny_ratio": 0.015,
+            "mask_iou_min": 0.1,
+            "duplicate_ratio_ok": true,
+            "tiny_ratio_ok": false,
+            "mask_iou_ok": true,
+            "accepted": false
+          },
+          "score": 1.171466
+        }
+      ]
+    },
+    {
+      "page_index": 3,
+      "selected_font": "Neucha",
+      "selected_variant": "raster_safe",
+      "selected_contours_mode": "always",
+      "selected_layout_similarity": 0.976772,
+      "selected_score": 1.227425,
+      "selected_quality_gate": {
+        "max_duplicate_ratio": 0.002,
+        "max_tiny_ratio": 0.015,
+        "mask_iou_min": 0.1,
+        "duplicate_ratio_ok": true,
+        "tiny_ratio_ok": false,
+        "mask_iou_ok": true,
+        "accepted": false
+      },
+      "selected_overlay_metrics": {
+        "mask_iou": 0.292402,
+        "mask_recall": 0.391853,
+        "mask_precision": 0.53534
+      },
+      "source_profile": {
+        "image_count": 32,
+        "text_count": 41,
+        "path_count": 62,
+        "image_heavy": true
+      },
+      "candidates": [
+        {
+          "item": "page_03",
+          "ok": true,
+          "message": "reused existing candidate",
+          "logs": [
+            "reused existing candidate artifacts"
+          ],
+          "font_label": "Neucha",
+          "font_path": "C:\\plotter_pdf\\data\\fonts\\Neucha.ttf",
+          "layout_similarity": 0.969716,
+          "metrics": {
+            "draw_length_mm": 4825.093,
+            "segments_total": 7593,
+            "segments_duplicate": 0,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 179.9625,
+              "y_min": -256.1368,
+              "y_max": -53.8132
+            }
+          },
+          "svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_03\\neucha\\page_03.svg",
+          "pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_03\\neucha\\page_03.pdf",
+          "nc": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_03\\neucha\\page_03.nc",
+          "gcode": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_03\\neucha\\page_03.gcode",
+          "notes": "reused_existing",
+          "font_slug": "neucha",
+          "variant_label": "always",
+          "image_contours_mode": "always",
+          "page_index": 3,
+          "source_image_count": 32,
+          "source_text_count": 41,
+          "source_path_count": 62,
+          "quality_metrics": {
+            "polylines": 241,
+            "segments_total": 7593,
+            "segments_duplicate": 0,
+            "segments_duplicate_ratio": 0.0,
+            "segments_tiny_lt_0_12mm": 62,
+            "segments_tiny_ratio": 0.008165415514289478,
+            "segments_short_lt_0_25mm": 384,
+            "segments_short_ratio": 0.050572896088502566,
+            "draw_length_mm": 4825.093321841146,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 179.9625,
+              "y_min": -256.1368,
+              "y_max": -53.8132
+            }
+          },
+          "overlay_metrics": {
+            "mask_iou": 0.235711,
+            "mask_recall": 0.395874,
+            "mask_precision": 0.368129
+          },
+          "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_03\\neucha\\page_03_overlay.png",
+          "quality_gate": {
+            "max_duplicate_ratio": 0.002,
+            "max_tiny_ratio": 0.015,
+            "mask_iou_min": 0.1,
+            "duplicate_ratio_ok": true,
+            "tiny_ratio_ok": true,
+            "mask_iou_ok": true,
+            "accepted": true
+          },
+          "score": 1.242103
+        },
+        {
+          "ok": true,
+          "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_vector.pdf",
+          "logs": [
+            "Render mode: handwriting; ExactGeometry=off; Handwriting=on",
+            "Sheet 210.0x297.0 mm is larger than workspace 180.0x280.0 mm. Using the overlapped sheet/workspace window.",
+            "Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-295.000,-15.000), sheet_bounds x(0.000,210.000) y(-295.000,2.000), sheet=a4, anchor=lower_left, offset=(0.00,0.00)",
+            "Method3 page preview: pages=1..1, body_font='C:\\plotter_pdf\\data\\fonts\\Neucha.ttf', formula_font='Times New Roman'.",
+            "Source pages: 1, selected: 1",
+            "Method3 centerline: threshold=32, candidates=9, paths=1109",
+            "Method3 cleanup: removed left-column text paths=8",
+            "Method3 micro-segment prune: segments=10467->10036, min=0.08 mm",
+            "Text render mode: handwriting=on font='C:\\plotter_pdf\\data\\fonts\\Neucha.ttf'; image_contours=always",
+            "Extracting paths from SVG ...",
+            "Raw geometry bounds: x(31.327, 191.508) y(13.168, 199.813)",
+            "SVG page: 210.034 x 297.059 mm",
+            "Auto trim: no outer border detected.",
+            "SVG geometry: paths=972, segments=10035.",
+            "Source bounds: x(31.327, 191.508) y(13.168, 199.813)",
+            "Fit to work area: scale=1.1237, translate=(-35.203,-274.666), from (31.327, 13.168)-(191.508, 199.813)",
+            "Reorder: source order preserved (972 polylines).",
+            "Handwriting fallback: skipping word-merge/smoothing for contour-only text source.",
+            "Segment counts: source=10035, fitted=10035, clipped=10035",
+            "Drawable segments after clip: 10035 (100.0% of source)",
+            "Prepared bounds: x(0.000, 180.000) y(-259.869, -50.131)",
+            "Estimated draw length: 3.05 m",
+            "Pencil mode: base_z=11.900, wear=0.000 mm, z_comp_start=0.000, z_down_start=11.900, dyn(rate=0.0100 mm/m, comp=1.000, slope=0.0100 Zmm/m, max=0.800), est_remaining_to_sharpen=120.0 m (wear=120.0, interval=inf)",
+            "Applying pen-up / pen-down ...",
+            "G-code stats: lines=13082, draw=12027, travel=351, bounds=0.000..180.000 x, -259.869..0.000 y",
+            "Preflight: ok: lines=13082, draw=12027, travel=351, ratio=0.03",
+            "Saved file stats: lines=13082, draw=12027, travel=351, bounds=0.000..180.000 x, -259.869..0.000 y",
+            "Saved: C:\\plotter_pdf\\_tmp\\latest_preview.nc"
+          ],
+          "font_label": "Neucha",
+          "font_path": "C:\\plotter_pdf\\data\\fonts\\Neucha.ttf",
+          "layout_similarity": 0.976772,
+          "metrics": {
+            "draw_length_mm": 3971.929,
+            "segments_total": 10647,
+            "segments_duplicate": 3,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -259.8691,
+              "y_max": -50.1309
+            }
+          },
+          "svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_03\\neucha__raster_safe\\page_03__fallback_candidate.svg",
+          "pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_03\\neucha__raster_safe\\page_03__fallback_candidate.pdf",
+          "nc": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_03\\neucha__raster_safe\\page_03__fallback_candidate.nc",
+          "gcode": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_03\\neucha__raster_safe\\page_03__fallback_candidate.gcode",
+          "notes": "fallback=raster_rewrite_handdraw; variant=raster_safe",
+          "font_slug": "neucha",
+          "variant_label": "raster_safe",
+          "image_contours_mode": "always",
+          "page_index": 3,
+          "source_image_count": 32,
+          "source_text_count": 41,
+          "source_path_count": 62,
+          "quality_metrics": {
+            "polylines": 345,
+            "segments_total": 10647,
+            "segments_duplicate": 3,
+            "segments_duplicate_ratio": 0.0002817695125387433,
+            "segments_tiny_lt_0_12mm": 1616,
+            "segments_tiny_ratio": 0.1517798440875364,
+            "segments_short_lt_0_25mm": 7316,
+            "segments_short_ratio": 0.6871419179111486,
+            "draw_length_mm": 3971.928974079303,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -259.8691,
+              "y_max": -50.1309
+            }
+          },
+          "overlay_metrics": {
+            "mask_iou": 0.292402,
+            "mask_recall": 0.391853,
+            "mask_precision": 0.53534
+          },
+          "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_03\\neucha__raster_safe\\page_03_overlay.png",
+          "quality_gate": {
+            "max_duplicate_ratio": 0.002,
+            "max_tiny_ratio": 0.015,
+            "mask_iou_min": 0.1,
+            "duplicate_ratio_ok": true,
+            "tiny_ratio_ok": false,
+            "mask_iou_ok": true,
+            "accepted": false
+          },
+          "score": 1.227425
+        }
+      ]
+    },
+    {
+      "page_index": 4,
+      "selected_font": "Neucha",
+      "selected_variant": "raster_safe",
+      "selected_contours_mode": "always",
+      "selected_layout_similarity": 0.960842,
+      "selected_score": 1.263703,
+      "selected_quality_gate": {
+        "max_duplicate_ratio": 0.002,
+        "max_tiny_ratio": 0.015,
+        "mask_iou_min": 0.1,
+        "duplicate_ratio_ok": true,
+        "tiny_ratio_ok": false,
+        "mask_iou_ok": true,
+        "accepted": false
+      },
+      "selected_overlay_metrics": {
+        "mask_iou": 0.365947,
+        "mask_recall": 0.426038,
+        "mask_precision": 0.7218
+      },
+      "source_profile": {
+        "image_count": 33,
+        "text_count": 30,
+        "path_count": 48,
+        "image_heavy": true
+      },
+      "candidates": [
+        {
+          "item": "page_04",
+          "ok": true,
+          "message": "reused existing candidate",
+          "logs": [
+            "reused existing candidate artifacts"
+          ],
+          "font_label": "Neucha",
+          "font_path": "C:\\plotter_pdf\\data\\fonts\\Neucha.ttf",
+          "layout_similarity": 0.945976,
+          "metrics": {
+            "draw_length_mm": 5571.688,
+            "segments_total": 6237,
+            "segments_duplicate": 0,
+            "bounds": {
+              "x_min": 6.2797,
+              "x_max": 173.8136,
+              "y_min": -294.7351,
+              "y_max": -15.0
+            }
+          },
+          "svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_04\\neucha\\page_04.svg",
+          "pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_04\\neucha\\page_04.pdf",
+          "nc": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_04\\neucha\\page_04.nc",
+          "gcode": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_04\\neucha\\page_04.gcode",
+          "notes": "reused_existing",
+          "font_slug": "neucha",
+          "variant_label": "always",
+          "image_contours_mode": "always",
+          "page_index": 4,
+          "source_image_count": 33,
+          "source_text_count": 30,
+          "source_path_count": 48,
+          "quality_metrics": {
+            "polylines": 248,
+            "segments_total": 6237,
+            "segments_duplicate": 0,
+            "segments_duplicate_ratio": 0.0,
+            "segments_tiny_lt_0_12mm": 5,
+            "segments_tiny_ratio": 0.000801667468334135,
+            "segments_short_lt_0_25mm": 117,
+            "segments_short_ratio": 0.01875901875901876,
+            "draw_length_mm": 5571.687718789646,
+            "bounds": {
+              "x_min": 6.2797,
+              "x_max": 173.8136,
+              "y_min": -294.7351,
+              "y_max": -15.0
+            }
+          },
+          "overlay_metrics": {
+            "mask_iou": 0.218409,
+            "mask_recall": 0.334534,
+            "mask_precision": 0.3862
+          },
+          "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_04\\neucha\\page_04_overlay.png",
+          "quality_gate": {
+            "max_duplicate_ratio": 0.002,
+            "max_tiny_ratio": 0.015,
+            "mask_iou_min": 0.1,
+            "duplicate_ratio_ok": true,
+            "tiny_ratio_ok": true,
+            "mask_iou_ok": true,
+            "accepted": true
+          },
+          "score": 1.184072
+        },
+        {
+          "ok": true,
+          "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_vector.pdf",
+          "logs": [
+            "Render mode: handwriting; ExactGeometry=off; Handwriting=on",
+            "Sheet 210.0x297.0 mm is larger than workspace 180.0x280.0 mm. Using the overlapped sheet/workspace window.",
+            "Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-295.000,-15.000), sheet_bounds x(0.000,210.000) y(-295.000,2.000), sheet=a4, anchor=lower_left, offset=(0.00,0.00)",
+            "Method3 page preview: pages=1..1, body_font='C:\\plotter_pdf\\data\\fonts\\Neucha.ttf', formula_font='Times New Roman'.",
+            "Source pages: 1, selected: 1",
+            "Method3 centerline: threshold=32, candidates=9, paths=963",
+            "Method3 graphics centerline: paths=28",
+            "Method3 layer split: text_paths=946, graphics_centerline=28, graphics_outline=18, graphics_accents=0",
+            "Method3 detail thick-lines multipass: candidates=27, extra_passes=49",
+            "Method3 micro-segment prune: segments=10784->10567, min=0.08 mm",
+            "Text render mode: handwriting=on font='C:\\plotter_pdf\\data\\fonts\\Neucha.ttf'; image_contours=always",
+            "Extracting paths from SVG ...",
+            "Raw geometry bounds: x(36.951, 191.770) y(13.453, 270.813)",
+            "SVG page: 210.034 x 297.059 mm",
+            "Auto trim: no outer border detected.",
+            "SVG geometry: paths=897, segments=10563.",
+            "Source bounds: x(36.951, 191.770) y(13.453, 270.813)",
+            "Fit to work area: scale=1.0880, translate=(-34.421,-309.637), from (36.951, 13.453)-(191.770, 270.813)",
+            "Reorder: source order preserved (897 polylines).",
+            "Handwriting fallback: skipping word-merge/smoothing for contour-only text source.",
+            "Segment counts: source=10563, fitted=10563, clipped=10563",
+            "Drawable segments after clip: 10563 (100.0% of source)",
+            "Prepared bounds: x(5.780, 174.220) y(-295.000, -15.000)",
+            "Estimated draw length: 5.86 m",
+            "Pencil mode: base_z=11.900, wear=0.000 mm, z_comp_start=0.000, z_down_start=11.900, dyn(rate=0.0100 mm/m, comp=1.000, slope=0.0100 Zmm/m, max=0.800), est_remaining_to_sharpen=120.0 m (wear=120.0, interval=inf)",
+            "Applying pen-up / pen-down ...",
+            "G-code stats: lines=13905, draw=12667, travel=412, bounds=0.000..174.220 x, -295.000..0.000 y",
+            "Preflight: ok: lines=13905, draw=12667, travel=412, ratio=0.03",
+            "Saved file stats: lines=13905, draw=12667, travel=412, bounds=0.000..174.220 x, -295.000..0.000 y",
+            "Saved: C:\\plotter_pdf\\_tmp\\latest_preview.nc"
+          ],
+          "font_label": "Neucha",
+          "font_path": "C:\\plotter_pdf\\data\\fonts\\Neucha.ttf",
+          "layout_similarity": 0.960842,
+          "metrics": {
+            "draw_length_mm": 6605.125,
+            "segments_total": 11043,
+            "segments_duplicate": 1,
+            "bounds": {
+              "x_min": 5.7804,
+              "x_max": 174.2196,
+              "y_min": -295.0,
+              "y_max": -15.0
+            }
+          },
+          "svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_04\\neucha__raster_safe\\page_04__fallback_candidate.svg",
+          "pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_04\\neucha__raster_safe\\page_04__fallback_candidate.pdf",
+          "nc": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_04\\neucha__raster_safe\\page_04__fallback_candidate.nc",
+          "gcode": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_04\\neucha__raster_safe\\page_04__fallback_candidate.gcode",
+          "notes": "fallback=raster_rewrite_handdraw; variant=raster_safe",
+          "font_slug": "neucha",
+          "variant_label": "raster_safe",
+          "image_contours_mode": "always",
+          "page_index": 4,
+          "source_image_count": 33,
+          "source_text_count": 30,
+          "source_path_count": 48,
+          "quality_metrics": {
+            "polylines": 406,
+            "segments_total": 11043,
+            "segments_duplicate": 1,
+            "segments_duplicate_ratio": 9.055510278004166e-05,
+            "segments_tiny_lt_0_12mm": 998,
+            "segments_tiny_ratio": 0.09037399257448157,
+            "segments_short_lt_0_25mm": 5643,
+            "segments_short_ratio": 0.511002444987775,
+            "draw_length_mm": 6605.125130353531,
+            "bounds": {
+              "x_min": 5.7804,
+              "x_max": 174.2196,
+              "y_min": -295.0,
+              "y_max": -15.0
+            }
+          },
+          "overlay_metrics": {
+            "mask_iou": 0.365947,
+            "mask_recall": 0.426038,
+            "mask_precision": 0.7218
+          },
+          "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_04\\neucha__raster_safe\\page_04_overlay.png",
+          "quality_gate": {
+            "max_duplicate_ratio": 0.002,
+            "max_tiny_ratio": 0.015,
+            "mask_iou_min": 0.1,
+            "duplicate_ratio_ok": true,
+            "tiny_ratio_ok": false,
+            "mask_iou_ok": true,
+            "accepted": false
+          },
+          "score": 1.263703
+        }
+      ]
+    },
+    {
+      "page_index": 5,
+      "selected_font": "Neucha",
+      "selected_variant": "raster_safe",
+      "selected_contours_mode": "always",
+      "selected_layout_similarity": 0.98736,
+      "selected_score": 1.323192,
+      "selected_quality_gate": {
+        "max_duplicate_ratio": 0.002,
+        "max_tiny_ratio": 0.015,
+        "mask_iou_min": 0.1,
+        "duplicate_ratio_ok": true,
+        "tiny_ratio_ok": false,
+        "mask_iou_ok": true,
+        "accepted": false
+      },
+      "selected_overlay_metrics": {
+        "mask_iou": 0.411523,
+        "mask_recall": 0.489572,
+        "mask_precision": 0.720774
+      },
+      "source_profile": {
+        "image_count": 42,
+        "text_count": 33,
+        "path_count": 55,
+        "image_heavy": true
+      },
+      "candidates": [
+        {
+          "item": "page_05",
+          "ok": true,
+          "message": "reused existing candidate",
+          "logs": [
+            "reused existing candidate artifacts"
+          ],
+          "font_label": "Neucha",
+          "font_path": "C:\\plotter_pdf\\data\\fonts\\Neucha.ttf",
+          "layout_similarity": 0.973892,
+          "metrics": {
+            "draw_length_mm": 4972.31,
+            "segments_total": 6042,
+            "segments_duplicate": 0,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 179.927,
+              "y_min": -293.1679,
+              "y_max": -16.7996
+            }
+          },
+          "svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_05\\neucha\\page_05.svg",
+          "pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_05\\neucha\\page_05.pdf",
+          "nc": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_05\\neucha\\page_05.nc",
+          "gcode": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_05\\neucha\\page_05.gcode",
+          "notes": "reused_existing",
+          "font_slug": "neucha",
+          "variant_label": "always",
+          "image_contours_mode": "always",
+          "page_index": 5,
+          "source_image_count": 42,
+          "source_text_count": 33,
+          "source_path_count": 55,
+          "quality_metrics": {
+            "polylines": 306,
+            "segments_total": 6042,
+            "segments_duplicate": 0,
+            "segments_duplicate_ratio": 0.0,
+            "segments_tiny_lt_0_12mm": 19,
+            "segments_tiny_ratio": 0.0031446540880503146,
+            "segments_short_lt_0_25mm": 112,
+            "segments_short_ratio": 0.018536908308507117,
+            "draw_length_mm": 4972.310054213004,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 179.927,
+              "y_min": -293.1679,
+              "y_max": -16.7996
+            }
+          },
+          "overlay_metrics": {
+            "mask_iou": 0.149127,
+            "mask_recall": 0.29329,
+            "mask_precision": 0.232771
+          },
+          "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_05\\neucha\\page_05_overlay.png",
+          "quality_gate": {
+            "max_duplicate_ratio": 0.002,
+            "max_tiny_ratio": 0.015,
+            "mask_iou_min": 0.1,
+            "duplicate_ratio_ok": true,
+            "tiny_ratio_ok": true,
+            "mask_iou_ok": true,
+            "accepted": true
+          },
+          "score": 1.153442
+        },
+        {
+          "ok": true,
+          "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_vector.pdf",
+          "logs": [
+            "Render mode: handwriting; ExactGeometry=off; Handwriting=on",
+            "Sheet 210.0x297.0 mm is larger than workspace 180.0x280.0 mm. Using the overlapped sheet/workspace window.",
+            "Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-295.000,-15.000), sheet_bounds x(0.000,210.000) y(-295.000,2.000), sheet=a4, anchor=lower_left, offset=(0.00,0.00)",
+            "Method3 page preview: pages=1..1, body_font='C:\\plotter_pdf\\data\\fonts\\Neucha.ttf', formula_font='Times New Roman'.",
+            "Source pages: 1, selected: 1",
+            "Method3 centerline: threshold=32, candidates=9, paths=1149",
+            "Method3 graphics centerline: paths=9",
+            "Method3 layer split: text_paths=1149, graphics_centerline=9, graphics_outline=9, graphics_accents=0",
+            "Method3 micro-segment prune: segments=7634->7380, min=0.08 mm",
+            "Text render mode: handwriting=on font='C:\\plotter_pdf\\data\\fonts\\Neucha.ttf'; image_contours=always",
+            "Extracting paths from SVG ...",
+            "Raw geometry bounds: x(25.521, 191.710) y(13.277, 268.575)",
+            "SVG page: 210.034 x 297.059 mm",
+            "Auto trim: no outer border detected.",
+            "SVG geometry: paths=980, segments=7380.",
+            "Source bounds: x(25.521, 191.710) y(13.277, 268.575)",
+            "Fit to work area: scale=1.0831, translate=(-27.642,-307.638), from (25.521, 13.277)-(191.710, 268.575)",
+            "Reorder: source order preserved (980 polylines).",
+            "Handwriting fallback: skipping word-merge/smoothing for contour-only text source.",
+            "Segment counts: source=7380, fitted=7380, clipped=7380",
+            "Drawable segments after clip: 7380 (100.0% of source)",
+            "Prepared bounds: x(0.000, 180.000) y(-293.257, -16.743)",
+            "Estimated draw length: 2.76 m",
+            "Pencil mode: base_z=11.900, wear=0.000 mm, z_comp_start=0.000, z_down_start=11.900, dyn(rate=0.0100 mm/m, comp=1.000, slope=0.0100 Zmm/m, max=0.800), est_remaining_to_sharpen=120.0 m (wear=120.0, interval=inf)",
+            "Applying pen-up / pen-down ...",
+            "G-code stats: lines=10328, draw=9327, travel=333, bounds=0.000..180.000 x, -293.257..0.000 y",
+            "Preflight: ok: lines=10328, draw=9327, travel=333, ratio=0.04",
+            "Saved file stats: lines=10328, draw=9327, travel=333, bounds=0.000..180.000 x, -293.257..0.000 y",
+            "Saved: C:\\plotter_pdf\\_tmp\\latest_preview.nc"
+          ],
+          "font_label": "Neucha",
+          "font_path": "C:\\plotter_pdf\\data\\fonts\\Neucha.ttf",
+          "layout_similarity": 0.98736,
+          "metrics": {
+            "draw_length_mm": 3782.96,
+            "segments_total": 8019,
+            "segments_duplicate": 0,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -293.2573,
+              "y_max": -16.7427
+            }
+          },
+          "svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_05\\neucha__raster_safe\\page_05__fallback_candidate.svg",
+          "pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_05\\neucha__raster_safe\\page_05__fallback_candidate.pdf",
+          "nc": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_05\\neucha__raster_safe\\page_05__fallback_candidate.nc",
+          "gcode": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_05\\neucha__raster_safe\\page_05__fallback_candidate.gcode",
+          "notes": "fallback=raster_rewrite_handdraw; variant=raster_safe",
+          "font_slug": "neucha",
+          "variant_label": "raster_safe",
+          "image_contours_mode": "always",
+          "page_index": 5,
+          "source_image_count": 42,
+          "source_text_count": 33,
+          "source_path_count": 55,
+          "quality_metrics": {
+            "polylines": 327,
+            "segments_total": 8019,
+            "segments_duplicate": 0,
+            "segments_duplicate_ratio": 0.0,
+            "segments_tiny_lt_0_12mm": 1093,
+            "segments_tiny_ratio": 0.1363012844494326,
+            "segments_short_lt_0_25mm": 5341,
+            "segments_short_ratio": 0.666043147524629,
+            "draw_length_mm": 3782.9596397609594,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -293.2573,
+              "y_max": -16.7427
+            }
+          },
+          "overlay_metrics": {
+            "mask_iou": 0.411523,
+            "mask_recall": 0.489572,
+            "mask_precision": 0.720774
+          },
+          "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_05\\neucha__raster_safe\\page_05_overlay.png",
+          "quality_gate": {
+            "max_duplicate_ratio": 0.002,
+            "max_tiny_ratio": 0.015,
+            "mask_iou_min": 0.1,
+            "duplicate_ratio_ok": true,
+            "tiny_ratio_ok": false,
+            "mask_iou_ok": true,
+            "accepted": false
+          },
+          "score": 1.323192
+        }
+      ]
+    },
+    {
+      "page_index": 6,
+      "selected_font": "Neucha",
+      "selected_variant": "raster_safe",
+      "selected_contours_mode": "always",
+      "selected_layout_similarity": 0.945248,
+      "selected_score": 1.195059,
+      "selected_quality_gate": {
+        "max_duplicate_ratio": 0.002,
+        "max_tiny_ratio": 0.015,
+        "mask_iou_min": 0.1,
+        "duplicate_ratio_ok": true,
+        "tiny_ratio_ok": false,
+        "mask_iou_ok": true,
+        "accepted": false
+      },
+      "selected_overlay_metrics": {
+        "mask_iou": 0.292848,
+        "mask_recall": 0.373557,
+        "mask_precision": 0.57545
+      },
+      "source_profile": {
+        "image_count": 13,
+        "text_count": 27,
+        "path_count": 35,
+        "image_heavy": true
+      },
+      "candidates": [
+        {
+          "item": "page_06",
+          "ok": true,
+          "message": "reused existing candidate",
+          "logs": [
+            "reused existing candidate artifacts"
+          ],
+          "font_label": "Neucha",
+          "font_path": "C:\\plotter_pdf\\data\\fonts\\Neucha.ttf",
+          "layout_similarity": 0.943699,
+          "metrics": {
+            "draw_length_mm": 4606.602,
+            "segments_total": 6026,
+            "segments_duplicate": 0,
+            "bounds": {
+              "x_min": 0.0127,
+              "x_max": 180.0,
+              "y_min": -261.2752,
+              "y_max": -48.6736
+            }
+          },
+          "svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_06\\neucha\\page_06.svg",
+          "pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_06\\neucha\\page_06.pdf",
+          "nc": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_06\\neucha\\page_06.nc",
+          "gcode": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_06\\neucha\\page_06.gcode",
+          "notes": "reused_existing",
+          "font_slug": "neucha",
+          "variant_label": "always",
+          "image_contours_mode": "always",
+          "page_index": 6,
+          "source_image_count": 13,
+          "source_text_count": 27,
+          "source_path_count": 35,
+          "quality_metrics": {
+            "polylines": 206,
+            "segments_total": 6026,
+            "segments_duplicate": 0,
+            "segments_duplicate_ratio": 0.0,
+            "segments_tiny_lt_0_12mm": 49,
+            "segments_tiny_ratio": 0.008131430467972121,
+            "segments_short_lt_0_25mm": 358,
+            "segments_short_ratio": 0.05940922668436774,
+            "draw_length_mm": 4606.601813391409,
+            "bounds": {
+              "x_min": 0.0127,
+              "x_max": 180.0,
+              "y_min": -261.2752,
+              "y_max": -48.6736
+            }
+          },
+          "overlay_metrics": {
+            "mask_iou": 0.334732,
+            "mask_recall": 0.417861,
+            "mask_precision": 0.627224
+          },
+          "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_06\\neucha\\page_06_overlay.png",
+          "quality_gate": {
+            "max_duplicate_ratio": 0.002,
+            "max_tiny_ratio": 0.015,
+            "mask_iou_min": 0.1,
+            "duplicate_ratio_ok": true,
+            "tiny_ratio_ok": true,
+            "mask_iou_ok": true,
+            "accepted": true
+          },
+          "score": 1.256105
+        },
+        {
+          "ok": true,
+          "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_vector.pdf",
+          "logs": [
+            "Render mode: handwriting; ExactGeometry=off; Handwriting=on",
+            "Sheet 210.0x297.0 mm is larger than workspace 180.0x280.0 mm. Using the overlapped sheet/workspace window.",
+            "Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-295.000,-15.000), sheet_bounds x(0.000,210.000) y(-295.000,2.000), sheet=a4, anchor=lower_left, offset=(0.00,0.00)",
+            "Method3 page preview: pages=1..1, body_font='C:\\plotter_pdf\\data\\fonts\\Neucha.ttf', formula_font='Times New Roman'.",
+            "Source pages: 1, selected: 1",
+            "Method3 centerline: threshold=96, candidates=9, paths=914",
+            "Method3 graphics centerline: paths=37",
+            "Method3 layer split: text_paths=889, graphics_centerline=37, graphics_outline=22, graphics_accents=2",
+            "Method3 cleanup: removed left-column text paths=5",
+            "Method3 detail thick-lines multipass: candidates=34, extra_passes=66",
+            "Method3 micro-segment prune: segments=13048->12670, min=0.08 mm",
+            "Text render mode: handwriting=on font='C:\\plotter_pdf\\data\\fonts\\Neucha.ttf'; image_contours=always",
+            "Extracting paths from SVG ...",
+            "Raw geometry bounds: x(29.754, 191.737) y(13.305, 209.369)",
+            "SVG page: 210.034 x 297.059 mm",
+            "Auto trim: no outer border detected.",
+            "SVG geometry: paths=940, segments=12663.",
+            "Source bounds: x(29.754, 191.737) y(13.305, 209.369)",
+            "Fit to work area: scale=1.1112, translate=(-33.064,-278.721), from (29.754, 13.305)-(191.737, 209.369)",
+            "Reorder: source order preserved (940 polylines).",
+            "Handwriting fallback: skipping word-merge/smoothing for contour-only text source.",
+            "Segment counts: source=12663, fitted=12663, clipped=12663",
+            "Drawable segments after clip: 12663 (100.0% of source)",
+            "Prepared bounds: x(0.000, 180.000) y(-263.936, -46.064)",
+            "Estimated draw length: 6.67 m",
+            "Pencil mode: base_z=11.900, wear=0.000 mm, z_comp_start=0.000, z_down_start=11.900, dyn(rate=0.0100 mm/m, comp=1.000, slope=0.0100 Zmm/m, max=0.800), est_remaining_to_sharpen=120.0 m (wear=120.0, interval=inf)",
+            "Applying pen-up / pen-down ...",
+            "G-code stats: lines=15672, draw=14617, travel=351, bounds=0.000..180.000 x, -263.936..0.000 y",
+            "Preflight: ok: lines=15672, draw=14617, travel=351, ratio=0.02",
+            "Saved file stats: lines=15672, draw=14617, travel=351, bounds=0.000..180.000 x, -263.936..0.000 y",
+            "Saved: C:\\plotter_pdf\\_tmp\\latest_preview.nc"
+          ],
+          "font_label": "Neucha",
+          "font_path": "C:\\plotter_pdf\\data\\fonts\\Neucha.ttf",
+          "layout_similarity": 0.945248,
+          "metrics": {
+            "draw_length_mm": 7518.042,
+            "segments_total": 13237,
+            "segments_duplicate": 5,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -263.936,
+              "y_max": -46.064
+            }
+          },
+          "svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_06\\neucha__raster_safe\\page_06__fallback_candidate.svg",
+          "pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_06\\neucha__raster_safe\\page_06__fallback_candidate.pdf",
+          "nc": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_06\\neucha__raster_safe\\page_06__fallback_candidate.nc",
+          "gcode": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_06\\neucha__raster_safe\\page_06__fallback_candidate.gcode",
+          "notes": "fallback=raster_rewrite_handdraw; variant=raster_safe",
+          "font_slug": "neucha",
+          "variant_label": "raster_safe",
+          "image_contours_mode": "always",
+          "page_index": 6,
+          "source_image_count": 13,
+          "source_text_count": 27,
+          "source_path_count": 35,
+          "quality_metrics": {
+            "polylines": 345,
+            "segments_total": 13237,
+            "segments_duplicate": 5,
+            "segments_duplicate_ratio": 0.00037772909269471935,
+            "segments_tiny_lt_0_12mm": 1713,
+            "segments_tiny_ratio": 0.12940998715721086,
+            "segments_short_lt_0_25mm": 6942,
+            "segments_short_ratio": 0.5244390722973483,
+            "draw_length_mm": 7518.042298887,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -263.936,
+              "y_max": -46.064
+            }
+          },
+          "overlay_metrics": {
+            "mask_iou": 0.292848,
+            "mask_recall": 0.373557,
+            "mask_precision": 0.57545
+          },
+          "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_06\\neucha__raster_safe\\page_06_overlay.png",
+          "quality_gate": {
+            "max_duplicate_ratio": 0.002,
+            "max_tiny_ratio": 0.015,
+            "mask_iou_min": 0.1,
+            "duplicate_ratio_ok": true,
+            "tiny_ratio_ok": false,
+            "mask_iou_ok": true,
+            "accepted": false
+          },
+          "score": 1.195059
+        }
+      ]
+    },
+    {
+      "page_index": 7,
+      "selected_font": "Neucha",
+      "selected_variant": "raster_safe",
+      "selected_contours_mode": "always",
+      "selected_layout_similarity": 0.95172,
+      "selected_score": 1.278599,
+      "selected_quality_gate": {
+        "max_duplicate_ratio": 0.002,
+        "max_tiny_ratio": 0.015,
+        "mask_iou_min": 0.1,
+        "duplicate_ratio_ok": true,
+        "tiny_ratio_ok": false,
+        "mask_iou_ok": true,
+        "accepted": false
+      },
+      "selected_overlay_metrics": {
+        "mask_iou": 0.408321,
+        "mask_recall": 0.463428,
+        "mask_precision": 0.774461
+      },
+      "source_profile": {
+        "image_count": 17,
+        "text_count": 32,
+        "path_count": 42,
+        "image_heavy": true
+      },
+      "candidates": [
+        {
+          "item": "page_07",
+          "ok": true,
+          "message": "reused existing candidate",
+          "logs": [
+            "reused existing candidate artifacts"
+          ],
+          "font_label": "Neucha",
+          "font_path": "C:\\plotter_pdf\\data\\fonts\\Neucha.ttf",
+          "layout_similarity": 0.936024,
+          "metrics": {
+            "draw_length_mm": 8339.098,
+            "segments_total": 10647,
+            "segments_duplicate": 0,
+            "bounds": {
+              "x_min": 0.0687,
+              "x_max": 179.9404,
+              "y_min": -292.4201,
+              "y_max": -17.8111
+            }
+          },
+          "svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_07\\neucha\\page_07.svg",
+          "pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_07\\neucha\\page_07.pdf",
+          "nc": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_07\\neucha\\page_07.nc",
+          "gcode": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_07\\neucha\\page_07.gcode",
+          "notes": "reused_existing",
+          "font_slug": "neucha",
+          "variant_label": "always",
+          "image_contours_mode": "always",
+          "page_index": 7,
+          "source_image_count": 17,
+          "source_text_count": 32,
+          "source_path_count": 42,
+          "quality_metrics": {
+            "polylines": 426,
+            "segments_total": 10647,
+            "segments_duplicate": 0,
+            "segments_duplicate_ratio": 0.0,
+            "segments_tiny_lt_0_12mm": 68,
+            "segments_tiny_ratio": 0.0063867756175448485,
+            "segments_short_lt_0_25mm": 405,
+            "segments_short_ratio": 0.03803888419273035,
+            "draw_length_mm": 8339.09812700316,
+            "bounds": {
+              "x_min": 0.0687,
+              "x_max": 179.9404,
+              "y_min": -292.4201,
+              "y_max": -17.8111
+            }
+          },
+          "overlay_metrics": {
+            "mask_iou": 0.275952,
+            "mask_recall": 0.400388,
+            "mask_precision": 0.470313
+          },
+          "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_07\\neucha\\page_07_overlay.png",
+          "quality_gate": {
+            "max_duplicate_ratio": 0.002,
+            "max_tiny_ratio": 0.015,
+            "mask_iou_min": 0.1,
+            "duplicate_ratio_ok": true,
+            "tiny_ratio_ok": true,
+            "mask_iou_ok": true,
+            "accepted": true
+          },
+          "score": 1.222814
+        },
+        {
+          "ok": true,
+          "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_vector.pdf",
+          "logs": [
+            "Render mode: handwriting; ExactGeometry=off; Handwriting=on",
+            "Sheet 210.0x297.0 mm is larger than workspace 180.0x280.0 mm. Using the overlapped sheet/workspace window.",
+            "Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-295.000,-15.000), sheet_bounds x(0.000,210.000) y(-295.000,2.000), sheet=a4, anchor=lower_left, offset=(0.00,0.00)",
+            "Method3 page preview: pages=1..1, body_font='C:\\plotter_pdf\\data\\fonts\\Neucha.ttf', formula_font='Times New Roman'.",
+            "Source pages: 1, selected: 1",
+            "Method3 centerline: threshold=32, candidates=9, paths=1656",
+            "Method3 graphics centerline: paths=29",
+            "Method3 layer split: text_paths=1633, graphics_centerline=29, graphics_outline=18, graphics_accents=0",
+            "Method3 cleanup: removed left-column text paths=5",
+            "Method3 detail thick-lines multipass: candidates=29, extra_passes=51",
+            "Method3 micro-segment prune: segments=16619->16148, min=0.08 mm",
+            "Text render mode: handwriting=on font='C:\\plotter_pdf\\data\\fonts\\Neucha.ttf'; image_contours=always",
+            "Extracting paths from SVG ...",
+            "Raw geometry bounds: x(25.521, 191.543) y(13.184, 266.700)",
+            "SVG page: 210.034 x 297.059 mm",
+            "Auto trim: no outer border detected.",
+            "SVG geometry: paths=1506, segments=16146.",
+            "Source bounds: x(25.521, 191.543) y(13.184, 266.700)",
+            "Fit to work area: scale=1.0842, translate=(-27.670,-306.724), from (25.521, 13.184)-(191.543, 266.700)",
+            "Reorder: source order preserved (1506 polylines).",
+            "Handwriting fallback: skipping word-merge/smoothing for contour-only text source.",
+            "Segment counts: source=16146, fitted=16146, clipped=16146",
+            "Drawable segments after clip: 16146 (100.0% of source)",
+            "Prepared bounds: x(0.000, 180.000) y(-292.430, -17.570)",
+            "Estimated draw length: 7.80 m",
+            "Pencil mode: base_z=11.900, wear=0.000 mm, z_comp_start=0.000, z_down_start=11.900, dyn(rate=0.0100 mm/m, comp=1.000, slope=0.0100 Zmm/m, max=0.800), est_remaining_to_sharpen=120.0 m (wear=120.0, interval=inf)",
+            "Applying pen-up / pen-down ...",
+            "G-code stats: lines=20947, draw=19277, travel=556, bounds=0.000..180.000 x, -292.430..0.000 y",
+            "Preflight: ok: lines=20947, draw=19277, travel=556, ratio=0.03",
+            "Saved file stats: lines=20947, draw=19277, travel=556, bounds=0.000..180.000 x, -292.430..0.000 y",
+            "Saved: C:\\plotter_pdf\\_tmp\\latest_preview.nc"
+          ],
+          "font_label": "Neucha",
+          "font_path": "C:\\plotter_pdf\\data\\fonts\\Neucha.ttf",
+          "layout_similarity": 0.95172,
+          "metrics": {
+            "draw_length_mm": 9218.686,
+            "segments_total": 17077,
+            "segments_duplicate": 4,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -292.4302,
+              "y_max": -17.5698
+            }
+          },
+          "svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_07\\neucha__raster_safe\\page_07__fallback_candidate.svg",
+          "pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_07\\neucha__raster_safe\\page_07__fallback_candidate.pdf",
+          "nc": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_07\\neucha__raster_safe\\page_07__fallback_candidate.nc",
+          "gcode": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_07\\neucha__raster_safe\\page_07__fallback_candidate.gcode",
+          "notes": "fallback=raster_rewrite_handdraw; variant=raster_safe",
+          "font_slug": "neucha",
+          "variant_label": "raster_safe",
+          "image_contours_mode": "always",
+          "page_index": 7,
+          "source_image_count": 17,
+          "source_text_count": 32,
+          "source_path_count": 42,
+          "quality_metrics": {
+            "polylines": 550,
+            "segments_total": 17077,
+            "segments_duplicate": 4,
+            "segments_duplicate_ratio": 0.00023423317912982375,
+            "segments_tiny_lt_0_12mm": 2186,
+            "segments_tiny_ratio": 0.12800843239444867,
+            "segments_short_lt_0_25mm": 9706,
+            "segments_short_ratio": 0.5683668091585173,
+            "draw_length_mm": 9218.686188442529,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -292.4302,
+              "y_max": -17.5698
+            }
+          },
+          "overlay_metrics": {
+            "mask_iou": 0.408321,
+            "mask_recall": 0.463428,
+            "mask_precision": 0.774461
+          },
+          "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_07\\neucha__raster_safe\\page_07_overlay.png",
+          "quality_gate": {
+            "max_duplicate_ratio": 0.002,
+            "max_tiny_ratio": 0.015,
+            "mask_iou_min": 0.1,
+            "duplicate_ratio_ok": true,
+            "tiny_ratio_ok": false,
+            "mask_iou_ok": true,
+            "accepted": false
+          },
+          "score": 1.278599
+        }
+      ]
+    },
+    {
+      "page_index": 8,
+      "selected_font": "Neucha",
+      "selected_variant": "raster_safe",
+      "selected_contours_mode": "always",
+      "selected_layout_similarity": 0.951754,
+      "selected_score": 1.31156,
+      "selected_quality_gate": {
+        "max_duplicate_ratio": 0.002,
+        "max_tiny_ratio": 0.015,
+        "mask_iou_min": 0.1,
+        "duplicate_ratio_ok": true,
+        "tiny_ratio_ok": false,
+        "mask_iou_ok": true,
+        "accepted": false
+      },
+      "selected_overlay_metrics": {
+        "mask_iou": 0.453054,
+        "mask_recall": 0.492546,
+        "mask_precision": 0.849636
+      },
+      "source_profile": {
+        "image_count": 13,
+        "text_count": 18,
+        "path_count": 26,
+        "image_heavy": true
+      },
+      "candidates": [
+        {
+          "item": "page_08",
+          "ok": true,
+          "message": "reused existing candidate",
+          "logs": [
+            "reused existing candidate artifacts"
+          ],
+          "font_label": "Neucha",
+          "font_path": "C:\\plotter_pdf\\data\\fonts\\Neucha.ttf",
+          "layout_similarity": 0.932406,
+          "metrics": {
+            "draw_length_mm": 5300.193,
+            "segments_total": 6015,
+            "segments_duplicate": 0,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 179.9582,
+              "y_min": -258.6603,
+              "y_max": -51.2208
+            }
+          },
+          "svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_08\\neucha\\page_08.svg",
+          "pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_08\\neucha\\page_08.pdf",
+          "nc": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_08\\neucha\\page_08.nc",
+          "gcode": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_08\\neucha\\page_08.gcode",
+          "notes": "reused_existing",
+          "font_slug": "neucha",
+          "variant_label": "always",
+          "image_contours_mode": "always",
+          "page_index": 8,
+          "source_image_count": 13,
+          "source_text_count": 18,
+          "source_path_count": 26,
+          "quality_metrics": {
+            "polylines": 268,
+            "segments_total": 6015,
+            "segments_duplicate": 0,
+            "segments_duplicate_ratio": 0.0,
+            "segments_tiny_lt_0_12mm": 14,
+            "segments_tiny_ratio": 0.0023275145469659184,
+            "segments_short_lt_0_25mm": 136,
+            "segments_short_ratio": 0.02261014131338321,
+            "draw_length_mm": 5300.193102661683,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 179.9582,
+              "y_min": -258.6603,
+              "y_max": -51.2208
+            }
+          },
+          "overlay_metrics": {
+            "mask_iou": 0.251436,
+            "mask_recall": 0.357198,
+            "mask_precision": 0.459226
+          },
+          "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_08\\neucha\\page_08_overlay.png",
+          "quality_gate": {
+            "max_duplicate_ratio": 0.002,
+            "max_tiny_ratio": 0.015,
+            "mask_iou_min": 0.1,
+            "duplicate_ratio_ok": true,
+            "tiny_ratio_ok": true,
+            "mask_iou_ok": true,
+            "accepted": true
+          },
+          "score": 1.191535
+        },
+        {
+          "ok": true,
+          "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_vector.pdf",
+          "logs": [
+            "Render mode: handwriting; ExactGeometry=off; Handwriting=on",
+            "Sheet 210.0x297.0 mm is larger than workspace 180.0x280.0 mm. Using the overlapped sheet/workspace window.",
+            "Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-295.000,-15.000), sheet_bounds x(0.000,210.000) y(-295.000,2.000), sheet=a4, anchor=lower_left, offset=(0.00,0.00)",
+            "Method3 page preview: pages=1..1, body_font='C:\\plotter_pdf\\data\\fonts\\Neucha.ttf', formula_font='Times New Roman'.",
+            "Source pages: 1, selected: 1",
+            "Method3 centerline: threshold=32, candidates=9, paths=977",
+            "Method3 graphics centerline: paths=28",
+            "Method3 layer split: text_paths=959, graphics_centerline=28, graphics_outline=18, graphics_accents=0",
+            "Method3 cleanup: removed left-column text paths=1",
+            "Method3 detail thick-lines multipass: candidates=27, extra_passes=49",
+            "Method3 micro-segment prune: segments=10433->10174, min=0.08 mm",
+            "Text render mode: handwriting=on font='C:\\plotter_pdf\\data\\fonts\\Neucha.ttf'; image_contours=always",
+            "Extracting paths from SVG ...",
+            "Raw geometry bounds: x(30.903, 191.953) y(13.144, 199.874)",
+            "SVG page: 210.034 x 297.059 mm",
+            "Auto trim: no outer border detected.",
+            "SVG geometry: paths=877, segments=10170.",
+            "Source bounds: x(30.903, 191.953) y(13.144, 199.874)",
+            "Fit to work area: scale=1.1177, translate=(-34.540,-274.042), from (30.903, 13.144)-(191.953, 199.874)",
+            "Reorder: source order preserved (877 polylines).",
+            "Handwriting fallback: skipping word-merge/smoothing for contour-only text source.",
+            "Segment counts: source=10170, fitted=10170, clipped=10170",
+            "Drawable segments after clip: 10170 (100.0% of source)",
+            "Prepared bounds: x(0.000, 180.000) y(-259.351, -50.649)",
+            "Estimated draw length: 5.98 m",
+            "Pencil mode: base_z=11.900, wear=0.000 mm, z_comp_start=0.000, z_down_start=11.900, dyn(rate=0.0100 mm/m, comp=1.000, slope=0.0100 Zmm/m, max=0.800), est_remaining_to_sharpen=120.0 m (wear=120.0, interval=inf)",
+            "Applying pen-up / pen-down ...",
+            "G-code stats: lines=13063, draw=12038, travel=341, bounds=0.000..180.000 x, -259.351..0.000 y",
+            "Preflight: ok: lines=13063, draw=12038, travel=341, ratio=0.03",
+            "Saved file stats: lines=13063, draw=12038, travel=341, bounds=0.000..180.000 x, -259.351..0.000 y",
+            "Saved: C:\\plotter_pdf\\_tmp\\latest_preview.nc"
+          ],
+          "font_label": "Neucha",
+          "font_path": "C:\\plotter_pdf\\data\\fonts\\Neucha.ttf",
+          "layout_similarity": 0.951754,
+          "metrics": {
+            "draw_length_mm": 6814.943,
+            "segments_total": 10698,
+            "segments_duplicate": 4,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -259.3509,
+              "y_max": -50.6491
+            }
+          },
+          "svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_08\\neucha__raster_safe\\page_08__fallback_candidate.svg",
+          "pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_08\\neucha__raster_safe\\page_08__fallback_candidate.pdf",
+          "nc": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_08\\neucha__raster_safe\\page_08__fallback_candidate.nc",
+          "gcode": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_08\\neucha__raster_safe\\page_08__fallback_candidate.gcode",
+          "notes": "fallback=raster_rewrite_handdraw; variant=raster_safe",
+          "font_slug": "neucha",
+          "variant_label": "raster_safe",
+          "image_contours_mode": "always",
+          "page_index": 8,
+          "source_image_count": 13,
+          "source_text_count": 18,
+          "source_path_count": 26,
+          "quality_metrics": {
+            "polylines": 335,
+            "segments_total": 10698,
+            "segments_duplicate": 4,
+            "segments_duplicate_ratio": 0.0003739016638624042,
+            "segments_tiny_lt_0_12mm": 1082,
+            "segments_tiny_ratio": 0.10114040007478033,
+            "segments_short_lt_0_25mm": 5128,
+            "segments_short_ratio": 0.47934193307160217,
+            "draw_length_mm": 6814.943419357743,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -259.3509,
+              "y_max": -50.6491
+            }
+          },
+          "overlay_metrics": {
+            "mask_iou": 0.453054,
+            "mask_recall": 0.492546,
+            "mask_precision": 0.849636
+          },
+          "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_08\\neucha__raster_safe\\page_08_overlay.png",
+          "quality_gate": {
+            "max_duplicate_ratio": 0.002,
+            "max_tiny_ratio": 0.015,
+            "mask_iou_min": 0.1,
+            "duplicate_ratio_ok": true,
+            "tiny_ratio_ok": false,
+            "mask_iou_ok": true,
+            "accepted": false
+          },
+          "score": 1.31156
+        }
+      ]
+    },
+    {
+      "page_index": 9,
+      "selected_font": "Neucha",
+      "selected_variant": "always",
+      "selected_contours_mode": "always",
+      "selected_layout_similarity": 0.981801,
+      "selected_score": 1.015592,
+      "selected_quality_gate": {
+        "max_duplicate_ratio": 0.002,
+        "max_tiny_ratio": 0.015,
+        "mask_iou_min": 0.0,
+        "duplicate_ratio_ok": true,
+        "tiny_ratio_ok": true,
+        "mask_iou_ok": true,
+        "accepted": true
+      },
+      "selected_overlay_metrics": {
+        "mask_iou": 0.471344,
+        "mask_recall": 0.56373,
+        "mask_precision": 0.742009
+      },
+      "source_profile": {
+        "image_count": 2,
+        "text_count": 22,
+        "path_count": 25,
+        "image_heavy": false
+      },
+      "candidates": [
+        {
+          "item": "page_09",
+          "ok": true,
+          "message": "reused existing candidate",
+          "logs": [
+            "reused existing candidate artifacts"
+          ],
+          "font_label": "Neucha",
+          "font_path": "C:\\plotter_pdf\\data\\fonts\\Neucha.ttf",
+          "layout_similarity": 0.981801,
+          "metrics": {
+            "draw_length_mm": 3951.384,
+            "segments_total": 4527,
+            "segments_duplicate": 0,
+            "bounds": {
+              "x_min": 1.0468,
+              "x_max": 178.8967,
+              "y_min": -294.9404,
+              "y_max": -15.0
+            }
+          },
+          "svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_09\\neucha\\page_09.svg",
+          "pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_09\\neucha\\page_09.pdf",
+          "nc": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_09\\neucha\\page_09.nc",
+          "gcode": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_09\\neucha\\page_09.gcode",
+          "notes": "reused_existing",
+          "font_slug": "neucha",
+          "variant_label": "always",
+          "image_contours_mode": "always",
+          "page_index": 9,
+          "source_image_count": 2,
+          "source_text_count": 22,
+          "source_path_count": 25,
+          "quality_metrics": {
+            "polylines": 176,
+            "segments_total": 4527,
+            "segments_duplicate": 0,
+            "segments_duplicate_ratio": 0.0,
+            "segments_tiny_lt_0_12mm": 64,
+            "segments_tiny_ratio": 0.014137397835210957,
+            "segments_short_lt_0_25mm": 335,
+            "segments_short_ratio": 0.07400044179368236,
+            "draw_length_mm": 3951.3835997735628,
+            "bounds": {
+              "x_min": 1.0468,
+              "x_max": 178.8967,
+              "y_min": -294.9404,
+              "y_max": -15.0
+            }
+          },
+          "overlay_metrics": {
+            "mask_iou": 0.471344,
+            "mask_recall": 0.56373,
+            "mask_precision": 0.742009
+          },
+          "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_09\\neucha\\page_09_overlay.png",
+          "quality_gate": {
+            "max_duplicate_ratio": 0.002,
+            "max_tiny_ratio": 0.015,
+            "mask_iou_min": 0.0,
+            "duplicate_ratio_ok": true,
+            "tiny_ratio_ok": true,
+            "mask_iou_ok": true,
+            "accepted": true
+          },
+          "score": 1.015592
+        },
+        {
+          "item": "page_09",
+          "ok": true,
+          "message": "reused existing candidate",
+          "logs": [
+            "reused existing candidate artifacts"
+          ],
+          "font_label": "Neucha",
+          "font_path": "C:\\plotter_pdf\\data\\fonts\\Neucha.ttf",
+          "layout_similarity": 0.974072,
+          "metrics": {
+            "draw_length_mm": 1909.457,
+            "segments_total": 3334,
+            "segments_duplicate": 0,
+            "bounds": {
+              "x_min": 1.0468,
+              "x_max": 178.8967,
+              "y_min": -294.9404,
+              "y_max": -15.0
+            }
+          },
+          "svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_09\\neucha__contours_off\\page_09.svg",
+          "pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_09\\neucha__contours_off\\page_09.pdf",
+          "nc": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_09\\neucha__contours_off\\page_09.nc",
+          "gcode": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_09\\neucha__contours_off\\page_09.gcode",
+          "notes": "reused_existing",
+          "font_slug": "neucha",
+          "variant_label": "contours_off",
+          "image_contours_mode": "off",
+          "page_index": 9,
+          "source_image_count": 2,
+          "source_text_count": 22,
+          "source_path_count": 25,
+          "quality_metrics": {
+            "polylines": 92,
+            "segments_total": 3334,
+            "segments_duplicate": 0,
+            "segments_duplicate_ratio": 0.0,
+            "segments_tiny_lt_0_12mm": 63,
+            "segments_tiny_ratio": 0.01889622075584883,
+            "segments_short_lt_0_25mm": 286,
+            "segments_short_ratio": 0.08578284343131373,
+            "draw_length_mm": 1909.4570765458373,
+            "bounds": {
+              "x_min": 1.0468,
+              "x_max": 178.8967,
+              "y_min": -294.9404,
+              "y_max": -15.0
+            }
+          },
+          "overlay_metrics": {
+            "mask_iou": 0.201416,
+            "mask_recall": 0.223301,
+            "mask_precision": 0.672685
+          },
+          "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_09\\neucha__contours_off\\page_09_overlay.png",
+          "quality_gate": {
+            "max_duplicate_ratio": 0.002,
+            "max_tiny_ratio": 0.015,
+            "mask_iou_min": 0.0,
+            "duplicate_ratio_ok": true,
+            "tiny_ratio_ok": false,
+            "mask_iou_ok": true,
+            "accepted": false
+          },
+          "score": 0.985344
+        }
+      ]
+    },
+    {
+      "page_index": 10,
+      "selected_font": "Neucha",
+      "selected_variant": "always",
+      "selected_contours_mode": "always",
+      "selected_layout_similarity": 0.981001,
+      "selected_score": 1.3549,
+      "selected_quality_gate": {
+        "max_duplicate_ratio": 0.002,
+        "max_tiny_ratio": 0.015,
+        "mask_iou_min": 0.1,
+        "duplicate_ratio_ok": true,
+        "tiny_ratio_ok": true,
+        "mask_iou_ok": true,
+        "accepted": true
+      },
+      "selected_overlay_metrics": {
+        "mask_iou": 0.360223,
+        "mask_recall": 0.527529,
+        "mask_precision": 0.531794
+      },
+      "source_profile": {
+        "image_count": 7,
+        "text_count": 19,
+        "path_count": 24,
+        "image_heavy": true
+      },
+      "candidates": [
+        {
+          "item": "page_10",
+          "ok": true,
+          "message": "reused existing candidate",
+          "logs": [
+            "reused existing candidate artifacts"
+          ],
+          "font_label": "Neucha",
+          "font_path": "C:\\plotter_pdf\\data\\fonts\\Neucha.ttf",
+          "layout_similarity": 0.981001,
+          "metrics": {
+            "draw_length_mm": 3359.891,
+            "segments_total": 4524,
+            "segments_duplicate": 0,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 179.9674,
+              "y_min": -249.3845,
+              "y_max": -60.5826
+            }
+          },
+          "svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_10\\neucha\\page_10.svg",
+          "pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_10\\neucha\\page_10.pdf",
+          "nc": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_10\\neucha\\page_10.nc",
+          "gcode": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_10\\neucha\\page_10.gcode",
+          "notes": "reused_existing",
+          "font_slug": "neucha",
+          "variant_label": "always",
+          "image_contours_mode": "always",
+          "page_index": 10,
+          "source_image_count": 7,
+          "source_text_count": 19,
+          "source_path_count": 24,
+          "quality_metrics": {
+            "polylines": 157,
+            "segments_total": 4524,
+            "segments_duplicate": 0,
+            "segments_duplicate_ratio": 0.0,
+            "segments_tiny_lt_0_12mm": 32,
+            "segments_tiny_ratio": 0.007073386383731211,
+            "segments_short_lt_0_25mm": 227,
+            "segments_short_ratio": 0.05017683465959328,
+            "draw_length_mm": 3359.8906850663548,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 179.9674,
+              "y_min": -249.3845,
+              "y_max": -60.5826
+            }
+          },
+          "overlay_metrics": {
+            "mask_iou": 0.360223,
+            "mask_recall": 0.527529,
+            "mask_precision": 0.531794
+          },
+          "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_10\\neucha\\page_10_overlay.png",
+          "quality_gate": {
+            "max_duplicate_ratio": 0.002,
+            "max_tiny_ratio": 0.015,
+            "mask_iou_min": 0.1,
+            "duplicate_ratio_ok": true,
+            "tiny_ratio_ok": true,
+            "mask_iou_ok": true,
+            "accepted": true
+          },
+          "score": 1.3549
+        },
+        {
+          "ok": true,
+          "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_vector.pdf",
+          "logs": [
+            "Render mode: handwriting; ExactGeometry=off; Handwriting=on",
+            "Sheet 210.0x297.0 mm is larger than workspace 180.0x280.0 mm. Using the overlapped sheet/workspace window.",
+            "Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-295.000,-15.000), sheet_bounds x(0.000,210.000) y(-295.000,2.000), sheet=a4, anchor=lower_left, offset=(0.00,0.00)",
+            "Method3 page preview: pages=1..1, body_font='C:\\plotter_pdf\\data\\fonts\\Neucha.ttf', formula_font='Times New Roman'.",
+            "Source pages: 1, selected: 1",
+            "Method3 centerline: threshold=64, candidates=9, paths=756",
+            "Method3 graphics centerline: paths=13",
+            "Method3 layer split: text_paths=753, graphics_centerline=13, graphics_outline=12, graphics_accents=2",
+            "Method3 cleanup: removed left-column text paths=3",
+            "Method3 detail thick-lines multipass: candidates=3, extra_passes=5",
+            "Method3 micro-segment prune: segments=7646->7342, min=0.08 mm",
+            "Text render mode: handwriting=on font='C:\\plotter_pdf\\data\\fonts\\Neucha.ttf'; image_contours=always",
+            "Extracting paths from SVG ...",
+            "Raw geometry bounds: x(29.390, 191.309) y(13.236, 187.053)",
+            "SVG page: 210.034 x 297.059 mm",
+            "Auto trim: no outer border detected.",
+            "SVG geometry: paths=710, segments=7331.",
+            "Source bounds: x(29.390, 191.309) y(13.236, 187.053)",
+            "Fit to work area: scale=1.1117, translate=(-32.672,-266.327), from (29.390, 13.236)-(191.309, 187.053)",
+            "Segment dedup: dropped 2/7331 retraced segments (0.0%), kept=7329, eps=0.010 mm",
+            "Reorder: source order preserved (710 polylines).",
+            "Handwriting fallback: skipping word-merge/smoothing for contour-only text source.",
+            "Segment counts: source=7331, fitted=7331, clipped=7331",
+            "Drawable segments after clip: 7331 (100.0% of source)",
+            "Prepared bounds: x(0.000, 180.000) y(-251.613, -58.387)",
+            "Estimated draw length: 3.22 m",
+            "Pencil mode: base_z=11.900, wear=0.000 mm, z_comp_start=0.000, z_down_start=11.900, dyn(rate=0.0100 mm/m, comp=1.000, slope=0.0100 Zmm/m, max=0.800), est_remaining_to_sharpen=120.0 m (wear=120.0, interval=inf)",
+            "Applying pen-up / pen-down ...",
+            "G-code stats: lines=9044, draw=8517, travel=175, bounds=0.000..180.000 x, -251.613..0.000 y",
+            "Preflight: ok: lines=9044, draw=8517, travel=175, ratio=0.02",
+            "Saved file stats: lines=9044, draw=8517, travel=175, bounds=0.000..180.000 x, -251.613..0.000 y",
+            "Saved: C:\\plotter_pdf\\_tmp\\latest_preview.nc"
+          ],
+          "font_label": "Neucha",
+          "font_path": "C:\\plotter_pdf\\data\\fonts\\Neucha.ttf",
+          "layout_similarity": 0.982559,
+          "metrics": {
+            "draw_length_mm": 4038.981,
+            "segments_total": 7841,
+            "segments_duplicate": 1,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -251.6131,
+              "y_max": -58.3869
+            }
+          },
+          "svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_10\\neucha__raster_safe\\page_10__fallback_candidate.svg",
+          "pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_10\\neucha__raster_safe\\page_10__fallback_candidate.pdf",
+          "nc": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_10\\neucha__raster_safe\\page_10__fallback_candidate.nc",
+          "gcode": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_10\\neucha__raster_safe\\page_10__fallback_candidate.gcode",
+          "notes": "fallback=raster_rewrite_handdraw; variant=raster_safe",
+          "font_slug": "neucha",
+          "variant_label": "raster_safe",
+          "image_contours_mode": "always",
+          "page_index": 10,
+          "source_image_count": 7,
+          "source_text_count": 19,
+          "source_path_count": 24,
+          "quality_metrics": {
+            "polylines": 169,
+            "segments_total": 7841,
+            "segments_duplicate": 1,
+            "segments_duplicate_ratio": 0.00012753475322025253,
+            "segments_tiny_lt_0_12mm": 1468,
+            "segments_tiny_ratio": 0.18722101772733069,
+            "segments_short_lt_0_25mm": 5142,
+            "segments_short_ratio": 0.6557837010585384,
+            "draw_length_mm": 4038.9811776490196,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -251.6131,
+              "y_max": -58.3869
+            }
+          },
+          "overlay_metrics": {
+            "mask_iou": 0.340655,
+            "mask_recall": 0.467532,
+            "mask_precision": 0.556597
+          },
+          "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_10\\neucha__raster_safe\\page_10_overlay.png",
+          "quality_gate": {
+            "max_duplicate_ratio": 0.002,
+            "max_tiny_ratio": 0.015,
+            "mask_iou_min": 0.1,
+            "duplicate_ratio_ok": true,
+            "tiny_ratio_ok": false,
+            "mask_iou_ok": true,
+            "accepted": false
+          },
+          "score": 1.281105
+        }
+      ]
+    },
+    {
+      "page_index": 11,
+      "selected_font": "Neucha",
+      "selected_variant": "raster_safe",
+      "selected_contours_mode": "always",
+      "selected_layout_similarity": 0.989607,
+      "selected_score": 1.312938,
+      "selected_quality_gate": {
+        "max_duplicate_ratio": 0.002,
+        "max_tiny_ratio": 0.015,
+        "mask_iou_min": 0.1,
+        "duplicate_ratio_ok": true,
+        "tiny_ratio_ok": false,
+        "mask_iou_ok": true,
+        "accepted": false
+      },
+      "selected_overlay_metrics": {
+        "mask_iou": 0.369983,
+        "mask_recall": 0.485456,
+        "mask_precision": 0.608676
+      },
+      "source_profile": {
+        "image_count": 7,
+        "text_count": 15,
+        "path_count": 20,
+        "image_heavy": true
+      },
+      "candidates": [
+        {
+          "item": "page_11",
+          "ok": true,
+          "message": "reused existing candidate",
+          "logs": [
+            "reused existing candidate artifacts"
+          ],
+          "font_label": "Neucha",
+          "font_path": "C:\\plotter_pdf\\data\\fonts\\Neucha.ttf",
+          "layout_similarity": 0.983339,
+          "metrics": {
+            "draw_length_mm": 2077.035,
+            "segments_total": 2229,
+            "segments_duplicate": 0,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -244.2119,
+              "y_max": -65.6157
+            }
+          },
+          "svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_11\\neucha\\page_11.svg",
+          "pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_11\\neucha\\page_11.pdf",
+          "nc": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_11\\neucha\\page_11.nc",
+          "gcode": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_11\\neucha\\page_11.gcode",
+          "notes": "reused_existing",
+          "font_slug": "neucha",
+          "variant_label": "always",
+          "image_contours_mode": "always",
+          "page_index": 11,
+          "source_image_count": 7,
+          "source_text_count": 15,
+          "source_path_count": 20,
+          "quality_metrics": {
+            "polylines": 99,
+            "segments_total": 2229,
+            "segments_duplicate": 0,
+            "segments_duplicate_ratio": 0.0,
+            "segments_tiny_lt_0_12mm": 7,
+            "segments_tiny_ratio": 0.0031404217137729925,
+            "segments_short_lt_0_25mm": 69,
+            "segments_short_ratio": 0.03095558546433378,
+            "draw_length_mm": 2077.0350617997665,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -244.2119,
+              "y_max": -65.6157
+            }
+          },
+          "overlay_metrics": {
+            "mask_iou": 0.245074,
+            "mask_recall": 0.396599,
+            "mask_precision": 0.390784
+          },
+          "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_11\\neucha\\page_11_overlay.png",
+          "quality_gate": {
+            "max_duplicate_ratio": 0.002,
+            "max_tiny_ratio": 0.015,
+            "mask_iou_min": 0.1,
+            "duplicate_ratio_ok": true,
+            "tiny_ratio_ok": true,
+            "mask_iou_ok": true,
+            "accepted": true
+          },
+          "score": 1.259908
+        },
+        {
+          "ok": true,
+          "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_vector.pdf",
+          "logs": [
+            "Render mode: handwriting; ExactGeometry=off; Handwriting=on",
+            "Sheet 210.0x297.0 mm is larger than workspace 180.0x280.0 mm. Using the overlapped sheet/workspace window.",
+            "Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-295.000,-15.000), sheet_bounds x(0.000,210.000) y(-295.000,2.000), sheet=a4, anchor=lower_left, offset=(0.00,0.00)",
+            "Method3 page preview: pages=1..1, body_font='C:\\plotter_pdf\\data\\fonts\\Neucha.ttf', formula_font='Times New Roman'.",
+            "Source pages: 1, selected: 1",
+            "Method3 centerline: threshold=32, candidates=9, paths=421",
+            "Method3 graphics centerline: paths=14",
+            "Method3 layer split: text_paths=421, graphics_centerline=14, graphics_outline=10, graphics_accents=2",
+            "Method3 detail thick-lines multipass: candidates=4, extra_passes=6",
+            "Method3 micro-segment prune: segments=3361->3226, min=0.08 mm",
+            "Text render mode: handwriting=on font='C:\\plotter_pdf\\data\\fonts\\Neucha.ttf'; image_contours=always",
+            "Extracting paths from SVG ...",
+            "Raw geometry bounds: x(38.100, 190.742) y(13.293, 164.556)",
+            "SVG page: 210.034 x 297.059 mm",
+            "Auto trim: no outer border detected.",
+            "SVG geometry: paths=367, segments=3213.",
+            "Source bounds: x(38.100, 190.742) y(13.293, 164.556)",
+            "Fit to work area: scale=1.1792, translate=(-44.929,-259.862), from (38.100, 13.293)-(190.742, 164.556)",
+            "Segment dedup: dropped 1/3213 retraced segments (0.0%), kept=3212, eps=0.010 mm",
+            "Reorder: source order preserved (368 polylines).",
+            "Handwriting fallback: skipping word-merge/smoothing for contour-only text source.",
+            "Segment counts: source=3213, fitted=3213, clipped=3213",
+            "Drawable segments after clip: 3213 (100.0% of source)",
+            "Prepared bounds: x(0.000, 180.000) y(-244.187, -65.813)",
+            "Estimated draw length: 1.98 m",
+            "Pencil mode: base_z=11.900, wear=0.000 mm, z_comp_start=0.000, z_down_start=11.900, dyn(rate=0.0100 mm/m, comp=1.000, slope=0.0100 Zmm/m, max=0.800), est_remaining_to_sharpen=120.0 m (wear=120.0, interval=inf)",
+            "Applying pen-up / pen-down ...",
+            "G-code stats: lines=4355, draw=3954, travel=133, bounds=0.000..180.000 x, -244.187..0.000 y",
+            "Preflight: ok: lines=4355, draw=3954, travel=133, ratio=0.03",
+            "Saved file stats: lines=4355, draw=3954, travel=133, bounds=0.000..180.000 x, -244.187..0.000 y",
+            "Saved: C:\\plotter_pdf\\_tmp\\latest_preview.nc"
+          ],
+          "font_label": "Neucha",
+          "font_path": "C:\\plotter_pdf\\data\\fonts\\Neucha.ttf",
+          "layout_similarity": 0.989607,
+          "metrics": {
+            "draw_length_mm": 2345.47,
+            "segments_total": 3446,
+            "segments_duplicate": 0,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -244.1868,
+              "y_max": -65.8132
+            }
+          },
+          "svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_11\\neucha__raster_safe\\page_11__fallback_candidate.svg",
+          "pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_11\\neucha__raster_safe\\page_11__fallback_candidate.pdf",
+          "nc": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_11\\neucha__raster_safe\\page_11__fallback_candidate.nc",
+          "gcode": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_11\\neucha__raster_safe\\page_11__fallback_candidate.gcode",
+          "notes": "fallback=raster_rewrite_handdraw; variant=raster_safe",
+          "font_slug": "neucha",
+          "variant_label": "raster_safe",
+          "image_contours_mode": "always",
+          "page_index": 11,
+          "source_image_count": 7,
+          "source_text_count": 15,
+          "source_path_count": 20,
+          "quality_metrics": {
+            "polylines": 127,
+            "segments_total": 3446,
+            "segments_duplicate": 0,
+            "segments_duplicate_ratio": 0.0,
+            "segments_tiny_lt_0_12mm": 454,
+            "segments_tiny_ratio": 0.1317469529889727,
+            "segments_short_lt_0_25mm": 2160,
+            "segments_short_ratio": 0.6268136970400464,
+            "draw_length_mm": 2345.4703416488583,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -244.1868,
+              "y_max": -65.8132
+            }
+          },
+          "overlay_metrics": {
+            "mask_iou": 0.369983,
+            "mask_recall": 0.485456,
+            "mask_precision": 0.608676
+          },
+          "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_11\\neucha__raster_safe\\page_11_overlay.png",
+          "quality_gate": {
+            "max_duplicate_ratio": 0.002,
+            "max_tiny_ratio": 0.015,
+            "mask_iou_min": 0.1,
+            "duplicate_ratio_ok": true,
+            "tiny_ratio_ok": false,
+            "mask_iou_ok": true,
+            "accepted": false
+          },
+          "score": 1.312938
+        }
+      ]
+    },
+    {
+      "page_index": 12,
+      "selected_font": "Neucha",
+      "selected_variant": "raster_safe",
+      "selected_contours_mode": "always",
+      "selected_layout_similarity": 0.956593,
+      "selected_score": 1.251781,
+      "selected_quality_gate": {
+        "max_duplicate_ratio": 0.002,
+        "max_tiny_ratio": 0.015,
+        "mask_iou_min": 0.1,
+        "duplicate_ratio_ok": true,
+        "tiny_ratio_ok": false,
+        "mask_iou_ok": true,
+        "accepted": false
+      },
+      "selected_overlay_metrics": {
+        "mask_iou": 0.353459,
+        "mask_recall": 0.44687,
+        "mask_precision": 0.628381
+      },
+      "source_profile": {
+        "image_count": 4,
+        "text_count": 15,
+        "path_count": 18,
+        "image_heavy": true
+      },
+      "candidates": [
+        {
+          "item": "page_12",
+          "ok": true,
+          "message": "reused existing candidate",
+          "logs": [
+            "reused existing candidate artifacts"
+          ],
+          "font_label": "Neucha",
+          "font_path": "C:\\plotter_pdf\\data\\fonts\\Neucha.ttf",
+          "layout_similarity": 0.945075,
+          "metrics": {
+            "draw_length_mm": 2632.428,
+            "segments_total": 4126,
+            "segments_duplicate": 0,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 179.9948,
+              "y_min": -188.5998,
+              "y_max": -121.2926
+            }
+          },
+          "svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_12\\neucha\\page_12.svg",
+          "pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_12\\neucha\\page_12.pdf",
+          "nc": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_12\\neucha\\page_12.nc",
+          "gcode": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_12\\neucha\\page_12.gcode",
+          "notes": "reused_existing",
+          "font_slug": "neucha",
+          "variant_label": "always",
+          "image_contours_mode": "always",
+          "page_index": 12,
+          "source_image_count": 4,
+          "source_text_count": 15,
+          "source_path_count": 18,
+          "quality_metrics": {
+            "polylines": 123,
+            "segments_total": 4126,
+            "segments_duplicate": 0,
+            "segments_duplicate_ratio": 0.0,
+            "segments_tiny_lt_0_12mm": 27,
+            "segments_tiny_ratio": 0.006543868153174988,
+            "segments_short_lt_0_25mm": 214,
+            "segments_short_ratio": 0.05186621425109064,
+            "draw_length_mm": 2632.428139181426,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 179.9948,
+              "y_min": -188.5998,
+              "y_max": -121.2926
+            }
+          },
+          "overlay_metrics": {
+            "mask_iou": 0.297829,
+            "mask_recall": 0.432957,
+            "mask_precision": 0.488295
+          },
+          "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_12\\neucha\\page_12_overlay.png",
+          "quality_gate": {
+            "max_duplicate_ratio": 0.002,
+            "max_tiny_ratio": 0.015,
+            "mask_iou_min": 0.1,
+            "duplicate_ratio_ok": true,
+            "tiny_ratio_ok": true,
+            "mask_iou_ok": true,
+            "accepted": true
+          },
+          "score": 1.254001
+        },
+        {
+          "ok": true,
+          "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_vector.pdf",
+          "logs": [
+            "Render mode: handwriting; ExactGeometry=off; Handwriting=on",
+            "Sheet 210.0x297.0 mm is larger than workspace 180.0x280.0 mm. Using the overlapped sheet/workspace window.",
+            "Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-295.000,-15.000), sheet_bounds x(0.000,210.000) y(-295.000,2.000), sheet=a4, anchor=lower_left, offset=(0.00,0.00)",
+            "Method3 page preview: pages=1..1, body_font='C:\\plotter_pdf\\data\\fonts\\Neucha.ttf', formula_font='Times New Roman'.",
+            "Source pages: 1, selected: 1",
+            "Method3 centerline: threshold=32, candidates=9, paths=661",
+            "Method3 graphics centerline: paths=1",
+            "Method3 layer split: text_paths=642, graphics_centerline=1, graphics_outline=1, graphics_accents=0",
+            "Method3 cleanup: removed left-column text paths=19",
+            "Method3 micro-segment prune: segments=5756->5544, min=0.08 mm",
+            "Text render mode: handwriting=on font='C:\\plotter_pdf\\data\\fonts\\Neucha.ttf'; image_contours=always",
+            "Extracting paths from SVG ...",
+            "Raw geometry bounds: x(28.908, 190.921) y(13.239, 74.325)",
+            "SVG page: 210.034 x 297.059 mm",
+            "Auto trim: no outer border detected.",
+            "SVG geometry: paths=583, segments=5544.",
+            "Source bounds: x(28.908, 190.921) y(13.239, 74.325)",
+            "Fit to work area: scale=1.1110, translate=(-32.117,-203.643), from (28.908, 13.239)-(190.921, 74.325)",
+            "Reorder: source order preserved (583 polylines).",
+            "Handwriting fallback: skipping word-merge/smoothing for contour-only text source.",
+            "Segment counts: source=5544, fitted=5544, clipped=5544",
+            "Drawable segments after clip: 5544 (100.0% of source)",
+            "Prepared bounds: x(0.000, 180.000) y(-188.934, -121.066)",
+            "Estimated draw length: 1.85 m",
+            "Pencil mode: base_z=11.900, wear=0.000 mm, z_comp_start=0.000, z_down_start=11.900, dyn(rate=0.0100 mm/m, comp=1.000, slope=0.0100 Zmm/m, max=0.800), est_remaining_to_sharpen=120.0 m (wear=120.0, interval=inf)",
+            "Applying pen-up / pen-down ...",
+            "G-code stats: lines=6979, draw=6536, travel=147, bounds=0.000..180.000 x, -188.934..0.000 y",
+            "Preflight: ok: lines=6979, draw=6536, travel=147, ratio=0.02",
+            "Saved file stats: lines=6979, draw=6536, travel=147, bounds=0.000..180.000 x, -188.934..0.000 y",
+            "Saved: C:\\plotter_pdf\\_tmp\\latest_preview.nc"
+          ],
+          "font_label": "Neucha",
+          "font_path": "C:\\plotter_pdf\\data\\fonts\\Neucha.ttf",
+          "layout_similarity": 0.956593,
+          "metrics": {
+            "draw_length_mm": 2500.677,
+            "segments_total": 5972,
+            "segments_duplicate": 0,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -188.9342,
+              "y_max": -121.0658
+            }
+          },
+          "svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_12\\neucha__raster_safe\\page_12__fallback_candidate.svg",
+          "pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_12\\neucha__raster_safe\\page_12__fallback_candidate.pdf",
+          "nc": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_12\\neucha__raster_safe\\page_12__fallback_candidate.nc",
+          "gcode": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_12\\neucha__raster_safe\\page_12__fallback_candidate.gcode",
+          "notes": "fallback=raster_rewrite_handdraw; variant=raster_safe",
+          "font_slug": "neucha",
+          "variant_label": "raster_safe",
+          "image_contours_mode": "always",
+          "page_index": 12,
+          "source_image_count": 4,
+          "source_text_count": 15,
+          "source_path_count": 18,
+          "quality_metrics": {
+            "polylines": 141,
+            "segments_total": 5972,
+            "segments_duplicate": 0,
+            "segments_duplicate_ratio": 0.0,
+            "segments_tiny_lt_0_12mm": 981,
+            "segments_tiny_ratio": 0.16426657736101807,
+            "segments_short_lt_0_25mm": 3909,
+            "segments_short_ratio": 0.654554588077696,
+            "draw_length_mm": 2500.676978544741,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -188.9342,
+              "y_max": -121.0658
+            }
+          },
+          "overlay_metrics": {
+            "mask_iou": 0.353459,
+            "mask_recall": 0.44687,
+            "mask_precision": 0.628381
+          },
+          "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_12\\neucha__raster_safe\\page_12_overlay.png",
+          "quality_gate": {
+            "max_duplicate_ratio": 0.002,
+            "max_tiny_ratio": 0.015,
+            "mask_iou_min": 0.1,
+            "duplicate_ratio_ok": true,
+            "tiny_ratio_ok": false,
+            "mask_iou_ok": true,
+            "accepted": false
+          },
+          "score": 1.251781
+        }
+      ]
+    },
+    {
+      "page_index": 13,
+      "selected_font": "Neucha",
+      "selected_variant": "always",
+      "selected_contours_mode": "always",
+      "selected_layout_similarity": 0.965697,
+      "selected_score": 1.006062,
+      "selected_quality_gate": {
+        "max_duplicate_ratio": 0.002,
+        "max_tiny_ratio": 0.015,
+        "mask_iou_min": 0.0,
+        "duplicate_ratio_ok": true,
+        "tiny_ratio_ok": true,
+        "mask_iou_ok": true,
+        "accepted": true
+      },
+      "selected_overlay_metrics": {
+        "mask_iou": 0.552259,
+        "mask_recall": 0.657559,
+        "mask_precision": 0.775213
+      },
+      "source_profile": {
+        "image_count": 1,
+        "text_count": 163,
+        "path_count": 468,
+        "image_heavy": false
+      },
+      "candidates": [
+        {
+          "item": "page_13",
+          "ok": true,
+          "message": "reused existing candidate",
+          "logs": [
+            "reused existing candidate artifacts"
+          ],
+          "font_label": "Neucha",
+          "font_path": "C:\\plotter_pdf\\data\\fonts\\Neucha.ttf",
+          "layout_similarity": 0.965697,
+          "metrics": {
+            "draw_length_mm": 11144.483,
+            "segments_total": 16284,
+            "segments_duplicate": 0,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -293.7439,
+              "y_max": -16.2424
+            }
+          },
+          "svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_13\\neucha\\page_13.svg",
+          "pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_13\\neucha\\page_13.pdf",
+          "nc": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_13\\neucha\\page_13.nc",
+          "gcode": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_13\\neucha\\page_13.gcode",
+          "notes": "reused_existing",
+          "font_slug": "neucha",
+          "variant_label": "always",
+          "image_contours_mode": "always",
+          "page_index": 13,
+          "source_image_count": 1,
+          "source_text_count": 163,
+          "source_path_count": 468,
+          "quality_metrics": {
+            "polylines": 474,
+            "segments_total": 16284,
+            "segments_duplicate": 0,
+            "segments_duplicate_ratio": 0.0,
+            "segments_tiny_lt_0_12mm": 225,
+            "segments_tiny_ratio": 0.013817243920412675,
+            "segments_short_lt_0_25mm": 1171,
+            "segments_short_ratio": 0.07191107835912552,
+            "draw_length_mm": 11144.483443167446,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -293.7439,
+              "y_max": -16.2424
+            }
+          },
+          "overlay_metrics": {
+            "mask_iou": 0.552259,
+            "mask_recall": 0.657559,
+            "mask_precision": 0.775213
+          },
+          "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_13\\neucha\\page_13_overlay.png",
+          "quality_gate": {
+            "max_duplicate_ratio": 0.002,
+            "max_tiny_ratio": 0.015,
+            "mask_iou_min": 0.0,
+            "duplicate_ratio_ok": true,
+            "tiny_ratio_ok": true,
+            "mask_iou_ok": true,
+            "accepted": true
+          },
+          "score": 1.006062
+        },
+        {
+          "item": "page_13",
+          "ok": true,
+          "message": "reused existing candidate",
+          "logs": [
+            "reused existing candidate artifacts"
+          ],
+          "font_label": "Neucha",
+          "font_path": "C:\\plotter_pdf\\data\\fonts\\Neucha.ttf",
+          "layout_similarity": 0.961329,
+          "metrics": {
+            "draw_length_mm": 10052.222,
+            "segments_total": 15478,
+            "segments_duplicate": 0,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -293.7439,
+              "y_max": -16.2424
+            }
+          },
+          "svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_13\\neucha__contours_off\\page_13.svg",
+          "pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_13\\neucha__contours_off\\page_13.pdf",
+          "nc": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_13\\neucha__contours_off\\page_13.nc",
+          "gcode": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_13\\neucha__contours_off\\page_13.gcode",
+          "notes": "reused_existing",
+          "font_slug": "neucha",
+          "variant_label": "contours_off",
+          "image_contours_mode": "off",
+          "page_index": 13,
+          "source_image_count": 1,
+          "source_text_count": 163,
+          "source_path_count": 468,
+          "quality_metrics": {
+            "polylines": 423,
+            "segments_total": 15478,
+            "segments_duplicate": 0,
+            "segments_duplicate_ratio": 0.0,
+            "segments_tiny_lt_0_12mm": 224,
+            "segments_tiny_ratio": 0.014472154025067838,
+            "segments_short_lt_0_25mm": 1148,
+            "segments_short_ratio": 0.07416978937847267,
+            "draw_length_mm": 10052.222153225386,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -293.7439,
+              "y_max": -16.2424
+            }
+          },
+          "overlay_metrics": {
+            "mask_iou": 0.493373,
+            "mask_recall": 0.580303,
+            "mask_precision": 0.767091
+          },
+          "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_13\\neucha__contours_off\\page_13_overlay.png",
+          "quality_gate": {
+            "max_duplicate_ratio": 0.002,
+            "max_tiny_ratio": 0.015,
+            "mask_iou_min": 0.0,
+            "duplicate_ratio_ok": true,
+            "tiny_ratio_ok": true,
+            "mask_iou_ok": true,
+            "accepted": true
+          },
+          "score": 0.996837
+        }
+      ]
+    },
+    {
+      "page_index": 14,
+      "selected_font": "Neucha",
+      "selected_variant": "raster_safe",
+      "selected_contours_mode": "always",
+      "selected_layout_similarity": 0.977105,
+      "selected_score": 1.223758,
+      "selected_quality_gate": {
+        "max_duplicate_ratio": 0.002,
+        "max_tiny_ratio": 0.015,
+        "mask_iou_min": 0.1,
+        "duplicate_ratio_ok": true,
+        "tiny_ratio_ok": false,
+        "mask_iou_ok": true,
+        "accepted": false
+      },
+      "selected_overlay_metrics": {
+        "mask_iou": 0.293583,
+        "mask_recall": 0.384664,
+        "mask_precision": 0.553548
+      },
+      "source_profile": {
+        "image_count": 40,
+        "text_count": 34,
+        "path_count": 55,
+        "image_heavy": true
+      },
+      "candidates": [
+        {
+          "item": "page_14",
+          "ok": true,
+          "message": "reused existing candidate",
+          "logs": [
+            "reused existing candidate artifacts"
+          ],
+          "font_label": "Neucha",
+          "font_path": "C:\\plotter_pdf\\data\\fonts\\Neucha.ttf",
+          "layout_similarity": 0.956578,
+          "metrics": {
+            "draw_length_mm": 9281.466,
+            "segments_total": 11272,
+            "segments_duplicate": 0,
+            "bounds": {
+              "x_min": 1.0478,
+              "x_max": 178.9522,
+              "y_min": -294.8964,
+              "y_max": -15.0
+            }
+          },
+          "svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_14\\neucha\\page_14.svg",
+          "pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_14\\neucha\\page_14.pdf",
+          "nc": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_14\\neucha\\page_14.nc",
+          "gcode": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_14\\neucha\\page_14.gcode",
+          "notes": "reused_existing",
+          "font_slug": "neucha",
+          "variant_label": "always",
+          "image_contours_mode": "always",
+          "page_index": 14,
+          "source_image_count": 40,
+          "source_text_count": 34,
+          "source_path_count": 55,
+          "quality_metrics": {
+            "polylines": 545,
+            "segments_total": 11272,
+            "segments_duplicate": 0,
+            "segments_duplicate_ratio": 0.0,
+            "segments_tiny_lt_0_12mm": 34,
+            "segments_tiny_ratio": 0.003016323633782825,
+            "segments_short_lt_0_25mm": 226,
+            "segments_short_ratio": 0.020049680624556424,
+            "draw_length_mm": 9281.46624510916,
+            "bounds": {
+              "x_min": 1.0478,
+              "x_max": 178.9522,
+              "y_min": -294.8964,
+              "y_max": -15.0
+            }
+          },
+          "overlay_metrics": {
+            "mask_iou": 0.17099,
+            "mask_recall": 0.352444,
+            "mask_precision": 0.249317
+          },
+          "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_14\\neucha\\page_14_overlay.png",
+          "quality_gate": {
+            "max_duplicate_ratio": 0.002,
+            "max_tiny_ratio": 0.015,
+            "mask_iou_min": 0.1,
+            "duplicate_ratio_ok": true,
+            "tiny_ratio_ok": true,
+            "mask_iou_ok": true,
+            "accepted": true
+          },
+          "score": 1.185254
+        },
+        {
+          "ok": true,
+          "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_vector.pdf",
+          "logs": [
+            "Render mode: handwriting; ExactGeometry=off; Handwriting=on",
+            "Sheet 210.0x297.0 mm is larger than workspace 180.0x280.0 mm. Using the overlapped sheet/workspace window.",
+            "Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-295.000,-15.000), sheet_bounds x(0.000,210.000) y(-295.000,2.000), sheet=a4, anchor=lower_left, offset=(0.00,0.00)",
+            "Method3 page preview: pages=1..1, body_font='C:\\plotter_pdf\\data\\fonts\\Neucha.ttf', formula_font='Times New Roman'.",
+            "Source pages: 1, selected: 1",
+            "Method3 centerline: threshold=32, candidates=9, paths=2198",
+            "Method3 graphics centerline: paths=6",
+            "Method3 layer split: text_paths=2194, graphics_centerline=6, graphics_outline=6, graphics_accents=0",
+            "Method3 cleanup: removed left-column text paths=4",
+            "Method3 micro-segment prune: segments=14294->13726, min=0.08 mm",
+            "Text render mode: handwriting=on font='C:\\plotter_pdf\\data\\fonts\\Neucha.ttf'; image_contours=always",
+            "Extracting paths from SVG ...",
+            "Raw geometry bounds: x(29.996, 191.044) y(13.293, 273.473)",
+            "SVG page: 210.034 x 297.059 mm",
+            "Auto trim: no outer border detected.",
+            "SVG geometry: paths=1819, segments=13725.",
+            "Source bounds: x(29.996, 191.044) y(13.293, 273.473)",
+            "Fit to work area: scale=1.0762, translate=(-28.939,-309.306), from (29.996, 13.293)-(191.044, 273.473)",
+            "Reorder: source order preserved (1819 polylines).",
+            "Handwriting fallback: skipping word-merge/smoothing for contour-only text source.",
+            "Segment counts: source=13725, fitted=13725, clipped=13725",
+            "Drawable segments after clip: 13725 (100.0% of source)",
+            "Prepared bounds: x(3.342, 176.658) y(-295.000, -15.000)",
+            "Estimated draw length: 4.50 m",
+            "Pencil mode: base_z=11.900, wear=0.000 mm, z_comp_start=0.000, z_down_start=11.900, dyn(rate=0.0100 mm/m, comp=1.000, slope=0.0100 Zmm/m, max=0.800), est_remaining_to_sharpen=120.0 m (wear=120.0, interval=inf)",
+            "Applying pen-up / pen-down ...",
+            "G-code stats: lines=18862, draw=17174, travel=562, bounds=0.000..176.658 x, -295.000..0.000 y",
+            "Preflight: ok: lines=18862, draw=17174, travel=562, ratio=0.03",
+            "Saved file stats: lines=18862, draw=17174, travel=562, bounds=0.000..176.658 x, -295.000..0.000 y",
+            "Saved: C:\\plotter_pdf\\_tmp\\latest_preview.nc"
+          ],
+          "font_label": "Neucha",
+          "font_path": "C:\\plotter_pdf\\data\\fonts\\Neucha.ttf",
+          "layout_similarity": 0.977105,
+          "metrics": {
+            "draw_length_mm": 6493.291,
+            "segments_total": 14950,
+            "segments_duplicate": 2,
+            "bounds": {
+              "x_min": 3.3419,
+              "x_max": 176.6581,
+              "y_min": -295.0,
+              "y_max": -15.0
+            }
+          },
+          "svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_14\\neucha__raster_safe\\page_14__fallback_candidate.svg",
+          "pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_14\\neucha__raster_safe\\page_14__fallback_candidate.pdf",
+          "nc": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_14\\neucha__raster_safe\\page_14__fallback_candidate.nc",
+          "gcode": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_14\\neucha__raster_safe\\page_14__fallback_candidate.gcode",
+          "notes": "fallback=raster_rewrite_handdraw; variant=raster_safe",
+          "font_slug": "neucha",
+          "variant_label": "raster_safe",
+          "image_contours_mode": "always",
+          "page_index": 14,
+          "source_image_count": 40,
+          "source_text_count": 34,
+          "source_path_count": 55,
+          "quality_metrics": {
+            "polylines": 556,
+            "segments_total": 14950,
+            "segments_duplicate": 2,
+            "segments_duplicate_ratio": 0.00013377926421404682,
+            "segments_tiny_lt_0_12mm": 2398,
+            "segments_tiny_ratio": 0.16040133779264215,
+            "segments_short_lt_0_25mm": 10271,
+            "segments_short_ratio": 0.6870234113712375,
+            "draw_length_mm": 6493.291086838957,
+            "bounds": {
+              "x_min": 3.3419,
+              "x_max": 176.6581,
+              "y_min": -295.0,
+              "y_max": -15.0
+            }
+          },
+          "overlay_metrics": {
+            "mask_iou": 0.293583,
+            "mask_recall": 0.384664,
+            "mask_precision": 0.553548
+          },
+          "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_14\\neucha__raster_safe\\page_14_overlay.png",
+          "quality_gate": {
+            "max_duplicate_ratio": 0.002,
+            "max_tiny_ratio": 0.015,
+            "mask_iou_min": 0.1,
+            "duplicate_ratio_ok": true,
+            "tiny_ratio_ok": false,
+            "mask_iou_ok": true,
+            "accepted": false
+          },
+          "score": 1.223758
+        }
+      ]
+    },
+    {
+      "page_index": 15,
+      "selected_font": "Neucha",
+      "selected_variant": "raster_safe",
+      "selected_contours_mode": "always",
+      "selected_layout_similarity": 0.966786,
+      "selected_score": 1.20932,
+      "selected_quality_gate": {
+        "max_duplicate_ratio": 0.002,
+        "max_tiny_ratio": 0.015,
+        "mask_iou_min": 0.1,
+        "duplicate_ratio_ok": true,
+        "tiny_ratio_ok": false,
+        "mask_iou_ok": true,
+        "accepted": false
+      },
+      "selected_overlay_metrics": {
+        "mask_iou": 0.281952,
+        "mask_recall": 0.364638,
+        "mask_precision": 0.554245
+      },
+      "source_profile": {
+        "image_count": 16,
+        "text_count": 14,
+        "path_count": 23,
+        "image_heavy": true
+      },
+      "candidates": [
+        {
+          "item": "page_15",
+          "ok": true,
+          "message": "reused existing candidate",
+          "logs": [
+            "reused existing candidate artifacts"
+          ],
+          "font_label": "Neucha",
+          "font_path": "C:\\plotter_pdf\\data\\fonts\\Neucha.ttf",
+          "layout_similarity": 0.936257,
+          "metrics": {
+            "draw_length_mm": 3286.601,
+            "segments_total": 4238,
+            "segments_duplicate": 0,
+            "bounds": {
+              "x_min": 0.0432,
+              "x_max": 180.0,
+              "y_min": -195.6044,
+              "y_max": -114.2783
+            }
+          },
+          "svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_15\\neucha\\page_15.svg",
+          "pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_15\\neucha\\page_15.pdf",
+          "nc": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_15\\neucha\\page_15.nc",
+          "gcode": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_15\\neucha\\page_15.gcode",
+          "notes": "reused_existing",
+          "font_slug": "neucha",
+          "variant_label": "always",
+          "image_contours_mode": "always",
+          "page_index": 15,
+          "source_image_count": 16,
+          "source_text_count": 14,
+          "source_path_count": 23,
+          "quality_metrics": {
+            "polylines": 174,
+            "segments_total": 4238,
+            "segments_duplicate": 0,
+            "segments_duplicate_ratio": 0.0,
+            "segments_tiny_lt_0_12mm": 3,
+            "segments_tiny_ratio": 0.0007078810759792355,
+            "segments_short_lt_0_25mm": 60,
+            "segments_short_ratio": 0.014157621519584709,
+            "draw_length_mm": 3286.6014396735145,
+            "bounds": {
+              "x_min": 0.0432,
+              "x_max": 180.0,
+              "y_min": -195.6044,
+              "y_max": -114.2783
+            }
+          },
+          "overlay_metrics": {
+            "mask_iou": 0.162934,
+            "mask_recall": 0.305222,
+            "mask_precision": 0.258989
+          },
+          "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_15\\neucha\\page_15_overlay.png",
+          "quality_gate": {
+            "max_duplicate_ratio": 0.002,
+            "max_tiny_ratio": 0.015,
+            "mask_iou_min": 0.1,
+            "duplicate_ratio_ok": true,
+            "tiny_ratio_ok": true,
+            "mask_iou_ok": true,
+            "accepted": true
+          },
+          "score": 1.133921
+        },
+        {
+          "ok": true,
+          "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_vector.pdf",
+          "logs": [
+            "Render mode: handwriting; ExactGeometry=off; Handwriting=on",
+            "Sheet 210.0x297.0 mm is larger than workspace 180.0x280.0 mm. Using the overlapped sheet/workspace window.",
+            "Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-295.000,-15.000), sheet_bounds x(0.000,210.000) y(-295.000,2.000), sheet=a4, anchor=lower_left, offset=(0.00,0.00)",
+            "Method3 page preview: pages=1..1, body_font='C:\\plotter_pdf\\data\\fonts\\Neucha.ttf', formula_font='Times New Roman'.",
+            "Source pages: 1, selected: 1",
+            "Method3 centerline: threshold=32, candidates=9, paths=771",
+            "Method3 micro-segment prune: segments=4693->4576, min=0.08 mm",
+            "Text render mode: handwriting=on font='C:\\plotter_pdf\\data\\fonts\\Neucha.ttf'; image_contours=always",
+            "Extracting paths from SVG ...",
+            "Raw geometry bounds: x(31.558, 190.984) y(13.274, 85.513)",
+            "SVG page: 210.034 x 297.059 mm",
+            "Auto trim: no outer border detected.",
+            "SVG geometry: paths=610, segments=4576.",
+            "Source bounds: x(31.558, 190.984) y(13.274, 85.513)",
+            "Fit to work area: scale=1.1290, translate=(-35.630,-210.768), from (31.558, 13.274)-(190.984, 85.513)",
+            "Reorder: source order preserved (610 polylines).",
+            "Handwriting fallback: skipping word-merge/smoothing for contour-only text source.",
+            "Segment counts: source=4576, fitted=4576, clipped=4576",
+            "Drawable segments after clip: 4576 (100.0% of source)",
+            "Prepared bounds: x(0.000, 180.000) y(-195.781, -114.219)",
+            "Estimated draw length: 1.58 m",
+            "Pencil mode: base_z=11.900, wear=0.000 mm, z_comp_start=0.000, z_down_start=11.900, dyn(rate=0.0100 mm/m, comp=1.000, slope=0.0100 Zmm/m, max=0.800), est_remaining_to_sharpen=120.0 m (wear=120.0, interval=inf)",
+            "Applying pen-up / pen-down ...",
+            "G-code stats: lines=6473, draw=5811, travel=220, bounds=0.000..180.000 x, -195.781..0.000 y",
+            "Preflight: ok: lines=6473, draw=5811, travel=220, ratio=0.04",
+            "Saved file stats: lines=6473, draw=5811, travel=220, bounds=0.000..180.000 x, -195.781..0.000 y",
+            "Saved: C:\\plotter_pdf\\_tmp\\latest_preview.nc"
+          ],
+          "font_label": "Neucha",
+          "font_path": "C:\\plotter_pdf\\data\\fonts\\Neucha.ttf",
+          "layout_similarity": 0.966786,
+          "metrics": {
+            "draw_length_mm": 2229.249,
+            "segments_total": 4955,
+            "segments_duplicate": 0,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -195.781,
+              "y_max": -114.219
+            }
+          },
+          "svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_15\\neucha__raster_safe\\page_15__fallback_candidate.svg",
+          "pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_15\\neucha__raster_safe\\page_15__fallback_candidate.pdf",
+          "nc": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_15\\neucha__raster_safe\\page_15__fallback_candidate.nc",
+          "gcode": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_15\\neucha__raster_safe\\page_15__fallback_candidate.gcode",
+          "notes": "fallback=raster_rewrite_handdraw; variant=raster_safe",
+          "font_slug": "neucha",
+          "variant_label": "raster_safe",
+          "image_contours_mode": "always",
+          "page_index": 15,
+          "source_image_count": 16,
+          "source_text_count": 14,
+          "source_path_count": 23,
+          "quality_metrics": {
+            "polylines": 214,
+            "segments_total": 4955,
+            "segments_duplicate": 0,
+            "segments_duplicate_ratio": 0.0,
+            "segments_tiny_lt_0_12mm": 537,
+            "segments_tiny_ratio": 0.10837537840565085,
+            "segments_short_lt_0_25mm": 2962,
+            "segments_short_ratio": 0.5977800201816347,
+            "draw_length_mm": 2229.2494306175436,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -195.781,
+              "y_max": -114.219
+            }
+          },
+          "overlay_metrics": {
+            "mask_iou": 0.281952,
+            "mask_recall": 0.364638,
+            "mask_precision": 0.554245
+          },
+          "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_15\\neucha__raster_safe\\page_15_overlay.png",
+          "quality_gate": {
+            "max_duplicate_ratio": 0.002,
+            "max_tiny_ratio": 0.015,
+            "mask_iou_min": 0.1,
+            "duplicate_ratio_ok": true,
+            "tiny_ratio_ok": false,
+            "mask_iou_ok": true,
+            "accepted": false
+          },
+          "score": 1.20932
+        }
+      ]
+    },
+    {
+      "page_index": 16,
+      "selected_font": "Neucha",
+      "selected_variant": "always",
+      "selected_contours_mode": "always",
+      "selected_layout_similarity": 0.966809,
+      "selected_score": 1.297949,
+      "selected_quality_gate": {
+        "max_duplicate_ratio": 0.002,
+        "max_tiny_ratio": 0.015,
+        "mask_iou_min": 0.1,
+        "duplicate_ratio_ok": true,
+        "tiny_ratio_ok": true,
+        "mask_iou_ok": true,
+        "accepted": true
+      },
+      "selected_overlay_metrics": {
+        "mask_iou": 0.327282,
+        "mask_recall": 0.460847,
+        "mask_precision": 0.530348
+      },
+      "source_profile": {
+        "image_count": 13,
+        "text_count": 31,
+        "path_count": 39,
+        "image_heavy": true
+      },
+      "candidates": [
+        {
+          "item": "page_16",
+          "ok": true,
+          "message": "reused existing candidate",
+          "logs": [
+            "reused existing candidate artifacts"
+          ],
+          "font_label": "Neucha",
+          "font_path": "C:\\plotter_pdf\\data\\fonts\\Neucha.ttf",
+          "layout_similarity": 0.966809,
+          "metrics": {
+            "draw_length_mm": 6556.927,
+            "segments_total": 9058,
+            "segments_duplicate": 0,
+            "bounds": {
+              "x_min": 1.0458,
+              "x_max": 178.9375,
+              "y_min": -294.997,
+              "y_max": -15.2584
+            }
+          },
+          "svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_16\\neucha\\page_16.svg",
+          "pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_16\\neucha\\page_16.pdf",
+          "nc": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_16\\neucha\\page_16.nc",
+          "gcode": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_16\\neucha\\page_16.gcode",
+          "notes": "reused_existing",
+          "font_slug": "neucha",
+          "variant_label": "always",
+          "image_contours_mode": "always",
+          "page_index": 16,
+          "source_image_count": 13,
+          "source_text_count": 31,
+          "source_path_count": 39,
+          "quality_metrics": {
+            "polylines": 351,
+            "segments_total": 9058,
+            "segments_duplicate": 0,
+            "segments_duplicate_ratio": 0.0,
+            "segments_tiny_lt_0_12mm": 77,
+            "segments_tiny_ratio": 0.008500772797527048,
+            "segments_short_lt_0_25mm": 432,
+            "segments_short_ratio": 0.04769264738352837,
+            "draw_length_mm": 6556.9269127277585,
+            "bounds": {
+              "x_min": 1.0458,
+              "x_max": 178.9375,
+              "y_min": -294.997,
+              "y_max": -15.2584
+            }
+          },
+          "overlay_metrics": {
+            "mask_iou": 0.327282,
+            "mask_recall": 0.460847,
+            "mask_precision": 0.530348
+          },
+          "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_16\\neucha\\page_16_overlay.png",
+          "quality_gate": {
+            "max_duplicate_ratio": 0.002,
+            "max_tiny_ratio": 0.015,
+            "mask_iou_min": 0.1,
+            "duplicate_ratio_ok": true,
+            "tiny_ratio_ok": true,
+            "mask_iou_ok": true,
+            "accepted": true
+          },
+          "score": 1.297949
+        },
+        {
+          "ok": true,
+          "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_vector.pdf",
+          "logs": [
+            "Render mode: handwriting; ExactGeometry=off; Handwriting=on",
+            "Sheet 210.0x297.0 mm is larger than workspace 180.0x280.0 mm. Using the overlapped sheet/workspace window.",
+            "Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-295.000,-15.000), sheet_bounds x(0.000,210.000) y(-295.000,2.000), sheet=a4, anchor=lower_left, offset=(0.00,0.00)",
+            "Method3 page preview: pages=1..1, body_font='C:\\plotter_pdf\\data\\fonts\\Neucha.ttf', formula_font='Times New Roman'.",
+            "Source pages: 1, selected: 1",
+            "Method3 centerline: threshold=32, candidates=9, paths=1672",
+            "Method3 graphics centerline: paths=39",
+            "Method3 layer split: text_paths=1651, graphics_centerline=39, graphics_outline=5, graphics_accents=0",
+            "Method3 cleanup: removed left-column text paths=14",
+            "Method3 detail thick-lines multipass: candidates=15, extra_passes=24",
+            "Method3 micro-segment prune: segments=12644->12186, min=0.08 mm",
+            "Text render mode: handwriting=on font='C:\\plotter_pdf\\data\\fonts\\Neucha.ttf'; image_contours=always",
+            "Extracting paths from SVG ...",
+            "Raw geometry bounds: x(25.521, 190.996) y(13.293, 273.897)",
+            "SVG page: 210.034 x 297.059 mm",
+            "Auto trim: no outer border detected.",
+            "SVG geometry: paths=1460, segments=12168.",
+            "Source bounds: x(25.521, 190.996) y(13.293, 273.897)",
+            "Fit to work area: scale=1.0744, translate=(-26.316,-309.282), from (25.521, 13.293)-(190.996, 273.897)",
+            "Segment dedup: dropped 2/12168 retraced segments (0.0%), kept=12166, eps=0.010 mm",
+            "Reorder: source order preserved (1460 polylines).",
+            "Handwriting fallback: skipping word-merge/smoothing for contour-only text source.",
+            "Segment counts: source=12168, fitted=12168, clipped=12168",
+            "Drawable segments after clip: 12168 (100.0% of source)",
+            "Prepared bounds: x(1.104, 178.896) y(-295.000, -15.000)",
+            "Estimated draw length: 5.12 m",
+            "Pencil mode: base_z=11.900, wear=0.000 mm, z_comp_start=0.000, z_down_start=11.900, dyn(rate=0.0100 mm/m, comp=1.000, slope=0.0100 Zmm/m, max=0.800), est_remaining_to_sharpen=120.0 m (wear=120.0, interval=inf)",
+            "Applying pen-up / pen-down ...",
+            "G-code stats: lines=16239, draw=14899, travel=446, bounds=0.000..178.896 x, -295.000..0.000 y",
+            "Preflight: ok: lines=16239, draw=14899, travel=446, ratio=0.03",
+            "Saved file stats: lines=16239, draw=14899, travel=446, bounds=0.000..178.896 x, -295.000..0.000 y",
+            "Saved: C:\\plotter_pdf\\_tmp\\latest_preview.nc"
+          ],
+          "font_label": "Neucha",
+          "font_path": "C:\\plotter_pdf\\data\\fonts\\Neucha.ttf",
+          "layout_similarity": 0.970459,
+          "metrics": {
+            "draw_length_mm": 6578.644,
+            "segments_total": 13139,
+            "segments_duplicate": 1,
+            "bounds": {
+              "x_min": 1.1044,
+              "x_max": 178.8956,
+              "y_min": -295.0,
+              "y_max": -15.0
+            }
+          },
+          "svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_16\\neucha__raster_safe\\page_16__fallback_candidate.svg",
+          "pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_16\\neucha__raster_safe\\page_16__fallback_candidate.pdf",
+          "nc": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_16\\neucha__raster_safe\\page_16__fallback_candidate.nc",
+          "gcode": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_16\\neucha__raster_safe\\page_16__fallback_candidate.gcode",
+          "notes": "fallback=raster_rewrite_handdraw; variant=raster_safe",
+          "font_slug": "neucha",
+          "variant_label": "raster_safe",
+          "image_contours_mode": "always",
+          "page_index": 16,
+          "source_image_count": 13,
+          "source_text_count": 31,
+          "source_path_count": 39,
+          "quality_metrics": {
+            "polylines": 440,
+            "segments_total": 13139,
+            "segments_duplicate": 1,
+            "segments_duplicate_ratio": 7.610929294466855e-05,
+            "segments_tiny_lt_0_12mm": 1947,
+            "segments_tiny_ratio": 0.14818479336326965,
+            "segments_short_lt_0_25mm": 8555,
+            "segments_short_ratio": 0.6511150011416394,
+            "draw_length_mm": 6578.644478145397,
+            "bounds": {
+              "x_min": 1.1044,
+              "x_max": 178.8956,
+              "y_min": -295.0,
+              "y_max": -15.0
+            }
+          },
+          "overlay_metrics": {
+            "mask_iou": 0.336879,
+            "mask_recall": 0.419562,
+            "mask_precision": 0.630921
+          },
+          "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_16\\neucha__raster_safe\\page_16_overlay.png",
+          "quality_gate": {
+            "max_duplicate_ratio": 0.002,
+            "max_tiny_ratio": 0.015,
+            "mask_iou_min": 0.1,
+            "duplicate_ratio_ok": true,
+            "tiny_ratio_ok": false,
+            "mask_iou_ok": true,
+            "accepted": false
+          },
+          "score": 1.249755
+        }
+      ]
+    },
+    {
+      "page_index": 17,
+      "selected_font": "Neucha",
+      "selected_variant": "raster_safe",
+      "selected_contours_mode": "always",
+      "selected_layout_similarity": 0.97392,
+      "selected_score": 1.341137,
+      "selected_quality_gate": {
+        "max_duplicate_ratio": 0.002,
+        "max_tiny_ratio": 0.015,
+        "mask_iou_min": 0.1,
+        "duplicate_ratio_ok": true,
+        "tiny_ratio_ok": false,
+        "mask_iou_ok": true,
+        "accepted": false
+      },
+      "selected_overlay_metrics": {
+        "mask_iou": 0.411152,
+        "mask_recall": 0.564551,
+        "mask_precision": 0.602094
+      },
+      "source_profile": {
+        "image_count": 11,
+        "text_count": 28,
+        "path_count": 35,
+        "image_heavy": true
+      },
+      "candidates": [
+        {
+          "item": "page_17",
+          "ok": true,
+          "message": "reused existing candidate",
+          "logs": [
+            "reused existing candidate artifacts"
+          ],
+          "font_label": "Neucha",
+          "font_path": "C:\\plotter_pdf\\data\\fonts\\Neucha.ttf",
+          "layout_similarity": 0.97072,
+          "metrics": {
+            "draw_length_mm": 7414.564,
+            "segments_total": 9570,
+            "segments_duplicate": 2,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -294.2309,
+              "y_max": -15.7897
+            }
+          },
+          "svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_17\\neucha\\page_17.svg",
+          "pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_17\\neucha\\page_17.pdf",
+          "nc": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_17\\neucha\\page_17.nc",
+          "gcode": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_17\\neucha\\page_17.gcode",
+          "notes": "reused_existing",
+          "font_slug": "neucha",
+          "variant_label": "always",
+          "image_contours_mode": "always",
+          "page_index": 17,
+          "source_image_count": 11,
+          "source_text_count": 28,
+          "source_path_count": 35,
+          "quality_metrics": {
+            "polylines": 354,
+            "segments_total": 9570,
+            "segments_duplicate": 2,
+            "segments_duplicate_ratio": 0.0002089864158829676,
+            "segments_tiny_lt_0_12mm": 80,
+            "segments_tiny_ratio": 0.008359456635318705,
+            "segments_short_lt_0_25mm": 453,
+            "segments_short_ratio": 0.04733542319749216,
+            "draw_length_mm": 7414.56426971988,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -294.2309,
+              "y_max": -15.7897
+            }
+          },
+          "overlay_metrics": {
+            "mask_iou": 0.35645,
+            "mask_recall": 0.52125,
+            "mask_precision": 0.529949
+          },
+          "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_17\\neucha\\page_17_overlay.png",
+          "quality_gate": {
+            "max_duplicate_ratio": 0.002,
+            "max_tiny_ratio": 0.015,
+            "mask_iou_min": 0.1,
+            "duplicate_ratio_ok": true,
+            "tiny_ratio_ok": true,
+            "mask_iou_ok": true,
+            "accepted": true
+          },
+          "score": 1.340281
+        },
+        {
+          "ok": true,
+          "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_vector.pdf",
+          "logs": [
+            "Render mode: handwriting; ExactGeometry=off; Handwriting=on",
+            "Sheet 210.0x297.0 mm is larger than workspace 180.0x280.0 mm. Using the overlapped sheet/workspace window.",
+            "Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-295.000,-15.000), sheet_bounds x(0.000,210.000) y(-295.000,2.000), sheet=a4, anchor=lower_left, offset=(0.00,0.00)",
+            "Method3 page preview: pages=1..1, body_font='C:\\plotter_pdf\\data\\fonts\\Neucha.ttf', formula_font='Times New Roman'.",
+            "Source pages: 1, selected: 1",
+            "Method3 centerline: threshold=224, candidates=9, paths=1886",
+            "Method3 graphics centerline: paths=100",
+            "Method3 layer split: text_paths=1842, graphics_centerline=100, graphics_outline=52, graphics_accents=17",
+            "Method3 cleanup: removed left-column text paths=37",
+            "Method3 detail thick-lines multipass: candidates=43, extra_passes=64",
+            "Method3 micro-segment prune: segments=18969->17958, min=0.08 mm",
+            "Text render mode: handwriting=on font='C:\\plotter_pdf\\data\\fonts\\Neucha.ttf'; image_contours=always",
+            "Extracting paths from SVG ...",
+            "Raw geometry bounds: x(25.763, 191.660) y(13.184, 270.208)",
+            "SVG page: 210.034 x 297.059 mm",
+            "Auto trim: no outer border detected.",
+            "SVG geometry: paths=1802, segments=17893.",
+            "Source bounds: x(25.763, 191.660) y(13.184, 270.208)",
+            "Fit to work area: scale=1.0850, translate=(-27.953,-308.742), from (25.763, 13.184)-(191.660, 270.208)",
+            "Segment dedup: dropped 14/17893 retraced segments (0.1%), kept=17879, eps=0.010 mm",
+            "Reorder: source order preserved (1804 polylines).",
+            "Handwriting fallback: skipping word-merge/smoothing for contour-only text source.",
+            "Segment counts: source=17893, fitted=17893, clipped=17893",
+            "Drawable segments after clip: 17893 (100.0% of source)",
+            "Prepared bounds: x(0.000, 180.000) y(-294.437, -15.563)",
+            "Estimated draw length: 8.25 m",
+            "Pencil mode: base_z=11.900, wear=0.000 mm, z_comp_start=0.000, z_down_start=11.900, dyn(rate=0.0100 mm/m, comp=1.000, slope=0.0100 Zmm/m, max=0.800), est_remaining_to_sharpen=120.0 m (wear=120.0, interval=inf)",
+            "Applying pen-up / pen-down ...",
+            "G-code stats: lines=22282, draw=20939, travel=447, bounds=0.000..180.000 x, -294.437..0.000 y",
+            "Preflight: ok: lines=22282, draw=20939, travel=447, ratio=0.02",
+            "Saved file stats: lines=22282, draw=20939, travel=447, bounds=0.000..180.000 x, -294.437..0.000 y",
+            "Saved: C:\\plotter_pdf\\_tmp\\latest_preview.nc"
+          ],
+          "font_label": "Neucha",
+          "font_path": "C:\\plotter_pdf\\data\\fonts\\Neucha.ttf",
+          "layout_similarity": 0.97392,
+          "metrics": {
+            "draw_length_mm": 9999.797,
+            "segments_total": 19175,
+            "segments_duplicate": 8,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -294.4369,
+              "y_max": -15.5631
+            }
+          },
+          "svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_17\\neucha__raster_safe\\page_17__fallback_candidate.svg",
+          "pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_17\\neucha__raster_safe\\page_17__fallback_candidate.pdf",
+          "nc": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_17\\neucha__raster_safe\\page_17__fallback_candidate.nc",
+          "gcode": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_17\\neucha__raster_safe\\page_17__fallback_candidate.gcode",
+          "notes": "fallback=raster_rewrite_handdraw; variant=raster_safe",
+          "font_slug": "neucha",
+          "variant_label": "raster_safe",
+          "image_contours_mode": "always",
+          "page_index": 17,
+          "source_image_count": 11,
+          "source_text_count": 28,
+          "source_path_count": 35,
+          "quality_metrics": {
+            "polylines": 441,
+            "segments_total": 19175,
+            "segments_duplicate": 8,
+            "segments_duplicate_ratio": 0.00041720990873533246,
+            "segments_tiny_lt_0_12mm": 3361,
+            "segments_tiny_ratio": 0.17528031290743154,
+            "segments_short_lt_0_25mm": 12923,
+            "segments_short_ratio": 0.6739504563233377,
+            "draw_length_mm": 9999.79692706926,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -294.4369,
+              "y_max": -15.5631
+            }
+          },
+          "overlay_metrics": {
+            "mask_iou": 0.411152,
+            "mask_recall": 0.564551,
+            "mask_precision": 0.602094
+          },
+          "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_17\\neucha__raster_safe\\page_17_overlay.png",
+          "quality_gate": {
+            "max_duplicate_ratio": 0.002,
+            "max_tiny_ratio": 0.015,
+            "mask_iou_min": 0.1,
+            "duplicate_ratio_ok": true,
+            "tiny_ratio_ok": false,
+            "mask_iou_ok": true,
+            "accepted": false
+          },
+          "score": 1.341137
+        }
+      ]
+    },
+    {
+      "page_index": 18,
+      "selected_font": "Neucha",
+      "selected_variant": "always",
+      "selected_contours_mode": "always",
+      "selected_layout_similarity": 0.973388,
+      "selected_score": 1.337452,
+      "selected_quality_gate": {
+        "max_duplicate_ratio": 0.002,
+        "max_tiny_ratio": 0.015,
+        "mask_iou_min": 0.1,
+        "duplicate_ratio_ok": true,
+        "tiny_ratio_ok": true,
+        "mask_iou_ok": true,
+        "accepted": true
+      },
+      "selected_overlay_metrics": {
+        "mask_iou": 0.343817,
+        "mask_recall": 0.515597,
+        "mask_precision": 0.507865
+      },
+      "source_profile": {
+        "image_count": 11,
+        "text_count": 18,
+        "path_count": 25,
+        "image_heavy": true
+      },
+      "candidates": [
+        {
+          "item": "page_18",
+          "ok": true,
+          "message": "reused existing candidate",
+          "logs": [
+            "reused existing candidate artifacts"
+          ],
+          "font_label": "Neucha",
+          "font_path": "C:\\plotter_pdf\\data\\fonts\\Neucha.ttf",
+          "layout_similarity": 0.973388,
+          "metrics": {
+            "draw_length_mm": 5178.021,
+            "segments_total": 5613,
+            "segments_duplicate": 0,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 179.9548,
+              "y_min": -259.1356,
+              "y_max": -50.7861
+            }
+          },
+          "svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_18\\neucha\\page_18.svg",
+          "pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_18\\neucha\\page_18.pdf",
+          "nc": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_18\\neucha\\page_18.nc",
+          "gcode": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_18\\neucha\\page_18.gcode",
+          "notes": "reused_existing",
+          "font_slug": "neucha",
+          "variant_label": "always",
+          "image_contours_mode": "always",
+          "page_index": 18,
+          "source_image_count": 11,
+          "source_text_count": 18,
+          "source_path_count": 25,
+          "quality_metrics": {
+            "polylines": 219,
+            "segments_total": 5613,
+            "segments_duplicate": 0,
+            "segments_duplicate_ratio": 0.0,
+            "segments_tiny_lt_0_12mm": 30,
+            "segments_tiny_ratio": 0.005344735435595938,
+            "segments_short_lt_0_25mm": 201,
+            "segments_short_ratio": 0.03580972741849278,
+            "draw_length_mm": 5178.020596252337,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 179.9548,
+              "y_min": -259.1356,
+              "y_max": -50.7861
+            }
+          },
+          "overlay_metrics": {
+            "mask_iou": 0.343817,
+            "mask_recall": 0.515597,
+            "mask_precision": 0.507865
+          },
+          "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_18\\neucha\\page_18_overlay.png",
+          "quality_gate": {
+            "max_duplicate_ratio": 0.002,
+            "max_tiny_ratio": 0.015,
+            "mask_iou_min": 0.1,
+            "duplicate_ratio_ok": true,
+            "tiny_ratio_ok": true,
+            "mask_iou_ok": true,
+            "accepted": true
+          },
+          "score": 1.337452
+        },
+        {
+          "ok": true,
+          "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_vector.pdf",
+          "logs": [
+            "Render mode: handwriting; ExactGeometry=off; Handwriting=on",
+            "Sheet 210.0x297.0 mm is larger than workspace 180.0x280.0 mm. Using the overlapped sheet/workspace window.",
+            "Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-295.000,-15.000), sheet_bounds x(0.000,210.000) y(-295.000,2.000), sheet=a4, anchor=lower_left, offset=(0.00,0.00)",
+            "Method3 page preview: pages=1..1, body_font='C:\\plotter_pdf\\data\\fonts\\Neucha.ttf', formula_font='Times New Roman'.",
+            "Source pages: 1, selected: 1",
+            "Method3 centerline: threshold=224, candidates=9, paths=1560",
+            "Method3 graphics centerline: paths=168",
+            "Method3 layer split: text_paths=1488, graphics_centerline=168, graphics_outline=80, graphics_accents=19",
+            "Method3 cleanup: removed left-column text paths=54",
+            "Method3 cleanup: deduped near text strokes=1",
+            "Method3 detail thick-lines multipass: candidates=74, extra_passes=86",
+            "Method3 micro-segment prune: segments=13825->13042, min=0.08 mm",
+            "Text render mode: handwriting=on font='C:\\plotter_pdf\\data\\fonts\\Neucha.ttf'; image_contours=always",
+            "Extracting paths from SVG ...",
+            "Raw geometry bounds: x(30.329, 191.226) y(13.128, 204.410)",
+            "SVG page: 210.034 x 297.059 mm",
+            "Auto trim: no outer border detected.",
+            "SVG geometry: paths=1445, segments=12973.",
+            "Source bounds: x(30.329, 191.226) y(13.128, 204.410)",
+            "Fit to work area: scale=1.1187, translate=(-33.930,-276.683), from (30.329, 13.128)-(191.226, 204.410)",
+            "Segment dedup: dropped 27/12973 retraced segments (0.2%), kept=12946, eps=0.010 mm",
+            "Reorder: source order preserved (1450 polylines).",
+            "Handwriting fallback: skipping word-merge/smoothing for contour-only text source.",
+            "Segment counts: source=12973, fitted=12973, clipped=12973",
+            "Drawable segments after clip: 12973 (100.0% of source)",
+            "Prepared bounds: x(0.000, 180.000) y(-261.996, -48.004)",
+            "Estimated draw length: 7.40 m",
+            "Pencil mode: base_z=11.900, wear=0.000 mm, z_comp_start=0.000, z_down_start=11.900, dyn(rate=0.0100 mm/m, comp=1.000, slope=0.0100 Zmm/m, max=0.800), est_remaining_to_sharpen=120.0 m (wear=120.0, interval=inf)",
+            "Applying pen-up / pen-down ...",
+            "G-code stats: lines=17354, draw=15849, travel=501, bounds=0.000..180.000 x, -261.996..0.000 y",
+            "Preflight: ok: lines=17354, draw=15849, travel=501, ratio=0.03",
+            "Saved file stats: lines=17354, draw=15849, travel=501, bounds=0.000..180.000 x, -261.996..0.000 y",
+            "Saved: C:\\plotter_pdf\\_tmp\\latest_preview.nc"
+          ],
+          "font_label": "Neucha",
+          "font_path": "C:\\plotter_pdf\\data\\fonts\\Neucha.ttf",
+          "layout_similarity": 0.961619,
+          "metrics": {
+            "draw_length_mm": 8644.264,
+            "segments_total": 13869,
+            "segments_duplicate": 5,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -261.9964,
+              "y_max": -48.0036
+            }
+          },
+          "svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_18\\neucha__raster_safe\\page_18__fallback_candidate.svg",
+          "pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_18\\neucha__raster_safe\\page_18__fallback_candidate.pdf",
+          "nc": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_18\\neucha__raster_safe\\page_18__fallback_candidate.nc",
+          "gcode": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_18\\neucha__raster_safe\\page_18__fallback_candidate.gcode",
+          "notes": "fallback=raster_rewrite_handdraw; variant=raster_safe",
+          "font_slug": "neucha",
+          "variant_label": "raster_safe",
+          "image_contours_mode": "always",
+          "page_index": 18,
+          "source_image_count": 11,
+          "source_text_count": 18,
+          "source_path_count": 25,
+          "quality_metrics": {
+            "polylines": 495,
+            "segments_total": 13869,
+            "segments_duplicate": 5,
+            "segments_duplicate_ratio": 0.0003605162592832937,
+            "segments_tiny_lt_0_12mm": 2089,
+            "segments_tiny_ratio": 0.1506236931285601,
+            "segments_short_lt_0_25mm": 8120,
+            "segments_short_ratio": 0.585478405076069,
+            "draw_length_mm": 8644.263743400425,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -261.9964,
+              "y_max": -48.0036
+            }
+          },
+          "overlay_metrics": {
+            "mask_iou": 0.208359,
+            "mask_recall": 0.357124,
+            "mask_precision": 0.333416
+          },
+          "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14_pack\\_candidates\\page_18\\neucha__raster_safe\\page_18_overlay.png",
+          "quality_gate": {
+            "max_duplicate_ratio": 0.002,
+            "max_tiny_ratio": 0.015,
+            "mask_iou_min": 0.1,
+            "duplicate_ratio_ok": true,
+            "tiny_ratio_ok": false,
+            "mask_iou_ok": true,
+            "accepted": false
+          },
+          "score": 1.173131
+        }
+      ]
+    }
+  ]
+}

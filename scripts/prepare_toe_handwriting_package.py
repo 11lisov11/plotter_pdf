@@ -9,6 +9,7 @@ import sys
 import time
 from pathlib import Path
 from typing import Any
+from xml.etree import ElementTree as ET
 
 import cv2  # type: ignore
 import fitz  # type: ignore
@@ -39,6 +40,14 @@ SOFT_OVERRIDE_MAX_DUPLICATE_RATIO = 0.005
 SOFT_OVERRIDE_MAX_TINY_RATIO = 0.040
 SOFT_OVERRIDE_MAX_SHORT_RATIO = 0.180
 SOFT_OVERRIDE_MIN_SCORE_GAIN = 0.001
+IMAGE_HEAVY_COUNT_THRESHOLD = 4
+IMAGE_HEAVY_MASK_IOU_MIN = 0.18
+IMAGE_HEAVY_MASK_IOU_GATE = 0.10
+FORMULA_HEAVY_IMAGE_COUNT_THRESHOLD = 30
+FORMULA_HEAVY_SELECTED_IOU_MAX = 0.20
+FORMULA_HEAVY_MAX_SIMILARITY_LOSS = 0.002
+FORMULA_HEAVY_SEGMENTS_RATIO_MIN = 2.0
+FORMULA_HEAVY_DRAW_LENGTH_RATIO_MIN = 2.0
 
 
 def _slugify(value: str) -> str:
@@ -54,6 +63,49 @@ def _candidate_fonts() -> list[tuple[str, Path]]:
     if not out:
         raise FileNotFoundError("No candidate handwriting fonts found in data/fonts.")
     return out
+
+
+def _filter_candidate_fonts(
+    fonts: list[tuple[str, Path]],
+    selected_labels: list[str],
+) -> list[tuple[str, Path]]:
+    requested = [str(label or "").strip().lower() for label in selected_labels if str(label or "").strip()]
+    if not requested:
+        return fonts
+    requested_set = set(requested)
+    filtered = [(label, path) for label, path in fonts if str(label).strip().lower() in requested_set]
+    if not filtered:
+        raise FileNotFoundError(f"Requested font labels not found: {', '.join(selected_labels)}")
+    return filtered
+
+
+def _source_page_visual_profile(page_svg: Path) -> dict[str, Any]:
+    profile = {
+        "image_count": 0,
+        "text_count": 0,
+        "path_count": 0,
+        "image_heavy": False,
+    }
+    try:
+        root = ET.parse(page_svg).getroot()
+    except Exception:
+        return profile
+    counts: dict[str, int] = {}
+    for el in root.iter():
+        tag = str(el.tag).split("}")[-1]
+        counts[tag] = counts.get(tag, 0) + 1
+    image_count = int(counts.get("image", 0))
+    text_count = int(counts.get("text", 0))
+    path_count = int(counts.get("path", 0))
+    profile.update(
+        {
+            "image_count": image_count,
+            "text_count": text_count,
+            "path_count": path_count,
+            "image_heavy": image_count >= int(IMAGE_HEAVY_COUNT_THRESHOLD),
+        }
+    )
+    return profile
 
 
 def _compute_quality_metrics(nc_path: Path) -> dict[str, Any]:
@@ -139,7 +191,26 @@ def _candidate_score(row: dict[str, Any]) -> float:
     tiny = float(g.get("segments_tiny_ratio", 0.0) or 0.0)
     short = float(g.get("segments_short_ratio", 0.0) or 0.0)
     iou = float(overlay.get("mask_iou", 0.0) or 0.0)
-    return round(sim + (iou * 0.08) - (dup * 0.30) - (tiny * 0.12) - (short * 0.03), 6)
+    recall = float(overlay.get("mask_recall", 0.0) or 0.0)
+    precision = float(overlay.get("mask_precision", 0.0) or 0.0)
+    image_count = int(row.get("source_image_count", 0) or 0)
+    image_heavy = image_count >= int(IMAGE_HEAVY_COUNT_THRESHOLD)
+    iou_weight = 0.18 if image_heavy else 0.08
+    recall_weight = 0.55 if image_heavy else 0.0
+    precision_weight = 0.04 if image_heavy else 0.0
+    low_iou_floor = float(IMAGE_HEAVY_MASK_IOU_MIN) if image_heavy else 0.0
+    low_iou_penalty = max(0.0, low_iou_floor - iou) * (0.55 if image_heavy else 0.0)
+    return round(
+        sim
+        + (iou * iou_weight)
+        + (recall * recall_weight)
+        + (precision * precision_weight)
+        - (dup * 0.30)
+        - (tiny * 0.12)
+        - (short * 0.03)
+        - low_iou_penalty,
+        6,
+    )
 
 
 def _font_doc_score(rows: list[dict[str, Any]]) -> float:
@@ -154,14 +225,22 @@ def _font_doc_score(rows: list[dict[str, Any]]) -> float:
 
 def _quality_gate(row: dict[str, Any], *, max_duplicate_ratio: float, max_tiny_ratio: float) -> dict[str, Any]:
     g = dict(row.get("quality_metrics", {}))
+    overlay = dict(row.get("overlay_metrics", {}))
     dup = float(g.get("segments_duplicate_ratio", 0.0) or 0.0)
     tiny = float(g.get("segments_tiny_ratio", 0.0) or 0.0)
+    image_count = int(row.get("source_image_count", 0) or 0)
+    image_heavy = image_count >= int(IMAGE_HEAVY_COUNT_THRESHOLD)
+    iou = float(overlay.get("mask_iou", 0.0) or 0.0)
+    mask_iou_min = float(IMAGE_HEAVY_MASK_IOU_GATE) if image_heavy else 0.0
+    mask_iou_ok = True if not image_heavy else iou >= mask_iou_min
     return {
         "max_duplicate_ratio": float(max_duplicate_ratio),
         "max_tiny_ratio": float(max_tiny_ratio),
+        "mask_iou_min": float(mask_iou_min),
         "duplicate_ratio_ok": dup <= float(max_duplicate_ratio),
         "tiny_ratio_ok": tiny <= float(max_tiny_ratio),
-        "accepted": dup <= float(max_duplicate_ratio) and tiny <= float(max_tiny_ratio),
+        "mask_iou_ok": bool(mask_iou_ok),
+        "accepted": dup <= float(max_duplicate_ratio) and tiny <= float(max_tiny_ratio) and bool(mask_iou_ok),
     }
 
 
@@ -238,12 +317,124 @@ def _select_page_result(
     return base
 
 
+def _should_prefer_image_heavy_fallback(
+    *,
+    selected: dict[str, Any],
+    fallback: dict[str, Any],
+    source_profile: dict[str, Any],
+) -> bool:
+    if not bool(fallback.get("ok")):
+        return False
+    selected_iou = float(dict(selected.get("overlay_metrics", {})).get("mask_iou", 0.0) or 0.0)
+    fallback_iou = float(dict(fallback.get("overlay_metrics", {})).get("mask_iou", 0.0) or 0.0)
+    selected_recall = float(dict(selected.get("overlay_metrics", {})).get("mask_recall", 0.0) or 0.0)
+    fallback_recall = float(dict(fallback.get("overlay_metrics", {})).get("mask_recall", 0.0) or 0.0)
+    selected_score = float(selected.get("score", -1e9) or -1e9)
+    fallback_score = float(fallback.get("score", -1e9) or -1e9)
+    if (
+        fallback_score >= (selected_score + 0.003)
+        or fallback_iou >= (selected_iou + 0.05)
+        or (fallback_recall >= (selected_recall + 0.02) and fallback_iou >= (selected_iou - 0.01))
+    ):
+        return True
+
+    image_count = int(source_profile.get("image_count", 0) or 0)
+    selected_variant = str(selected.get("variant_label", "always") or "always")
+    selected_segments = int(dict(selected.get("quality_metrics", {})).get("segments_total", 0) or 0)
+    fallback_segments = int(dict(fallback.get("quality_metrics", {})).get("segments_total", 0) or 0)
+    selected_draw = float(dict(selected.get("quality_metrics", {})).get("draw_length_mm", 0.0) or 0.0)
+    fallback_draw = float(dict(fallback.get("quality_metrics", {})).get("draw_length_mm", 0.0) or 0.0)
+    selected_sim = float(selected.get("layout_similarity", 0.0) or 0.0)
+    fallback_sim = float(fallback.get("layout_similarity", 0.0) or 0.0)
+    formula_like_overtrace = (
+        image_count >= int(FORMULA_HEAVY_IMAGE_COUNT_THRESHOLD)
+        and selected_variant == "always"
+        and selected_iou <= float(FORMULA_HEAVY_SELECTED_IOU_MAX)
+        and fallback_sim >= (selected_sim - float(FORMULA_HEAVY_MAX_SIMILARITY_LOSS))
+        and (
+            (fallback_segments > 0 and selected_segments >= math.ceil(fallback_segments * float(FORMULA_HEAVY_SEGMENTS_RATIO_MIN)))
+            or (fallback_draw > 0.0 and selected_draw >= (fallback_draw * float(FORMULA_HEAVY_DRAW_LENGTH_RATIO_MIN)))
+        )
+    )
+    if formula_like_overtrace:
+        return True
+    return False
+
+
 def _copy_selected_artifacts(selected: dict[str, Any], prefix: Path) -> None:
     for src_key, dst_path in zip(["svg", "pdf", "nc", "gcode"], prep._bridge_preview_copy_targets(prefix)):
         prep._copy_file(Path(str(selected[src_key])), dst_path)
     overlay_src = Path(str(selected.get("overlay_png", "")))
     if overlay_src.exists():
         prep._copy_file(overlay_src, prefix.parent / f"{prefix.name}_overlay.png")
+
+
+def _build_image_heavy_fallback_candidate(
+    *,
+    source_pdf: Path,
+    page_index: int,
+    package_dir: Path,
+    font_label: str,
+    font_path: Path,
+    source_profile: dict[str, Any],
+    max_duplicate_ratio: float,
+    max_tiny_ratio: float,
+    resume: bool,
+) -> dict[str, Any]:
+    font_slug = _slugify(font_label)
+    prefix = package_dir / "_candidates" / f"page_{page_index:02d}" / f"{font_slug}__raster_safe" / f"page_{page_index:02d}"
+    prefix.parent.mkdir(parents=True, exist_ok=True)
+    row = None
+    if resume:
+        row = _load_existing_candidate(
+            source_pdf=source_pdf,
+            page_index=page_index,
+            font_label=font_label,
+            font_path=font_path,
+            prefix=prefix,
+        )
+    if row is None:
+        row = prep._prepare_toe_raster_fallback(
+            source_pdf=source_pdf,
+            page_index=page_index,
+            prefix=prefix,
+            font_label=font_label,
+            font_path=font_path,
+        )
+    row["font_slug"] = font_slug
+    row["variant_label"] = "raster_safe"
+    row["image_contours_mode"] = "always"
+    row["page_index"] = int(page_index)
+    row["source_image_count"] = int(source_profile.get("image_count", 0) or 0)
+    row["source_text_count"] = int(source_profile.get("text_count", 0) or 0)
+    row["source_path_count"] = int(source_profile.get("path_count", 0) or 0)
+    if bool(row.get("ok")):
+        quality_metrics = _compute_quality_metrics(Path(str(row["nc"])))
+        row["quality_metrics"] = quality_metrics
+        overlay_png = prefix.parent / f"{prefix.name}_overlay.png"
+        row["overlay_metrics"] = _build_overlay_metrics(
+            source_pdf=source_pdf,
+            source_page_index=page_index - 1,
+            preview_pdf=Path(str(row["pdf"])),
+            out_png=overlay_png,
+        )
+        row["overlay_png"] = str(overlay_png)
+        row["quality_gate"] = _quality_gate(
+            row,
+            max_duplicate_ratio=float(max_duplicate_ratio),
+            max_tiny_ratio=float(max_tiny_ratio),
+        )
+        row["score"] = _candidate_score(row)
+        row["notes"] = "; ".join(
+            part for part in [str(row.get("notes", "")), "variant=raster_safe"] if part
+        )
+    else:
+        row["quality_metrics"] = {}
+        row["quality_gate"] = {"accepted": False}
+        row["overlay_metrics"] = {}
+        row["overlay_png"] = ""
+        row["score"] = -1e9
+    return row
 
 
 def main() -> int:
@@ -253,6 +444,12 @@ def main() -> int:
     parser.add_argument("--max-duplicate-ratio", type=float, default=0.002)
     parser.add_argument("--max-tiny-ratio", type=float, default=0.015)
     parser.add_argument("--override-similarity-gain", type=float, default=0.012)
+    parser.add_argument(
+        "--font-label",
+        action="append",
+        default=[],
+        help="Restrict candidate fonts to specific labels. Can be passed multiple times.",
+    )
     parser.add_argument("--resume", action="store_true", help="Reuse existing package/candidate artifacts and continue from them.")
     args = parser.parse_args()
 
@@ -274,11 +471,13 @@ def main() -> int:
     candidates_dir.mkdir(parents=True, exist_ok=True)
     page_svg_dir.mkdir(parents=True, exist_ok=True)
 
-    fonts = _candidate_fonts()
+    fonts = _filter_candidate_fonts(_candidate_fonts(), list(args.font_label))
     doc = fitz.open(source_pdf)
     page_count = int(doc.page_count)
     all_page_results: dict[int, list[dict[str, Any]]] = {}
+    page_source_profiles: dict[int, dict[str, Any]] = {}
     font_success: dict[str, list[dict[str, Any]]] = {label: [] for label, _path in fonts}
+    font_path_by_label = {label: path for label, path in fonts}
     started_at = time.time()
 
     for page_index in range(1, page_count + 1):
@@ -286,11 +485,13 @@ def main() -> int:
         page_svg = page_svg_dir / f"page_{page_index:02d}.svg"
         if not (args.resume and page_svg.exists() and page_svg.is_file()):
             prep._export_pdf_page_to_mupdf_svg(source_pdf, page_index - 1, page_svg)
+        page_source_profiles[page_index] = _source_page_visual_profile(page_svg)
         results: list[dict[str, Any]] = []
+        page_variants = [("always", "always")] if bool(page_source_profiles[page_index].get("image_heavy")) else list(TOE_RENDER_VARIANTS)
         for font_label, font_path in fonts:
             print(f"  - {font_label}", flush=True)
             font_slug = _slugify(font_label)
-            for variant_label, contours_mode in TOE_RENDER_VARIANTS:
+            for variant_label, contours_mode in page_variants:
                 variant_slug = font_slug if variant_label == "always" else f"{font_slug}__{variant_label}"
                 prefix = candidates_dir / f"page_{page_index:02d}" / variant_slug / f"page_{page_index:02d}"
                 prefix.parent.mkdir(parents=True, exist_ok=True)
@@ -361,14 +562,12 @@ def main() -> int:
                 row["variant_label"] = variant_label
                 row["image_contours_mode"] = contours_mode
                 row["page_index"] = int(page_index)
+                row["source_image_count"] = int(page_source_profiles[page_index].get("image_count", 0) or 0)
+                row["source_text_count"] = int(page_source_profiles[page_index].get("text_count", 0) or 0)
+                row["source_path_count"] = int(page_source_profiles[page_index].get("path_count", 0) or 0)
                 if bool(row.get("ok")):
                     quality_metrics = _compute_quality_metrics(Path(str(row["nc"])))
                     row["quality_metrics"] = quality_metrics
-                    row["quality_gate"] = _quality_gate(
-                        row,
-                        max_duplicate_ratio=float(args.max_duplicate_ratio),
-                        max_tiny_ratio=float(args.max_tiny_ratio),
-                    )
                     overlay_png = prefix.parent / f"{prefix.name}_overlay.png"
                     row["overlay_metrics"] = _build_overlay_metrics(
                         source_pdf=source_pdf,
@@ -377,6 +576,11 @@ def main() -> int:
                         out_png=overlay_png,
                     )
                     row["overlay_png"] = str(overlay_png)
+                    row["quality_gate"] = _quality_gate(
+                        row,
+                        max_duplicate_ratio=float(args.max_duplicate_ratio),
+                        max_tiny_ratio=float(args.max_tiny_ratio),
+                    )
                     row["score"] = _candidate_score(row)
                     font_success[font_label].append(row)
                 else:
@@ -434,10 +638,40 @@ def main() -> int:
             page_results=page_results,
             override_similarity_gain=float(args.override_similarity_gain),
         )
+        source_profile = dict(page_source_profiles.get(page_index, {}))
+        selected_iou = float(dict(selected.get("overlay_metrics", {})).get("mask_iou", 0.0) or 0.0)
+        selected_gate = dict(selected.get("quality_gate", {}))
+        if bool(source_profile.get("image_heavy")):
+            fallback_font_label = str(selected.get("font_label") or primary_font)
+            fallback_font_path = font_path_by_label.get(fallback_font_label) or font_path_by_label[str(primary_font)]
+            fallback = _build_image_heavy_fallback_candidate(
+                source_pdf=source_pdf,
+                page_index=page_index,
+                package_dir=package_dir,
+                font_label=fallback_font_label,
+                font_path=fallback_font_path,
+                source_profile=source_profile,
+                max_duplicate_ratio=float(args.max_duplicate_ratio),
+                max_tiny_ratio=float(args.max_tiny_ratio),
+                resume=bool(args.resume),
+            )
+            page_results.append(fallback)
+            if _should_prefer_image_heavy_fallback(
+                selected=selected,
+                fallback=fallback,
+                source_profile=source_profile,
+            ):
+                selected = fallback
         final_prefix = pages_dir / f"page_{page_index:02d}"
         if bool(selected.get("ok")):
             _copy_selected_artifacts(selected, final_prefix)
             page_logs = list(selected.get("logs", []))
+            page_logs.append(
+                "source_profile="
+                f"images={int(source_profile.get('image_count', 0) or 0)};"
+                f" texts={int(source_profile.get('text_count', 0) or 0)};"
+                f" paths={int(source_profile.get('path_count', 0) or 0)}"
+            )
             page_logs.append(f"selected_primary_font={primary_font}")
             page_logs.append(f"selected_font={selected.get('font_label')}")
             page_logs.append(f"selected_variant={selected.get('variant_label')}")
@@ -448,7 +682,8 @@ def main() -> int:
                 "quality_gate="
                 f"accepted={bool(gate.get('accepted', False))};"
                 f" dup_ok={bool(gate.get('duplicate_ratio_ok', False))};"
-                f" tiny_ok={bool(gate.get('tiny_ratio_ok', False))}"
+                f" tiny_ok={bool(gate.get('tiny_ratio_ok', False))};"
+                f" mask_iou_ok={bool(gate.get('mask_iou_ok', True))}"
             )
             prep._write_text(logs_dir / f"page_{page_index:02d}.log.txt", "\n".join(page_logs) + "\n")
             q = dict(selected.get("quality_metrics", {}))
@@ -519,6 +754,7 @@ def main() -> int:
                 "selected_score": selected.get("score"),
                 "selected_quality_gate": selected.get("quality_gate"),
                 "selected_overlay_metrics": selected.get("overlay_metrics"),
+                "source_profile": source_profile,
                 "candidates": page_results,
             }
         )
@@ -526,6 +762,7 @@ def main() -> int:
     prep._write_json(package_dir / "report.json", report)
     prep._write_csv(package_dir / "summary.csv", rows)
     prep._mirror_package_root_artifacts(package_dir, rows)
+    ok_rows = [row for row in rows if bool(row.ok) and row.layout_similarity is not None]
     prep._write_json(
         package_dir / "final_overview.json",
         {
@@ -535,6 +772,12 @@ def main() -> int:
             "pages_ok": sum(1 for row in rows if bool(row.ok)),
             "page_count": page_count,
             "elapsed_s": round(time.time() - started_at, 3),
+            "avg_layout_similarity": round(float(statistics.fmean([float(row.layout_similarity or 0.0) for row in ok_rows])), 6)
+            if ok_rows
+            else None,
+            "min_layout_similarity": round(min(float(row.layout_similarity or 0.0) for row in ok_rows), 6)
+            if ok_rows
+            else None,
         },
     )
     print(f"Prepared: {package_dir}")

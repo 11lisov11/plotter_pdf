@@ -1,0 +1,19 @@
+{
+  "source_pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_14.pdf",
+  "selected_primary_font": "Neucha",
+  "fonts_evaluated": [
+    {
+      "font_label": "Neucha",
+      "pages_ok": 18,
+      "avg_layout_similarity": 0.960176,
+      "min_layout_similarity": 0.932406,
+      "avg_score": 1.207447,
+      "doc_score": 1.226095
+    }
+  ],
+  "pages_ok": 18,
+  "page_count": 18,
+  "elapsed_s": 1774724215.1018593,
+  "avg_layout_similarity": 0.968177,
+  "min_layout_similarity": 0.945248
+}

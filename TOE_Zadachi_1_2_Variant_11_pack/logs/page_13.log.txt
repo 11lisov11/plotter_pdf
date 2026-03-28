@@ -1,0 +1,37 @@
+Render mode: handwriting; ExactGeometry=off; Handwriting=on
+Sheet 210.0x297.0 mm is larger than workspace 180.0x280.0 mm. Using the overlapped sheet/workspace window.
+Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-295.000,-15.000), sheet_bounds x(0.000,210.000) y(-295.000,2.000), sheet=a4, anchor=lower_left, offset=(0.00,0.00)
+Method3 page preview: pages=1..1, body_font='C:\plotter_pdf\data\fonts\Neucha.ttf', formula_font='Times New Roman'.
+Source pages: 1, selected: 1
+Method3 centerline: threshold=32, candidates=9, paths=2219
+Method3 graphics centerline: paths=7
+Method3 layer split: text_paths=2215, graphics_centerline=7, graphics_outline=7, graphics_accents=0
+Method3 cleanup: removed left-column text paths=4
+Method3 micro-segment prune: segments=15406->14793, min=0.08 mm
+Text render mode: handwriting=on font='C:\plotter_pdf\data\fonts\Neucha.ttf'; image_contours=always
+Extracting paths from SVG ...
+Raw geometry bounds: x(29.996, 190.763) y(13.166, 273.473)
+SVG page: 210.034 x 297.059 mm
+Auto trim: no outer border detected.
+SVG geometry: paths=1872, segments=14793.
+Source bounds: x(29.996, 190.763) y(13.166, 273.473)
+Fit to work area: scale=1.0757, translate=(-28.730,-309.162), from (29.996, 13.166)-(190.763, 273.473)
+Reorder: source order preserved (1872 polylines).
+Handwriting fallback: skipping word-merge/smoothing for contour-only text source.
+Segment counts: source=14793, fitted=14793, clipped=14793
+Drawable segments after clip: 14793 (100.0% of source)
+Prepared bounds: x(3.536, 176.464) y(-295.000, -15.000)
+Estimated draw length: 4.64 m
+Pencil mode: base_z=11.900, wear=0.000 mm, z_comp_start=0.000, z_down_start=11.900, dyn(rate=0.0100 mm/m, comp=1.000, slope=0.0100 Zmm/m, max=0.800), est_remaining_to_sharpen=120.0 m (wear=120.0, interval=inf)
+Applying pen-up / pen-down ...
+G-code stats: lines=20183, draw=18399, travel=594, bounds=0.000..176.464 x, -295.000..0.000 y
+Preflight: ok: lines=20183, draw=18399, travel=594, ratio=0.03
+Saved file stats: lines=20183, draw=18399, travel=594, bounds=0.000..176.464 x, -295.000..0.000 y
+Saved: C:\plotter_pdf\_tmp\latest_preview.nc
+source_profile=images=40; texts=34; paths=55
+selected_primary_font=Neucha
+selected_font=Neucha
+selected_variant=raster_safe
+selected_contours=always
+selected_score=1.226303
+quality_gate=accepted=False; dup_ok=True; tiny_ok=False; mask_iou_ok=True

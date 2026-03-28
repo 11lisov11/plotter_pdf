@@ -18,6 +18,11 @@ class SvgPathGeometryModuleTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             list(svg_path.parse_path_tokens("10 10 L 20 20"))
 
+    def test_parse_path_tokens_accepts_leading_decimal_values(self) -> None:
+        tokens = list(svg_path.parse_path_tokens("M.5 .25 L 10.0 .75"))
+        self.assertEqual(tokens[0], ("M", [0.5, 0.25]))
+        self.assertEqual(tokens[1], ("L", [10.0, 0.75]))
+
     def test_cubic_approx_returns_polyline_ending_at_target(self) -> None:
         pts = svg_path.cubic_approx(
             (0.0, 0.0),

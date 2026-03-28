@@ -1,0 +1,63 @@
+Text render mode: handwriting=on font='C:\plotter_pdf\data\fonts\Neucha.ttf'; image_contours=always
+Handwriting mode: Cyrillic text profile tokens=44, short=32%, digits=14%, long=59%, style=paragraph.
+Handwriting mode: Cyrillic detected, trying TTF single-line pipeline first ('C:\plotter_pdf\data\fonts\Neucha.ttf').
+TTF centerline postprocess: 3 -> 3 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '17' -> 3 stroke(s), thr=160, cand=8, font=Neucha.ttf, size=14.04
+TTF centerline postprocess: 19 -> 14 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Рисунок 2.4' -> 14 stroke(s), thr=160, cand=8, font=Neucha.ttf, size=12.00
+TTF centerline postprocess: 1 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '-' -> 1 stroke(s), thr=160, cand=8, font=Neucha.ttf, size=12.00
+TTF centerline postprocess: 47 -> 25 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Мгновенные значения тока,' -> 25 stroke(s), thr=129, cand=8, font=Neucha.ttf, size=12.00
+TTF centerline postprocess: 44 -> 33 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'напряжения и мощности' -> 33 stroke(s), thr=129, cand=8, font=Neucha.ttf, size=12.00
+TTF centerline postprocess: 128 -> 77 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'По графикам определяем ампли' -> 77 stroke(s), thr=129, cand=8, font=Neucha.ttf, size=12.00
+TTF centerline postprocess: 45 -> 32 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'ную мощность приемника.' -> 32 stroke(s), thr=129, cand=8, font=Neucha.ttf, size=12.00
+Handwriting TTF centerline mode: replaced 7 text node(s), generated 185 stroke path(s) using 'Neucha.ttf'.
+Text nodes after stroke-font replacement: 14
+Handwriting mode: applied font 'C:\plotter_pdf\data\fonts\Neucha.ttf' to 14 text node(s).
+Text->path conversion #1: inkscape.exe --batch-process --actions=select-all;export-text-to-path --export-type=svg --export-overwrite --export-filename=C:\plotter_pdf\_tmp\tmpff4zlhfn\source.svg C:\plotter_pdf\_tmp\tmpff4zlhfn\source.svg
+Text converted to SVG paths.
+Text nodes after conversion: 0
+Extracting paths from SVG ...
+Image contour tracing: +49 path(s) from embedded raster.
+Image vectorization mode: centerline (added 49 path(s), simplify=0.34 mm).
+Image contour tracing: +69 path(s) from embedded raster.
+Image vectorization mode: centerline (added 69 path(s), simplify=0.34 mm).
+Image contour tracing: +368 path(s) from embedded raster.
+Image vectorization mode: centerline (added 368 path(s), simplify=0.08 mm).
+Image contour tracing: total +486 path(s).
+Raw geometry bounds: x(25.692, 190.732) y(13.700, 164.656)
+SVG page: 210.016 x 297.011 mm
+Auto trim: no outer border detected.
+Applied content area crop: x(20.5,205.0) y(10.0,292.0) dropped segments=0
+Bounds after content margin crop: x(25.692, 190.732) y(13.700, 164.656)
+SVG geometry: paths=671, segments=3570.
+Source bounds: x(25.692, 190.732) y(13.700, 164.656)
+Fit to work area: scale=1.0906, translate=(-28.021,-252.261), from (25.692, 13.700)-(190.732, 164.656)
+Stitch: polylines 671 -> 643 (eps=0.080 mm, gap_eps=0.150 mm, angle<=20.0 deg)
+Reorder: 643 polylines ordered (nearest-end).
+Pencil naturalization: adjusted 292/643 stroke(s).
+Pencil naturalization segments: 3570 -> 3270
+Polyline optimization: 671 -> 644
+Segment counts: source=3570, fitted=3570, clipped=3570
+Drawable segments after clip: 3570 (100.0% of source)
+Prepared bounds: x(0.000, 179.930) y(-237.339, -72.643)
+Estimated draw length: 2.96 m
+Pencil mode: base_z=11.900, wear=0.000 mm, z_comp_start=0.000, z_down_start=11.900, dyn(rate=0.0100 mm/m, comp=1.000, slope=0.0100 Zmm/m, max=0.800), est_remaining_to_sharpen=120.0 m (wear=120.0, interval=inf)
+Applying pen-up / pen-down ...
+G-code stats: lines=4672, draw=4262, travel=136, bounds=0.000..179.930 x, -237.339..0.000 y
+Preflight: ok: lines=4672, draw=4262, travel=136, ratio=0.03
+Saved file stats: lines=4672, draw=4262, travel=136, bounds=0.000..179.930 x, -237.339..0.000 y
+Saved: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_25_pack\_candidates\page_17\neucha\page_17.nc
+Preview SVG: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_25_pack\_candidates\page_17\neucha\page_17.svg
+Preview PDF: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_25_pack\_candidates\page_17\neucha\page_17.pdf
+source_profile=images=5; texts=14; paths=18
+selected_primary_font=Neucha
+selected_font=Neucha
+selected_variant=always
+selected_contours=always
+selected_score=1.295540
+quality_gate=accepted=True; dup_ok=True; tiny_ok=True; mask_iou_ok=True

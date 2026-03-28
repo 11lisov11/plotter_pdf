@@ -32,6 +32,12 @@ class GeometryTransformModuleTests(unittest.TestCase):
             (1.0, 0.0, 0.0, 1.0, 0.0, 0.0),
         )
 
+    def test_parse_transform_accepts_leading_decimal_values(self) -> None:
+        m = transform_mod.parse_transform("matrix(.5,0,0,.25,10,5)")
+        x, y = transform_mod.mat_apply(m, (20.0, 12.0))
+        self.assertAlmostEqual(x, 20.0, places=6)
+        self.assertAlmostEqual(y, 8.0, places=6)
+
     def test_parse_points_accepts_commas_spaces_and_exponents(self) -> None:
         pts = transform_mod.parse_points("1,2 3 4 -1e1,5e-1")
         self.assertEqual(pts, [(1.0, 2.0), (3.0, 4.0), (-10.0, 0.5)])

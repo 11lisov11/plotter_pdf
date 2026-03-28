@@ -7,7 +7,7 @@ from typing import Callable, Iterable, List, Optional, Tuple
 Point = Tuple[float, float]
 
 _CMD_RE = re.compile(r"[MmLlHhVvCcSsQqTtAaZz]")
-_FLOAT_RE = re.compile(r"[+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?")
+_FLOAT_RE = re.compile(r"[+-]?(?:(?:\d+\.\d*)|(?:\.\d+)|(?:\d+))(?:[eE][+-]?\d+)?")
 
 
 def _parse_floats(text: str) -> List[float]:

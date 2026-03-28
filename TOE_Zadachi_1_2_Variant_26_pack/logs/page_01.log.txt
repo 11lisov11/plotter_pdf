@@ -1,0 +1,175 @@
+Text render mode: handwriting=on font='C:\plotter_pdf\data\fonts\Neucha.ttf'; image_contours=always
+Handwriting mode: Cyrillic text profile tokens=366, short=42%, digits=18%, long=41%, style=paragraph.
+Handwriting mode: Cyrillic detected, trying TTF single-line pipeline first ('C:\plotter_pdf\data\fonts\Neucha.ttf').
+TTF centerline postprocess: 2 -> 2 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '1' -> 2 stroke(s), thr=160, cand=8, font=Neucha.ttf, size=14.04
+TTF centerline postprocess: 19 -> 17 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Задача №1' -> 17 stroke(s), thr=32, cand=8, font=Neucha.ttf, size=12.00
+TTF centerline postprocess: 44 -> 38 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'РАСЧЕТ ЦЕПИ ПОСТОЯННОГО ТОКА' -> 38 stroke(s), thr=96, cand=8, font=Neucha.ttf, size=12.00
+TTF centerline postprocess: 124 -> 85 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Целью работы является расчёт' -> 85 stroke(s), thr=64, cand=8, font=Neucha.ttf, size=12.00
+TTF centerline postprocess: 58 -> 45 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'стоянного тока приведена на ' -> 45 stroke(s), thr=32, cand=8, font=Neucha.ttf, size=12.00
+TTF centerline postprocess: 20 -> 19 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Рисунок 1.1' -> 19 stroke(s), thr=160, cand=8, font=Neucha.ttf, size=12.00
+TTF centerline postprocess: 1 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '-' -> 1 stroke(s), thr=160, cand=8, font=Neucha.ttf, size=12.00
+TTF centerline postprocess: 43 -> 25 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Схема электрической цепи' -> 25 stroke(s), thr=64, cand=8, font=Neucha.ttf, size=12.00
+TTF centerline postprocess: 59 -> 52 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Числовые данные приведены в ' -> 52 stroke(s), thr=160, cand=8, font=Neucha.ttf, size=12.00
+TTF centerline postprocess: 18 -> 14 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Таблица 1.1' -> 14 stroke(s), thr=160, cand=8, font=Neucha.ttf, size=12.00
+TTF centerline postprocess: 10 -> 6 stroke(s) (eps=0.12, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Вари-' -> 6 stroke(s), thr=96, cand=8, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 7 -> 4 stroke(s) (eps=0.12, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'ант' -> 4 stroke(s), thr=224, cand=8, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 2 -> 2 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '26' -> 2 stroke(s), thr=96, cand=8, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 2 -> 2 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'J0' -> 2 stroke(s), thr=160, cand=8, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 4 -> 4 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'E1' -> 4 stroke(s), thr=128, cand=8, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 3 -> 3 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'E2' -> 3 stroke(s), thr=96, cand=8, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 4 -> 4 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'E3' -> 4 stroke(s), thr=160, cand=8, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 3 -> 3 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'E4' -> 3 stroke(s), thr=131, cand=8, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 3 -> 3 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'G0' -> 3 stroke(s), thr=160, cand=8, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 4 -> 4 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'R1' -> 4 stroke(s), thr=64, cand=8, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 3 -> 3 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'R2' -> 3 stroke(s), thr=96, cand=8, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 4 -> 4 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'R3' -> 4 stroke(s), thr=32, cand=8, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 4 -> 4 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'R4' -> 4 stroke(s), thr=131, cand=8, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 3 -> 3 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'R5' -> 3 stroke(s), thr=64, cand=8, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 3 -> 3 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'R6' -> 3 stroke(s), thr=96, cand=8, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 3 -> 3 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'A' -> 3 stroke(s), thr=160, cand=8, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 2 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'V' -> 1 stroke(s), thr=224, cand=8, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 2 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'V' -> 1 stroke(s), thr=224, cand=8, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 2 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'V' -> 1 stroke(s), thr=224, cand=8, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 2 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'V' -> 1 stroke(s), thr=224, cand=8, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 1 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'S' -> 1 stroke(s), thr=128, cand=8, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 6 -> 6 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Ohm' -> 6 stroke(s), thr=32, cand=8, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 6 -> 6 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Ohm' -> 6 stroke(s), thr=32, cand=8, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 6 -> 6 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Ohm' -> 6 stroke(s), thr=32, cand=8, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 6 -> 6 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Ohm' -> 6 stroke(s), thr=32, cand=8, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 6 -> 6 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Ohm' -> 6 stroke(s), thr=32, cand=8, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 6 -> 6 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Ohm' -> 6 stroke(s), thr=32, cand=8, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 1 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '4' -> 1 stroke(s), thr=131, cand=8, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 4 -> 4 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '100' -> 4 stroke(s), thr=64, cand=8, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 2 -> 2 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '50' -> 2 stroke(s), thr=64, cand=8, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 4 -> 4 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '100' -> 4 stroke(s), thr=64, cand=8, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 2 -> 2 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '50' -> 2 stroke(s), thr=64, cand=8, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 2 -> 2 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '0.2' -> 2 stroke(s), thr=96, cand=8, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 1 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '6' -> 1 stroke(s), thr=96, cand=7, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 1 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '9' -> 1 stroke(s), thr=128, cand=8, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 3 -> 2 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '15' -> 2 stroke(s), thr=64, cand=8, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 1 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '7' -> 1 stroke(s), thr=32, cand=8, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 2 -> 2 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '20' -> 2 stroke(s), thr=96, cand=8, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 3 -> 3 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '10' -> 3 stroke(s), thr=64, cand=8, font=Neucha.ttf, size=9.96
+TTF centerline postprocess: 17 -> 13 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Требуется:' -> 13 stroke(s), thr=64, cand=8, font=Neucha.ttf, size=12.00
+TTF centerline postprocess: 130 -> 102 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '1. Начертить граф цепи, дере' -> 102 stroke(s), thr=129, cand=8, font=Neucha.ttf, size=12.00
+TTF centerline postprocess: 10 -> 8 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'быть не' -> 8 stroke(s), thr=96, cand=8, font=Neucha.ttf, size=12.00
+TTF centerline postprocess: 118 -> 94 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'менее количества узлов, умен' -> 94 stroke(s), thr=129, cand=8, font=Neucha.ttf, size=12.00
+TTF centerline postprocess: 24 -> 16 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'матрицы цепи.' -> 16 stroke(s), thr=129, cand=8, font=Neucha.ttf, size=12.00
+TTF centerline postprocess: 91 -> 56 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '2. Рассчитать токи во всех в' -> 56 stroke(s), thr=129, cand=8, font=Neucha.ttf, size=12.00
+TTF centerline postprocess: 138 -> 96 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '3. Рассчитать токи во всех в' -> 96 stroke(s), thr=64, cand=8, font=Neucha.ttf, size=12.00
+TTF centerline postprocess: 13 -> 11 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'чета по п.2.' -> 11 stroke(s), thr=192, cand=8, font=Neucha.ttf, size=12.00
+TTF centerline postprocess: 57 -> 32 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '4. Рассчитать показания воль' -> 32 stroke(s), thr=129, cand=8, font=Neucha.ttf, size=12.00
+TTF centerline postprocess: 44 -> 36 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '5. Проверить баланс мощности' -> 36 stroke(s), thr=129, cand=8, font=Neucha.ttf, size=12.00
+TTF centerline postprocess: 136 -> 85 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '6. Рассчитать значения потен' -> 85 stroke(s), thr=129, cand=8, font=Neucha.ttf, size=12.00
+TTF centerline postprocess: 124 -> 83 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'построить потенциальную диаг' -> 83 stroke(s), thr=129, cand=8, font=Neucha.ttf, size=12.00
+TTF centerline postprocess: 140 -> 85 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '7. Рассчитать значение тока ' -> 85 stroke(s), thr=129, cand=8, font=Neucha.ttf, size=12.00
+TTF centerline postprocess: 25 -> 16 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'точника тока.' -> 16 stroke(s), thr=32, cand=8, font=Neucha.ttf, size=12.00
+TTF centerline postprocess: 141 -> 85 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '8. Рассчитать значение тока ' -> 85 stroke(s), thr=129, cand=8, font=Neucha.ttf, size=12.00
+TTF centerline postprocess: 22 -> 18 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'точника ЭДС.' -> 18 stroke(s), thr=129, cand=8, font=Neucha.ttf, size=12.00
+Handwriting TTF centerline mode: replaced 65 text node(s), generated 1255 stroke path(s) using 'Neucha.ttf'.
+Text nodes after stroke-font replacement: 132
+Handwriting mode: applied font 'C:\plotter_pdf\data\fonts\Neucha.ttf' to 132 text node(s).
+Text->path conversion #1: inkscape.exe --batch-process --actions=select-all;export-text-to-path --export-type=svg --export-overwrite --export-filename=C:\plotter_pdf\_tmp\tmpskum6zrq\source.svg C:\plotter_pdf\_tmp\tmpskum6zrq\source.svg
+Text converted to SVG paths.
+Text nodes after conversion: 0
+Extracting paths from SVG ...
+Image contour tracing: +80 path(s) from embedded raster.
+Image vectorization mode: centerline (added 80 path(s), simplify=0.08 mm).
+Image contour tracing: total +80 path(s).
+Raw geometry bounds: x(25.409, 192.271) y(13.819, 275.502)
+SVG page: 210.016 x 297.011 mm
+Auto trim: no outer border detected.
+Applied content area crop: x(20.5,205.0) y(10.0,292.0) dropped segments=0
+Bounds after content margin crop: x(25.409, 192.271) y(13.819, 275.502)
+SVG geometry: paths=1512, segments=18015.
+Source bounds: x(25.409, 192.271) y(13.819, 275.502)
+Fit to work area: scale=1.0700, translate=(-26.458,-309.786), from (25.409, 13.819)-(192.271, 275.502)
+Stitch: polylines 1512 -> 1415 (eps=0.080 mm, gap_eps=0.150 mm, angle<=20.0 deg)
+Reorder: 1415 polylines ordered (nearest-end).
+Pencil naturalization: adjusted 951/1415 stroke(s).
+Pencil naturalization segments: 18002 -> 11778
+Polyline optimization: 1512 -> 1415
+Segment counts: source=18015, fitted=18015, clipped=18015
+Drawable segments after clip: 18015 (100.0% of source)
+Prepared bounds: x(0.635, 179.222) y(-294.893, -15.000)
+Estimated draw length: 7.65 m
+Pencil mode: base_z=11.900, wear=0.000 mm, z_comp_start=0.000, z_down_start=11.900, dyn(rate=0.0100 mm/m, comp=1.000, slope=0.0100 Zmm/m, max=0.800), est_remaining_to_sharpen=120.0 m (wear=120.0, interval=inf)
+Applying pen-up / pen-down ...
+G-code stats: lines=15135, draw=14116, travel=339, bounds=0.000..179.222 x, -294.893..0.000 y
+Preflight: ok: lines=15135, draw=14116, travel=339, ratio=0.02
+Saved file stats: lines=15135, draw=14116, travel=339, bounds=0.000..179.222 x, -294.893..0.000 y
+Saved: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_26_pack\_candidates\page_01\neucha\page_01.nc
+Preview SVG: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_26_pack\_candidates\page_01\neucha\page_01.svg
+Preview PDF: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_26_pack\_candidates\page_01\neucha\page_01.pdf
+source_profile=images=1; texts=131; paths=362
+selected_primary_font=Neucha
+selected_font=Neucha
+selected_variant=always
+selected_contours=always
+selected_score=1.015618
+quality_gate=accepted=True; dup_ok=True; tiny_ok=True; mask_iou_ok=True
