@@ -1,89 +1,89 @@
-Text render mode: handwriting=on font='C:\plotter_pdf\data\fonts\Neucha.ttf'; image_contours=always
+Text render mode: handwriting=on font='C:\plotter_pdf\data\fonts\MarckScript-Regular.ttf'; image_contours=always
 Handwriting mode: Cyrillic text profile tokens=154, short=31%, digits=10%, long=56%, style=paragraph.
-Handwriting mode: Cyrillic detected, trying TTF single-line pipeline first ('C:\plotter_pdf\data\fonts\Neucha.ttf').
-TTF centerline postprocess: 3 -> 3 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: '14' -> 3 stroke(s), thr=160, cand=8, font=Neucha.ttf, size=14.04
-TTF centerline postprocess: 107 -> 88 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: '2. ОПРЕДЕЛИТЬ ДЕЙСТВУЮЩИЕ ЗН' -> 88 stroke(s), thr=128, cand=8, font=Neucha.ttf, size=12.00
-TTF centerline postprocess: 121 -> 85 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'ТРИЧЕСКОЙ ЦЕПИ И НАПРЯЖЕНИЙ ' -> 85 stroke(s), thr=129, cand=8, font=Neucha.ttf, size=12.00
-TTF centerline postprocess: 135 -> 84 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'Согласно схеме, на рис 2.2 о' -> 84 stroke(s), thr=129, cand=8, font=Neucha.ttf, size=12.00
-TTF centerline postprocess: 40 -> 25 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'мах ветвей приемника.' -> 25 stroke(s), thr=129, cand=8, font=Neucha.ttf, size=12.00
-TTF centerline postprocess: 18 -> 14 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'Рисунок 2.2' -> 14 stroke(s), thr=160, cand=8, font=Neucha.ttf, size=12.00
+Handwriting mode: Cyrillic detected, trying TTF single-line pipeline first ('C:\plotter_pdf\data\fonts\MarckScript-Regular.ttf').
+TTF centerline postprocess: 5 -> 4 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '14' -> 4 stroke(s), thr=192, cand=8, font=MarckScript-Regular.ttf, size=14.04
+TTF centerline postprocess: 162 -> 97 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '2. ОПРЕДЕЛИТЬ ДЕЙСТВУЮЩИЕ ЗН' -> 97 stroke(s), thr=128, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 148 -> 90 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'ТРИЧЕСКОЙ ЦЕПИ И НАПРЯЖЕНИЙ ' -> 90 stroke(s), thr=224, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 149 -> 97 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Согласно схеме, на рис 2.2 о' -> 97 stroke(s), thr=96, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 44 -> 27 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'мах ветвей приемника.' -> 27 stroke(s), thr=64, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 19 -> 12 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Рисунок 2.2' -> 12 stroke(s), thr=96, cand=8, font=MarckScript-Regular.ttf, size=12.00
 TTF centerline postprocess: 1 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: '-' -> 1 stroke(s), thr=160, cand=8, font=Neucha.ttf, size=12.00
-TTF centerline postprocess: 34 -> 21 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'Расчетная схема цепи' -> 21 stroke(s), thr=96, cand=8, font=Neucha.ttf, size=12.00
-TTF centerline postprocess: 108 -> 89 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: '3. ОПРЕДЕЛИТЬ ПОКАЗАНИЯ ПРИБ' -> 89 stroke(s), thr=129, cand=8, font=Neucha.ttf, size=12.00
-TTF centerline postprocess: 26 -> 22 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'ВАТТМЕТРА W.' -> 22 stroke(s), thr=129, cand=8, font=Neucha.ttf, size=12.00
-TTF centerline postprocess: 130 -> 83 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'Определяем показания измерит' -> 83 stroke(s), thr=129, cand=8, font=Neucha.ttf, size=12.00
-TTF centerline postprocess: 30 -> 24 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'и напряжений.' -> 24 stroke(s), thr=160, cand=8, font=Neucha.ttf, size=12.00
-TTF centerline postprocess: 44 -> 36 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: '4. РАССЧИТАТЬ АКТИВНУЮ,' -> 36 stroke(s), thr=128, cand=8, font=Neucha.ttf, size=12.00
-TTF centerline postprocess: 67 -> 53 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'РЕАКТИВНУЮ И ПОЛНУЮ МОЩНОСТИ' -> 53 stroke(s), thr=129, cand=8, font=Neucha.ttf, size=12.00
-TTF centerline postprocess: 110 -> 79 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'ПЛЕКСНОЙ ФОРМЕ, КОЭФФИЦИЕНТ ' -> 79 stroke(s), thr=129, cand=8, font=Neucha.ttf, size=12.00
-TTF centerline postprocess: 34 -> 26 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'БАЛАНС МОЩНОСТЕЙ.' -> 26 stroke(s), thr=129, cand=8, font=Neucha.ttf, size=12.00
-Handwriting TTF centerline mode: replaced 16 text node(s), generated 733 stroke path(s) using 'Neucha.ttf'.
+TTF centerline method3 text: '-' -> 1 stroke(s), thr=160, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 41 -> 25 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Расчетная схема цепи' -> 25 stroke(s), thr=160, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 149 -> 93 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '3. ОПРЕДЕЛИТЬ ПОКАЗАНИЯ ПРИБ' -> 93 stroke(s), thr=160, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 35 -> 15 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'ВАТТМЕТРА W.' -> 15 stroke(s), thr=160, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 146 -> 106 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Определяем показания измерит' -> 106 stroke(s), thr=96, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 30 -> 17 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'и напряжений.' -> 17 stroke(s), thr=96, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 63 -> 42 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '4. РАССЧИТАТЬ АКТИВНУЮ,' -> 42 stroke(s), thr=224, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 89 -> 60 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'РЕАКТИВНУЮ И ПОЛНУЮ МОЩНОСТИ' -> 60 stroke(s), thr=224, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 144 -> 90 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'ПЛЕКСНОЙ ФОРМЕ, КОЭФФИЦИЕНТ ' -> 90 stroke(s), thr=224, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 44 -> 34 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'БАЛАНС МОЩНОСТЕЙ.' -> 34 stroke(s), thr=224, cand=8, font=MarckScript-Regular.ttf, size=12.00
+Handwriting TTF centerline mode: replaced 16 text node(s), generated 810 stroke path(s) using 'MarckScript-Regular.ttf'.
 Text nodes after stroke-font replacement: 30
-Handwriting mode: applied font 'C:\plotter_pdf\data\fonts\Neucha.ttf' to 30 text node(s).
-Text->path conversion #1: inkscape.exe --batch-process --actions=select-all;export-text-to-path --export-type=svg --export-overwrite --export-filename=C:\plotter_pdf\_tmp\tmp598imott\source.svg C:\plotter_pdf\_tmp\tmp598imott\source.svg
+Handwriting mode: applied font 'C:\plotter_pdf\data\fonts\MarckScript-Regular.ttf' to 30 text node(s).
+Text->path conversion #1: inkscape.exe --batch-process --actions=select-all;export-text-to-path --export-type=svg --export-overwrite --export-filename=C:\plotter_pdf\_tmp\tmp1hj_tpic\source.svg C:\plotter_pdf\_tmp\tmp1hj_tpic\source.svg
 Text converted to SVG paths.
 Text nodes after conversion: 0
 Extracting paths from SVG ...
-Image contour tracing: +99 path(s) from embedded raster.
-Image vectorization mode: centerline (added 99 path(s), simplify=0.34 mm).
-Image contour tracing: +52 path(s) from embedded raster.
-Image vectorization mode: centerline (added 52 path(s), simplify=0.34 mm).
-Image contour tracing: +88 path(s) from embedded raster.
-Image vectorization mode: centerline (added 88 path(s), simplify=0.34 mm).
-Image contour tracing: +56 path(s) from embedded raster.
-Image vectorization mode: centerline (added 56 path(s), simplify=0.34 mm).
-Image contour tracing: +67 path(s) from embedded raster.
-Image vectorization mode: centerline (added 67 path(s), simplify=0.34 mm).
-Image contour tracing: +85 path(s) from embedded raster.
-Image vectorization mode: centerline (added 85 path(s), simplify=0.34 mm).
+Image contour tracing: +47 path(s) from embedded raster.
+Image vectorization mode: edge fallback (added 47 path(s), simplify=0.04 mm).
+Image contour tracing: +22 path(s) from embedded raster.
+Image vectorization mode: edge fallback (added 22 path(s), simplify=0.04 mm).
+Image contour tracing: +42 path(s) from embedded raster.
+Image vectorization mode: edge fallback (added 42 path(s), simplify=0.04 mm).
+Image contour tracing: +28 path(s) from embedded raster.
+Image vectorization mode: edge fallback (added 28 path(s), simplify=0.04 mm).
+Image contour tracing: +32 path(s) from embedded raster.
+Image vectorization mode: edge fallback (added 32 path(s), simplify=0.04 mm).
+Image contour tracing: +36 path(s) from embedded raster.
+Image vectorization mode: edge fallback (added 36 path(s), simplify=0.04 mm).
 Image contour tracing: +129 path(s) from embedded raster.
 Image vectorization mode: centerline (added 129 path(s), simplify=0.08 mm).
-Image contour tracing: total +576 path(s).
-Raw geometry bounds: x(25.507, 190.952) y(13.819, 274.117)
+Image contour tracing: total +336 path(s).
+Raw geometry bounds: x(25.511, 203.969) y(14.845, 274.248)
 SVG page: 210.016 x 297.011 mm
 Auto trim: no outer border detected.
 Applied content area crop: x(20.5,205.0) y(10.0,292.0) dropped segments=0
-Bounds after content margin crop: x(25.507, 190.952) y(13.819, 274.117)
-SVG geometry: paths=1309, segments=9526.
-Source bounds: x(25.507, 190.952) y(13.819, 274.117)
-Fit to work area: scale=1.0757, translate=(-26.421,-309.865), from (25.507, 13.819)-(190.952, 274.117)
-Stitch: polylines 1309 -> 1184 (eps=0.080 mm, gap_eps=0.150 mm, angle<=20.0 deg)
-Reorder: 1184 polylines ordered (nearest-end).
-Pencil naturalization: adjusted 855/1184 stroke(s).
-Pencil naturalization segments: 9516 -> 8367
-Polyline optimization: 1309 -> 1184
-Segment counts: source=9526, fitted=9526, clipped=9526
-Drawable segments after clip: 9526 (100.0% of source)
-Prepared bounds: x(1.016, 178.984) y(-294.897, -15.166)
-Estimated draw length: 5.47 m
+Bounds after content margin crop: x(25.511, 203.969) y(14.845, 274.248)
+SVG geometry: paths=1146, segments=17444.
+Source bounds: x(25.511, 203.969) y(14.845, 274.248)
+Fit to work area: scale=1.0086, translate=(-25.731,-300.795), from (25.511, 14.845)-(203.969, 274.248)
+Stitch: polylines 1146 -> 1141 (eps=0.080 mm, gap_eps=0.150 mm, angle<=20.0 deg)
+Reorder: 1141 polylines ordered (nearest-end).
+Pencil naturalization: adjusted 626/1141 stroke(s).
+Pencil naturalization segments: 17439 -> 10353
+Polyline optimization: 1146 -> 1141
+Segment counts: source=17444, fitted=17444, clipped=17444
+Drawable segments after clip: 17444 (100.0% of source)
+Prepared bounds: x(0.016, 179.880) y(-285.822, -24.178)
+Estimated draw length: 6.20 m
 Pencil mode: base_z=11.900, wear=0.000 mm, z_comp_start=0.000, z_down_start=11.900, dyn(rate=0.0100 mm/m, comp=1.000, slope=0.0100 Zmm/m, max=0.800), est_remaining_to_sharpen=120.0 m (wear=120.0, interval=inf)
 Applying pen-up / pen-down ...
-G-code stats: lines=11507, draw=10458, travel=349, bounds=0.000..178.984 x, -294.897..0.000 y
-Preflight: ok: lines=11507, draw=10458, travel=349, ratio=0.03
-Saved file stats: lines=11507, draw=10458, travel=349, bounds=0.000..178.984 x, -294.897..0.000 y
-Saved: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_26_pack\_candidates\page_14\neucha\page_14.nc
-Preview SVG: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_26_pack\_candidates\page_14\neucha\page_14.svg
-Preview PDF: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_26_pack\_candidates\page_14\neucha\page_14.pdf
+G-code stats: lines=13700, draw=12579, travel=373, bounds=0.000..179.880 x, -285.822..0.000 y
+Preflight: ok: lines=13700, draw=12579, travel=373, ratio=0.03
+Saved file stats: lines=13700, draw=12579, travel=373, bounds=0.000..179.880 x, -285.822..0.000 y
+Saved: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_26_pack\_candidates\page_14\marck_script\page_14.nc
+Preview SVG: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_26_pack\_candidates\page_14\marck_script\page_14.svg
+Preview PDF: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_26_pack\_candidates\page_14\marck_script\page_14.pdf
 source_profile=images=13; texts=31; paths=39
-selected_primary_font=Neucha
-selected_font=Neucha
+selected_primary_font=Marck Script
+selected_font=Marck Script
 selected_variant=always
 selected_contours=always
-selected_score=1.299640
-quality_gate=accepted=True; dup_ok=True; tiny_ok=True; mask_iou_ok=True
+selected_score=1.297596
+quality_gate=accepted=False; dup_ok=True; tiny_ok=False; mask_iou_ok=True

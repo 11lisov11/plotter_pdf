@@ -6,6 +6,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import fitz  # type: ignore
+
 
 def _load_module():
     root = Path(__file__).resolve().parents[1]
@@ -19,6 +21,16 @@ def _load_module():
 
 
 class PrepareToeHandwritingPackageModuleTests(unittest.TestCase):
+    def test_filter_candidate_fonts_defaults_to_marck_script(self) -> None:
+        mod = _load_module()
+        fonts = [
+            ("Neucha", Path("neucha.ttf")),
+            ("Marck Script", Path("marck.ttf")),
+            ("Bad Script", Path("bad.ttf")),
+        ]
+        filtered = mod._filter_candidate_fonts(fonts, [])
+        self.assertEqual(filtered, [("Marck Script", Path("marck.ttf"))])
+
     def test_filter_candidate_fonts_keeps_requested_labels(self) -> None:
         mod = _load_module()
         fonts = [
@@ -48,6 +60,27 @@ class PrepareToeHandwritingPackageModuleTests(unittest.TestCase):
         self.assertEqual(profile["text_count"], 1)
         self.assertEqual(profile["path_count"], 1)
         self.assertTrue(profile["image_heavy"])
+
+    def test_pdf_page_ink_ratio_detects_blank_page(self) -> None:
+        mod = _load_module()
+        with tempfile.TemporaryDirectory(prefix="toe_blank_ratio_") as td:
+            blank_pdf = Path(td) / "blank.pdf"
+            text_pdf = Path(td) / "text.pdf"
+            doc = fitz.open()
+            doc.new_page(width=595, height=842)
+            doc.save(blank_pdf)
+            doc.close()
+
+            doc = fitz.open()
+            page = doc.new_page(width=595, height=842)
+            page.insert_text((72, 72), "test", fontsize=12)
+            doc.save(text_pdf)
+            doc.close()
+
+            blank_ratio = mod._pdf_page_ink_ratio(blank_pdf, 1)
+            text_ratio = mod._pdf_page_ink_ratio(text_pdf, 1)
+        self.assertLess(blank_ratio, mod.BLANK_PAGE_INK_RATIO_MAX)
+        self.assertGreater(text_ratio, blank_ratio)
 
     def test_candidate_score_penalizes_low_iou_on_image_heavy_pages(self) -> None:
         mod = _load_module()

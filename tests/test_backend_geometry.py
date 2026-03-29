@@ -205,7 +205,7 @@ class BackendGeometryTests(unittest.TestCase):
             backend.IMAGE_CONTOUR_MODE = old_mode
             backend.HANDWRITING_TEXT_ENABLED = old_handwriting
 
-    def test_extract_image_contour_items_prefers_edge_mode_for_formula_like_raster(self) -> None:
+    def test_extract_image_contour_items_uses_configured_edge_mode_for_formula_like_raster(self) -> None:
         image = Image.new("RGB", (4, 4), "white")
         image.putpixel((1, 1), (0, 0, 0))
         buf = io.BytesIO()
@@ -220,10 +220,12 @@ class BackendGeometryTests(unittest.TestCase):
         old_enabled = backend.IMAGE_CONTOUR_ENABLED
         old_mode = backend.IMAGE_CONTOUR_MODE
         old_handwriting = backend.HANDWRITING_TEXT_ENABLED
+        old_formula_mode = backend.IMAGE_CONTOUR_FORMULA_VECTORIZE_MODE
         try:
             backend.IMAGE_CONTOUR_ENABLED = True
             backend.IMAGE_CONTOUR_MODE = "always"
             backend.HANDWRITING_TEXT_ENABLED = True
+            backend.IMAGE_CONTOUR_FORMULA_VECTORIZE_MODE = "edge"
             with tempfile.TemporaryDirectory() as td:
                 path = Path(td) / "sample.svg"
                 path.write_text(svg, encoding="utf-8")
@@ -249,6 +251,7 @@ class BackendGeometryTests(unittest.TestCase):
             backend.IMAGE_CONTOUR_ENABLED = old_enabled
             backend.IMAGE_CONTOUR_MODE = old_mode
             backend.HANDWRITING_TEXT_ENABLED = old_handwriting
+            backend.IMAGE_CONTOUR_FORMULA_VECTORIZE_MODE = old_formula_mode
 
     def test_cluster_small_fill_items_for_single_stroke_groups_nested_contours(self) -> None:
         items = [

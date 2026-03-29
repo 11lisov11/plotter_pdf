@@ -1,8 +1,70 @@
-reused existing candidate artifacts
+Text render mode: handwriting=on font='C:\plotter_pdf\data\fonts\MarckScript-Regular.ttf'; image_contours=always
+Handwriting mode: Cyrillic text profile tokens=56, short=36%, digits=18%, long=57%, style=paragraph.
+Handwriting mode: Cyrillic detected, trying TTF single-line pipeline first ('C:\plotter_pdf\data\fonts\MarckScript-Regular.ttf').
+TTF centerline postprocess: 4 -> 4 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '18' -> 4 stroke(s), thr=224, cand=8, font=MarckScript-Regular.ttf, size=14.04
+TTF centerline postprocess: 67 -> 45 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Графики представлены на рису' -> 45 stroke(s), thr=96, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 21 -> 13 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Рисунок 2.4' -> 13 stroke(s), thr=96, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 1 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '-' -> 1 stroke(s), thr=160, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 100 -> 62 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Мгновенные значения тока, на' -> 62 stroke(s), thr=96, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 150 -> 108 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'По графикам определяем ампли' -> 108 stroke(s), thr=96, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 50 -> 39 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'ную мощность приемника.' -> 39 stroke(s), thr=96, cand=8, font=MarckScript-Regular.ttf, size=12.00
+Handwriting TTF centerline mode: replaced 7 text node(s), generated 272 stroke path(s) using 'MarckScript-Regular.ttf'.
+Text nodes after stroke-font replacement: 22
+Handwriting mode: applied font 'C:\plotter_pdf\data\fonts\MarckScript-Regular.ttf' to 22 text node(s).
+Text->path conversion #1: inkscape.exe --batch-process --actions=select-all;export-text-to-path --export-type=svg --export-overwrite --export-filename=C:\plotter_pdf\_tmp\tmpi5_36al3\source.svg C:\plotter_pdf\_tmp\tmpi5_36al3\source.svg
+Text converted to SVG paths.
+Text nodes after conversion: 0
+Extracting paths from SVG ...
+Image contour tracing: +25 path(s) from embedded raster.
+Image vectorization mode: edge fallback (added 25 path(s), simplify=0.04 mm).
+Image contour tracing: +25 path(s) from embedded raster.
+Image vectorization mode: edge fallback (added 25 path(s), simplify=0.04 mm).
+Image contour tracing: +57 path(s) from embedded raster.
+Image vectorization mode: edge fallback (added 57 path(s), simplify=0.04 mm).
+Image contour tracing: +21 path(s) from embedded raster.
+Image vectorization mode: edge fallback (added 21 path(s), simplify=0.04 mm).
+Image contour tracing: +29 path(s) from embedded raster.
+Image vectorization mode: edge fallback (added 29 path(s), simplify=0.04 mm).
+Image contour tracing: +510 path(s) from embedded raster.
+Image vectorization mode: centerline (added 510 path(s), simplify=0.08 mm).
+Image contour tracing: total +667 path(s).
+Raw geometry bounds: x(25.489, 190.386) y(14.845, 204.501)
+SVG page: 210.016 x 297.011 mm
+Auto trim: no outer border detected.
+Applied content area crop: x(20.5,205.0) y(10.0,292.0) dropped segments=0
+Bounds after content margin crop: x(25.489, 190.386) y(14.845, 204.501)
+SVG geometry: paths=939, segments=6370.
+Source bounds: x(25.489, 190.386) y(14.845, 204.501)
+Fit to work area: scale=1.0916, translate=(-27.823,-274.718), from (25.489, 14.845)-(190.386, 204.501)
+Segment dedup: dropped 4/6370 retraced segments (0.1%), kept=6366, eps=0.010 mm
+Stitch: polylines 943 -> 938 (eps=0.080 mm, gap_eps=0.150 mm, angle<=20.0 deg)
+Reorder: 938 polylines ordered (nearest-end).
+Pencil naturalization: adjusted 266/938 stroke(s).
+Pencil naturalization segments: 6365 -> 4967
+Polyline optimization: 943 -> 938
+Segment counts: source=6370, fitted=6370, clipped=6370
+Drawable segments after clip: 6370 (100.0% of source)
+Prepared bounds: x(0.199, 179.911) y(-258.513, -51.487)
+Estimated draw length: 4.45 m
+Pencil mode: base_z=11.900, wear=0.000 mm, z_comp_start=0.000, z_down_start=11.900, dyn(rate=0.0100 mm/m, comp=1.000, slope=0.0100 Zmm/m, max=0.800), est_remaining_to_sharpen=120.0 m (wear=120.0, interval=inf)
+Applying pen-up / pen-down ...
+G-code stats: lines=7246, draw=6563, travel=227, bounds=0.000..179.911 x, -258.513..0.000 y
+Preflight: ok: lines=7246, draw=6563, travel=227, ratio=0.03
+Saved file stats: lines=7246, draw=6563, travel=227, bounds=0.000..179.911 x, -258.513..0.000 y
+Saved: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_14_pack\_candidates\page_18\marck_script\page_18.nc
+Preview SVG: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_14_pack\_candidates\page_18\marck_script\page_18.svg
+Preview PDF: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_14_pack\_candidates\page_18\marck_script\page_18.pdf
 source_profile=images=11; texts=18; paths=25
-selected_primary_font=Neucha
-selected_font=Neucha
+selected_primary_font=Marck Script
+selected_font=Marck Script
 selected_variant=always
 selected_contours=always
-selected_score=1.337452
-quality_gate=accepted=True; dup_ok=True; tiny_ok=True; mask_iou_ok=True
+selected_score=1.336756
+quality_gate=accepted=False; dup_ok=True; tiny_ok=False; mask_iou_ok=True

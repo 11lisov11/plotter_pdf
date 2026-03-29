@@ -32,6 +32,7 @@ FONT_CANDIDATES = [
     ("Caveat", PROJECT_ROOT / "data" / "fonts" / "Caveat-wght.ttf"),
     ("Neucha", PROJECT_ROOT / "data" / "fonts" / "Neucha.ttf"),
 ]
+DEFAULT_TOE_FONT_LABELS = ["Marck Script"]
 TOE_RENDER_VARIANTS = [
     ("always", "always"),
     ("contours_off", "off"),
@@ -43,6 +44,7 @@ SOFT_OVERRIDE_MIN_SCORE_GAIN = 0.001
 IMAGE_HEAVY_COUNT_THRESHOLD = 4
 IMAGE_HEAVY_MASK_IOU_MIN = 0.18
 IMAGE_HEAVY_MASK_IOU_GATE = 0.10
+BLANK_PAGE_INK_RATIO_MAX = 0.0005
 FORMULA_HEAVY_IMAGE_COUNT_THRESHOLD = 30
 FORMULA_HEAVY_SELECTED_IOU_MAX = 0.20
 FORMULA_HEAVY_MAX_SIMILARITY_LOSS = 0.002
@@ -70,6 +72,8 @@ def _filter_candidate_fonts(
     selected_labels: list[str],
 ) -> list[tuple[str, Path]]:
     requested = [str(label or "").strip().lower() for label in selected_labels if str(label or "").strip()]
+    if not requested:
+        requested = [str(label).strip().lower() for label in DEFAULT_TOE_FONT_LABELS]
     if not requested:
         return fonts
     requested_set = set(requested)
@@ -106,6 +110,17 @@ def _source_page_visual_profile(page_svg: Path) -> dict[str, Any]:
         }
     )
     return profile
+
+
+def _pdf_page_ink_ratio(source_pdf: Path, page_index: int) -> float:
+    try:
+        gray = prep._render_pdf_page_gray(source_pdf, page_index=page_index - 1, dpi=140)
+    except Exception:
+        return 0.0
+    if gray is None or getattr(gray, "size", 0) <= 0:
+        return 0.0
+    mask = gray < 245
+    return float(np.count_nonzero(mask)) / float(mask.size)
 
 
 def _compute_quality_metrics(nc_path: Path) -> dict[str, Any]:
@@ -486,6 +501,9 @@ def main() -> int:
         if not (args.resume and page_svg.exists() and page_svg.is_file()):
             prep._export_pdf_page_to_mupdf_svg(source_pdf, page_index - 1, page_svg)
         page_source_profiles[page_index] = _source_page_visual_profile(page_svg)
+        ink_ratio = _pdf_page_ink_ratio(source_pdf, page_index)
+        page_source_profiles[page_index]["ink_ratio"] = round(float(ink_ratio), 8)
+        page_source_profiles[page_index]["blank_like"] = bool(ink_ratio <= float(BLANK_PAGE_INK_RATIO_MAX))
         results: list[dict[str, Any]] = []
         page_variants = [("always", "always")] if bool(page_source_profiles[page_index].get("image_heavy")) else list(TOE_RENDER_VARIANTS)
         for font_label, font_path in fonts:
@@ -641,7 +659,7 @@ def main() -> int:
         source_profile = dict(page_source_profiles.get(page_index, {}))
         selected_iou = float(dict(selected.get("overlay_metrics", {})).get("mask_iou", 0.0) or 0.0)
         selected_gate = dict(selected.get("quality_gate", {}))
-        if bool(source_profile.get("image_heavy")):
+        if bool(source_profile.get("image_heavy")) or bool(source_profile.get("blank_like")):
             fallback_font_label = str(selected.get("font_label") or primary_font)
             fallback_font_path = font_path_by_label.get(fallback_font_label) or font_path_by_label[str(primary_font)]
             fallback = _build_image_heavy_fallback_candidate(
@@ -656,7 +674,9 @@ def main() -> int:
                 resume=bool(args.resume),
             )
             page_results.append(fallback)
-            if _should_prefer_image_heavy_fallback(
+            if bool(source_profile.get("blank_like")) and bool(fallback.get("ok")):
+                selected = fallback
+            elif _should_prefer_image_heavy_fallback(
                 selected=selected,
                 fallback=fallback,
                 source_profile=source_profile,

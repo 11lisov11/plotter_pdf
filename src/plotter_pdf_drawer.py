@@ -398,6 +398,7 @@ IMAGE_CONTOUR_FORMULA_SIMPLIFY_MM = 0.045
 IMAGE_CONTOUR_FORMULA_TINY_BBOX_MM = 0.18
 IMAGE_CONTOUR_FORMULA_MIN_COMPONENT_PX = 2
 IMAGE_CONTOUR_FORMULA_RDP_PX = 0.42
+IMAGE_CONTOUR_FORMULA_VECTORIZE_MODE = "centerline"  # edge | centerline | auto
 IMAGE_CONTOUR_LINEART_MIN_PATH_MM = 0.45
 IMAGE_CONTOUR_LINEART_SIMPLIFY_MM = 0.080
 IMAGE_CONTOUR_LINEART_TINY_BBOX_MM = 0.35
@@ -884,6 +885,24 @@ def _embedded_image_to_gray_alpha(img: "np.ndarray") -> Tuple[Optional["np.ndarr
         return None, None
 
 
+def _normalize_embedded_gray_polarity(gray: "np.ndarray", alpha: Optional["np.ndarray"]) -> "np.ndarray":
+    if cv2 is None or np is None or gray is None:
+        return gray
+    try:
+        _, mask = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+        active_area = mask.size
+        if alpha is not None and int(np.max(alpha)) > 0:
+            _, alpha_mask = cv2.threshold(alpha, 10, 255, cv2.THRESH_BINARY)
+            mask = cv2.bitwise_and(mask, alpha_mask)
+            active_area = max(1, int(np.count_nonzero(alpha_mask)))
+        dark_ratio = float(np.count_nonzero(mask)) / float(max(1, int(active_area)))
+        if dark_ratio > 0.55:
+            return cv2.bitwise_not(gray)
+    except Exception:
+        return gray
+    return gray
+
+
 def _analyze_embedded_image_profile(img: "np.ndarray") -> Dict[str, object]:
     default = {
         "kind": "generic",
@@ -900,6 +919,7 @@ def _analyze_embedded_image_profile(img: "np.ndarray") -> Dict[str, object]:
         return default
 
     try:
+        gray = _normalize_embedded_gray_polarity(gray, alpha)
         h_px, w_px = gray.shape[:2]
         if h_px <= 0 or w_px <= 0:
             return default
@@ -965,6 +985,7 @@ def _extract_image_centerline_paths_px_autotrace(
         return []
 
     try:
+        gray = _normalize_embedded_gray_polarity(gray, alpha)
         gray = cv2.GaussianBlur(gray, (3, 3), 0)
         _, mask = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
         if alpha is not None and int(np.max(alpha)) > 0:
@@ -1032,22 +1053,12 @@ def _extract_image_centerline_paths_px(
 ) -> List[List[Tuple[float, float]]]:
     if cv2 is None or np is None or img is None:
         return []
-    try:
-        if len(img.shape) == 2:
-            gray = img
-            alpha = None
-        else:
-            if img.shape[2] == 4:
-                alpha = img[:, :, 3]
-                bgr = img[:, :, :3]
-                gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
-            else:
-                alpha = None
-                gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    except Exception:
+    gray, alpha = _embedded_image_to_gray_alpha(img)
+    if gray is None:
         return []
 
     try:
+        gray = _normalize_embedded_gray_polarity(gray, alpha)
         gray = cv2.GaussianBlur(gray, (3, 3), 0)
         _, mask = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
         if alpha is not None and int(np.max(alpha)) > 0:
@@ -1104,23 +1115,13 @@ def _extract_image_edge_contours_px(img: "np.ndarray") -> List[List[Tuple[float,
     if cv2 is None or np is None or img is None:
         return []
 
-    try:
-        if len(img.shape) == 2:
-            gray = img
-            alpha = None
-        else:
-            if img.shape[2] == 4:
-                alpha = img[:, :, 3]
-                bgr = img[:, :, :3]
-                gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
-                if int(np.max(alpha)) > 0:
-                    gray = cv2.bitwise_and(gray, gray, mask=alpha)
-            else:
-                alpha = None
-                gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    except Exception:
+    gray, alpha = _embedded_image_to_gray_alpha(img)
+    if gray is None:
         return []
 
+    gray = _normalize_embedded_gray_polarity(gray, alpha)
+    if alpha is not None and int(np.max(alpha)) > 0:
+        gray = cv2.bitwise_and(gray, gray, mask=alpha)
     gray = cv2.GaussianBlur(gray, (3, 3), 0)
     edges = cv2.Canny(gray, int(IMAGE_CONTOUR_CANNY_LOW), int(IMAGE_CONTOUR_CANNY_HIGH))
 
@@ -1307,10 +1308,9 @@ def extract_image_contour_items(
                     if mode not in {"edge", "centerline", "auto"}:
                         mode = "centerline"
                     if HANDWRITING_TEXT_ENABLED and profile_kind == "formula":
-                        # Printed formulas survive badly after centerline skeletonization:
-                        # symbols fragment into unreadable "maze" strokes. Prefer edge
-                        # contours for formula-like raster blocks so equations stay legible.
-                        mode = "edge"
+                        formula_mode = str(IMAGE_CONTOUR_FORMULA_VECTORIZE_MODE or "centerline").strip().lower()
+                        if formula_mode in {"edge", "centerline", "auto"}:
+                            mode = formula_mode
 
                     px_centerlines: List[List[Tuple[float, float]]] = []
                     if mode in {"centerline", "auto"}:

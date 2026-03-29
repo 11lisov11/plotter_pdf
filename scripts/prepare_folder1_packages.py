@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import os
 import re
 import shutil
 import sys
@@ -31,8 +32,8 @@ from src import plotter_pdf_drawer as backend
 
 TOE_FONT_MAP = {
     "TOE_Zadachi_1_2_Variant_14": ("Marck Script", "MarckScript-Regular.ttf"),
-    "TOE_Zadachi_1_2_Variant_25": ("Bad Script", "BadScript-Regular.ttf"),
-    "TOE_Zadachi_1_2_Variant_26": ("Caveat", "Caveat-wght.ttf"),
+    "TOE_Zadachi_1_2_Variant_25": ("Marck Script", "MarckScript-Regular.ttf"),
+    "TOE_Zadachi_1_2_Variant_26": ("Marck Script", "MarckScript-Regular.ttf"),
 }
 TOE_FALLBACK_LAYOUT_THRESHOLD = 0.93
 
@@ -313,8 +314,34 @@ def _rewrite_pdf_page_text_to_handwritten_pdf(
     page_index: int,
     font_path: Path,
     out_pdf: Path,
+    formula_font_path: Path | None = None,
     render_dpi: int = 450,
 ) -> None:
+    def _line_prefers_print_formula_font(text: str, spans: list[dict[str, Any]]) -> bool:
+        raw = str(text or "").strip()
+        if not raw:
+            return False
+        compact = re.sub(r"\s+", "", raw, flags=re.UNICODE)
+        if not compact:
+            return False
+        if any(ch in compact for ch in "=+-*/^_<>≈≤≥±×÷√∑∫∞[]{}|"):
+            return True
+        if bool(getattr(backend, "_text_contains_formula_script", lambda _text: False)(compact)):
+            return True
+        if len(compact) <= 12 and re.search(r"[A-Za-zА-Яа-я]", compact) and re.search(r"\d", compact):
+            return True
+        if len(compact) <= 8 and re.fullmatch(r"[A-Za-zА-Яа-я]{1,3}\d{0,2}", compact):
+            return True
+        fonts = " ".join(str(span.get("font", "")) for span in spans).lower()
+        if "math" in fonts:
+            return True
+        alpha = sum(1 for ch in compact if ch.isalpha())
+        digits = sum(1 for ch in compact if ch.isdigit())
+        operators = sum(1 for ch in compact if ch in "=+-*/^_<>≈≤≥±×÷√∑∫∞")
+        if len(compact) <= 24 and operators >= 1 and (alpha + digits) >= 2:
+            return True
+        return False
+
     doc = fitz.open(source_pdf)
     page = doc[page_index]
     scale = float(render_dpi) / 72.0
@@ -343,9 +370,10 @@ def _rewrite_pdf_page_text_to_handwritten_pdf(
             target_h = max(12, int((ly1 - ly0) * 0.92))
             target_w = max(12, int((lx1 - lx0) * 0.98))
             size = target_h
-            font = ImageFont.truetype(str(font_path), size=size)
+            selected_font_path = formula_font_path if (formula_font_path is not None and _line_prefers_print_formula_font(text, spans)) else font_path
+            font = ImageFont.truetype(str(selected_font_path), size=size)
             while size > 8:
-                font = ImageFont.truetype(str(font_path), size=size)
+                font = ImageFont.truetype(str(selected_font_path), size=size)
                 bb = draw.textbbox((0, 0), text, font=font)
                 text_w = bb[2] - bb[0]
                 text_h = bb[3] - bb[1]
@@ -377,11 +405,21 @@ def _prepare_toe_raster_fallback(
         td_path = Path(td)
         rewritten_pdf = td_path / "rewritten.pdf"
         candidate_prefix = prefix.parent / f"{prefix.name}__fallback_candidate"
+        formula_font_path = None
+        for candidate in (
+            Path(os.environ.get("WINDIR", r"C:\Windows")) / "Fonts" / "times.ttf",
+            Path(os.environ.get("WINDIR", r"C:\Windows")) / "Fonts" / "cambria.ttc",
+            Path(os.environ.get("WINDIR", r"C:\Windows")) / "Fonts" / "arial.ttf",
+        ):
+            if candidate.exists() and candidate.is_file():
+                formula_font_path = candidate
+                break
         _rewrite_pdf_page_text_to_handwritten_pdf(
             source_pdf=source_pdf,
             page_index=page_index - 1,
             font_path=font_path,
             out_pdf=rewritten_pdf,
+            formula_font_path=formula_font_path,
         )
         ok, msg, logs = _bridge_run_preview(
             input_path=rewritten_pdf,
@@ -423,7 +461,7 @@ def _prepare_toe_raster_fallback(
             "pdf": str(pdf_path),
             "nc": str(nc_path),
             "gcode": str(gcode_path),
-            "notes": "fallback=raster_rewrite_handdraw",
+            "notes": "fallback=raster_rewrite_handdraw; body_font=Marck Script; formula_font=Times New Roman",
         }
 
 
@@ -1136,6 +1174,8 @@ def _configure_toe_backend(font_path: Path) -> None:
     backend.IMAGE_CONTOUR_MODE = "always"
     backend.IMAGE_CONTOUR_ENABLED = True
     backend.IMAGE_CONTOUR_WORD_ONLY = False
+    backend.IMAGE_CONTOUR_VECTORIZE_MODE = "centerline"
+    backend.IMAGE_CONTOUR_FORMULA_VECTORIZE_MODE = "edge"
     backend.FORCE_TEXT_TO_PATH = False
     backend.USE_INKSCAPE_PDF_IMPORT = False
     backend.EXACT_GEOMETRY_MODE = False

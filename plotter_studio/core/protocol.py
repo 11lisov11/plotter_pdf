@@ -976,10 +976,30 @@ def _preview_bounds(polylines: list[list[tuple[float, float]]]) -> tuple[float, 
     return min(xs), max(xs), min(ys), max(ys)
 
 
-def _write_svg_preview(polylines: list[list[tuple[float, float]]], out_path: Path, *, pad_mm: float = 2.0) -> None:
-    x0, x1, y0, y1 = _preview_bounds(polylines)
+def _resolve_preview_canvas_bounds(
+    polylines: list[list[tuple[float, float]]],
+    *,
+    canvas_bounds_mm: Optional[tuple[float, float, float, float]] = None,
+) -> tuple[float, float, float, float]:
+    if canvas_bounds_mm is not None and len(canvas_bounds_mm) == 4:
+        try:
+            x0, x1, y0, y1 = [float(v) for v in canvas_bounds_mm]
+            if x1 > x0 and y1 > y0:
+                return x0, x1, y0, y1
+        except Exception:
+            pass
+    return _preview_bounds(polylines)
+
+
+def _write_svg_preview(
+    polylines: list[list[tuple[float, float]]],
+    out_path: Path,
+    *,
+    pad_mm: float = 2.0,
+    canvas_bounds_mm: Optional[tuple[float, float, float, float]] = None,
+) -> None:
     flipped = [[(x, -y) for x, y in poly] for poly in polylines]
-    x0, x1, y0, y1 = _preview_bounds(flipped)
+    x0, x1, y0, y1 = _resolve_preview_canvas_bounds(flipped, canvas_bounds_mm=canvas_bounds_mm)
     width = max(1e-6, x1 - x0)
     height = max(1e-6, y1 - y0)
     pad = max(0.0, float(pad_mm))
@@ -1003,13 +1023,18 @@ def _write_svg_preview(polylines: list[list[tuple[float, float]]], out_path: Pat
     out_path.write_text("\n".join(parts), encoding="utf-8")
 
 
-def _write_pdf_preview(polylines: list[list[tuple[float, float]]], out_path: Path, *, pad_mm: float = 2.0) -> None:
+def _write_pdf_preview(
+    polylines: list[list[tuple[float, float]]],
+    out_path: Path,
+    *,
+    pad_mm: float = 2.0,
+    canvas_bounds_mm: Optional[tuple[float, float, float, float]] = None,
+) -> None:
     if fitz is None:
         return
 
-    x0, x1, y0, y1 = _preview_bounds(polylines)
     flipped = [[(x, -y) for x, y in poly] for poly in polylines]
-    x0, x1, y0, y1 = _preview_bounds(flipped)
+    x0, x1, y0, y1 = _resolve_preview_canvas_bounds(flipped, canvas_bounds_mm=canvas_bounds_mm)
     width = max(1e-6, x1 - x0)
     height = max(1e-6, y1 - y0)
     pad = max(0.0, float(pad_mm))
@@ -1143,8 +1168,23 @@ class BackendBridge:
             )
             if not polylines:
                 return False, "Generated G-code has no drawable paths."
-            _write_svg_preview(polylines, svg_path)
-            _write_pdf_preview(polylines, pdf_path)
+            canvas_bounds_mm = None
+            bounds_fn = getattr(backend, "work_area_bounds", None)
+            if callable(bounds_fn):
+                try:
+                    area_min_x, area_max_x, area_min_y, area_max_y = bounds_fn()
+                    flipped_bounds = (
+                        float(area_min_x),
+                        float(area_max_x),
+                        float(-float(area_max_y)),
+                        float(-float(area_min_y)),
+                    )
+                    if flipped_bounds[1] > flipped_bounds[0] and flipped_bounds[3] > flipped_bounds[2]:
+                        canvas_bounds_mm = flipped_bounds
+                except Exception:
+                    canvas_bounds_mm = None
+            _write_svg_preview(polylines, svg_path, canvas_bounds_mm=canvas_bounds_mm)
+            _write_pdf_preview(polylines, pdf_path, canvas_bounds_mm=canvas_bounds_mm)
             log(f"Preview SVG: {svg_path}")
             if pdf_path.exists():
                 log(f"Preview PDF: {pdf_path}")

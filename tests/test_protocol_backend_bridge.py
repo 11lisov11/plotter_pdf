@@ -5,6 +5,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+import fitz  # type: ignore
+
 import plotter_studio.core.protocol as protocol_mod
 from plotter_studio.core.protocol import BackendBridge
 from src import plotter_pdf_drawer as backend_mod
@@ -14,6 +16,10 @@ from src.plotter_backend.errors import ToolDependencyError
 class _PreviewBackend:
     Z_UP = 0.0
     Z_DOWN = 10.0
+
+    @staticmethod
+    def work_area_bounds():
+        return (0.0, 180.0, -295.0, -15.0)
 
 
 class _Port:
@@ -149,6 +155,25 @@ class ProtocolBackendBridgeTests(unittest.TestCase):
                 )
             self.assertFalse(ok)
             self.assertIn("no drawable paths", msg)
+
+    def test_build_vector_preview_uses_work_area_canvas_bounds(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="plotter_proto_prev_canvas_") as td:
+            root = Path(td)
+            gcode = root / "in.nc"
+            gcode.write_text("G21\nG90\nG0 Z0\nG1 Z10\nG1 X10 Y-20\nG1 X20 Y-30\n", encoding="utf-8")
+            bridge = BackendBridge(root)
+            ok, msg = bridge._build_vector_preview_from_gcode(
+                gcode,
+                root / "out.svg",
+                root / "out.pdf",
+                backend=_PreviewBackend(),
+                log=lambda *_args: None,
+            )
+            self.assertTrue(ok, msg)
+            with fitz.open(root / "out.pdf") as pdf:
+                rect = pdf[0].rect
+            self.assertAlmostEqual(rect.width, (180.0 + 4.0) * 72.0 / 25.4, places=1)
+            self.assertAlmostEqual(rect.height, (280.0 + 4.0) * 72.0 / 25.4, places=1)
 
     def test_method3_centerline_raises_when_autotrace_missing(self) -> None:
         with tempfile.TemporaryDirectory(prefix="plotter_proto_ctrace_missing_") as td:

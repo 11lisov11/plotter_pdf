@@ -1,80 +1,38 @@
-Text render mode: handwriting=on font='C:\plotter_pdf\data\fonts\Neucha.ttf'; image_contours=always
-Handwriting mode: Cyrillic text profile tokens=76, short=32%, digits=18%, long=47%, style=paragraph.
-Handwriting mode: Cyrillic detected, trying TTF single-line pipeline first ('C:\plotter_pdf\data\fonts\Neucha.ttf').
-TTF centerline postprocess: 1 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: '9' -> 1 stroke(s), thr=160, cand=8, font=Neucha.ttf, size=14.04
-TTF centerline postprocess: 22 -> 20 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'Рисунок 1.14' -> 20 stroke(s), thr=160, cand=8, font=Neucha.ttf, size=12.00
-TTF centerline postprocess: 1 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: '-' -> 1 stroke(s), thr=160, cand=8, font=Neucha.ttf, size=12.00
-TTF centerline postprocess: 84 -> 50 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'Схема при подавленных незави' -> 50 stroke(s), thr=64, cand=8, font=Neucha.ttf, size=12.00
-TTF centerline postprocess: 73 -> 45 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: '2) Найдем эквивалентное сопр' -> 45 stroke(s), thr=129, cand=8, font=Neucha.ttf, size=12.00
-TTF centerline postprocess: 44 -> 26 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'После преобразований получае' -> 26 stroke(s), thr=129, cand=8, font=Neucha.ttf, size=12.00
-TTF centerline postprocess: 83 -> 50 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'расчётную схему для определе' -> 50 stroke(s), thr=32, cand=8, font=Neucha.ttf, size=12.00
-TTF centerline postprocess: 20 -> 15 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'Рисунок 1.15' -> 15 stroke(s), thr=224, cand=8, font=Neucha.ttf, size=12.00
-TTF centerline postprocess: 1 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: '-' -> 1 stroke(s), thr=160, cand=8, font=Neucha.ttf, size=12.00
-TTF centerline postprocess: 54 -> 36 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'Преобразованная расчетная сх' -> 36 stroke(s), thr=96, cand=8, font=Neucha.ttf, size=12.00
-TTF centerline postprocess: 94 -> 55 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: '3) Найдем ток I1 по схеме эк' -> 55 stroke(s), thr=129, cand=8, font=Neucha.ttf, size=12.00
-Handwriting TTF centerline mode: replaced 11 text node(s), generated 300 stroke path(s) using 'Neucha.ttf'.
-Text nodes after stroke-font replacement: 30
-Handwriting mode: applied font 'C:\plotter_pdf\data\fonts\Neucha.ttf' to 30 text node(s).
-Text->path conversion #1: inkscape.exe --batch-process --actions=select-all;export-text-to-path --export-type=svg --export-overwrite --export-filename=C:\plotter_pdf\_tmp\tmp6eh1bc5t\source.svg C:\plotter_pdf\_tmp\tmp6eh1bc5t\source.svg
-Text converted to SVG paths.
-Text nodes after conversion: 0
+Render mode: handwriting; ExactGeometry=off; Handwriting=on
+Sheet 210.0x297.0 mm is larger than workspace 180.0x280.0 mm. Using the overlapped sheet/workspace window.
+Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-295.000,-15.000), sheet_bounds x(0.000,210.000) y(-295.000,2.000), sheet=a4, anchor=lower_left, offset=(0.00,0.00)
+Method3 page preview: pages=1..1, body_font='C:\plotter_pdf\data\fonts\MarckScript-Regular.ttf', formula_font='Times New Roman'.
+Source pages: 1, selected: 1
+Method3 centerline: threshold=64, candidates=9, paths=964
+Method3 graphics centerline: paths=27
+Method3 layer split: text_paths=957, graphics_centerline=27, graphics_outline=21, graphics_accents=4
+Method3 detail thick-lines multipass: candidates=7, extra_passes=13
+Method3 micro-segment prune: segments=9048->8330, min=0.08 mm
+Text render mode: handwriting=on font='C:\plotter_pdf\data\fonts\MarckScript-Regular.ttf'; image_contours=always
 Extracting paths from SVG ...
-Image contour tracing: +72 path(s) from embedded raster.
-Image vectorization mode: centerline (added 72 path(s), simplify=0.34 mm).
-Image contour tracing: +51 path(s) from embedded raster.
-Image vectorization mode: centerline (added 51 path(s), simplify=0.34 mm).
-Image contour tracing: +56 path(s) from embedded raster.
-Image vectorization mode: centerline (added 56 path(s), simplify=0.34 mm).
-Image contour tracing: +38 path(s) from embedded raster.
-Image vectorization mode: centerline (added 38 path(s), simplify=0.34 mm).
-Image contour tracing: +81 path(s) from embedded raster.
-Image vectorization mode: centerline (added 81 path(s), simplify=0.34 mm).
-Image contour tracing: +30 path(s) from embedded raster.
-Image vectorization mode: centerline (added 30 path(s), simplify=0.08 mm).
-Image contour tracing: +31 path(s) from embedded raster.
-Image vectorization mode: centerline (added 31 path(s), simplify=0.08 mm).
-Image contour tracing: total +359 path(s).
-Raw geometry bounds: x(37.704, 191.630) y(13.789, 270.902)
-SVG page: 210.016 x 297.011 mm
+Raw geometry bounds: x(37.677, 191.702) y(14.767, 270.147)
+SVG page: 210.034 x 297.059 mm
 Auto trim: no outer border detected.
-Applied content area crop: x(20.5,205.0) y(10.0,292.0) dropped segments=0
-Bounds after content margin crop: x(37.704, 191.630) y(13.789, 270.902)
-SVG geometry: paths=659, segments=5213.
-Source bounds: x(37.704, 191.630) y(13.789, 270.902)
-Fit to work area: scale=1.0890, translate=(-34.874,-310.016), from (37.704, 13.789)-(191.630, 270.902)
-Stitch: polylines 659 -> 600 (eps=0.080 mm, gap_eps=0.150 mm, angle<=20.0 deg)
-Reorder: 600 polylines ordered (nearest-end).
-Pencil naturalization: adjusted 466/600 stroke(s).
-Work area clipping: kept 4660 visible segments, dropped 2 out-of-area segments.
-Pencil naturalization segments: 5213 -> 4660
-Polyline optimization: 659 -> 607
-Segment counts: source=5213, fitted=5213, clipped=5213
-Drawable segments after clip: 5213 (100.0% of source)
-Prepared bounds: x(6.186, 173.734) y(-294.937, -15.000)
-Estimated draw length: 3.56 m
+SVG geometry: paths=899, segments=8306.
+Source bounds: x(37.677, 191.702) y(14.767, 270.147)
+Fit to work area: scale=1.0964, translate=(-35.746,-311.191), from (37.677, 14.767)-(191.702, 270.147)
+Segment dedup: dropped 3/8306 retraced segments (0.0%), kept=8303, eps=0.010 mm
+Reorder: source order preserved (899 polylines).
+Handwriting fallback: skipping word-merge/smoothing for contour-only text source.
+Segment counts: source=8306, fitted=8306, clipped=8306
+Drawable segments after clip: 8306 (100.0% of source)
+Prepared bounds: x(5.563, 174.437) y(-295.000, -15.000)
+Estimated draw length: 3.47 m
 Pencil mode: base_z=11.900, wear=0.000 mm, z_comp_start=0.000, z_down_start=11.900, dyn(rate=0.0100 mm/m, comp=1.000, slope=0.0100 Zmm/m, max=0.800), est_remaining_to_sharpen=120.0 m (wear=120.0, interval=inf)
 Applying pen-up / pen-down ...
-G-code stats: lines=6303, draw=5737, travel=188, bounds=0.000..173.734 x, -294.937..0.000 y
-Preflight: ok: lines=6303, draw=5737, travel=188, ratio=0.03
-Saved file stats: lines=6303, draw=5737, travel=188, bounds=0.000..173.734 x, -294.937..0.000 y
-Saved: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_25_pack\_candidates\page_09\neucha\page_09.nc
-Preview SVG: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_25_pack\_candidates\page_09\neucha\page_09.svg
-Preview PDF: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_25_pack\_candidates\page_09\neucha\page_09.pdf
+G-code stats: lines=10589, draw=9870, travel=239, bounds=0.000..174.437 x, -295.000..0.000 y
+Preflight: ok: lines=10589, draw=9870, travel=239, ratio=0.02
+Saved file stats: lines=10589, draw=9870, travel=239, bounds=0.000..174.437 x, -295.000..0.000 y
+Saved: C:\plotter_pdf\_tmp\latest_preview.nc
 source_profile=images=12; texts=26; paths=34
-selected_primary_font=Neucha
-selected_font=Neucha
-selected_variant=always
+selected_primary_font=Marck Script
+selected_font=Marck Script
+selected_variant=raster_safe
 selected_contours=always
-selected_score=1.349918
-quality_gate=accepted=True; dup_ok=True; tiny_ok=True; mask_iou_ok=True
+selected_score=1.409051
+quality_gate=accepted=False; dup_ok=True; tiny_ok=False; mask_iou_ok=True

@@ -20,6 +20,15 @@ def _load_module():
 
 
 class PrepareFolder1PackagesModuleTests(unittest.TestCase):
+    def test_configure_toe_backend_uses_edge_for_formula_rasters(self) -> None:
+        mod = _load_module()
+        with tempfile.TemporaryDirectory(prefix="toe_backend_cfg_") as td:
+            font_path = Path(td) / "font.ttf"
+            font_path.write_bytes(b"font")
+            mod._configure_toe_backend(font_path)
+        self.assertEqual(mod.backend.IMAGE_CONTOUR_VECTORIZE_MODE, "centerline")
+        self.assertEqual(mod.backend.IMAGE_CONTOUR_FORMULA_VECTORIZE_MODE, "edge")
+
     def test_prepare_toe_raster_fallback_uses_handdraw_preview(self) -> None:
         mod = _load_module()
         with tempfile.TemporaryDirectory(prefix="toe_raster_fallback_") as td:
@@ -62,6 +71,7 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
         self.assertTrue(capture["handwriting_enabled"])
         self.assertEqual(capture["image_contours_mode"], "always")
         self.assertIn("raster_rewrite_handdraw", row["notes"])
+        self.assertIn("formula_font=Times New Roman", row["notes"])
 
 
 if __name__ == "__main__":
