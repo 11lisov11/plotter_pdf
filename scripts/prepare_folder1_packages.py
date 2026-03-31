@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from contextlib import contextmanager
 import csv
 import json
 import os
@@ -27,14 +28,10 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from plotter_studio.core.protocol import BackendBridge, SheetConfig, _gcode_to_polylines, _is_detail_polyline_mm
 from plotter_studio.core.serial_worker import OperationContext
+from src.plotter_backend import text_content_routing, toe_font_policy
 from src import plotter_pdf_drawer as backend
 
 
-TOE_FONT_MAP = {
-    "TOE_Zadachi_1_2_Variant_14": ("Marck Script", "MarckScript-Regular.ttf"),
-    "TOE_Zadachi_1_2_Variant_25": ("Marck Script", "MarckScript-Regular.ttf"),
-    "TOE_Zadachi_1_2_Variant_26": ("Marck Script", "MarckScript-Regular.ttf"),
-}
 TOE_FALLBACK_LAYOUT_THRESHOLD = 0.93
 
 
@@ -283,11 +280,28 @@ def _bridge_preview_copy_targets(prefix: Path) -> tuple[Path, Path, Path, Path]:
     )
 
 
-def _copy_latest_preview_artifacts(prefix: Path) -> tuple[Path, Path, Path, Path]:
+def _preview_artifact_sources(*, op_id: str | None = None) -> tuple[Path, Path, Path]:
     tmp = PROJECT_ROOT / "_tmp"
-    src_svg = tmp / "latest_preview_vector.svg"
-    src_pdf = tmp / "latest_preview_vector.pdf"
-    src_nc = tmp / "latest_preview.nc"
+    if op_id:
+        token = re.sub(r"[^A-Za-z0-9_.-]+", "_", str(op_id or "").strip()).strip("._")
+        if token:
+            if len(token) > 80:
+                token = token[:80]
+            stem = f"latest_preview_{token}"
+            unique_svg = tmp / f"{stem}_vector.svg"
+            unique_pdf = tmp / f"{stem}_vector.pdf"
+            unique_nc = tmp / f"{stem}.nc"
+            if unique_svg.exists() and unique_pdf.exists() and unique_nc.exists():
+                return unique_svg, unique_pdf, unique_nc
+    return (
+        tmp / "latest_preview_vector.svg",
+        tmp / "latest_preview_vector.pdf",
+        tmp / "latest_preview.nc",
+    )
+
+
+def _copy_latest_preview_artifacts(prefix: Path, *, op_id: str | None = None) -> tuple[Path, Path, Path, Path]:
+    src_svg, src_pdf, src_nc = _preview_artifact_sources(op_id=op_id)
     dst_svg, dst_pdf, dst_nc, dst_gcode = _bridge_preview_copy_targets(prefix)
     _copy_file(src_svg, dst_svg)
     _copy_file(src_pdf, dst_pdf)
@@ -295,17 +309,112 @@ def _copy_latest_preview_artifacts(prefix: Path) -> tuple[Path, Path, Path, Path
     return dst_svg, dst_pdf, dst_nc, dst_gcode
 
 
+@contextmanager
+def _backend_override_context(backend_overrides: dict[str, Any] | None):
+    overrides = dict(backend_overrides or {})
+    if not overrides:
+        yield
+        return
+    saved: dict[str, Any] = {}
+    try:
+        for key, value in overrides.items():
+            if hasattr(backend, key):
+                saved[key] = getattr(backend, key)
+                setattr(backend, key, value)
+        yield
+    finally:
+        for key, value in saved.items():
+            setattr(backend, key, value)
+
+
 def _mirror_package_root_artifacts(package_dir: Path, rows: list[ArtifactRow]) -> None:
     for row in rows:
         if not bool(row.ok):
             continue
-        for src_text in (row.preview_pdf, row.nc, row.gcode):
+        for src_text in (row.preview_pdf, row.preview_svg, row.nc, row.gcode):
             if not src_text:
                 continue
             src = Path(str(src_text))
             if not src.exists() or not src.is_file():
                 continue
             _copy_file(src, package_dir / src.name)
+
+
+def _polyline_axis_aligned(poly: list[tuple[float, float]], *, eps_mm: float = 0.08) -> bool:
+    if len(poly) < 2:
+        return False
+    for idx in range(1, len(poly)):
+        x0, y0 = poly[idx - 1]
+        x1, y1 = poly[idx]
+        dx = abs(float(x1) - float(x0))
+        dy = abs(float(y1) - float(y0))
+        if dx <= eps_mm or dy <= eps_mm:
+            continue
+        return False
+    return True
+
+
+def _table_like_overlay_polylines(page_svg: Path) -> list[list[tuple[float, float]]]:
+    try:
+        items = backend.extract_polylines(page_svg)
+    except Exception:
+        return []
+    out: list[list[tuple[float, float]]] = []
+    for item in items:
+        poly = list(item.points or [])
+        if len(poly) < 2:
+            continue
+        if not bool(item.is_stroke):
+            continue
+        if bool(item.is_fill) and len(poly) > 2:
+            continue
+        if not _polyline_axis_aligned(poly):
+            continue
+        xs = [float(p[0]) for p in poly]
+        ys = [float(p[1]) for p in poly]
+        width_mm = max(xs) - min(xs)
+        height_mm = max(ys) - min(ys)
+        draw_len_mm = _polyline_length(poly)
+        if max(width_mm, height_mm) < 3.5 and draw_len_mm < 5.0:
+            continue
+        out.append(poly)
+    return out
+
+
+def _merge_table_like_vectors_into_svg(*, source_page_svg: Path, target_svg: Path) -> int:
+    polylines = _table_like_overlay_polylines(source_page_svg)
+    if not polylines:
+        return 0
+    tree = ET.parse(target_svg)
+    root = tree.getroot()
+    target_scale = float(backend.infer_scale(root) or 1.0)
+    if target_scale <= 1e-9:
+        return 0
+    ns_uri = str(root.tag).split("}")[0].strip("{") if "}" in str(root.tag) else "http://www.w3.org/2000/svg"
+    group = ET.Element(f"{{{ns_uri}}}g")
+    group.set("id", "table_vector_overlay")
+    stroke_width_units = max(0.35, 0.18 / target_scale)
+    added = 0
+    for poly in polylines:
+        if len(poly) < 2:
+            continue
+        d_parts = [f"M {poly[0][0] / target_scale:.4f} {poly[0][1] / target_scale:.4f}"]
+        for x_mm, y_mm in poly[1:]:
+            d_parts.append(f"L {x_mm / target_scale:.4f} {y_mm / target_scale:.4f}")
+        path_el = ET.Element(f"{{{ns_uri}}}path")
+        path_el.set("d", " ".join(d_parts))
+        path_el.set("fill", "none")
+        path_el.set("stroke", "#222222")
+        path_el.set("stroke-width", f"{stroke_width_units:.4f}")
+        path_el.set("stroke-linecap", "round")
+        path_el.set("stroke-linejoin", "miter")
+        group.append(path_el)
+        added += 1
+    if added <= 0:
+        return 0
+    root.append(group)
+    tree.write(target_svg, encoding="utf-8", xml_declaration=True)
+    return added
 
 
 def _rewrite_pdf_page_text_to_handwritten_pdf(
@@ -317,10 +426,57 @@ def _rewrite_pdf_page_text_to_handwritten_pdf(
     formula_font_path: Path | None = None,
     render_dpi: int = 450,
 ) -> None:
-    def _line_prefers_print_formula_font(text: str, spans: list[dict[str, Any]]) -> bool:
+    def _classify_line_role(text: str, spans: list[dict[str, Any]]) -> str:
+        raw = str(text or "").strip()
+        if not raw:
+            return text_content_routing.ROLE_BODY_HANDWRITING
+        span_font_size = 0.0
+        try:
+            span_font_size = max(float(span.get("size", 0.0) or 0.0) for span in spans) if spans else 0.0
+        except Exception:
+            span_font_size = 0.0
+        return text_content_routing.classify_text_content_role(
+            raw,
+            font_size=span_font_size or None,
+            font_names=[str(span.get("font", "")) for span in spans],
+            text_contains_formula_script_fn=getattr(backend, "_text_contains_formula_script", lambda _text: False),
+        )
+
+    def _line_prefers_print_formula_font(
+        text: str,
+        spans: list[dict[str, Any]],
+        *,
+        line_bbox: list[float] | tuple[float, ...] | None = None,
+        block_print_cutoff_y: float | None = None,
+    ) -> bool:
         raw = str(text or "").strip()
         if not raw:
             return False
+        span_font_size = 0.0
+        try:
+            span_font_size = max(float(span.get("size", 0.0) or 0.0) for span in spans) if spans else 0.0
+        except Exception:
+            span_font_size = 0.0
+        route = _classify_line_role(raw, spans)
+        if route != text_content_routing.ROLE_BODY_HANDWRITING:
+            return True
+        if block_print_cutoff_y is not None and line_bbox and len(line_bbox) >= 4:
+            try:
+                if float(line_bbox[3]) <= float(block_print_cutoff_y):
+                    return True
+            except Exception:
+                pass
+        lower_text = raw.casefold()
+        if any(
+            token in lower_text
+            for token in (
+                "\u0442\u0430\u0431\u043b\u0438\u0446",
+                "\u0440\u0438\u0441\u0443\u043d\u043e\u043a",
+                "\u0440\u0438\u0441.",
+                "\u0441\u0445\u0435\u043c",
+            )
+        ):
+            return True
         compact = re.sub(r"\s+", "", raw, flags=re.UNICODE)
         if not compact:
             return False
@@ -340,7 +496,33 @@ def _rewrite_pdf_page_text_to_handwritten_pdf(
         operators = sum(1 for ch in compact if ch in "=+-*/^_<>≈≤≥±×÷√∑∫∞")
         if len(compact) <= 24 and operators >= 1 and (alpha + digits) >= 2:
             return True
+        if bool(getattr(backend, "_text_prefers_print_font", lambda _text, font_size=None: False)(raw, font_size=span_font_size or None)):
+            return True
         return False
+
+    def _block_print_cutoff_y(block: dict[str, Any]) -> float | None:
+        consecutive_non_body = 0
+        cutoff_y = None
+        for line in block.get("lines", []):
+            spans = list(line.get("spans", []))
+            text = "".join(str(span.get("text", "")) for span in spans).strip()
+            if not text:
+                continue
+            bbox = list(line.get("bbox", []))
+            if len(bbox) < 4:
+                continue
+            role = _classify_line_role(text, spans)
+            if role != text_content_routing.ROLE_BODY_HANDWRITING:
+                consecutive_non_body += 1
+                cutoff_y = float(bbox[3]) + 2.0
+                continue
+            if consecutive_non_body >= 3:
+                return cutoff_y
+            consecutive_non_body = 0
+            cutoff_y = None
+        if consecutive_non_body >= 3:
+            return cutoff_y
+        return None
 
     doc = fitz.open(source_pdf)
     page = doc[page_index]
@@ -353,6 +535,7 @@ def _rewrite_pdf_page_text_to_handwritten_pdf(
     for block in page_dict.get("blocks", []):
         if block.get("type") != 0:
             continue
+        block_print_cutoff_y = _block_print_cutoff_y(block)
         bbox = block.get("bbox")
         if not bbox:
             continue
@@ -363,6 +546,7 @@ def _rewrite_pdf_page_text_to_handwritten_pdf(
             text = "".join(str(span.get("text", "")) for span in spans).strip()
             if not text:
                 continue
+            rendered_text = str(getattr(backend, "_normalize_handwriting_text_string", lambda value: value)(text))
             line_bbox = line.get("bbox")
             if not line_bbox:
                 continue
@@ -370,17 +554,29 @@ def _rewrite_pdf_page_text_to_handwritten_pdf(
             target_h = max(12, int((ly1 - ly0) * 0.92))
             target_w = max(12, int((lx1 - lx0) * 0.98))
             size = target_h
-            selected_font_path = formula_font_path if (formula_font_path is not None and _line_prefers_print_formula_font(text, spans)) else font_path
+            selected_font_path = (
+                formula_font_path
+                if (
+                    formula_font_path is not None
+                    and _line_prefers_print_formula_font(
+                        text,
+                        spans,
+                        line_bbox=list(line_bbox),
+                        block_print_cutoff_y=block_print_cutoff_y,
+                    )
+                )
+                else font_path
+            )
             font = ImageFont.truetype(str(selected_font_path), size=size)
             while size > 8:
                 font = ImageFont.truetype(str(selected_font_path), size=size)
-                bb = draw.textbbox((0, 0), text, font=font)
+                bb = draw.textbbox((0, 0), rendered_text, font=font)
                 text_w = bb[2] - bb[0]
                 text_h = bb[3] - bb[1]
                 if text_w <= target_w and text_h <= max(12, int((ly1 - ly0) * 1.05)):
                     break
                 size -= 1
-            draw.text((lx0, ly0), text, font=font, fill=(25, 25, 25))
+            draw.text((lx0, ly0), rendered_text, font=font, fill=(25, 25, 25))
 
     out_pdf.parent.mkdir(parents=True, exist_ok=True)
     raster_png = out_pdf.with_suffix(".png")
@@ -397,14 +593,19 @@ def _prepare_toe_raster_fallback(
     *,
     source_pdf: Path,
     page_index: int,
+    page_svg: Path | None,
     prefix: Path,
     font_label: str,
     font_path: Path,
+    backend_overrides: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     with tempfile.TemporaryDirectory(prefix="toe_raster_fallback_") as td:
         td_path = Path(td)
         rewritten_pdf = td_path / "rewritten.pdf"
+        rewritten_svg = td_path / "rewritten.svg"
         candidate_prefix = prefix.parent / f"{prefix.name}__fallback_candidate"
+        ctx = _ctx(f"preview-{time.time_ns()}")
+        preflight_logs: list[str] = []
         formula_font_path = None
         for candidate in (
             Path(os.environ.get("WINDIR", r"C:\Windows")) / "Fonts" / "times.ttf",
@@ -421,38 +622,53 @@ def _prepare_toe_raster_fallback(
             out_pdf=rewritten_pdf,
             formula_font_path=formula_font_path,
         )
-        ok, msg, logs = _bridge_run_preview(
-            input_path=rewritten_pdf,
-            sheet=SheetConfig(sheet_format="a4", anchor="lower_left"),
-            tool_mode="pencil",
-            render_mode="handwriting",
-            quality_profile="high",
-            force_text_to_path=False,
-            handwriting_enabled=True,
-            handwriting_font=str(font_path),
-            handwriting_formula_font="Times New Roman",
-            image_contours_mode="always",
-            source_page_index=1,
-            source_all_pages=False,
-            exact_geometry_mode=True,
-            safe_travel_lift=False,
-            strict_one_to_one=False,
-        )
+        preview_input = rewritten_pdf
+        try:
+            _export_pdf_page_to_mupdf_svg(rewritten_pdf, 0, rewritten_svg)
+            preview_input = rewritten_svg
+            if page_svg is not None and page_svg.exists() and page_svg.is_file():
+                merged = _merge_table_like_vectors_into_svg(
+                    source_page_svg=page_svg,
+                    target_svg=rewritten_svg,
+                )
+                preflight_logs.append(f"table_vector_overlay_count={int(merged)}")
+        except Exception as exc:
+            preflight_logs.append(f"table_vector_overlay_failed={exc!r}")
+            preview_input = rewritten_pdf
+        with _backend_override_context(backend_overrides):
+            ok, msg, logs = _bridge_run_preview(
+                ctx=ctx,
+                input_path=preview_input,
+                sheet=SheetConfig(sheet_format="a4", anchor="lower_left"),
+                tool_mode="pencil",
+                render_mode="handwriting",
+                quality_profile="high",
+                force_text_to_path=False,
+                handwriting_enabled=True,
+                handwriting_font=str(font_path),
+                handwriting_formula_font=str(toe_font_policy.DEFAULT_FORMULA_FONT_FAMILY),
+                image_contours_mode="always",
+                source_page_index=1,
+                source_all_pages=False,
+                exact_geometry_mode=True,
+                safe_travel_lift=False,
+                strict_one_to_one=False,
+            )
         if not ok:
             return {
                 "ok": False,
                 "message": msg,
-                "logs": logs,
+                "logs": [*preflight_logs, *logs],
                 "font_label": font_label,
                 "font_path": str(font_path),
             }
-        svg_path, pdf_path, nc_path, gcode_path = _copy_latest_preview_artifacts(candidate_prefix)
+        svg_path, pdf_path, nc_path, gcode_path = _copy_latest_preview_artifacts(candidate_prefix, op_id=ctx.op_id)
         metrics = _analyze_gcode(nc_path)
         similarity = _layout_similarity_pdf(source_pdf, pdf_path, source_page_index=page_index - 1)
         return {
             "ok": True,
             "message": msg,
-            "logs": logs,
+            "logs": [*preflight_logs, *logs],
             "font_label": font_label,
             "font_path": str(font_path),
             "layout_similarity": similarity,
@@ -461,12 +677,18 @@ def _prepare_toe_raster_fallback(
             "pdf": str(pdf_path),
             "nc": str(nc_path),
             "gcode": str(gcode_path),
-            "notes": "fallback=raster_rewrite_handdraw; body_font=Marck Script; formula_font=Times New Roman",
+            "notes": (
+                "fallback=raster_rewrite_handdraw; "
+                f"body_font={font_label}; "
+                f"formula_font={toe_font_policy.DEFAULT_FORMULA_FONT_FAMILY}; "
+                "table_vector_overlay=enabled"
+            ),
         }
 
 
 def _bridge_run_preview(
     *,
+    ctx: OperationContext,
     input_path: Path,
     sheet: SheetConfig,
     tool_mode: str,
@@ -487,7 +709,7 @@ def _bridge_run_preview(
     logs: list[str] = []
     with _technical_drawing_backend_precision():
         ok, msg = bridge.run_preview(
-            ctx=_ctx(f"preview-{time.time_ns()}"),
+            ctx=ctx,
             input_path=input_path,
             sheet=sheet,
             tool_mode=tool_mode,
@@ -957,7 +1179,9 @@ def _prepare_drawing_candidate(
         td_path = Path(td)
         ascii_pdf = td_path / "input.pdf"
         shutil.copy2(source_pdf, ascii_pdf)
+        ctx = _ctx(f"preview-{time.time_ns()}")
         ok, msg, logs = _bridge_run_preview(
+            ctx=ctx,
             input_path=ascii_pdf,
             sheet=SheetConfig(sheet_format="a4", anchor="lower_left"),
             tool_mode="pen",
@@ -982,7 +1206,7 @@ def _prepare_drawing_candidate(
                 "logs": logs,
             }
         prefix = candidate_dir / variant_name
-        svg_path, pdf_path, nc_path, gcode_path = _copy_latest_preview_artifacts(prefix)
+        svg_path, pdf_path, nc_path, gcode_path = _copy_latest_preview_artifacts(prefix, op_id=ctx.op_id)
         metrics = _analyze_gcode(nc_path)
         similarity = _layout_similarity_pdf(source_pdf, pdf_path, source_page_index=0)
         return {
@@ -1014,7 +1238,9 @@ def _prepare_a3_pass(
         pass_notes = []
         if int(pass_index) == 2:
             pass_notes.append("pass_02_rotated_180_for_sheet_flip=True")
+        ctx = _ctx(f"preview-{time.time_ns()}")
         ok, msg, logs = _bridge_run_preview(
+            ctx=ctx,
             input_path=ascii_pdf,
             sheet=SheetConfig(sheet_format="a3", anchor="lower_left", pass_cols=2, pass_rows=1, pass_col=pass_index, pass_row=1),
             tool_mode="pen",
@@ -1038,7 +1264,7 @@ def _prepare_a3_pass(
                 "message": msg,
                 "logs": logs,
             }
-        svg_path, pdf_path, nc_path, gcode_path = _copy_latest_preview_artifacts(prefix)
+        svg_path, pdf_path, nc_path, gcode_path = _copy_latest_preview_artifacts(prefix, op_id=ctx.op_id)
         metrics = _analyze_gcode(nc_path)
         return {
             "item": f"pass_{pass_index}",
@@ -1095,9 +1321,10 @@ def _prepare_a3_pass_from_clean_svg(
     pass_notes: list[str] = []
     if int(pass_index) == 2:
         pass_notes.append("pass_02_rotated_180_for_sheet_flip=True")
+    ctx = _ctx(f"a3-clean-pass-{pass_index}-{time.time_ns()}")
     with _technical_drawing_backend_precision():
         ok, msg = bridge.run_preview(
-            ctx=_ctx(f"a3-clean-pass-{pass_index}-{time.time_ns()}"),
+            ctx=ctx,
             input_path=clean_svg,
             sheet=SheetConfig(sheet_format="a3", anchor="lower_left", pass_cols=2, pass_rows=1, pass_col=pass_index, pass_row=1),
             tool_mode="pen",
@@ -1122,7 +1349,7 @@ def _prepare_a3_pass_from_clean_svg(
             "message": msg,
             "logs": [*(prep_logs or []), *pass_notes, "--- a3 clean pass ---", *logs],
         }
-    svg_path, pdf_path, nc_path, gcode_path = _copy_latest_preview_artifacts(prefix)
+    svg_path, pdf_path, nc_path, gcode_path = _copy_latest_preview_artifacts(prefix, op_id=ctx.op_id)
     metrics = _analyze_gcode(nc_path)
     return {
         "item": f"pass_{pass_index:02d}",
@@ -1165,23 +1392,11 @@ def _export_pdf_page_to_mupdf_svg(pdf_path: Path, page_index: int, out_svg: Path
     tree.write(out_svg, encoding="utf-8", xml_declaration=True)
 
 
-def _configure_toe_backend(font_path: Path) -> None:
-    backend.HANDWRITING_TEXT_ENABLED = True
-    backend.HANDWRITING_FONT_FAMILY = str(font_path)
-    backend.HANDWRITING_CYRILLIC_FONT_FAMILY = str(font_path)
-    backend.HANDWRITING_SINGLELINE_TTF_BACKEND = "autotrace3"
-    backend.HANDWRITING_DIRECT_VECTOR_TEXT_ENABLED = True
-    backend.IMAGE_CONTOUR_MODE = "always"
-    backend.IMAGE_CONTOUR_ENABLED = True
-    backend.IMAGE_CONTOUR_WORD_ONLY = False
-    backend.IMAGE_CONTOUR_VECTORIZE_MODE = "centerline"
-    backend.IMAGE_CONTOUR_FORMULA_VECTORIZE_MODE = "edge"
-    backend.FORCE_TEXT_TO_PATH = False
-    backend.USE_INKSCAPE_PDF_IMPORT = False
-    backend.EXACT_GEOMETRY_MODE = False
-    backend.MIN_FIT_SCALE_FOR_DIMENSIONAL_DRAW = 0.0
-    backend.SAFE_PEN_TRAVEL_UP = False
-    backend.TOOL_MODE = "pencil"
+def _configure_toe_backend(font_path: Path, *, backend_overrides: dict[str, Any] | None = None) -> None:
+    policy = toe_font_policy.toe_font_first_policy()
+    for key, value in policy.backend_settings(font_path).items():
+        if hasattr(backend, key):
+            setattr(backend, key, value)
     backend.apply_quality_profile("high", force_text_to_path=False)
     backend.configure_active_work_area(
         sheet_format="a4",
@@ -1192,6 +1407,9 @@ def _configure_toe_backend(font_path: Path) -> None:
         offset_y_mm=0.0,
         logger=lambda *_args, **_kwargs: None,
     )
+    for key, value in dict(backend_overrides or {}).items():
+        if hasattr(backend, key):
+            setattr(backend, key, value)
 
 
 def _prepare_toe_page(
@@ -1202,8 +1420,9 @@ def _prepare_toe_page(
     font_label: str,
     font_path: Path,
     prefix: Path,
+    backend_overrides: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    _configure_toe_backend(font_path)
+    _configure_toe_backend(font_path, backend_overrides=backend_overrides)
     logs: list[str] = []
     nc_path = prefix.with_suffix(".nc")
     ok, msg = backend.run_pipeline(page_svg, logs.append, send_to_plotter=False, output_path=nc_path)
@@ -1260,9 +1479,11 @@ def _prepare_toe_page(
         fallback = _prepare_toe_raster_fallback(
             source_pdf=source_pdf,
             page_index=page_index,
+            page_svg=page_svg,
             prefix=prefix,
             font_label=font_label,
             font_path=font_path,
+            backend_overrides=backend_overrides,
         )
         if bool(fallback.get("ok")) and float(fallback.get("layout_similarity", 0.0)) > float(similarity):
             for src_key, dst_path in zip(
@@ -1499,7 +1720,8 @@ def _prepare_toe_package(source_pdf: Path, package_dir: Path) -> tuple[dict[str,
     logs_dir.mkdir(parents=True, exist_ok=True)
     temp_svg_dir.mkdir(parents=True, exist_ok=True)
 
-    font_label, font_filename = TOE_FONT_MAP.get(source_pdf.stem, ("Marck Script", "MarckScript-Regular.ttf"))
+    profile = toe_font_policy.toe_profile_for_source_stem(source_pdf.stem)
+    font_label, font_filename = profile.label, profile.filename
     font_path = PROJECT_ROOT / "data" / "fonts" / font_filename
     doc = fitz.open(source_pdf)
     rows: list[ArtifactRow] = []

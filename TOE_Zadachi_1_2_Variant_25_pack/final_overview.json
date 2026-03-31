@@ -4,16 +4,16 @@
   "fonts_evaluated": [
     {
       "font_label": "Marck Script",
-      "pages_ok": 17,
-      "avg_layout_similarity": 0.954769,
-      "min_layout_similarity": 0.906032,
-      "avg_score": 1.222718,
-      "doc_score": 1.240838
+      "pages_ok": 12,
+      "avg_layout_similarity": 0.956012,
+      "min_layout_similarity": 0.906021,
+      "avg_score": 1.233488,
+      "doc_score": 1.251608
     }
   ],
   "pages_ok": 17,
   "page_count": 17,
-  "elapsed_s": 870.424,
-  "avg_layout_similarity": 0.955901,
-  "min_layout_similarity": 0.894976
+  "elapsed_s": 2780.029,
+  "avg_layout_similarity": 0.964997,
+  "min_layout_similarity": 0.940065
 }

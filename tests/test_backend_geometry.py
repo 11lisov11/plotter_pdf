@@ -130,9 +130,11 @@ class BackendGeometryTests(unittest.TestCase):
         old_enabled = backend.IMAGE_TONE_HATCH_ENABLED
         old_word_only = backend.IMAGE_TONE_HATCH_WORD_ONLY
         old_mode = backend.IMAGE_CONTOUR_MODE
+        old_handwriting = backend.HANDWRITING_TEXT_ENABLED
         try:
             backend.IMAGE_TONE_HATCH_ENABLED = True
             backend.IMAGE_TONE_HATCH_WORD_ONLY = True
+            backend.HANDWRITING_TEXT_ENABLED = False
 
             backend.IMAGE_CONTOUR_MODE = "off"
             self.assertFalse(backend.image_hatch_enabled_for_input(False))
@@ -149,6 +151,7 @@ class BackendGeometryTests(unittest.TestCase):
             backend.IMAGE_TONE_HATCH_ENABLED = old_enabled
             backend.IMAGE_TONE_HATCH_WORD_ONLY = old_word_only
             backend.IMAGE_CONTOUR_MODE = old_mode
+            backend.HANDWRITING_TEXT_ENABLED = old_handwriting
 
     def test_analyze_embedded_image_profile_detects_formula_like_raster(self) -> None:
         if backend.np is None:
@@ -162,6 +165,17 @@ class BackendGeometryTests(unittest.TestCase):
         self.assertEqual(profile.get("kind"), "formula")
         self.assertTrue(bool(profile.get("line_art")))
         self.assertTrue(bool(profile.get("formula_like")))
+
+    def test_analyze_embedded_image_profile_detects_small_line_art_raster(self) -> None:
+        if backend.np is None:
+            self.skipTest("numpy unavailable")
+        img = backend.np.full((180, 300, 3), 255, dtype=backend.np.uint8)
+        img[20:160, 150:154] = 0
+        img[150:154, 40:260] = 0
+        profile = backend._analyze_embedded_image_profile(img)
+        self.assertEqual(profile.get("kind"), "lineart")
+        self.assertTrue(bool(profile.get("line_art")))
+        self.assertTrue(bool(profile.get("small_line_art")))
 
     def test_extract_image_contour_items_handles_leading_decimal_matrix_transform(self) -> None:
         if backend.cv2 is None or backend.np is None:
@@ -252,6 +266,178 @@ class BackendGeometryTests(unittest.TestCase):
             backend.IMAGE_CONTOUR_MODE = old_mode
             backend.HANDWRITING_TEXT_ENABLED = old_handwriting
             backend.IMAGE_CONTOUR_FORMULA_VECTORIZE_MODE = old_formula_mode
+
+    def test_extract_image_contour_items_uses_threshold_floor_for_light_line_art(self) -> None:
+        image = Image.new("RGB", (20, 20), "white")
+        image.putpixel((10, 10), (190, 190, 190))
+        buf = io.BytesIO()
+        image.save(buf, format="PNG")
+        png_b64 = base64.b64encode(buf.getvalue()).decode("ascii")
+        svg = f"""<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="10mm" height="10mm" viewBox="0 0 10 10">
+  <image width="20" height="20" xlink:href="data:image/png;base64,{png_b64}"/>
+</svg>
+"""
+        old_enabled = backend.IMAGE_CONTOUR_ENABLED
+        old_mode = backend.IMAGE_CONTOUR_MODE
+        old_handwriting = backend.HANDWRITING_TEXT_ENABLED
+        old_formula_mode = backend.IMAGE_CONTOUR_FORMULA_VECTORIZE_MODE
+        try:
+            backend.IMAGE_CONTOUR_ENABLED = True
+            backend.IMAGE_CONTOUR_MODE = "always"
+            backend.HANDWRITING_TEXT_ENABLED = True
+            backend.IMAGE_CONTOUR_FORMULA_VECTORIZE_MODE = "edge"
+            with tempfile.TemporaryDirectory() as td:
+                path = Path(td) / "sample.svg"
+                path.write_text(svg, encoding="utf-8")
+                with (
+                    mock.patch.object(
+                        backend,
+                        "_analyze_embedded_image_profile",
+                        return_value={
+                            "kind": "lineart",
+                            "line_art": True,
+                            "formula_like": False,
+                            "small_line_art": False,
+                            "dark_ratio": 0.02,
+                        },
+                    ),
+                    mock.patch.object(
+                        backend,
+                        "_extract_image_centerline_paths_px_autotrace",
+                        return_value=[[(0.0, 0.0), (5.0, 0.0)]],
+                    ) as center_mock,
+                ):
+                    backend.extract_image_contour_items(path, logger=lambda *_: None)
+            self.assertTrue(center_mock.called)
+            self.assertEqual(
+                center_mock.call_args.kwargs.get("threshold_floor"),
+                int(backend.IMAGE_CONTOUR_LINEART_THRESHOLD_MIN),
+            )
+        finally:
+            backend.IMAGE_CONTOUR_ENABLED = old_enabled
+            backend.IMAGE_CONTOUR_MODE = old_mode
+            backend.HANDWRITING_TEXT_ENABLED = old_handwriting
+            backend.IMAGE_CONTOUR_FORMULA_VECTORIZE_MODE = old_formula_mode
+
+    def test_extract_image_contour_items_upscales_small_line_art_before_tracing(self) -> None:
+        image = Image.new("RGB", (20, 12), "white")
+        image.putpixel((10, 6), (0, 0, 0))
+        buf = io.BytesIO()
+        image.save(buf, format="PNG")
+        png_b64 = base64.b64encode(buf.getvalue()).decode("ascii")
+        svg = f"""<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="10mm" height="10mm" viewBox="0 0 10 10">
+  <image width="20" height="12" xlink:href="data:image/png;base64,{png_b64}"/>
+</svg>
+"""
+        old_enabled = backend.IMAGE_CONTOUR_ENABLED
+        old_mode = backend.IMAGE_CONTOUR_MODE
+        old_handwriting = backend.HANDWRITING_TEXT_ENABLED
+        old_autotrace = backend.IMAGE_CONTOUR_LINEART_AUTOTRACE
+        try:
+            backend.IMAGE_CONTOUR_ENABLED = True
+            backend.IMAGE_CONTOUR_MODE = "always"
+            backend.HANDWRITING_TEXT_ENABLED = True
+            backend.IMAGE_CONTOUR_LINEART_AUTOTRACE = True
+            with tempfile.TemporaryDirectory() as td:
+                path = Path(td) / "sample.svg"
+                path.write_text(svg, encoding="utf-8")
+                with (
+                    mock.patch.object(
+                        backend,
+                        "_analyze_embedded_image_profile",
+                        return_value={
+                            "kind": "lineart",
+                            "line_art": True,
+                            "formula_like": False,
+                            "small_line_art": True,
+                            "dark_ratio": 0.02,
+                        },
+                    ),
+                    mock.patch.object(
+                        backend,
+                        "_extract_image_centerline_paths_px_autotrace",
+                        return_value=[[(0.0, 0.0), (5.0, 0.0)]],
+                    ) as center_mock,
+                ):
+                    backend.extract_image_contour_items(path, logger=lambda *_: None)
+            self.assertTrue(center_mock.called)
+            traced_img = center_mock.call_args.args[0]
+            self.assertGreater(int(traced_img.shape[1]), 20)
+            self.assertGreater(int(traced_img.shape[0]), 12)
+        finally:
+            backend.IMAGE_CONTOUR_ENABLED = old_enabled
+            backend.IMAGE_CONTOUR_MODE = old_mode
+            backend.HANDWRITING_TEXT_ENABLED = old_handwriting
+            backend.IMAGE_CONTOUR_LINEART_AUTOTRACE = old_autotrace
+
+    def test_extract_image_hough_circles_px_detects_small_line_art_nodes(self) -> None:
+        if backend.cv2 is None or backend.np is None:
+            self.skipTest("opencv/numpy unavailable")
+        img = backend.np.full((189, 309, 3), 255, dtype=backend.np.uint8)
+        backend.cv2.circle(img, (21, 148), 9, (205, 205, 205), thickness=1)
+        backend.cv2.circle(img, (141, 167), 9, (205, 205, 205), thickness=1)
+        backend.cv2.circle(img, (143, 21), 9, (205, 205, 205), thickness=1)
+        backend.cv2.circle(img, (287, 148), 9, (205, 205, 205), thickness=1)
+        polys = backend._extract_image_hough_circles_px(img)
+        self.assertGreaterEqual(len(polys), 4)
+        self.assertTrue(all(len(poly) >= 10 for poly in polys[:4]))
+
+    def test_extract_image_contour_items_adds_hough_circles_for_small_line_art(self) -> None:
+        if backend.cv2 is None or backend.np is None:
+            self.skipTest("opencv/numpy unavailable")
+        img = backend.np.full((189, 309, 3), 255, dtype=backend.np.uint8)
+        for center in ((21, 148), (141, 167), (143, 21), (287, 148)):
+            backend.cv2.circle(img, center, 9, (205, 205, 205), thickness=1)
+        ok, encoded = backend.cv2.imencode(".png", img)
+        self.assertTrue(bool(ok))
+        png_b64 = base64.b64encode(encoded.tobytes()).decode("ascii")
+        svg = f"""<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="30mm" height="20mm" viewBox="0 0 30 20">
+  <image width="30" height="20" xlink:href="data:image/png;base64,{png_b64}"/>
+</svg>
+"""
+        old_enabled = backend.IMAGE_CONTOUR_ENABLED
+        old_mode = backend.IMAGE_CONTOUR_MODE
+        old_handwriting = backend.HANDWRITING_TEXT_ENABLED
+        old_autotrace = backend.IMAGE_CONTOUR_LINEART_AUTOTRACE
+        try:
+            backend.IMAGE_CONTOUR_ENABLED = True
+            backend.IMAGE_CONTOUR_MODE = "always"
+            backend.HANDWRITING_TEXT_ENABLED = True
+            backend.IMAGE_CONTOUR_LINEART_AUTOTRACE = False
+            with tempfile.TemporaryDirectory() as td:
+                path = Path(td) / "sample.svg"
+                path.write_text(svg, encoding="utf-8")
+                with (
+                    mock.patch.object(
+                        backend,
+                        "_analyze_embedded_image_profile",
+                        return_value={
+                            "kind": "lineart",
+                            "line_art": True,
+                            "formula_like": False,
+                            "small_line_art": True,
+                            "dark_ratio": 0.02,
+                        },
+                    ),
+                    mock.patch.object(backend, "_extract_image_centerline_paths_px_autotrace", return_value=[]),
+                    mock.patch.object(backend, "_extract_image_centerline_paths_px", return_value=[]),
+                    mock.patch.object(backend, "_extract_image_edge_contours_px", return_value=[]),
+                ):
+                    items = backend.extract_image_contour_items(path, logger=lambda *_: None)
+            closed = [it for it in items if bool(getattr(it, "closed", False))]
+            self.assertGreaterEqual(len(closed), 4)
+            self.assertTrue(all(len(it.points) >= 10 for it in closed[:4]))
+        finally:
+            backend.IMAGE_CONTOUR_ENABLED = old_enabled
+            backend.IMAGE_CONTOUR_MODE = old_mode
+            backend.HANDWRITING_TEXT_ENABLED = old_handwriting
+            backend.IMAGE_CONTOUR_LINEART_AUTOTRACE = old_autotrace
 
     def test_cluster_small_fill_items_for_single_stroke_groups_nested_contours(self) -> None:
         items = [

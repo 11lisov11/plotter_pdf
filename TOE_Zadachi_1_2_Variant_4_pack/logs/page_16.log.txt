@@ -1,8 +1,37 @@
-reused existing candidate artifacts
+region_rescue_from=raster_safe
+region_boxes_norm=[[0.6667, 1.0, 0.5, 0.75]]
+Text render mode: handwriting=on font='C:\plotter_pdf\data\fonts\MarckScript-Regular.ttf'; image_contours=always
+Extracting paths from SVG ...
+Raw geometry bounds: x(0.000, 180.000) y(-597.813, -332.310)
+SVG page: 188.000 x 288.000 mm
+Auto trim: no outer border detected.
+Page 188.0x288.0 mm not A4; skipping content area crop.
+SVG geometry: paths=452, segments=11157.
+Source bounds: x(0.000, 180.000) y(-597.813, -332.310)
+Fit to work area: scale=1.0000, translate=(0.000,310.062), from (0.000, -597.813)-(180.000, -332.310)
+Stitch: polylines 452 -> 448 (eps=0.220 mm, gap_eps=0.380 mm, angle<=40.0 deg)
+Reorder: 448 polylines ordered (nearest-end).
+Handwriting fallback: skipping word-merge/smoothing for contour-only text source.
+Pencil naturalization: adjusted 359/448 stroke(s).
+Pencil naturalization segments: 11157 -> 10660
+Polyline optimization: 452 -> 448
+Segment counts: source=11157, fitted=11157, clipped=11157
+Drawable segments after clip: 11157 (100.0% of source)
+Prepared bounds: x(0.000, 180.000) y(-287.751, -22.250)
+Estimated draw length: 6.23 m
+Pencil mode: base_z=11.900, wear=0.000 mm, z_comp_start=0.000, z_down_start=11.900, dyn(rate=0.0100 mm/m, comp=1.000, slope=0.0100 Zmm/m, max=0.800), est_remaining_to_sharpen=120.0 m (wear=120.0, interval=inf)
+Applying pen-up / pen-down ...
+G-code stats: lines=13305, draw=12196, travel=369, bounds=0.000..180.000 x, -287.751..0.000 y
+Preflight: ok: lines=13305, draw=12196, travel=369, ratio=0.03
+Saved file stats: lines=13305, draw=12196, travel=369, bounds=0.000..180.000 x, -287.751..0.000 y
+Saved: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_4_pack\_candidates\page_16\marck_script__region_safe_from_raster_safe\page_16.nc
+Preview SVG: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_4_pack\_candidates\page_16\marck_script__region_safe_from_raster_safe\page_16.svg
+Preview PDF: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_4_pack\_candidates\page_16\marck_script__region_safe_from_raster_safe\page_16.pdf
 source_profile=images=17; texts=34; paths=44
-selected_primary_font=Neucha
-selected_font=Neucha
-selected_variant=always
+selected_primary_font=Marck Script
+selected_font=Marck Script
+selected_variant=region_safe
 selected_contours=always
-selected_score=1.289162
+selected_score=1.253162
+selection_reason=source_strategy=graph_lineart; primary_font=Marck Script; selected_font=Marck Script; selected_variant=region_safe; selected_contours=always; font_first_preferred=false; fallback_threshold=0.946; selection=override; reason=region_rescue
 quality_gate=accepted=True; dup_ok=True; tiny_ok=True; mask_iou_ok=True

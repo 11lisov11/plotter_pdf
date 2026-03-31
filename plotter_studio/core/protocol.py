@@ -3459,6 +3459,20 @@ class BackendBridge:
             shutil.copyfile(str(nc_src), str(nc_dst))
 
     @staticmethod
+    def _preview_artifact_paths(previews_dir: Path, op_id: str) -> tuple[Path, Path, Path]:
+        token = re.sub(r"[^A-Za-z0-9_.-]+", "_", str(op_id or "").strip()).strip("._")
+        if not token:
+            token = "preview"
+        if len(token) > 80:
+            token = token[:80]
+        stem = f"latest_preview_{token}"
+        return (
+            previews_dir / f"{stem}.nc",
+            previews_dir / f"{stem}_vector.svg",
+            previews_dir / f"{stem}_vector.pdf",
+        )
+
+    @staticmethod
     def _run_manual_commands_with_timeout(
         backend,
         com_port: str,
@@ -3913,9 +3927,11 @@ class BackendBridge:
 
         previews_dir = self._project_root / "_tmp"
         previews_dir.mkdir(parents=True, exist_ok=True)
-        nc_path = previews_dir / "latest_preview.nc"
-        svg_path = previews_dir / "latest_preview_vector.svg"
-        pdf_path = previews_dir / "latest_preview_vector.pdf"
+        legacy_nc_path = previews_dir / "latest_preview.nc"
+        legacy_svg_path = previews_dir / "latest_preview_vector.svg"
+        legacy_pdf_path = previews_dir / "latest_preview_vector.pdf"
+        op_id = str(getattr(ctx, "op_id", "") or "preview")
+        nc_path, svg_path, pdf_path = self._preview_artifact_paths(previews_dir, op_id)
         ext = input_path.suffix.lower()
         use_method3_page = bool(effective_handwriting) and ext in {".doc", ".docx", ".pdf"}
 
@@ -3984,6 +4000,14 @@ class BackendBridge:
                         pdf_dst=pdf_path,
                         nc_dst=nc_path,
                     )
+                self._copy_latest_artifacts(
+                    svg_src=svg_path,
+                    pdf_src=pdf_path,
+                    nc_src=nc_path,
+                    svg_dst=legacy_svg_path,
+                    pdf_dst=legacy_pdf_path,
+                    nc_dst=legacy_nc_path,
+                )
                 suffix = f" | PDF: {pdf_path}" if pdf_path.exists() else ""
                 return True, f"Preview ready: {svg_path} | G-code: {nc_path}{suffix}"
 
@@ -4015,6 +4039,14 @@ class BackendBridge:
         if not preview_ok:
             return False, preview_err
 
+        self._copy_latest_artifacts(
+            svg_src=svg_path,
+            pdf_src=pdf_path,
+            nc_src=nc_path,
+            svg_dst=legacy_svg_path,
+            pdf_dst=legacy_pdf_path,
+            nc_dst=legacy_nc_path,
+        )
         suffix = f" | PDF: {pdf_path}" if pdf_path.exists() else ""
         return True, f"Preview ready: {svg_path} | G-code: {nc_path}{suffix}"
 

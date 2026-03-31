@@ -1,104 +1,104 @@
-Text render mode: handwriting=on font='C:\plotter_pdf\data\fonts\MarckScript-Regular.ttf'; image_contours=always
+Text render mode: handwriting=on font='C:\plotter_pdf\data\fonts\MarckScript-Regular.ttf'; image_contours=off
 Handwriting mode: Cyrillic text profile tokens=366, short=42%, digits=18%, long=41%, style=paragraph.
 Handwriting mode: Cyrillic detected, trying TTF single-line pipeline first ('C:\plotter_pdf\data\fonts\MarckScript-Regular.ttf').
 TTF centerline postprocess: 2 -> 2 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: '1' -> 2 stroke(s), thr=224, cand=8, font=MarckScript-Regular.ttf, size=14.04
-TTF centerline postprocess: 18 -> 14 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'Задача №1' -> 14 stroke(s), thr=128, cand=8, font=MarckScript-Regular.ttf, size=12.00
-TTF centerline postprocess: 71 -> 48 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'РАСЧЕТ ЦЕПИ ПОСТОЯННОГО ТОКА' -> 48 stroke(s), thr=224, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline method3 text: '1' -> 2 stroke(s), thr=96, cand=8, font=times.ttf, size=14.04
+TTF centerline postprocess: 25 -> 18 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Задача №1' -> 18 stroke(s), thr=96, cand=8, font=times.ttf, size=12.00
+TTF centerline postprocess: 52 -> 35 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Расчет цепи постоянного тока' -> 35 stroke(s), thr=160, cand=8, font=MarckScript-Regular.ttf, size=12.00
 TTF centerline postprocess: 144 -> 85 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
 TTF centerline method3 text: 'Целью работы является расчёт' -> 85 stroke(s), thr=64, cand=8, font=MarckScript-Regular.ttf, size=12.00
-TTF centerline postprocess: 62 -> 39 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'стоянного тока приведена на ' -> 39 stroke(s), thr=96, cand=8, font=MarckScript-Regular.ttf, size=12.00
-TTF centerline postprocess: 20 -> 14 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'Рисунок 1.1' -> 14 stroke(s), thr=32, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 96 -> 61 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'стоянного тока приведена на ' -> 61 stroke(s), thr=96, cand=8, font=times.ttf, size=12.00
+TTF centerline postprocess: 32 -> 23 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Рисунок 1.1' -> 23 stroke(s), thr=96, cand=8, font=times.ttf, size=12.00
 TTF centerline postprocess: 1 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
 TTF centerline method3 text: '-' -> 1 stroke(s), thr=160, cand=8, font=MarckScript-Regular.ttf, size=12.00
 TTF centerline postprocess: 47 -> 28 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
 TTF centerline method3 text: 'Схема электрической цепи' -> 28 stroke(s), thr=64, cand=8, font=MarckScript-Regular.ttf, size=12.00
-TTF centerline postprocess: 68 -> 53 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'Числовые данные приведены в ' -> 53 stroke(s), thr=96, cand=8, font=MarckScript-Regular.ttf, size=12.00
-TTF centerline postprocess: 19 -> 15 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'Таблица 1.1' -> 15 stroke(s), thr=32, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 122 -> 77 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Числовые данные приведены в ' -> 77 stroke(s), thr=96, cand=8, font=times.ttf, size=12.00
+TTF centerline postprocess: 28 -> 15 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Таблица 1.1' -> 15 stroke(s), thr=129, cand=8, font=times.ttf, size=12.00
 TTF centerline postprocess: 12 -> 5 stroke(s) (eps=0.12, gap=0.92, smooth_step=0.13, col=0.028)
 TTF centerline method3 text: 'Вари-' -> 5 stroke(s), thr=64, cand=8, font=MarckScript-Regular.ttf, size=9.96
 TTF centerline postprocess: 9 -> 5 stroke(s) (eps=0.12, gap=0.92, smooth_step=0.13, col=0.028)
 TTF centerline method3 text: 'ант' -> 5 stroke(s), thr=192, cand=8, font=MarckScript-Regular.ttf, size=9.96
-TTF centerline postprocess: 2 -> 2 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: '26' -> 2 stroke(s), thr=192, cand=8, font=MarckScript-Regular.ttf, size=9.96
+TTF centerline postprocess: 3 -> 3 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '26' -> 3 stroke(s), thr=224, cand=8, font=times.ttf, size=9.96
+TTF centerline postprocess: 3 -> 3 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'J0' -> 3 stroke(s), thr=96, cand=8, font=times.ttf, size=9.96
+TTF centerline postprocess: 7 -> 6 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'E1' -> 6 stroke(s), thr=32, cand=8, font=times.ttf, size=9.96
+TTF centerline postprocess: 7 -> 6 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'E2' -> 6 stroke(s), thr=32, cand=8, font=times.ttf, size=9.96
+TTF centerline postprocess: 7 -> 6 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'E3' -> 6 stroke(s), thr=64, cand=8, font=times.ttf, size=9.96
+TTF centerline postprocess: 7 -> 5 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'E4' -> 5 stroke(s), thr=32, cand=8, font=times.ttf, size=9.96
+TTF centerline postprocess: 4 -> 3 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'G0' -> 3 stroke(s), thr=192, cand=8, font=times.ttf, size=9.96
+TTF centerline postprocess: 6 -> 6 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'R1' -> 6 stroke(s), thr=64, cand=8, font=times.ttf, size=9.96
+TTF centerline postprocess: 5 -> 5 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'R2' -> 5 stroke(s), thr=96, cand=8, font=times.ttf, size=9.96
+TTF centerline postprocess: 6 -> 5 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'R3' -> 5 stroke(s), thr=96, cand=8, font=times.ttf, size=9.96
+TTF centerline postprocess: 6 -> 5 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'R4' -> 5 stroke(s), thr=96, cand=8, font=times.ttf, size=9.96
+TTF centerline postprocess: 5 -> 4 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'R5' -> 4 stroke(s), thr=64, cand=8, font=times.ttf, size=9.96
+TTF centerline postprocess: 5 -> 5 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'R6' -> 5 stroke(s), thr=64, cand=8, font=times.ttf, size=9.96
+TTF centerline postprocess: 5 -> 5 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'A' -> 5 stroke(s), thr=192, cand=8, font=times.ttf, size=9.96
+TTF centerline postprocess: 4 -> 3 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'V' -> 3 stroke(s), thr=32, cand=8, font=times.ttf, size=9.96
 TTF centerline postprocess: 4 -> 4 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'J0' -> 4 stroke(s), thr=32, cand=8, font=MarckScript-Regular.ttf, size=9.96
-TTF centerline postprocess: 5 -> 4 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'E1' -> 4 stroke(s), thr=64, cand=8, font=MarckScript-Regular.ttf, size=9.96
-TTF centerline postprocess: 4 -> 3 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'E2' -> 3 stroke(s), thr=224, cand=8, font=MarckScript-Regular.ttf, size=9.96
-TTF centerline postprocess: 5 -> 4 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'E3' -> 4 stroke(s), thr=224, cand=8, font=MarckScript-Regular.ttf, size=9.96
-TTF centerline postprocess: 6 -> 3 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'E4' -> 3 stroke(s), thr=64, cand=8, font=MarckScript-Regular.ttf, size=9.96
+TTF centerline method3 text: 'V' -> 4 stroke(s), thr=32, cand=8, font=times.ttf, size=9.96
 TTF centerline postprocess: 4 -> 4 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'G0' -> 4 stroke(s), thr=64, cand=8, font=MarckScript-Regular.ttf, size=9.96
-TTF centerline postprocess: 5 -> 4 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'R1' -> 4 stroke(s), thr=96, cand=8, font=MarckScript-Regular.ttf, size=9.96
-TTF centerline postprocess: 4 -> 3 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'R2' -> 3 stroke(s), thr=192, cand=8, font=MarckScript-Regular.ttf, size=9.96
-TTF centerline postprocess: 5 -> 4 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'R3' -> 4 stroke(s), thr=192, cand=8, font=MarckScript-Regular.ttf, size=9.96
-TTF centerline postprocess: 6 -> 3 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'R4' -> 3 stroke(s), thr=64, cand=8, font=MarckScript-Regular.ttf, size=9.96
-TTF centerline postprocess: 4 -> 3 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'R5' -> 3 stroke(s), thr=192, cand=8, font=MarckScript-Regular.ttf, size=9.96
-TTF centerline postprocess: 4 -> 3 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'R6' -> 3 stroke(s), thr=192, cand=8, font=MarckScript-Regular.ttf, size=9.96
-TTF centerline postprocess: 4 -> 2 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'A' -> 2 stroke(s), thr=224, cand=8, font=MarckScript-Regular.ttf, size=9.96
+TTF centerline method3 text: 'V' -> 4 stroke(s), thr=32, cand=8, font=times.ttf, size=9.96
+TTF centerline postprocess: 4 -> 4 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'V' -> 4 stroke(s), thr=32, cand=8, font=times.ttf, size=9.96
+TTF centerline postprocess: 3 -> 2 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'S' -> 2 stroke(s), thr=160, cand=8, font=times.ttf, size=9.96
+TTF centerline postprocess: 10 -> 7 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Ohm' -> 7 stroke(s), thr=224, cand=8, font=times.ttf, size=9.96
+TTF centerline postprocess: 10 -> 7 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Ohm' -> 7 stroke(s), thr=224, cand=8, font=times.ttf, size=9.96
+TTF centerline postprocess: 10 -> 7 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Ohm' -> 7 stroke(s), thr=224, cand=8, font=times.ttf, size=9.96
+TTF centerline postprocess: 10 -> 7 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Ohm' -> 7 stroke(s), thr=224, cand=8, font=times.ttf, size=9.96
+TTF centerline postprocess: 10 -> 7 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Ohm' -> 7 stroke(s), thr=224, cand=8, font=times.ttf, size=9.96
+TTF centerline postprocess: 10 -> 7 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Ohm' -> 7 stroke(s), thr=224, cand=8, font=times.ttf, size=9.96
 TTF centerline postprocess: 2 -> 2 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'V' -> 2 stroke(s), thr=192, cand=8, font=MarckScript-Regular.ttf, size=9.96
+TTF centerline method3 text: '4' -> 2 stroke(s), thr=128, cand=8, font=times.ttf, size=9.96
+TTF centerline postprocess: 4 -> 4 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '100' -> 4 stroke(s), thr=192, cand=8, font=times.ttf, size=9.96
 TTF centerline postprocess: 2 -> 2 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'V' -> 2 stroke(s), thr=192, cand=8, font=MarckScript-Regular.ttf, size=9.96
+TTF centerline method3 text: '50' -> 2 stroke(s), thr=224, cand=8, font=times.ttf, size=9.96
+TTF centerline postprocess: 4 -> 4 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '100' -> 4 stroke(s), thr=192, cand=8, font=times.ttf, size=9.96
 TTF centerline postprocess: 2 -> 2 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'V' -> 2 stroke(s), thr=192, cand=8, font=MarckScript-Regular.ttf, size=9.96
-TTF centerline postprocess: 2 -> 2 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'V' -> 2 stroke(s), thr=192, cand=8, font=MarckScript-Regular.ttf, size=9.96
-TTF centerline postprocess: 2 -> 2 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'S' -> 2 stroke(s), thr=131, cand=8, font=MarckScript-Regular.ttf, size=9.96
-TTF centerline postprocess: 7 -> 6 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'Ohm' -> 6 stroke(s), thr=32, cand=8, font=MarckScript-Regular.ttf, size=9.96
-TTF centerline postprocess: 7 -> 6 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'Ohm' -> 6 stroke(s), thr=32, cand=8, font=MarckScript-Regular.ttf, size=9.96
-TTF centerline postprocess: 7 -> 6 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'Ohm' -> 6 stroke(s), thr=32, cand=8, font=MarckScript-Regular.ttf, size=9.96
-TTF centerline postprocess: 7 -> 6 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'Ohm' -> 6 stroke(s), thr=32, cand=8, font=MarckScript-Regular.ttf, size=9.96
-TTF centerline postprocess: 7 -> 6 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'Ohm' -> 6 stroke(s), thr=32, cand=8, font=MarckScript-Regular.ttf, size=9.96
-TTF centerline postprocess: 7 -> 6 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'Ohm' -> 6 stroke(s), thr=32, cand=8, font=MarckScript-Regular.ttf, size=9.96
-TTF centerline postprocess: 3 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: '4' -> 1 stroke(s), thr=64, cand=8, font=MarckScript-Regular.ttf, size=9.96
-TTF centerline postprocess: 4 -> 3 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: '100' -> 3 stroke(s), thr=128, cand=8, font=MarckScript-Regular.ttf, size=9.96
-TTF centerline postprocess: 2 -> 2 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: '50' -> 2 stroke(s), thr=128, cand=8, font=MarckScript-Regular.ttf, size=9.96
-TTF centerline postprocess: 4 -> 3 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: '100' -> 3 stroke(s), thr=128, cand=8, font=MarckScript-Regular.ttf, size=9.96
-TTF centerline postprocess: 2 -> 2 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: '50' -> 2 stroke(s), thr=128, cand=8, font=MarckScript-Regular.ttf, size=9.96
-TTF centerline postprocess: 2 -> 2 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: '0.2' -> 2 stroke(s), thr=128, cand=8, font=MarckScript-Regular.ttf, size=9.96
+TTF centerline method3 text: '50' -> 2 stroke(s), thr=224, cand=8, font=times.ttf, size=9.96
+TTF centerline postprocess: 3 -> 3 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '0.2' -> 3 stroke(s), thr=224, cand=8, font=times.ttf, size=9.96
 TTF centerline postprocess: 1 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: '6' -> 1 stroke(s), thr=192, cand=8, font=MarckScript-Regular.ttf, size=9.96
-TTF centerline postprocess: 2 -> 2 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: '9' -> 2 stroke(s), thr=192, cand=8, font=MarckScript-Regular.ttf, size=9.96
-TTF centerline postprocess: 3 -> 2 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: '15' -> 2 stroke(s), thr=160, cand=8, font=MarckScript-Regular.ttf, size=9.96
+TTF centerline method3 text: '6' -> 1 stroke(s), thr=32, cand=8, font=times.ttf, size=9.96
 TTF centerline postprocess: 2 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: '7' -> 1 stroke(s), thr=192, cand=8, font=MarckScript-Regular.ttf, size=9.96
-TTF centerline postprocess: 2 -> 2 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: '20' -> 2 stroke(s), thr=128, cand=8, font=MarckScript-Regular.ttf, size=9.96
-TTF centerline postprocess: 3 -> 2 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: '10' -> 2 stroke(s), thr=96, cand=8, font=MarckScript-Regular.ttf, size=9.96
+TTF centerline method3 text: '9' -> 1 stroke(s), thr=224, cand=8, font=times.ttf, size=9.96
+TTF centerline postprocess: 3 -> 3 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '15' -> 3 stroke(s), thr=132, cand=8, font=times.ttf, size=9.96
+TTF centerline postprocess: 1 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '7' -> 1 stroke(s), thr=160, cand=8, font=times.ttf, size=9.96
+TTF centerline postprocess: 3 -> 3 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '20' -> 3 stroke(s), thr=224, cand=8, font=times.ttf, size=9.96
+TTF centerline postprocess: 3 -> 3 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '10' -> 3 stroke(s), thr=192, cand=8, font=times.ttf, size=9.96
 TTF centerline postprocess: 21 -> 17 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
 TTF centerline method3 text: 'Требуется:' -> 17 stroke(s), thr=192, cand=8, font=MarckScript-Regular.ttf, size=12.00
 TTF centerline postprocess: 149 -> 109 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
@@ -113,8 +113,8 @@ TTF centerline postprocess: 116 -> 75 stroke(s) (eps=0.14, gap=0.92, smooth_step
 TTF centerline method3 text: '2. Рассчитать токи во всех в' -> 75 stroke(s), thr=160, cand=8, font=MarckScript-Regular.ttf, size=12.00
 TTF centerline postprocess: 171 -> 113 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
 TTF centerline method3 text: '3. Рассчитать токи во всех в' -> 113 stroke(s), thr=192, cand=8, font=MarckScript-Regular.ttf, size=12.00
-TTF centerline postprocess: 15 -> 10 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'чета по п.2.' -> 10 stroke(s), thr=160, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 24 -> 16 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'чета по п.2.' -> 16 stroke(s), thr=96, cand=8, font=times.ttf, size=12.00
 TTF centerline postprocess: 70 -> 47 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
 TTF centerline method3 text: '4. Рассчитать показания воль' -> 47 stroke(s), thr=64, cand=8, font=MarckScript-Regular.ttf, size=12.00
 TTF centerline postprocess: 49 -> 38 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
@@ -131,46 +131,44 @@ TTF centerline postprocess: 160 -> 99 stroke(s) (eps=0.14, gap=0.92, smooth_step
 TTF centerline method3 text: '8. Рассчитать значение тока ' -> 99 stroke(s), thr=96, cand=8, font=MarckScript-Regular.ttf, size=12.00
 TTF centerline postprocess: 25 -> 14 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
 TTF centerline method3 text: 'точника ЭДС.' -> 14 stroke(s), thr=96, cand=8, font=MarckScript-Regular.ttf, size=12.00
-Handwriting TTF centerline mode: replaced 65 text node(s), generated 1379 stroke path(s) using 'MarckScript-Regular.ttf'.
+Handwriting TTF centerline mode: replaced 65 text node(s), generated 1471 stroke path(s) using 'MarckScript-Regular.ttf'.
 Text nodes after stroke-font replacement: 132
 Handwriting mode: applied font 'C:\plotter_pdf\data\fonts\MarckScript-Regular.ttf' to 132 text node(s).
-Text->path conversion #1: inkscape.exe --batch-process --actions=select-all;export-text-to-path --export-type=svg --export-overwrite --export-filename=C:\plotter_pdf\_tmp\tmpktp36l4_\source.svg C:\plotter_pdf\_tmp\tmpktp36l4_\source.svg
+Text->path conversion #1: inkscape.exe --batch-process --actions=select-all;export-text-to-path --export-type=svg --export-overwrite --export-filename=C:\plotter_pdf\_tmp\tmpvbm81ro9\source.svg C:\plotter_pdf\_tmp\tmpvbm81ro9\source.svg
 Text converted to SVG paths.
 Text nodes after conversion: 0
 Extracting paths from SVG ...
-Image contour tracing: +80 path(s) from embedded raster.
-Image vectorization mode: centerline (added 80 path(s), simplify=0.08 mm).
-Image contour tracing: total +80 path(s).
-Raw geometry bounds: x(25.409, 201.307) y(14.845, 275.094)
+Raw geometry bounds: x(25.409, 201.307) y(14.157, 275.094)
 SVG page: 210.016 x 297.011 mm
 Auto trim: no outer border detected.
 Applied content area crop: x(20.5,205.0) y(10.0,292.0) dropped segments=0
-Bounds after content margin crop: x(25.409, 201.307) y(14.845, 275.094)
-SVG geometry: paths=1636, segments=22256.
-Source bounds: x(25.409, 201.307) y(14.845, 275.094)
-Fit to work area: scale=1.0233, translate=(-26.001,-303.349), from (25.409, 14.845)-(201.307, 275.094)
-Stitch: polylines 1636 -> 1522 (eps=0.080 mm, gap_eps=0.150 mm, angle<=20.0 deg)
-Reorder: 1522 polylines ordered (nearest-end).
-Pencil naturalization: adjusted 1068/1522 stroke(s).
-Work area clipping: kept 11502 visible segments, dropped 1 out-of-area segments.
-Pencil naturalization segments: 22243 -> 11502
-Polyline optimization: 1636 -> 1527
-Segment counts: source=22256, fitted=22256, clipped=22256
-Drawable segments after clip: 22256 (100.0% of source)
-Prepared bounds: x(0.000, 180.000) y(-288.158, -21.962)
-Estimated draw length: 6.92 m
+Bounds after content margin crop: x(25.409, 201.307) y(14.157, 275.094)
+SVG geometry: paths=1648, segments=21960.
+Source bounds: x(25.409, 201.307) y(14.157, 275.094)
+Fit to work area: scale=1.0233, translate=(-26.001,-302.997), from (25.409, 14.157)-(201.307, 275.094)
+Stitch: polylines 1648 -> 1534 (eps=0.080 mm, gap_eps=0.150 mm, angle<=20.0 deg)
+Reorder: 1534 polylines ordered (nearest-end).
+Pencil naturalization: adjusted 1023/1534 stroke(s).
+Work area clipping: kept 11325 visible segments, dropped 2 out-of-area segments.
+Pencil naturalization segments: 21947 -> 11325
+Polyline optimization: 1648 -> 1539
+Segment counts: source=21960, fitted=21960, clipped=21960
+Drawable segments after clip: 21960 (100.0% of source)
+Prepared bounds: x(0.000, 180.000) y(-288.456, -21.535)
+Estimated draw length: 5.62 m
 Pencil mode: base_z=11.900, wear=0.000 mm, z_comp_start=0.000, z_down_start=11.900, dyn(rate=0.0100 mm/m, comp=1.000, slope=0.0100 Zmm/m, max=0.800), est_remaining_to_sharpen=120.0 m (wear=120.0, interval=inf)
 Applying pen-up / pen-down ...
-G-code stats: lines=15325, draw=14141, travel=394, bounds=0.000..180.000 x, -288.158..0.000 y
-Preflight: ok: lines=15325, draw=14141, travel=394, ratio=0.03
-Saved file stats: lines=15325, draw=14141, travel=394, bounds=0.000..180.000 x, -288.158..0.000 y
-Saved: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_26_pack\_candidates\page_01\marck_script\page_01.nc
-Preview SVG: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_26_pack\_candidates\page_01\marck_script\page_01.svg
-Preview PDF: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_26_pack\_candidates\page_01\marck_script\page_01.pdf
+G-code stats: lines=15001, draw=13898, travel=367, bounds=0.000..180.000 x, -288.456..0.000 y
+Preflight: ok: lines=15001, draw=13898, travel=367, ratio=0.03
+Saved file stats: lines=15001, draw=13898, travel=367, bounds=0.000..180.000 x, -288.456..0.000 y
+Saved: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_26_pack\_candidates\page_01\marck_script__contours_off\page_01.nc
+Preview SVG: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_26_pack\_candidates\page_01\marck_script__contours_off\page_01.svg
+Preview PDF: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_26_pack\_candidates\page_01\marck_script__contours_off\page_01.pdf
 source_profile=images=1; texts=131; paths=362
 selected_primary_font=Marck Script
 selected_font=Marck Script
-selected_variant=always
-selected_contours=always
-selected_score=0.985888
+selected_variant=contours_off
+selected_contours=off
+selected_score=0.976930
+selection_reason=source_strategy=font_first_text_rich; primary_font=Marck Script; selected_font=Marck Script; selected_variant=contours_off; selected_contours=off; font_first_preferred=true; fallback_threshold=0.920; selection=base
 quality_gate=accepted=False; dup_ok=True; tiny_ok=False; mask_iou_ok=True

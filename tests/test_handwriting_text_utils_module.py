@@ -20,6 +20,37 @@ class HandwritingTextUtilsModuleTests(unittest.TestCase):
         )
         self.assertEqual(normalized, "V^2 a")
 
+    def test_sentence_case_normalization_skips_formulas(self) -> None:
+        self.assertEqual(
+            handwriting_text_utils.normalize_handwriting_sentence_case(
+                "СОСТАВИМ СИСТЕМУ УРАВНЕНИЙ",
+                text_contains_formula_script_fn=lambda text: False,
+            ),
+            "Составим систему уравнений",
+        )
+        self.assertEqual(
+            handwriting_text_utils.normalize_handwriting_text_string(
+                "I=U/R",
+                strip_unpaired_surrogates=lambda text, replacement=" ": text,
+                text_contains_formula_script_fn=lambda text: False,
+            ),
+            "I=U/R",
+        )
+        self.assertTrue(
+            handwriting_text_utils.text_prefers_print_font(
+                "R12",
+                font_size=9.0,
+                text_contains_formula_script_fn=lambda text: False,
+            )
+        )
+        self.assertFalse(
+            handwriting_text_utils.text_prefers_print_font(
+                "Составим систему",
+                font_size=12.0,
+                text_contains_formula_script_fn=lambda text: False,
+            )
+        )
+
     def test_native_vector_and_line_spacing_helpers(self) -> None:
         self.assertTrue(
             handwriting_text_utils.text_prefers_native_vector(

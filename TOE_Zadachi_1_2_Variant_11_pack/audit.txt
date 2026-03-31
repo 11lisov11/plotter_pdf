@@ -1,0 +1,28 @@
+pack=C:\plotter_pdf\TOE_Zadachi_1_2_Variant_11_pack
+source_pdf=C:\plotter_pdf\TOE_Zadachi_1_2_Variant_11.pdf
+page_count=17
+selected_primary_font=Marck Script
+avg_layout_similarity=0.963999
+min_layout_similarity=0.936726
+weak_pages_count=12
+watch_pages_count=2
+
+Top pages:
+- page_17: status=weak; severity=13.268626; sim=0.953206; iou=0.069438; variant=raster_safe; strategy=image_heavy
+  reason=source_strategy=image_heavy; primary_font=Marck Script; selected_font=Marck Script; selected_variant=raster_safe; selected_contours=always; font_first_preferred=false; fallback_threshold=0.946; selection=override; reason=image_heavy_fallback
+  hotspot_bbox_norm=[0.06, 0.862222, 0.186667, 0.895556] hotspot_image=C:\plotter_pdf\TOE_Zadachi_1_2_Variant_11_pack\audit_hotspots\page_17_hotspot.png
+- page_07: status=weak; severity=7.072534; sim=0.940764; iou=0.313042; variant=always; strategy=graph_lineart
+  reason=source_strategy=graph_lineart; primary_font=Marck Script; selected_font=Marck Script; selected_variant=always; selected_contours=always; font_first_preferred=false; fallback_threshold=0.946; selection=base
+  hotspot_bbox_norm=[0.22, 0.93, 0.063333, 0.401111] hotspot_image=C:\plotter_pdf\TOE_Zadachi_1_2_Variant_11_pack\audit_hotspots\page_07_hotspot.png
+- page_12: status=weak; severity=6.587786; sim=0.949510; iou=0.290148; variant=contours_off; strategy=font_first_text_rich
+  reason=source_strategy=font_first_text_rich; primary_font=Marck Script; selected_font=Marck Script; selected_variant=contours_off; selected_contours=off; font_first_preferred=true; fallback_threshold=0.920; selection=base
+  hotspot_bbox_norm=[0.008889, 0.992222, 0.49, 0.647778] hotspot_image=C:\plotter_pdf\TOE_Zadachi_1_2_Variant_11_pack\audit_hotspots\page_12_hotspot.png
+- page_01: status=weak; severity=6.327400; sim=0.936726; iou=0.381063; variant=always; strategy=font_first_text_rich
+  reason=source_strategy=font_first_text_rich; primary_font=Marck Script; selected_font=Marck Script; selected_variant=always; selected_contours=always; font_first_preferred=true; fallback_threshold=0.920; selection=base
+  hotspot_bbox_norm=[0.13, 0.953333, 0.123333, 0.455556] hotspot_image=C:\plotter_pdf\TOE_Zadachi_1_2_Variant_11_pack\audit_hotspots\page_01_hotspot.png
+- page_06: status=weak; severity=4.817174; sim=0.939101; iou=0.312822; variant=raster_safe; strategy=image_heavy
+  reason=source_strategy=image_heavy; primary_font=Marck Script; selected_font=Marck Script; selected_variant=raster_safe; selected_contours=always; font_first_preferred=false; fallback_threshold=0.946; selection=override; reason=image_heavy_fallback
+  hotspot_bbox_norm=[0.093333, 0.554444, 0.054444, 0.404444] hotspot_image=C:\plotter_pdf\TOE_Zadachi_1_2_Variant_11_pack\audit_hotspots\page_06_hotspot.png
+- page_08: status=weak; severity=4.098086; sim=0.939158; iou=0.338713; variant=raster_safe; strategy=image_heavy
+  reason=source_strategy=image_heavy; primary_font=Marck Script; selected_font=Marck Script; selected_variant=raster_safe; selected_contours=always; font_first_preferred=false; fallback_threshold=0.946; selection=override; reason=image_heavy_fallback
+  hotspot_bbox_norm=[0.098889, 0.55, 0.228889, 0.354444] hotspot_image=C:\plotter_pdf\TOE_Zadachi_1_2_Variant_11_pack\audit_hotspots\page_08_hotspot.png

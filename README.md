@@ -396,3 +396,77 @@ python -m pytest -q
 - Preview должен существовать рядом с итоговым G-code.
 - Геометрические инварианты вроде `A3 pass_02 rotate 180 + Y+4 mm` фиксируются в backend и в документации.
 - Новые автоматизации должны идти через `scripts/` и `src/`, без возврата к отдельному desktop UI.
+
+## TOE Font-First Pipeline
+
+Новый TOE pipeline теперь строится вокруг `font-first` маршрута:
+
+- обычный текст идёт через рукописный векторный шрифт;
+- формулы, короткие техобозначения и табличные значения идут печатным шрифтом;
+- схемы и line-art стараются сохранять геометрию, а не переводиться в page-wide raster;
+- fallback выбирается по профилю страницы и логируется с явной причиной.
+
+Главный скрипт для одного варианта:
+
+```powershell
+python scripts\prepare_toe_handwriting_package.py --pdf TOE_Zadachi_1_2_Variant_25.pdf
+python scripts\prepare_toe_handwriting_package.py --pdf TOE_Zadachi_1_2_Variant_25.pdf --resume
+```
+
+Что он создаёт:
+
+- `*_pack/pages/page_XX.pdf`
+- `*_pack/pages/page_XX.svg`
+- `*_pack/pages/page_XX.nc`
+- `*_pack/pages/page_XX.gcode`
+- `*_pack/pages/page_XX_overlay.png`
+- `*_pack/logs/page_XX.log.txt`
+- `*_pack/report.json`
+- `*_pack/summary.csv`
+- `*_pack/final_overview.json`
+
+Что теперь видно в логах и отчётах:
+
+- `source_strategy`
+- `graph_lineart`
+- `selected_variant`
+- `selected_reason`
+- `fallback_threshold`
+- `font_first_preferred`
+
+Additional `selected_reason` values now used by the TOE pipeline:
+
+- `reason=graph_rescue`
+- `reason=region_rescue`
+
+Массовая пересборка известных TOE-вариантов:
+
+```powershell
+python scripts\prepare_toe_variants.py --all-known --resume
+python scripts\prepare_toe_variants.py --variant 4 --variant 25 --variant 26
+```
+
+Windows-обёртка:
+
+```bat
+scripts\prepare_toe_variants.bat --all-known --resume
+```
+
+TOE package audit:
+
+```powershell
+python scripts\audit_toe_packages.py --all-known --top-k 6
+python scripts\audit_toe_packages.py --variant 11 --variant 25
+```
+
+Each `*_pack` now also gets:
+
+- `audit.json`
+- `audit.txt`
+- `audit_hotspots/page_XX_hotspot.png`
+
+Windows wrapper:
+
+```bat
+scripts\audit_toe_packages.bat --all-known --top-k 6
+```

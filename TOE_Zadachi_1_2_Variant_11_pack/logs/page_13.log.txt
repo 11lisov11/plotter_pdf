@@ -2,7 +2,7 @@ Text render mode: handwriting=on font='C:\plotter_pdf\data\fonts\MarckScript-Reg
 Handwriting mode: Cyrillic text profile tokens=66, short=12%, digits=3%, long=70%, style=paragraph.
 Handwriting mode: Cyrillic detected, trying TTF single-line pipeline first ('C:\plotter_pdf\data\fonts\MarckScript-Regular.ttf').
 TTF centerline postprocess: 4 -> 4 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: '13' -> 4 stroke(s), thr=224, cand=8, font=MarckScript-Regular.ttf, size=14.04
+TTF centerline method3 text: '13' -> 4 stroke(s), thr=96, cand=8, font=times.ttf, size=14.04
 TTF centerline postprocess: 127 -> 86 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
 TTF centerline method3 text: 'Выполним эквивалентное преоб' -> 86 stroke(s), thr=96, cand=8, font=MarckScript-Regular.ttf, size=12.00
 TTF centerline postprocess: 9 -> 5 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
@@ -20,71 +20,72 @@ TTF centerline method3 text: 'Выполняем проверку расчёто
 Handwriting TTF centerline mode: replaced 8 text node(s), generated 369 stroke path(s) using 'MarckScript-Regular.ttf'.
 Text nodes after stroke-font replacement: 52
 Handwriting mode: applied font 'C:\plotter_pdf\data\fonts\MarckScript-Regular.ttf' to 52 text node(s).
-Text->path conversion #1: inkscape.exe --batch-process --actions=select-all;export-text-to-path --export-type=svg --export-overwrite --export-filename=C:\plotter_pdf\_tmp\tmpiqko8tw2\source.svg C:\plotter_pdf\_tmp\tmpiqko8tw2\source.svg
+Text->path conversion #1: inkscape.exe --batch-process --actions=select-all;export-text-to-path --export-type=svg --export-overwrite --export-filename=C:\plotter_pdf\_tmp\tmpspmrarco\source.svg C:\plotter_pdf\_tmp\tmpspmrarco\source.svg
 Text converted to SVG paths.
 Text nodes after conversion: 0
 Extracting paths from SVG ...
-Image contour tracing: +26 path(s) from embedded raster.
-Image vectorization mode: edge fallback (added 26 path(s), simplify=0.04 mm).
-Image contour tracing: +26 path(s) from embedded raster.
-Image vectorization mode: edge fallback (added 26 path(s), simplify=0.04 mm).
-Image contour tracing: +25 path(s) from embedded raster.
-Image vectorization mode: edge fallback (added 25 path(s), simplify=0.04 mm).
-Image contour tracing: +64 path(s) from embedded raster.
-Image vectorization mode: edge fallback (added 64 path(s), simplify=0.04 mm).
-Image contour tracing: +48 path(s) from embedded raster.
-Image vectorization mode: edge fallback (added 48 path(s), simplify=0.04 mm).
-Image contour tracing: +57 path(s) from embedded raster.
-Image vectorization mode: edge fallback (added 57 path(s), simplify=0.04 mm).
-Image contour tracing: +64 path(s) from embedded raster.
-Image vectorization mode: edge fallback (added 64 path(s), simplify=0.04 mm).
-Image contour tracing: +57 path(s) from embedded raster.
-Image vectorization mode: edge fallback (added 57 path(s), simplify=0.04 mm).
+Image contour tracing: +34 path(s) from embedded raster.
+Image vectorization mode: centerline (added 34 path(s), simplify=0.04 mm).
+Image contour tracing: +36 path(s) from embedded raster.
+Image vectorization mode: centerline (added 36 path(s), simplify=0.04 mm).
+Image contour tracing: +36 path(s) from embedded raster.
+Image vectorization mode: centerline (added 36 path(s), simplify=0.04 mm).
+Image contour tracing: +89 path(s) from embedded raster.
+Image vectorization mode: centerline (added 89 path(s), simplify=0.04 mm).
+Image contour tracing: +63 path(s) from embedded raster.
+Image vectorization mode: centerline (added 63 path(s), simplify=0.04 mm).
+Image contour tracing: +91 path(s) from embedded raster.
+Image vectorization mode: centerline (added 91 path(s), simplify=0.04 mm).
+Image contour tracing: +84 path(s) from embedded raster.
+Image vectorization mode: centerline (added 84 path(s), simplify=0.04 mm).
+Image contour tracing: +77 path(s) from embedded raster.
+Image vectorization mode: centerline (added 77 path(s), simplify=0.04 mm).
+Image contour tracing: +88 path(s) from embedded raster.
+Image vectorization mode: centerline (added 88 path(s), simplify=0.04 mm).
+Image contour tracing: +49 path(s) from embedded raster.
+Image vectorization mode: centerline (added 49 path(s), simplify=0.04 mm).
+Image contour tracing: +49 path(s) from embedded raster.
+Image vectorization mode: centerline (added 49 path(s), simplify=0.04 mm).
 Image contour tracing: +65 path(s) from embedded raster.
-Image vectorization mode: edge fallback (added 65 path(s), simplify=0.04 mm).
+Image vectorization mode: centerline (added 65 path(s), simplify=0.04 mm).
+Image contour tracing: +68 path(s) from embedded raster.
+Image vectorization mode: centerline (added 68 path(s), simplify=0.04 mm).
+Image contour tracing: +50 path(s) from embedded raster.
+Image vectorization mode: centerline (added 50 path(s), simplify=0.04 mm).
+Image contour tracing: +63 path(s) from embedded raster.
+Image vectorization mode: centerline (added 63 path(s), simplify=0.04 mm).
+Image contour tracing: +58 path(s) from embedded raster.
+Image vectorization mode: centerline (added 58 path(s), simplify=0.04 mm).
+Image contour tracing: +69 path(s) from embedded raster.
+Image vectorization mode: centerline (added 69 path(s), simplify=0.04 mm).
+Image contour tracing: +54 path(s) from embedded raster.
+Image vectorization mode: centerline (added 54 path(s), simplify=0.04 mm).
 Image contour tracing: +37 path(s) from embedded raster.
-Image vectorization mode: edge fallback (added 37 path(s), simplify=0.04 mm).
-Image contour tracing: +38 path(s) from embedded raster.
-Image vectorization mode: edge fallback (added 38 path(s), simplify=0.04 mm).
-Image contour tracing: +42 path(s) from embedded raster.
-Image vectorization mode: edge fallback (added 42 path(s), simplify=0.04 mm).
-Image contour tracing: +49 path(s) from embedded raster.
-Image vectorization mode: edge fallback (added 49 path(s), simplify=0.04 mm).
-Image contour tracing: +43 path(s) from embedded raster.
-Image vectorization mode: edge fallback (added 43 path(s), simplify=0.04 mm).
-Image contour tracing: +47 path(s) from embedded raster.
-Image vectorization mode: edge fallback (added 47 path(s), simplify=0.04 mm).
-Image contour tracing: +43 path(s) from embedded raster.
-Image vectorization mode: edge fallback (added 43 path(s), simplify=0.04 mm).
-Image contour tracing: +49 path(s) from embedded raster.
-Image vectorization mode: edge fallback (added 49 path(s), simplify=0.04 mm).
-Image contour tracing: +42 path(s) from embedded raster.
-Image vectorization mode: edge fallback (added 42 path(s), simplify=0.04 mm).
-Image contour tracing: +27 path(s) from embedded raster.
-Image vectorization mode: edge fallback (added 27 path(s), simplify=0.04 mm).
-Image contour tracing: +19 path(s) from embedded raster.
-Image vectorization mode: edge fallback (added 19 path(s), simplify=0.04 mm).
-Image contour tracing: total +868 path(s).
-Raw geometry bounds: x(25.585, 190.235) y(14.845, 273.614)
+Image vectorization mode: centerline (added 37 path(s), simplify=0.04 mm).
+Image contour tracing: +39 path(s) from embedded raster.
+Image vectorization mode: centerline (added 27 path(s), simplify=0.04 mm).
+Image node circle recovery: +12 closed path(s).
+Image contour tracing: total +1199 path(s).
+Raw geometry bounds: x(25.585, 191.681) y(13.994, 273.545)
 SVG page: 210.016 x 297.011 mm
 Auto trim: no outer border detected.
 Applied content area crop: x(20.5,205.0) y(10.0,292.0) dropped segments=0
-Bounds after content margin crop: x(25.585, 190.235) y(14.845, 273.614)
-SVG geometry: paths=1237, segments=14548.
-Source bounds: x(25.585, 190.235) y(14.845, 273.614)
-Fit to work area: scale=1.0820, translate=(-26.763,-311.063), from (25.585, 14.845)-(190.235, 273.614)
-Reorder: 1237 polylines ordered (nearest-end).
-Pencil naturalization: adjusted 254/1237 stroke(s).
-Pencil naturalization segments: 14545 -> 11838
-Segment counts: source=14548, fitted=14548, clipped=14548
-Drawable segments after clip: 14548 (100.0% of source)
-Prepared bounds: x(0.920, 179.029) y(-295.000, -15.000)
-Estimated draw length: 9.82 m
+Bounds after content margin crop: x(25.585, 191.681) y(13.994, 273.545)
+SVG geometry: paths=1568, segments=11531.
+Source bounds: x(25.585, 191.681) y(13.994, 273.545)
+Fit to work area: scale=1.0788, translate=(-27.192,-310.097), from (25.585, 13.994)-(191.681, 273.545)
+Reorder: 1568 polylines ordered (nearest-end).
+Pencil naturalization: adjusted 1056/1568 stroke(s).
+Pencil naturalization segments: 11531 -> 10381
+Segment counts: source=11531, fitted=11531, clipped=11531
+Drawable segments after clip: 11531 (100.0% of source)
+Prepared bounds: x(0.409, 179.529) y(-294.947, -15.000)
+Estimated draw length: 5.28 m
 Pencil mode: base_z=11.900, wear=0.000 mm, z_comp_start=0.000, z_down_start=11.900, dyn(rate=0.0100 mm/m, comp=1.000, slope=0.0100 Zmm/m, max=0.800), est_remaining_to_sharpen=120.0 m (wear=120.0, interval=inf)
 Applying pen-up / pen-down ...
-G-code stats: lines=16734, draw=14893, travel=613, bounds=0.000..179.029 x, -295.000..0.000 y
-Preflight: ok: lines=16734, draw=14893, travel=613, ratio=0.04
-Saved file stats: lines=16734, draw=14893, travel=613, bounds=0.000..179.029 x, -295.000..0.000 y
+G-code stats: lines=14630, draw=13269, travel=453, bounds=0.000..179.529 x, -294.947..0.000 y
+Preflight: ok: lines=14630, draw=13269, travel=453, ratio=0.03
+Saved file stats: lines=14630, draw=13269, travel=453, bounds=0.000..179.529 x, -294.947..0.000 y
 Saved: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_11_pack\_candidates\page_13\marck_script\page_13.nc
 Preview SVG: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_11_pack\_candidates\page_13\marck_script\page_13.svg
 Preview PDF: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_11_pack\_candidates\page_13\marck_script\page_13.pdf
@@ -93,5 +94,6 @@ selected_primary_font=Marck Script
 selected_font=Marck Script
 selected_variant=always
 selected_contours=always
-selected_score=1.368219
-quality_gate=accepted=True; dup_ok=True; tiny_ok=True; mask_iou_ok=True
+selected_score=1.496292
+selection_reason=source_strategy=formula_heavy; primary_font=Marck Script; selected_font=Marck Script; selected_variant=always; selected_contours=always; font_first_preferred=false; fallback_threshold=0.946; selection=base
+quality_gate=accepted=False; dup_ok=True; tiny_ok=False; mask_iou_ok=True

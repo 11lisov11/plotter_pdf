@@ -6,6 +6,8 @@ from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple
 from xml.etree import ElementTree as ET
 
+from . import text_content_routing
+
 
 _HANDWRITING_TEXT_NORMALIZE_TRANSLATIONS = {
     ord("⁰"): "^0",
@@ -89,6 +91,10 @@ _HANDWRITING_GREEK_ASCII_FALLBACK = {
 }
 
 _PROFILE_TOKEN_RE = re.compile(r"[0-9A-Za-z\u0400-\u04FFЁё]+")
+_HANDWRITING_CASE_SKIP_MATH_RE = re.compile(r"[=+\-*/^_<>≈≤≥±×÷√∑∫∞\[\]{}|]")
+
+
+_PRINT_TECH_TOKEN_RE = re.compile(r"^[0-9A-Za-z\u0400-\u04FFРЃС‘]{1,12}$")
 
 
 def split_text_tokens_keep_spaces(text: str) -> List[str]:
@@ -137,6 +143,62 @@ def normalize_handwriting_text_token(
     return "".join(out_chars)
 
 
+def normalize_handwriting_sentence_case(
+    text: str,
+    *,
+    text_contains_formula_script_fn: Callable[[str], bool],
+) -> str:
+    src = str(text or "")
+    if not src:
+        return src
+    if bool(text_contains_formula_script_fn(src)):
+        return src
+    if _HANDWRITING_CASE_SKIP_MATH_RE.search(src):
+        return src
+
+    letters = [ch for ch in src if ch.isalpha()]
+    if len(letters) < 2:
+        return src
+    upper_count = sum(1 for ch in letters if ch.isupper())
+    lower_count = sum(1 for ch in letters if ch.islower())
+    if upper_count < 2:
+        return src
+    if lower_count > max(1, upper_count // 3):
+        return src
+
+    out_chars: List[str] = []
+    sentence_start = True
+    changed = False
+    for ch in src:
+        if ch.isalpha():
+            repl = ch.upper() if sentence_start else ch.lower()
+            if repl != ch:
+                changed = True
+            out_chars.append(repl)
+            sentence_start = False
+            continue
+        out_chars.append(ch)
+        if ch in {".", "!", "?", "\n", "\r"}:
+            sentence_start = True
+    return "".join(out_chars) if changed else src
+
+
+def normalize_handwriting_text_string(
+    text: str,
+    *,
+    strip_unpaired_surrogates: Callable[[str, str], str],
+    text_contains_formula_script_fn: Callable[[str], bool],
+) -> str:
+    normalized = normalize_handwriting_text_token(
+        text,
+        strip_unpaired_surrogates=strip_unpaired_surrogates,
+    )
+    return normalize_handwriting_sentence_case(
+        normalized,
+        text_contains_formula_script_fn=text_contains_formula_script_fn,
+    )
+
+
 def style_prefers_native_vector(style: Optional[dict]) -> bool:
     return False
 
@@ -167,6 +229,19 @@ def text_prefers_native_vector(
     broken_math = sum(1 for ch in src if 0xD400 <= ord(ch) <= 0xD7FF)
     replacement = src.count("\uFFFD")
     return (private_use + broken_math + replacement) >= 3 and letters <= 2 and digits <= 2
+
+
+def text_prefers_print_font(
+    text: str,
+    *,
+    font_size: Optional[float],
+    text_contains_formula_script_fn: Callable[[str], bool],
+) -> bool:
+    return text_content_routing.text_prefers_print_font(
+        text,
+        font_size=font_size,
+        text_contains_formula_script_fn=text_contains_formula_script_fn,
+    )
 
 
 def handwriting_min_line_step_mm(

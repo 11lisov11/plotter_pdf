@@ -404,6 +404,23 @@ IMAGE_CONTOUR_LINEART_SIMPLIFY_MM = 0.080
 IMAGE_CONTOUR_LINEART_TINY_BBOX_MM = 0.35
 IMAGE_CONTOUR_LINEART_MIN_COMPONENT_PX = 3
 IMAGE_CONTOUR_LINEART_RDP_PX = 0.60
+IMAGE_CONTOUR_LINEART_THRESHOLD_MIN = 205
+IMAGE_CONTOUR_LIGHT_LINEART_DARK_RATIO_MAX = 0.030
+IMAGE_CONTOUR_SMALL_LINEART_MAX_WIDTH_PX = 420
+IMAGE_CONTOUR_SMALL_LINEART_MAX_HEIGHT_PX = 260
+IMAGE_CONTOUR_SMALL_LINEART_MIN_PATH_MM = 0.18
+IMAGE_CONTOUR_SMALL_LINEART_SIMPLIFY_MM = 0.035
+IMAGE_CONTOUR_SMALL_LINEART_TINY_BBOX_MM = 0.12
+IMAGE_CONTOUR_SMALL_LINEART_MIN_COMPONENT_PX = 1
+IMAGE_CONTOUR_SMALL_LINEART_RDP_PX = 0.25
+IMAGE_CONTOUR_SMALL_LINEART_TRACE_SCALE = 2.0
+IMAGE_CONTOUR_SMALL_LINEART_CIRCLE_DP = 1.0
+IMAGE_CONTOUR_SMALL_LINEART_CIRCLE_PARAM1 = 80
+IMAGE_CONTOUR_SMALL_LINEART_CIRCLE_PARAM2 = 10
+IMAGE_CONTOUR_SMALL_LINEART_CIRCLE_MIN_RADIUS_PX = 7
+IMAGE_CONTOUR_SMALL_LINEART_CIRCLE_MAX_RADIUS_PX = 18
+IMAGE_CONTOUR_SMALL_LINEART_CIRCLE_MIN_DIST_PX = 18
+IMAGE_CONTOUR_SMALL_LINEART_CIRCLE_STEPS = 20
 # Raster tone hatch for embedded images (notes/photos/screenshots):
 # emit sparse horizontal hatch segments in dark regions.
 IMAGE_TONE_HATCH_ENABLED = True
@@ -908,6 +925,7 @@ def _analyze_embedded_image_profile(img: "np.ndarray") -> Dict[str, object]:
         "kind": "generic",
         "line_art": False,
         "formula_like": False,
+        "small_line_art": False,
         "dark_ratio": 0.0,
         "ink_fill_ratio": 1.0,
         "aspect_ratio": 1.0,
@@ -950,10 +968,16 @@ def _analyze_embedded_image_profile(img: "np.ndarray") -> Dict[str, object]:
             and aspect >= float(IMAGE_CONTOUR_FORMULA_ASPECT_MIN)
             and h_px <= int(IMAGE_CONTOUR_FORMULA_MAX_HEIGHT_PX)
         )
+        small_line_art = bool(
+            line_art
+            and w_px <= int(IMAGE_CONTOUR_SMALL_LINEART_MAX_WIDTH_PX)
+            and h_px <= int(IMAGE_CONTOUR_SMALL_LINEART_MAX_HEIGHT_PX)
+        )
         return {
             "kind": "formula" if formula_like else ("lineart" if line_art else "generic"),
             "line_art": bool(line_art),
             "formula_like": bool(formula_like),
+            "small_line_art": bool(small_line_art),
             "dark_ratio": float(dark_ratio),
             "ink_fill_ratio": float(bbox_fill),
             "aspect_ratio": float(aspect),
@@ -973,6 +997,7 @@ def _extract_image_centerline_paths_px_autotrace(
     curve_step_px: float,
     rdp_px: float,
     close_kernel: Tuple[int, int],
+    threshold_floor: int = 0,
 ) -> List[List[Tuple[float, float]]]:
     if cv2 is None or np is None or img is None:
         return []
@@ -987,7 +1012,9 @@ def _extract_image_centerline_paths_px_autotrace(
     try:
         gray = _normalize_embedded_gray_polarity(gray, alpha)
         gray = cv2.GaussianBlur(gray, (3, 3), 0)
-        _, mask = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+        otsu_thr, _ = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+        thr = int(max(float(otsu_thr), float(threshold_floor)))
+        _, mask = cv2.threshold(gray, thr, 255, cv2.THRESH_BINARY_INV)
         if alpha is not None and int(np.max(alpha)) > 0:
             _, alpha_mask = cv2.threshold(alpha, 10, 255, cv2.THRESH_BINARY)
             mask = cv2.bitwise_and(mask, alpha_mask)
@@ -1050,6 +1077,7 @@ def _extract_image_centerline_paths_px(
     min_path_px: float,
     max_paths: int,
     rdp_px: float,
+    threshold_floor: int = 0,
 ) -> List[List[Tuple[float, float]]]:
     if cv2 is None or np is None or img is None:
         return []
@@ -1060,7 +1088,9 @@ def _extract_image_centerline_paths_px(
     try:
         gray = _normalize_embedded_gray_polarity(gray, alpha)
         gray = cv2.GaussianBlur(gray, (3, 3), 0)
-        _, mask = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+        otsu_thr, _ = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+        thr = int(max(float(otsu_thr), float(threshold_floor)))
+        _, mask = cv2.threshold(gray, thr, 255, cv2.THRESH_BINARY_INV)
         if alpha is not None and int(np.max(alpha)) > 0:
             _, alpha_mask = cv2.threshold(alpha, 10, 255, cv2.THRESH_BINARY)
             mask = cv2.bitwise_and(mask, alpha_mask)
@@ -1157,6 +1187,65 @@ def _extract_image_edge_contours_px(img: "np.ndarray") -> List[List[Tuple[float,
         if points_distance(pts[0], pts[-1]) > 1e-6:
             pts.append(pts[0])
         out.append(pts)
+    return out
+
+
+def _extract_image_hough_circles_px(img: "np.ndarray") -> List[List[Tuple[float, float]]]:
+    if cv2 is None or np is None or img is None:
+        return []
+
+    gray, alpha = _embedded_image_to_gray_alpha(img)
+    if gray is None:
+        return []
+
+    try:
+        gray = _normalize_embedded_gray_polarity(gray, alpha)
+        attempts = [
+            (gray, float(IMAGE_CONTOUR_SMALL_LINEART_CIRCLE_PARAM2)),
+            (cv2.GaussianBlur(gray, (3, 3), 0), max(12.0, float(IMAGE_CONTOUR_SMALL_LINEART_CIRCLE_PARAM2))),
+        ]
+        circles = None
+        for attempt_gray, attempt_param2 in attempts:
+            circles = cv2.HoughCircles(
+                attempt_gray,
+                cv2.HOUGH_GRADIENT,
+                dp=float(IMAGE_CONTOUR_SMALL_LINEART_CIRCLE_DP),
+                minDist=float(IMAGE_CONTOUR_SMALL_LINEART_CIRCLE_MIN_DIST_PX),
+                param1=float(IMAGE_CONTOUR_SMALL_LINEART_CIRCLE_PARAM1),
+                param2=float(attempt_param2),
+                minRadius=int(IMAGE_CONTOUR_SMALL_LINEART_CIRCLE_MIN_RADIUS_PX),
+                maxRadius=int(IMAGE_CONTOUR_SMALL_LINEART_CIRCLE_MAX_RADIUS_PX),
+            )
+            if circles is not None and len(circles) > 0:
+                break
+    except Exception:
+        return []
+
+    if circles is None or len(circles) <= 0:
+        return []
+
+    out: List[List[Tuple[float, float]]] = []
+    accepted: List[Tuple[float, float, float]] = []
+    steps = max(10, int(IMAGE_CONTOUR_SMALL_LINEART_CIRCLE_STEPS))
+    for x, y, r in circles[0]:
+        cx = float(x)
+        cy = float(y)
+        cr = float(r)
+        if cr <= 0.0:
+            continue
+        duplicate = False
+        for px, py, pr in accepted:
+            if math.hypot(cx - px, cy - py) <= max(3.0, 0.35 * max(cr, pr)):
+                duplicate = True
+                break
+        if duplicate:
+            continue
+        poly: List[Tuple[float, float]] = []
+        for idx in range(steps + 1):
+            ang = (2.0 * math.pi * float(idx)) / float(steps)
+            poly.append((cx + (cr * math.cos(ang)), cy + (cr * math.sin(ang))))
+        out.append(poly)
+        accepted.append((cx, cy, cr))
     return out
 
 
@@ -1265,6 +1354,10 @@ def extract_image_contour_items(
                 h_u = _length_to_user_units(node.attrib.get("height", "0"), scale) or 0.0
                 h_px, w_px = img.shape[:2]
                 if w_u > 1e-9 and h_u > 1e-9 and w_px > 2 and h_px > 2:
+                    trace_img = img
+                    trace_h_px, trace_w_px = h_px, w_px
+                    circle_img = img
+                    circle_h_px, circle_w_px = h_px, w_px
                     w_mm = max(1e-9, float(w_u) * float(scale))
                     h_mm = max(1e-9, float(h_u) * float(scale))
                     mm_per_px_x = w_mm / max(1.0, float(w_px - 1))
@@ -1283,9 +1376,13 @@ def extract_image_contour_items(
                     center_curve_step_px = float(HANDWRITING_SINGLELINE_TTF_AUTOTRACE_CURVE_STEP_PX)
                     post_rdp_eps_mm = 0.16
                     prefer_autotrace = False
+                    center_threshold_floor = 0
 
                     if HANDWRITING_TEXT_ENABLED and bool(profile.get("line_art", False)):
                         prefer_autotrace = bool(IMAGE_CONTOUR_LINEART_AUTOTRACE)
+                        dark_ratio = float(profile.get("dark_ratio", 1.0) or 1.0)
+                        if dark_ratio <= float(IMAGE_CONTOUR_LIGHT_LINEART_DARK_RATIO_MAX):
+                            center_threshold_floor = int(IMAGE_CONTOUR_LINEART_THRESHOLD_MIN)
                         if profile_kind == "formula":
                             min_path_mm = min(min_path_mm, float(IMAGE_CONTOUR_FORMULA_MIN_PATH_MM))
                             simplify_eps_mm = min(simplify_eps_mm, float(IMAGE_CONTOUR_FORMULA_SIMPLIFY_MM))
@@ -1302,6 +1399,31 @@ def extract_image_contour_items(
                             center_rdp_px = min(center_rdp_px, float(IMAGE_CONTOUR_LINEART_RDP_PX))
                             center_curve_step_px = min(center_curve_step_px, 0.60)
                             post_rdp_eps_mm = 0.10
+                            if bool(profile.get("small_line_art", False)):
+                                min_path_mm = min(min_path_mm, float(IMAGE_CONTOUR_SMALL_LINEART_MIN_PATH_MM))
+                                simplify_eps_mm = min(simplify_eps_mm, float(IMAGE_CONTOUR_SMALL_LINEART_SIMPLIFY_MM))
+                                tiny_bbox_mm = min(tiny_bbox_mm, float(IMAGE_CONTOUR_SMALL_LINEART_TINY_BBOX_MM))
+                                center_min_component_px = min(
+                                    center_min_component_px,
+                                    int(IMAGE_CONTOUR_SMALL_LINEART_MIN_COMPONENT_PX),
+                                )
+                                center_rdp_px = min(center_rdp_px, float(IMAGE_CONTOUR_SMALL_LINEART_RDP_PX))
+                                center_curve_step_px = min(center_curve_step_px, 0.40)
+                                post_rdp_eps_mm = 0.04
+                                trace_scale = max(1.0, float(IMAGE_CONTOUR_SMALL_LINEART_TRACE_SCALE))
+                                if trace_scale > 1.01:
+                                    try:
+                                        trace_img = cv2.resize(
+                                            img,
+                                            dsize=None,
+                                            fx=trace_scale,
+                                            fy=trace_scale,
+                                            interpolation=cv2.INTER_CUBIC,
+                                        )
+                                        trace_h_px, trace_w_px = trace_img.shape[:2]
+                                    except Exception:
+                                        trace_img = img
+                                        trace_h_px, trace_w_px = h_px, w_px
                     min_path_px = max(0.25, min_path_mm / max(1e-9, mm_per_px))
 
                     mode = (IMAGE_CONTOUR_VECTORIZE_MODE or "centerline").strip().lower()
@@ -1320,37 +1442,43 @@ def extract_image_contour_items(
                         if HANDWRITING_TEXT_ENABLED and prefer_autotrace:
                             close_kernel = (3, 1) if profile_kind == "formula" else (2, 2)
                             px_centerlines = _extract_image_centerline_paths_px_autotrace(
-                                img,
+                                trace_img,
                                 min_component_px=center_min_component_px,
                                 min_path_px=min_path_px,
                                 max_paths=center_cap,
                                 curve_step_px=center_curve_step_px,
                                 rdp_px=center_rdp_px,
                                 close_kernel=close_kernel,
+                                threshold_floor=center_threshold_floor,
                             )
                         if not px_centerlines:
                             px_centerlines = _extract_image_centerline_paths_px(
-                                img,
+                                trace_img,
                                 min_component_px=center_min_component_px,
                                 min_path_px=min_path_px,
                                 max_paths=center_cap,
                                 rdp_px=center_rdp_px,
+                                threshold_floor=center_threshold_floor,
                             )
 
                     px_edge_polys: List[List[Tuple[float, float]]] = []
                     if mode == "edge" or (mode == "auto" and not px_centerlines):
-                        px_edge_polys = _extract_image_edge_contours_px(img)
+                        px_edge_polys = _extract_image_edge_contours_px(trace_img)
+                    px_circle_polys: List[List[Tuple[float, float]]] = []
+                    if HANDWRITING_TEXT_ENABLED and bool(profile.get("small_line_art", False)):
+                        px_circle_polys = _extract_image_hough_circles_px(circle_img)
 
                     added = 0
                     added_centerline = 0
                     added_edge = 0
+                    added_circles = 0
                     added_hatch = 0
                     for px_poly in px_centerlines:
                         mm_poly: List[Tuple[float, float]] = []
                         for px, py in px_poly:
                             # Map pixel contour to image placement box in SVG user units.
-                            ux = x_u + (px / max(1.0, float(w_px - 1))) * w_u
-                            uy = y_u + (py / max(1.0, float(h_px - 1))) * h_u
+                            ux = x_u + (px / max(1.0, float(trace_w_px - 1))) * w_u
+                            uy = y_u + (py / max(1.0, float(trace_h_px - 1))) * h_u
                             tx, ty = mat_apply(cur_matrix, (ux, uy))
                             mm_poly.append((tx * scale, ty * scale))
                         mm_poly = simplify_polyline(mm_poly, eps=simplify_eps_mm)
@@ -1379,8 +1507,8 @@ def extract_image_contour_items(
                     for px_poly in px_edge_polys:
                         mm_poly = []
                         for px, py in px_poly:
-                            ux = x_u + (px / max(1.0, float(w_px - 1))) * w_u
-                            uy = y_u + (py / max(1.0, float(h_px - 1))) * h_u
+                            ux = x_u + (px / max(1.0, float(trace_w_px - 1))) * w_u
+                            uy = y_u + (py / max(1.0, float(trace_h_px - 1))) * h_u
                             tx, ty = mat_apply(cur_matrix, (ux, uy))
                             mm_poly.append((tx * scale, ty * scale))
                         mm_poly = simplify_polyline(mm_poly, eps=simplify_eps_mm)
@@ -1408,6 +1536,33 @@ def extract_image_contour_items(
                         added += 1
                         added_edge += 1
 
+                    for px_poly in px_circle_polys:
+                        mm_poly = []
+                        for px, py in px_poly:
+                            ux = x_u + (px / max(1.0, float(circle_w_px - 1))) * w_u
+                            uy = y_u + (py / max(1.0, float(circle_h_px - 1))) * h_u
+                            tx, ty = mat_apply(cur_matrix, (ux, uy))
+                            mm_poly.append((tx * scale, ty * scale))
+                        if len(mm_poly) < 10:
+                            continue
+                        if points_distance(mm_poly[0], mm_poly[-1]) > 1e-6:
+                            mm_poly.append(mm_poly[0])
+                        xs = [p[0] for p in mm_poly]
+                        ys = [p[1] for p in mm_poly]
+                        if (max(xs) - min(xs)) < max(0.45, tiny_bbox_mm * 0.35) and (max(ys) - min(ys)) < max(0.45, tiny_bbox_mm * 0.35):
+                            continue
+                        out.append(
+                            PathItem(
+                                points=mm_poly,
+                                closed=True,
+                                is_fill=False,
+                                is_stroke=True,
+                                source_id=source_id_seq,
+                            )
+                        )
+                        added += 1
+                        added_circles += 1
+
                     if enable_hatch:
                         step_px = max(1, int(round(float(IMAGE_TONE_HATCH_STEP_MM) * (float(h_px) / h_mm))))
                         min_seg_px = max(1, int(round(float(IMAGE_TONE_HATCH_MIN_SEGMENT_MM) * (float(w_px) / w_mm))))
@@ -1420,8 +1575,8 @@ def extract_image_contour_items(
                         for px_seg in hatch_px:
                             mm_seg: List[Tuple[float, float]] = []
                             for px, py in px_seg:
-                                ux = x_u + (px / max(1.0, float(w_px - 1))) * w_u
-                                uy = y_u + (py / max(1.0, float(h_px - 1))) * h_u
+                                ux = x_u + (px / max(1.0, float(trace_w_px - 1))) * w_u
+                                uy = y_u + (py / max(1.0, float(trace_h_px - 1))) * h_u
                                 tx, ty = mat_apply(cur_matrix, (ux, uy))
                                 mm_seg.append((tx * scale, ty * scale))
                             mm_seg = simplify_polyline(mm_seg, eps=max(0.08, simplify_eps_mm * 0.85))
@@ -1450,6 +1605,11 @@ def extract_image_contour_items(
                             logger(
                                 "Image vectorization mode: edge fallback "
                                 f"(added {added_edge} path(s), simplify={simplify_eps_mm:.2f} mm)."
+                            )
+                        if added_circles > 0:
+                            logger(
+                                "Image node circle recovery: "
+                                f"+{added_circles} closed path(s)."
                             )
                     if added_hatch > 0 and logger:
                         logger(
@@ -1542,6 +1702,8 @@ def _resolve_handwriting_ttf_path(font_name: str) -> Optional[Path]:
         "katherine plus": ["Katherine Plus.ttf", "Katerine Plus SL.otf"],
         "katerine plus": ["Katherine Plus.ttf", "Katerine Plus SL.otf"],
         "katerine plus sl": ["Katerine Plus SL.otf", "Katherine Plus.ttf"],
+        "times new roman": ["times.ttf", "timesbd.ttf", "timesi.ttf"],
+        "cambria": ["cambria.ttc", "cambria.ttf"],
         "arial": ["arial.ttf"],
     }
     candidate_files: List[Path] = []
@@ -1923,6 +2085,14 @@ def _normalize_handwriting_text_token(text: str) -> str:
     )
 
 
+def _normalize_handwriting_text_string(text: str) -> str:
+    return handwriting_text_utils_mod.normalize_handwriting_text_string(
+        text,
+        strip_unpaired_surrogates=_strip_unpaired_surrogates,
+        text_contains_formula_script_fn=handwriting_text_utils_mod.text_contains_formula_script,
+    )
+
+
 def _style_prefers_native_vector(style: Optional[dict]) -> bool:
     return handwriting_text_utils_mod.style_prefers_native_vector(style)
 
@@ -1935,6 +2105,14 @@ def _text_prefers_native_vector(text: str) -> bool:
     return handwriting_text_utils_mod.text_prefers_native_vector(
         text,
         strip_unpaired_surrogates=_strip_unpaired_surrogates,
+    )
+
+
+def _text_prefers_print_font(text: str, *, font_size: Optional[float] = None) -> bool:
+    return handwriting_text_utils_mod.text_prefers_print_font(
+        text,
+        font_size=font_size,
+        text_contains_formula_script_fn=handwriting_text_utils_mod.text_contains_formula_script,
     )
 
 
@@ -1977,7 +2155,7 @@ def _merge_svg_text_style(parent_style: dict, node: ET.Element) -> dict:
 def _sanitize_svg_text_node_for_vector(node: ET.Element) -> bool:
     return handwriting_text_utils_mod.sanitize_svg_text_node_for_vector(
         node,
-        normalize_handwriting_text_token_fn=_normalize_handwriting_text_token,
+        normalize_handwriting_text_token_fn=_normalize_handwriting_text_string,
     )
 
 
@@ -2024,7 +2202,7 @@ def _dedupe_svg_text_nodes(root: ET.Element, *, coord_tol_mm: float = 0.20, font
     """Drop exact duplicate text nodes at the same position (Word/PDF import artifact)."""
 
     def _norm_text(src: str) -> str:
-        txt = _normalize_handwriting_text_token(src or "")
+        txt = _normalize_handwriting_text_string(src or "")
         txt = re.sub(r"\s+", " ", txt, flags=re.UNICODE).strip()
         return txt
 
@@ -3049,8 +3227,8 @@ def _render_singleline_text_line_ttf(
     if not text:
         return []
     backend = _normalize_singleline_ttf_backend(HANDWRITING_SINGLELINE_TTF_BACKEND)
-    line_has_cyrillic = _text_contains_cyrillic(text)
-    text_norm = _normalize_handwriting_text_token(text)
+    text_norm = _normalize_handwriting_text_string(text)
+    line_has_cyrillic = _text_contains_cyrillic(text_norm)
     # Method3 (autotrace centerline) works best on full line raster,
     # preserving inter-letter continuity and reducing token boundary artifacts.
     if backend == "autotrace3":
@@ -3063,7 +3241,7 @@ def _render_singleline_text_line_ttf(
             force_cyrillic_mode=line_has_cyrillic,
             logger=logger,
         )
-    tokens = _split_text_tokens_keep_spaces(text)
+    tokens = _split_text_tokens_keep_spaces(text_norm)
     if len(tokens) <= 1:
         return _render_singleline_text_polylines_ttf(
             text_norm,
@@ -3147,6 +3325,11 @@ def replace_svg_text_with_singleline_ttf(svg_path: Path, font_name: str, logger)
     changed = 0
     total_paths = 0
     native_row_ids = _collect_native_row_text_node_ids(root)
+    print_ttf_path = (
+        _resolve_handwriting_ttf_path("Times New Roman")
+        or _resolve_handwriting_ttf_path("Cambria")
+        or _resolve_handwriting_ttf_path("Arial")
+    )
 
     def _merge_inherited_text_style(parent_style: dict, node: ET.Element) -> dict:
         return _merge_svg_text_style(parent_style, node)
@@ -3169,14 +3352,14 @@ def replace_svg_text_with_singleline_ttf(svg_path: Path, font_name: str, logger)
         runs: List[Tuple[str, float, float, dict, str]] = []
         tspans = [c for c in list(node) if tag_name(c.tag).lower() == "tspan"]
         if tspans:
-            lead = (node.text or "").strip()
+            lead = str((node.text or "").strip())
             if lead:
                 runs.append((lead, base_x, base_y, dict(style_base), node_transform))
             cursor_x = float(base_x)
             cursor_y = float(base_y)
             has_lead = bool(lead)
             for ts_idx, ts in enumerate(tspans):
-                text = _extract_svg_text_plain(ts)
+                text = str(_extract_svg_text_plain(ts))
                 if not text:
                     continue
                 run_style = dict(style_base)
@@ -3226,13 +3409,13 @@ def replace_svg_text_with_singleline_ttf(svg_path: Path, font_name: str, logger)
                 run_transform = " ".join(part for part in (node_transform, ts_transform) if part)
                 runs.append((text, x0, y0, run_style, run_transform))
         else:
-            text = _extract_svg_text_plain(node)
+            text = str(_extract_svg_text_plain(node))
             if text:
                 runs.append((text, base_x, base_y, dict(style_base), node_transform))
 
         if not runs:
             return None
-        combined_text = " ".join(str(run[0]) for run in runs if str(run[0]).strip())
+        combined_text = " ".join(str(run[0]).strip() for run in runs if str(run[0]).strip())
         if (
             _text_prefers_native_vector(combined_text)
             or any(_style_prefers_native_vector(run[3]) for run in runs)
@@ -3245,7 +3428,7 @@ def replace_svg_text_with_singleline_ttf(svg_path: Path, font_name: str, logger)
             ns = node.tag.split("}")[0] + "}"
         group_el = ET.Element(f"{ns}g")
 
-        for text, x0, y0, style, run_transform in runs:
+        for raw_text, x0, y0, style, run_transform in runs:
             if _style_prefers_native_vector(style):
                 # Preserve complex math/symbol runs in native vector form.
                 continue
@@ -3254,6 +3437,13 @@ def replace_svg_text_with_singleline_ttf(svg_path: Path, font_name: str, logger)
             font_size = _parse_svg_number(style.get("font-size"), default=12.0)
             if font_size <= 0.0:
                 font_size = 12.0
+            use_print_font = bool(
+                print_ttf_path is not None
+                and _text_prefers_print_font(raw_text, font_size=font_size)
+            )
+            render_text = str(raw_text or "")
+            if not use_print_font:
+                render_text = _normalize_handwriting_text_string(render_text)
             stroke_color = _pick_svg_text_stroke_color(style)
             if not stroke_color:
                 continue
@@ -3262,7 +3452,7 @@ def replace_svg_text_with_singleline_ttf(svg_path: Path, font_name: str, logger)
                 font_size * float(HANDWRITING_SINGLELINE_TTF_PREVIEW_STROKE_SCALE),
             )
 
-            lines = [ln for ln in text.split("\n") if ln != ""]
+            lines = [ln for ln in render_text.split("\n") if ln != ""]
             if not lines:
                 continue
             line_step = max(font_size * 1.34, font_size + 1.0)
@@ -3271,7 +3461,7 @@ def replace_svg_text_with_singleline_ttf(svg_path: Path, font_name: str, logger)
                 baseline_y = y0 + (li * line_step)
                 polylines = _render_singleline_text_line_ttf(
                     line_text,
-                    ttf_path=ttf_path,
+                    ttf_path=(print_ttf_path if use_print_font and print_ttf_path is not None else ttf_path),
                     font_size=font_size,
                     baseline_x=x0,
                     baseline_y=baseline_y,
@@ -3357,6 +3547,7 @@ def apply_handwriting_font(svg_path: Path, font_name: str, logger) -> int:
                     walk(child, cur_style)
                 return
             if (id(node) not in native_row_ids) and not (_text_prefers_native_vector(txt) or _style_prefers_native_vector(cur_style)):
+                _sanitize_svg_text_node_for_vector(node)
                 node_style = _read_style_dict_preserve(node.attrib.get("style"))
                 node_style["font-family"] = f"'{target_font}'"
                 node_style["-inkscape-font-specification"] = target_font
@@ -3607,14 +3798,14 @@ def replace_svg_text_with_svg_stroke_fonts(svg_path: Path, font_name: str, logge
         runs: List[Tuple[str, float, float, dict, str]] = []
         tspans = [c for c in list(node) if tag_name(c.tag).lower() == "tspan"]
         if tspans:
-            lead = (node.text or "").strip()
+            lead = _normalize_handwriting_text_string((node.text or "").strip())
             if lead:
                 runs.append((lead, base_x, base_y, dict(style_base), node_transform))
             cursor_x = float(base_x)
             cursor_y = float(base_y)
             has_lead = bool(lead)
             for ts_idx, ts in enumerate(tspans):
-                text = _extract_svg_text_plain(ts)
+                text = _normalize_handwriting_text_string(_extract_svg_text_plain(ts))
                 if not text:
                     continue
                 run_style = dict(style_base)
@@ -3664,7 +3855,7 @@ def replace_svg_text_with_svg_stroke_fonts(svg_path: Path, font_name: str, logge
                 run_transform = " ".join(part for part in (node_transform, ts_transform) if part)
                 runs.append((text, x0, y0, run_style, run_transform))
         else:
-            text = _extract_svg_text_plain(node)
+            text = _normalize_handwriting_text_string(_extract_svg_text_plain(node))
             if text:
                 runs.append((text, base_x, base_y, dict(style_base), node_transform))
 
@@ -3889,14 +4080,14 @@ def replace_svg_text_with_hershey_strokes(svg_path: Path, font_name: str, logger
         runs: List[Tuple[str, float, float, dict, str, List[float]]] = []
         tspans = [c for c in list(node) if tag_name(c.tag).lower() == "tspan"]
         if tspans:
-            lead = (node.text or "").strip()
+            lead = _normalize_handwriting_text_string((node.text or "").strip())
             if lead:
                 runs.append((lead, base_x, base_y, dict(style_base), node_transform, list(node_x_list)))
             cursor_x = float(base_x)
             cursor_y = float(base_y)
             has_lead = bool(lead)
             for ts_idx, ts in enumerate(tspans):
-                text = _extract_svg_text_plain(ts)
+                text = _normalize_handwriting_text_string(_extract_svg_text_plain(ts))
                 if not text:
                     continue
                 run_style = dict(style_base)
@@ -3946,7 +4137,7 @@ def replace_svg_text_with_hershey_strokes(svg_path: Path, font_name: str, logger
                 run_transform = " ".join(part for part in (node_transform, ts_transform) if part)
                 runs.append((text, x0, y0, run_style, run_transform, x_list if x_list else [x0]))
         else:
-            text = _extract_svg_text_plain(node)
+            text = _normalize_handwriting_text_string(_extract_svg_text_plain(node))
             if text:
                 runs.append((text, base_x, base_y, dict(style_base), node_transform, list(node_x_list)))
 

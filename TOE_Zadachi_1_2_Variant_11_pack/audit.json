@@ -1,0 +1,641 @@
+{
+  "pack_dir": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack",
+  "source_pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11.pdf",
+  "page_count": 17,
+  "selected_primary_font": "Marck Script",
+  "avg_layout_similarity": 0.963999,
+  "min_layout_similarity": 0.936726,
+  "weak_pages_count": 12,
+  "watch_pages_count": 2,
+  "weak_pages": [
+    {
+      "page_index": 17,
+      "page_name": "page_17",
+      "status": "weak",
+      "severity_score": 13.268626,
+      "selected_variant": "raster_safe",
+      "source_strategy": "image_heavy",
+      "selected_layout_similarity": 0.953206,
+      "selected_mask_iou": 0.069438,
+      "selected_mask_recall": 0.114089,
+      "quality_gate_accepted": false,
+      "selected_reason": "source_strategy=image_heavy; primary_font=Marck Script; selected_font=Marck Script; selected_variant=raster_safe; selected_contours=always; font_first_preferred=false; fallback_threshold=0.946; selection=override; reason=image_heavy_fallback",
+      "preview_pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_17.pdf",
+      "preview_svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_17.svg",
+      "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_17_overlay.png",
+      "log_path": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\logs\\page_17.log.txt",
+      "hotspot": {
+        "bbox_norm": [
+          0.06,
+          0.862222,
+          0.186667,
+          0.895556
+        ],
+        "crop_px": [
+          36,
+          794,
+          150,
+          824
+        ],
+        "image": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\audit_hotspots\\page_17_hotspot.png"
+      }
+    },
+    {
+      "page_index": 7,
+      "page_name": "page_07",
+      "status": "weak",
+      "severity_score": 7.072534,
+      "selected_variant": "always",
+      "source_strategy": "graph_lineart",
+      "selected_layout_similarity": 0.940764,
+      "selected_mask_iou": 0.313042,
+      "selected_mask_recall": 0.389631,
+      "quality_gate_accepted": false,
+      "selected_reason": "source_strategy=graph_lineart; primary_font=Marck Script; selected_font=Marck Script; selected_variant=always; selected_contours=always; font_first_preferred=false; fallback_threshold=0.946; selection=base",
+      "preview_pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_07.pdf",
+      "preview_svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_07.svg",
+      "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_07_overlay.png",
+      "log_path": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\logs\\page_07.log.txt",
+      "hotspot": {
+        "bbox_norm": [
+          0.22,
+          0.93,
+          0.063333,
+          0.401111
+        ],
+        "crop_px": [
+          180,
+          855,
+          39,
+          379
+        ],
+        "image": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\audit_hotspots\\page_07_hotspot.png"
+      }
+    },
+    {
+      "page_index": 12,
+      "page_name": "page_12",
+      "status": "weak",
+      "severity_score": 6.587786,
+      "selected_variant": "contours_off",
+      "source_strategy": "font_first_text_rich",
+      "selected_layout_similarity": 0.94951,
+      "selected_mask_iou": 0.290148,
+      "selected_mask_recall": 0.391855,
+      "quality_gate_accepted": false,
+      "selected_reason": "source_strategy=font_first_text_rich; primary_font=Marck Script; selected_font=Marck Script; selected_variant=contours_off; selected_contours=off; font_first_preferred=true; fallback_threshold=0.920; selection=base",
+      "preview_pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_12.pdf",
+      "preview_svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_12.svg",
+      "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_12_overlay.png",
+      "log_path": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\logs\\page_12.log.txt",
+      "hotspot": {
+        "bbox_norm": [
+          0.008889,
+          0.992222,
+          0.49,
+          0.647778
+        ],
+        "crop_px": [
+          0,
+          900,
+          423,
+          601
+        ],
+        "image": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\audit_hotspots\\page_12_hotspot.png"
+      }
+    },
+    {
+      "page_index": 1,
+      "page_name": "page_01",
+      "status": "weak",
+      "severity_score": 6.3274,
+      "selected_variant": "always",
+      "source_strategy": "font_first_text_rich",
+      "selected_layout_similarity": 0.936726,
+      "selected_mask_iou": 0.381063,
+      "selected_mask_recall": 0.463983,
+      "quality_gate_accepted": false,
+      "selected_reason": "source_strategy=font_first_text_rich; primary_font=Marck Script; selected_font=Marck Script; selected_variant=always; selected_contours=always; font_first_preferred=true; fallback_threshold=0.920; selection=base",
+      "preview_pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_01.pdf",
+      "preview_svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_01.svg",
+      "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_01_overlay.png",
+      "log_path": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\logs\\page_01.log.txt",
+      "hotspot": {
+        "bbox_norm": [
+          0.13,
+          0.953333,
+          0.123333,
+          0.455556
+        ],
+        "crop_px": [
+          99,
+          876,
+          93,
+          428
+        ],
+        "image": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\audit_hotspots\\page_01_hotspot.png"
+      }
+    },
+    {
+      "page_index": 6,
+      "page_name": "page_06",
+      "status": "weak",
+      "severity_score": 4.817174,
+      "selected_variant": "raster_safe",
+      "source_strategy": "image_heavy",
+      "selected_layout_similarity": 0.939101,
+      "selected_mask_iou": 0.312822,
+      "selected_mask_recall": 0.362193,
+      "quality_gate_accepted": true,
+      "selected_reason": "source_strategy=image_heavy; primary_font=Marck Script; selected_font=Marck Script; selected_variant=raster_safe; selected_contours=always; font_first_preferred=false; fallback_threshold=0.946; selection=override; reason=image_heavy_fallback",
+      "preview_pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_06.pdf",
+      "preview_svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_06.svg",
+      "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_06_overlay.png",
+      "log_path": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\logs\\page_06.log.txt",
+      "hotspot": {
+        "bbox_norm": [
+          0.093333,
+          0.554444,
+          0.054444,
+          0.404444
+        ],
+        "crop_px": [
+          66,
+          517,
+          31,
+          382
+        ],
+        "image": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\audit_hotspots\\page_06_hotspot.png"
+      }
+    },
+    {
+      "page_index": 8,
+      "page_name": "page_08",
+      "status": "weak",
+      "severity_score": 4.098086,
+      "selected_variant": "raster_safe",
+      "source_strategy": "image_heavy",
+      "selected_layout_similarity": 0.939158,
+      "selected_mask_iou": 0.338713,
+      "selected_mask_recall": 0.386928,
+      "quality_gate_accepted": true,
+      "selected_reason": "source_strategy=image_heavy; primary_font=Marck Script; selected_font=Marck Script; selected_variant=raster_safe; selected_contours=always; font_first_preferred=false; fallback_threshold=0.946; selection=override; reason=image_heavy_fallback",
+      "preview_pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_08.pdf",
+      "preview_svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_08.svg",
+      "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_08_overlay.png",
+      "log_path": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\logs\\page_08.log.txt",
+      "hotspot": {
+        "bbox_norm": [
+          0.098889,
+          0.55,
+          0.228889,
+          0.354444
+        ],
+        "crop_px": [
+          71,
+          513,
+          188,
+          337
+        ],
+        "image": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\audit_hotspots\\page_08_hotspot.png"
+      }
+    },
+    {
+      "page_index": 16,
+      "page_name": "page_16",
+      "status": "weak",
+      "severity_score": 3.328536,
+      "selected_variant": "always",
+      "source_strategy": "image_heavy",
+      "selected_layout_similarity": 0.971094,
+      "selected_mask_iou": 0.341748,
+      "selected_mask_recall": 0.459358,
+      "quality_gate_accepted": false,
+      "selected_reason": "source_strategy=image_heavy; primary_font=Marck Script; selected_font=Marck Script; selected_variant=always; selected_contours=always; font_first_preferred=false; fallback_threshold=0.946; selection=base",
+      "preview_pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_16.pdf",
+      "preview_svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_16.svg",
+      "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_16_overlay.png",
+      "log_path": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\logs\\page_16.log.txt",
+      "hotspot": {
+        "bbox_norm": [
+          0.661111,
+          0.99,
+          0.515556,
+          0.711111
+        ],
+        "crop_px": [
+          577,
+          900,
+          446,
+          658
+        ],
+        "image": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\audit_hotspots\\page_16_hotspot.png"
+      }
+    },
+    {
+      "page_index": 15,
+      "page_name": "page_15",
+      "status": "weak",
+      "severity_score": 3.245598,
+      "selected_variant": "always",
+      "source_strategy": "image_heavy",
+      "selected_layout_similarity": 0.968437,
+      "selected_mask_iou": 0.355039,
+      "selected_mask_recall": 0.456472,
+      "quality_gate_accepted": false,
+      "selected_reason": "source_strategy=image_heavy; primary_font=Marck Script; selected_font=Marck Script; selected_variant=always; selected_contours=always; font_first_preferred=false; fallback_threshold=0.946; selection=base",
+      "preview_pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_15.pdf",
+      "preview_svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_15.svg",
+      "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_15_overlay.png",
+      "log_path": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\logs\\page_15.log.txt",
+      "hotspot": {
+        "bbox_norm": [
+          0.593333,
+          0.78,
+          0.201111,
+          0.478889
+        ],
+        "crop_px": [
+          516,
+          720,
+          163,
+          449
+        ],
+        "image": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\audit_hotspots\\page_15_hotspot.png"
+      }
+    },
+    {
+      "page_index": 2,
+      "page_name": "page_02",
+      "status": "weak",
+      "severity_score": 3.0,
+      "selected_variant": "always",
+      "source_strategy": "graph_lineart",
+      "selected_layout_similarity": 0.976841,
+      "selected_mask_iou": 0.38949,
+      "selected_mask_recall": 0.485652,
+      "quality_gate_accepted": false,
+      "selected_reason": "source_strategy=graph_lineart; primary_font=Marck Script; selected_font=Marck Script; selected_variant=always; selected_contours=always; font_first_preferred=false; fallback_threshold=0.946; selection=base",
+      "preview_pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_02.pdf",
+      "preview_svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_02.svg",
+      "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_02_overlay.png",
+      "log_path": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\logs\\page_02.log.txt",
+      "hotspot": {
+        "bbox_norm": [
+          0.225556,
+          0.674444,
+          0.22,
+          0.518889
+        ],
+        "crop_px": [
+          185,
+          625,
+          180,
+          485
+        ],
+        "image": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\audit_hotspots\\page_02_hotspot.png"
+      }
+    },
+    {
+      "page_index": 5,
+      "page_name": "page_05",
+      "status": "weak",
+      "severity_score": 3.0,
+      "selected_variant": "always",
+      "source_strategy": "formula_heavy",
+      "selected_layout_similarity": 0.986351,
+      "selected_mask_iou": 0.448468,
+      "selected_mask_recall": 0.586482,
+      "quality_gate_accepted": false,
+      "selected_reason": "source_strategy=formula_heavy; primary_font=Marck Script; selected_font=Marck Script; selected_variant=always; selected_contours=always; font_first_preferred=false; fallback_threshold=0.946; selection=base",
+      "preview_pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_05.pdf",
+      "preview_svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_05.svg",
+      "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_05_overlay.png",
+      "log_path": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\logs\\page_05.log.txt",
+      "hotspot": {
+        "bbox_norm": [
+          0.008889,
+          0.358889,
+          0.933333,
+          0.952222
+        ],
+        "crop_px": [
+          0,
+          341,
+          822,
+          875
+        ],
+        "image": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\audit_hotspots\\page_05_hotspot.png"
+      }
+    },
+    {
+      "page_index": 9,
+      "page_name": "page_09",
+      "status": "weak",
+      "severity_score": 3.0,
+      "selected_variant": "always",
+      "source_strategy": "image_heavy",
+      "selected_layout_similarity": 0.981701,
+      "selected_mask_iou": 0.486355,
+      "selected_mask_recall": 0.566839,
+      "quality_gate_accepted": false,
+      "selected_reason": "source_strategy=image_heavy; primary_font=Marck Script; selected_font=Marck Script; selected_variant=always; selected_contours=always; font_first_preferred=false; fallback_threshold=0.946; selection=base",
+      "preview_pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_09.pdf",
+      "preview_svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_09.svg",
+      "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_09_overlay.png",
+      "log_path": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\logs\\page_09.log.txt",
+      "hotspot": {
+        "bbox_norm": [
+          0.032222,
+          0.351111,
+          0.976667,
+          0.994444
+        ],
+        "crop_px": [
+          11,
+          334,
+          861,
+          900
+        ],
+        "image": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\audit_hotspots\\page_09_hotspot.png"
+      }
+    },
+    {
+      "page_index": 13,
+      "page_name": "page_13",
+      "status": "weak",
+      "severity_score": 3.0,
+      "selected_variant": "always",
+      "source_strategy": "formula_heavy",
+      "selected_layout_similarity": 0.98508,
+      "selected_mask_iou": 0.572286,
+      "selected_mask_recall": 0.693461,
+      "quality_gate_accepted": false,
+      "selected_reason": "source_strategy=formula_heavy; primary_font=Marck Script; selected_font=Marck Script; selected_variant=always; selected_contours=always; font_first_preferred=false; fallback_threshold=0.946; selection=base",
+      "preview_pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_13.pdf",
+      "preview_svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_13.svg",
+      "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_13_overlay.png",
+      "log_path": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\logs\\page_13.log.txt"
+    }
+  ],
+  "watch_pages": [
+    {
+      "page_index": 4,
+      "page_name": "page_04",
+      "status": "watch",
+      "severity_score": 2.665316,
+      "selected_variant": "always",
+      "source_strategy": "formula_heavy",
+      "selected_layout_similarity": 0.954546,
+      "selected_mask_iou": 0.313988,
+      "selected_mask_recall": 0.39083,
+      "quality_gate_accepted": true,
+      "selected_reason": "source_strategy=formula_heavy; primary_font=Marck Script; selected_font=Marck Script; selected_variant=always; selected_contours=always; font_first_preferred=false; fallback_threshold=0.946; selection=base",
+      "preview_pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_04.pdf",
+      "preview_svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_04.svg",
+      "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_04_overlay.png",
+      "log_path": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\logs\\page_04.log.txt",
+      "hotspot": {
+        "bbox_norm": [
+          0.09,
+          0.547778,
+          0.037778,
+          0.207778
+        ],
+        "crop_px": [
+          63,
+          511,
+          16,
+          205
+        ],
+        "image": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\audit_hotspots\\page_04_hotspot.png"
+      }
+    },
+    {
+      "page_index": 11,
+      "page_name": "page_11",
+      "status": "watch",
+      "severity_score": 1.5357,
+      "selected_variant": "raster_safe",
+      "source_strategy": "image_heavy",
+      "selected_layout_similarity": 0.957643,
+      "selected_mask_iou": 0.366023,
+      "selected_mask_recall": 0.431077,
+      "quality_gate_accepted": true,
+      "selected_reason": "source_strategy=image_heavy; primary_font=Marck Script; selected_font=Marck Script; selected_variant=raster_safe; selected_contours=always; font_first_preferred=false; fallback_threshold=0.946; selection=override; reason=image_heavy_fallback",
+      "preview_pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_11.pdf",
+      "preview_svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_11.svg",
+      "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_11_overlay.png",
+      "log_path": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\logs\\page_11.log.txt",
+      "hotspot": {
+        "bbox_norm": [
+          0.472222,
+          0.725556,
+          0.096667,
+          0.17
+        ],
+        "crop_px": [
+          407,
+          671,
+          69,
+          171
+        ],
+        "image": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\audit_hotspots\\page_11_hotspot.png"
+      }
+    }
+  ],
+  "top_pages": [
+    {
+      "page_index": 17,
+      "page_name": "page_17",
+      "status": "weak",
+      "severity_score": 13.268626,
+      "selected_variant": "raster_safe",
+      "source_strategy": "image_heavy",
+      "selected_layout_similarity": 0.953206,
+      "selected_mask_iou": 0.069438,
+      "selected_mask_recall": 0.114089,
+      "quality_gate_accepted": false,
+      "selected_reason": "source_strategy=image_heavy; primary_font=Marck Script; selected_font=Marck Script; selected_variant=raster_safe; selected_contours=always; font_first_preferred=false; fallback_threshold=0.946; selection=override; reason=image_heavy_fallback",
+      "preview_pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_17.pdf",
+      "preview_svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_17.svg",
+      "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_17_overlay.png",
+      "log_path": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\logs\\page_17.log.txt",
+      "hotspot": {
+        "bbox_norm": [
+          0.06,
+          0.862222,
+          0.186667,
+          0.895556
+        ],
+        "crop_px": [
+          36,
+          794,
+          150,
+          824
+        ],
+        "image": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\audit_hotspots\\page_17_hotspot.png"
+      }
+    },
+    {
+      "page_index": 7,
+      "page_name": "page_07",
+      "status": "weak",
+      "severity_score": 7.072534,
+      "selected_variant": "always",
+      "source_strategy": "graph_lineart",
+      "selected_layout_similarity": 0.940764,
+      "selected_mask_iou": 0.313042,
+      "selected_mask_recall": 0.389631,
+      "quality_gate_accepted": false,
+      "selected_reason": "source_strategy=graph_lineart; primary_font=Marck Script; selected_font=Marck Script; selected_variant=always; selected_contours=always; font_first_preferred=false; fallback_threshold=0.946; selection=base",
+      "preview_pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_07.pdf",
+      "preview_svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_07.svg",
+      "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_07_overlay.png",
+      "log_path": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\logs\\page_07.log.txt",
+      "hotspot": {
+        "bbox_norm": [
+          0.22,
+          0.93,
+          0.063333,
+          0.401111
+        ],
+        "crop_px": [
+          180,
+          855,
+          39,
+          379
+        ],
+        "image": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\audit_hotspots\\page_07_hotspot.png"
+      }
+    },
+    {
+      "page_index": 12,
+      "page_name": "page_12",
+      "status": "weak",
+      "severity_score": 6.587786,
+      "selected_variant": "contours_off",
+      "source_strategy": "font_first_text_rich",
+      "selected_layout_similarity": 0.94951,
+      "selected_mask_iou": 0.290148,
+      "selected_mask_recall": 0.391855,
+      "quality_gate_accepted": false,
+      "selected_reason": "source_strategy=font_first_text_rich; primary_font=Marck Script; selected_font=Marck Script; selected_variant=contours_off; selected_contours=off; font_first_preferred=true; fallback_threshold=0.920; selection=base",
+      "preview_pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_12.pdf",
+      "preview_svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_12.svg",
+      "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_12_overlay.png",
+      "log_path": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\logs\\page_12.log.txt",
+      "hotspot": {
+        "bbox_norm": [
+          0.008889,
+          0.992222,
+          0.49,
+          0.647778
+        ],
+        "crop_px": [
+          0,
+          900,
+          423,
+          601
+        ],
+        "image": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\audit_hotspots\\page_12_hotspot.png"
+      }
+    },
+    {
+      "page_index": 1,
+      "page_name": "page_01",
+      "status": "weak",
+      "severity_score": 6.3274,
+      "selected_variant": "always",
+      "source_strategy": "font_first_text_rich",
+      "selected_layout_similarity": 0.936726,
+      "selected_mask_iou": 0.381063,
+      "selected_mask_recall": 0.463983,
+      "quality_gate_accepted": false,
+      "selected_reason": "source_strategy=font_first_text_rich; primary_font=Marck Script; selected_font=Marck Script; selected_variant=always; selected_contours=always; font_first_preferred=true; fallback_threshold=0.920; selection=base",
+      "preview_pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_01.pdf",
+      "preview_svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_01.svg",
+      "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_01_overlay.png",
+      "log_path": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\logs\\page_01.log.txt",
+      "hotspot": {
+        "bbox_norm": [
+          0.13,
+          0.953333,
+          0.123333,
+          0.455556
+        ],
+        "crop_px": [
+          99,
+          876,
+          93,
+          428
+        ],
+        "image": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\audit_hotspots\\page_01_hotspot.png"
+      }
+    },
+    {
+      "page_index": 6,
+      "page_name": "page_06",
+      "status": "weak",
+      "severity_score": 4.817174,
+      "selected_variant": "raster_safe",
+      "source_strategy": "image_heavy",
+      "selected_layout_similarity": 0.939101,
+      "selected_mask_iou": 0.312822,
+      "selected_mask_recall": 0.362193,
+      "quality_gate_accepted": true,
+      "selected_reason": "source_strategy=image_heavy; primary_font=Marck Script; selected_font=Marck Script; selected_variant=raster_safe; selected_contours=always; font_first_preferred=false; fallback_threshold=0.946; selection=override; reason=image_heavy_fallback",
+      "preview_pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_06.pdf",
+      "preview_svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_06.svg",
+      "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_06_overlay.png",
+      "log_path": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\logs\\page_06.log.txt",
+      "hotspot": {
+        "bbox_norm": [
+          0.093333,
+          0.554444,
+          0.054444,
+          0.404444
+        ],
+        "crop_px": [
+          66,
+          517,
+          31,
+          382
+        ],
+        "image": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\audit_hotspots\\page_06_hotspot.png"
+      }
+    },
+    {
+      "page_index": 8,
+      "page_name": "page_08",
+      "status": "weak",
+      "severity_score": 4.098086,
+      "selected_variant": "raster_safe",
+      "source_strategy": "image_heavy",
+      "selected_layout_similarity": 0.939158,
+      "selected_mask_iou": 0.338713,
+      "selected_mask_recall": 0.386928,
+      "quality_gate_accepted": true,
+      "selected_reason": "source_strategy=image_heavy; primary_font=Marck Script; selected_font=Marck Script; selected_variant=raster_safe; selected_contours=always; font_first_preferred=false; fallback_threshold=0.946; selection=override; reason=image_heavy_fallback",
+      "preview_pdf": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_08.pdf",
+      "preview_svg": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_08.svg",
+      "overlay_png": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\pages\\page_08_overlay.png",
+      "log_path": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\logs\\page_08.log.txt",
+      "hotspot": {
+        "bbox_norm": [
+          0.098889,
+          0.55,
+          0.228889,
+          0.354444
+        ],
+        "crop_px": [
+          71,
+          513,
+          188,
+          337
+        ],
+        "image": "C:\\plotter_pdf\\TOE_Zadachi_1_2_Variant_11_pack\\audit_hotspots\\page_08_hotspot.png"
+      }
+    }
+  ]
+}

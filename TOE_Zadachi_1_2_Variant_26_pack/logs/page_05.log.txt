@@ -2,17 +2,17 @@ Text render mode: handwriting=on font='C:\plotter_pdf\data\fonts\MarckScript-Reg
 Handwriting mode: Cyrillic text profile tokens=122, short=31%, digits=11%, long=49%, style=paragraph.
 Handwriting mode: Cyrillic detected, trying TTF single-line pipeline first ('C:\plotter_pdf\data\fonts\MarckScript-Regular.ttf').
 TTF centerline postprocess: 1 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: '5' -> 1 stroke(s), thr=192, cand=8, font=MarckScript-Regular.ttf, size=14.04
-TTF centerline postprocess: 155 -> 87 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: '3. РАССЧИТАТЬ ТОКИ ВО ВСЕХ В' -> 87 stroke(s), thr=128, cand=8, font=MarckScript-Regular.ttf, size=12.00
-TTF centerline postprocess: 95 -> 57 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'СРАВНИТЬ С РЕЗУЛЬТАТАМИ РАСЧ' -> 57 stroke(s), thr=160, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline method3 text: '5' -> 1 stroke(s), thr=160, cand=8, font=times.ttf, size=14.04
+TTF centerline postprocess: 164 -> 110 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '3. Рассчитать токи во всех в' -> 110 stroke(s), thr=96, cand=8, font=times.ttf, size=12.00
+TTF centerline postprocess: 68 -> 44 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Сравнить с результатами расч' -> 44 stroke(s), thr=192, cand=8, font=MarckScript-Regular.ttf, size=12.00
 TTF centerline postprocess: 135 -> 102 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
 TTF centerline method3 text: 'Расчёт производим по схеме н' -> 102 stroke(s), thr=96, cand=8, font=MarckScript-Regular.ttf, size=12.00
 TTF centerline postprocess: 70 -> 47 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
 TTF centerline method3 text: 'даём направления контурных т' -> 47 stroke(s), thr=96, cand=8, font=MarckScript-Regular.ttf, size=12.00
-TTF centerline postprocess: 21 -> 15 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: 'Рисунок 1.10' -> 15 stroke(s), thr=32, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 33 -> 21 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Рисунок 1.10' -> 21 stroke(s), thr=96, cand=8, font=times.ttf, size=12.00
 TTF centerline postprocess: 1 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
 TTF centerline method3 text: '-' -> 1 stroke(s), thr=160, cand=8, font=MarckScript-Regular.ttf, size=12.00
 TTF centerline postprocess: 76 -> 51 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
@@ -23,48 +23,52 @@ TTF centerline postprocess: 103 -> 72 stroke(s) (eps=0.14, gap=0.92, smooth_step
 TTF centerline method3 text: 'После подстановки получаем з' -> 72 stroke(s), thr=96, cand=8, font=MarckScript-Regular.ttf, size=12.00
 TTF centerline postprocess: 67 -> 46 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
 TTF centerline method3 text: 'Проверяем восстановление ток' -> 46 stroke(s), thr=96, cand=8, font=MarckScript-Regular.ttf, size=12.00
-Handwriting TTF centerline mode: replaced 11 text node(s), generated 570 stroke path(s) using 'MarckScript-Regular.ttf'.
+Handwriting TTF centerline mode: replaced 11 text node(s), generated 586 stroke path(s) using 'MarckScript-Regular.ttf'.
 Text nodes after stroke-font replacement: 34
 Handwriting mode: applied font 'C:\plotter_pdf\data\fonts\MarckScript-Regular.ttf' to 34 text node(s).
-Text->path conversion #1: inkscape.exe --batch-process --actions=select-all;export-text-to-path --export-type=svg --export-overwrite --export-filename=C:\plotter_pdf\_tmp\tmpft02eb7h\source.svg C:\plotter_pdf\_tmp\tmpft02eb7h\source.svg
+Text->path conversion #1: inkscape.exe --batch-process --actions=select-all;export-text-to-path --export-type=svg --export-overwrite --export-filename=C:\plotter_pdf\_tmp\tmprl5s6h7r\source.svg C:\plotter_pdf\_tmp\tmprl5s6h7r\source.svg
 Text converted to SVG paths.
 Text nodes after conversion: 0
 Extracting paths from SVG ...
-Image contour tracing: +18 path(s) from embedded raster.
-Image vectorization mode: centerline (added 18 path(s), simplify=0.08 mm).
-Image contour tracing: +18 path(s) from embedded raster.
-Image vectorization mode: edge fallback (added 18 path(s), simplify=0.04 mm).
-Image contour tracing: +22 path(s) from embedded raster.
-Image vectorization mode: edge fallback (added 22 path(s), simplify=0.04 mm).
-Image contour tracing: +20 path(s) from embedded raster.
-Image vectorization mode: edge fallback (added 20 path(s), simplify=0.04 mm).
-Image contour tracing: +33 path(s) from embedded raster.
-Image vectorization mode: edge fallback (added 33 path(s), simplify=0.04 mm).
-Image contour tracing: +15 path(s) from embedded raster.
-Image vectorization mode: centerline (added 15 path(s), simplify=0.08 mm).
+Image contour tracing: +26 path(s) from embedded raster.
+Image vectorization mode: centerline (added 24 path(s), simplify=0.04 mm).
+Image node circle recovery: +2 closed path(s).
+Image contour tracing: +34 path(s) from embedded raster.
+Image vectorization mode: centerline (added 34 path(s), simplify=0.04 mm).
+Image contour tracing: +40 path(s) from embedded raster.
+Image vectorization mode: centerline (added 40 path(s), simplify=0.04 mm).
+Image contour tracing: +37 path(s) from embedded raster.
+Image vectorization mode: centerline (added 37 path(s), simplify=0.04 mm).
+Image contour tracing: +56 path(s) from embedded raster.
+Image vectorization mode: centerline (added 56 path(s), simplify=0.04 mm).
+Image contour tracing: +23 path(s) from embedded raster.
+Image vectorization mode: centerline (added 18 path(s), simplify=0.04 mm).
+Image node circle recovery: +5 closed path(s).
 Image contour tracing: +71 path(s) from embedded raster.
 Image vectorization mode: centerline (added 71 path(s), simplify=0.08 mm).
-Image contour tracing: total +197 path(s).
-Raw geometry bounds: x(25.526, 192.148) y(14.915, 222.226)
+Image contour tracing: total +287 path(s).
+Raw geometry bounds: x(25.663, 191.754) y(14.104, 222.951)
 SVG page: 210.016 x 297.011 mm
 Auto trim: no outer border detected.
 Applied content area crop: x(20.5,205.0) y(10.0,292.0) dropped segments=0
-Bounds after content margin crop: x(25.526, 192.148) y(14.915, 222.226)
-SVG geometry: paths=767, segments=10653.
-Source bounds: x(25.526, 192.148) y(14.915, 222.226)
-Fit to work area: scale=1.0803, translate=(-27.576,-283.091), from (25.526, 14.915)-(192.148, 222.226)
-Reorder: 767 polylines ordered (nearest-end).
-Pencil naturalization: adjusted 464/767 stroke(s).
-Pencil naturalization segments: 10652 -> 6697
-Segment counts: source=10653, fitted=10653, clipped=10653
-Drawable segments after clip: 10653 (100.0% of source)
-Prepared bounds: x(0.000, 180.000) y(-266.978, -43.022)
-Estimated draw length: 4.40 m
+Bounds after content margin crop: x(25.663, 191.754) y(14.104, 222.951)
+SVG geometry: paths=873, segments=9499.
+Source bounds: x(25.663, 191.754) y(14.104, 222.951)
+Fit to work area: scale=1.0837, translate=(-27.812,-283.454), from (25.663, 14.104)-(191.754, 222.951)
+Stitch: polylines 873 -> 872 (eps=0.080 mm, gap_eps=0.150 mm, angle<=20.0 deg)
+Reorder: 872 polylines ordered (nearest-end).
+Pencil naturalization: adjusted 539/872 stroke(s).
+Pencil naturalization segments: 9499 -> 6159
+Polyline optimization: 873 -> 872
+Segment counts: source=9499, fitted=9499, clipped=9499
+Drawable segments after clip: 9499 (100.0% of source)
+Prepared bounds: x(0.000, 179.932) y(-268.168, -41.840)
+Estimated draw length: 3.61 m
 Pencil mode: base_z=11.900, wear=0.000 mm, z_comp_start=0.000, z_down_start=11.900, dyn(rate=0.0100 mm/m, comp=1.000, slope=0.0100 Zmm/m, max=0.800), est_remaining_to_sharpen=120.0 m (wear=120.0, interval=inf)
 Applying pen-up / pen-down ...
-G-code stats: lines=9006, draw=8221, travel=261, bounds=0.000..180.000 x, -266.978..0.000 y
-Preflight: ok: lines=9006, draw=8221, travel=261, ratio=0.03
-Saved file stats: lines=9006, draw=8221, travel=261, bounds=0.000..180.000 x, -266.978..0.000 y
+G-code stats: lines=8365, draw=7685, travel=226, bounds=0.000..179.932 x, -268.168..0.000 y
+Preflight: ok: lines=8365, draw=7685, travel=226, ratio=0.03
+Saved file stats: lines=8365, draw=7685, travel=226, bounds=0.000..179.932 x, -268.168..0.000 y
 Saved: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_26_pack\_candidates\page_05\marck_script\page_05.nc
 Preview SVG: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_26_pack\_candidates\page_05\marck_script\page_05.svg
 Preview PDF: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_26_pack\_candidates\page_05\marck_script\page_05.pdf
@@ -73,5 +77,6 @@ selected_primary_font=Marck Script
 selected_font=Marck Script
 selected_variant=always
 selected_contours=always
-selected_score=1.352938
+selected_score=1.390177
+selection_reason=source_strategy=image_heavy; primary_font=Marck Script; selected_font=Marck Script; selected_variant=always; selected_contours=always; font_first_preferred=false; fallback_threshold=0.946; selection=base
 quality_gate=accepted=False; dup_ok=True; tiny_ok=False; mask_iou_ok=True
