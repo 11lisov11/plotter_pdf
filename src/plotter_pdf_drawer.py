@@ -2108,10 +2108,16 @@ def _text_prefers_native_vector(text: str) -> bool:
     )
 
 
-def _text_prefers_print_font(text: str, *, font_size: Optional[float] = None) -> bool:
+def _text_prefers_print_font(
+    text: str,
+    *,
+    font_size: Optional[float] = None,
+    font_names: Optional[List[str]] = None,
+) -> bool:
     return handwriting_text_utils_mod.text_prefers_print_font(
         text,
         font_size=font_size,
+        font_names=font_names,
         text_contains_formula_script_fn=handwriting_text_utils_mod.text_contains_formula_script,
     )
 
@@ -3439,7 +3445,15 @@ def replace_svg_text_with_singleline_ttf(svg_path: Path, font_name: str, logger)
                 font_size = 12.0
             use_print_font = bool(
                 print_ttf_path is not None
-                and _text_prefers_print_font(raw_text, font_size=font_size)
+                and _text_prefers_print_font(
+                    raw_text,
+                    font_size=font_size,
+                    font_names=[
+                        str(style.get("font-family", "")).strip(),
+                        str(style.get("-inkscape-font-specification", "")).strip(),
+                        str(style.get("font", "")).strip(),
+                    ],
+                )
             )
             render_text = str(raw_text or "")
             if not use_print_font:

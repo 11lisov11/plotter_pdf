@@ -11,7 +11,10 @@ ROLE_PRINT_TABLE = "print_table"
 ROLE_PRINT_CAPTION = "print_caption"
 
 _PRINT_TECH_TOKEN_RE = re.compile(r"^[0-9A-Za-z\u0400-\u04FF\u0401\u0451]{1,12}$")
-_FORMULA_OPERATOR_RE = re.compile(r"[=+*/^_<>≈≤≥±×÷√∑∫∂\[\]{}|]")
+_FORMULA_OPERATOR_RE = re.compile(r"[=+*/^_<>≈≤≥±×÷√−∫∂\[\]{}|]")
+_FORMULA_MINUS_CONTEXT_RE = re.compile(
+    r"(?:(?<=\d)-(?=\d)|(?<=[A-Za-z\u0400-\u04FF\u0401\u0451])-(?=\d)|(?<=\d)-(?=[A-Za-z\u0400-\u04FF\u0401\u0451]))"
+)
 _CAPTION_KEYWORDS = (
     "\u0442\u0430\u0431\u043b\u0438\u0446",
     "\u0440\u0438\u0441\u0443\u043d\u043e\u043a",
@@ -55,12 +58,53 @@ def _looks_unit_token(text: str) -> bool:
 def text_has_caption_keyword(text: str) -> bool:
     lower_text = str(text or "").casefold()
     words = _split_words(lower_text)
-    has_digits = any(ch.isdigit() for ch in lower_text)
-    for token in _CAPTION_KEYWORDS:
-        if lower_text.startswith(token) and has_digits:
-            return True
-        if token in lower_text and has_digits and len(words) <= 8 and len(lower_text) <= 72:
-            return True
+    if not words:
+        return False
+    first_word = _compact_token(words[0]).casefold()
+    if not first_word:
+        return False
+    matched_caption_prefix = next(
+        (token for token in _CAPTION_KEYWORDS if first_word.startswith(token)),
+        None,
+    )
+    if matched_caption_prefix is None:
+        return False
+    if any(ch.isdigit() for ch in first_word):
+        return True
+    if len(words) < 2:
+        return False
+    second_word = _compact_token(words[1]).casefold()
+    if not second_word:
+        return False
+    return any(ch.isdigit() for ch in second_word)
+
+
+def text_looks_formula_like(
+    text: str,
+    *,
+    font_names: Iterable[str] | None = None,
+    text_contains_formula_script_fn: Callable[[str], bool],
+) -> bool:
+    src = str(text or "").strip()
+    if not src:
+        return False
+    compact = re.sub(r"\s+", "", src, flags=re.UNICODE)
+    if not compact:
+        return False
+
+    if text_contains_formula_script_fn(compact):
+        return True
+
+    lower_font_names = " ".join(str(name or "") for name in (font_names or ())).casefold()
+    if "math" in lower_font_names:
+        return True
+
+    alpha = sum(1 for ch in compact if ch.isalpha())
+    digits = sum(1 for ch in compact if ch.isdigit())
+    if _FORMULA_OPERATOR_RE.search(compact) and (alpha + digits) >= 2:
+        return True
+    if _FORMULA_MINUS_CONTEXT_RE.search(compact) and digits > 0 and (alpha + digits) >= 2:
+        return True
     return False
 
 
@@ -77,25 +121,43 @@ def text_looks_table_like(text: str, *, font_size: Optional[float]) -> bool:
 
     short_like = 0
     strong_table_tokens = 0
+    lowercase_long_words = 0
+    alpha_long_words = 0
+    numeric_or_unit_tokens = 0
     for word in words:
         compact = _compact_token(word)
         if not compact:
             continue
         if not _TABLE_TOKEN_RE.fullmatch(compact):
             return False
+        core = compact.strip(".,:;()[]{}")
+        if not core:
+            core = compact
         short_like += 1
-        if _looks_unit_token(compact):
+        if _looks_unit_token(core):
             strong_table_tokens += 1
-        elif _looks_short_numeric(compact):
+            numeric_or_unit_tokens += 1
+        elif _looks_short_numeric(core):
             strong_table_tokens += 1
-        elif any(ch.isdigit() for ch in compact):
+            numeric_or_unit_tokens += 1
+        elif any(ch.isdigit() for ch in core):
             strong_table_tokens += 1
-        elif compact.upper() == compact and compact.lower() != compact:
+            numeric_or_unit_tokens += 1
+        elif core.upper() == core and core.lower() != core:
             strong_table_tokens += 1
-        elif len(compact) <= 3:
-            strong_table_tokens += 1
+            if core.isalpha() and len(core) > 4:
+                alpha_long_words += 1
+        elif core.isalpha():
+            if core.casefold() == core and len(core) > 3:
+                lowercase_long_words += 1
+            if len(core) > 4:
+                alpha_long_words += 1
 
     if short_like <= 0 or short_like != len(words):
+        return False
+    if lowercase_long_words >= 2:
+        return False
+    if alpha_long_words >= 2 and numeric_or_unit_tokens <= 2:
         return False
     return strong_table_tokens >= max(2, len(words) // 2)
 
@@ -115,16 +177,13 @@ def classify_text_content_role(
     if not compact:
         return ROLE_BODY_HANDWRITING
 
-    lower_font_names = " ".join(str(name or "") for name in (font_names or ())).casefold()
-    alpha = sum(1 for ch in compact if ch.isalpha())
-    digits = sum(1 for ch in compact if ch.isdigit())
     words = _split_words(src)
 
-    if text_contains_formula_script_fn(compact):
-        return ROLE_PRINT_FORMULA
-    if "math" in lower_font_names:
-        return ROLE_PRINT_FORMULA
-    if _FORMULA_OPERATOR_RE.search(compact) and (alpha + digits) >= 2:
+    if text_looks_formula_like(
+        compact,
+        font_names=font_names,
+        text_contains_formula_script_fn=text_contains_formula_script_fn,
+    ):
         return ROLE_PRINT_FORMULA
 
     if text_has_caption_keyword(src):
@@ -139,6 +198,8 @@ def classify_text_content_role(
         if compact_words and all(_looks_unit_token(word) or _looks_short_numeric(word) for word in compact_words):
             return ROLE_PRINT_SHORT_TECH
 
+    alpha = sum(1 for ch in compact if ch.isalpha())
+    digits = sum(1 for ch in compact if ch.isdigit())
     if font_size is not None and float(font_size) <= 9.6 and len(words) <= 4 and len(compact) <= 24:
         return ROLE_PRINT_SHORT_TECH
     if _looks_unit_token(compact):

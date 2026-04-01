@@ -11,8 +11,8 @@ TTF centerline postprocess: 30 -> 21 stroke(s) (eps=0.14, gap=0.92, smooth_step=
 TTF centerline method3 text: 'расчёта получим:' -> 21 stroke(s), thr=192, cand=8, font=MarckScript-Regular.ttf, size=12.00
 TTF centerline postprocess: 43 -> 34 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
 TTF centerline method3 text: 'Определяем токи ветвей:' -> 34 stroke(s), thr=64, cand=8, font=MarckScript-Regular.ttf, size=12.00
-TTF centerline postprocess: 164 -> 110 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline method3 text: '3. Рассчитать токи во всех в' -> 110 stroke(s), thr=96, cand=8, font=times.ttf, size=12.00
+TTF centerline postprocess: 114 -> 75 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '3. Рассчитать токи во всех в' -> 75 stroke(s), thr=160, cand=8, font=MarckScript-Regular.ttf, size=12.00
 TTF centerline postprocess: 68 -> 44 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
 TTF centerline method3 text: 'Сравнить с результатами расч' -> 44 stroke(s), thr=192, cand=8, font=MarckScript-Regular.ttf, size=12.00
 TTF centerline postprocess: 130 -> 99 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
@@ -21,10 +21,10 @@ TTF centerline postprocess: 5 -> 4 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.
 TTF centerline method3 text: 'за-' -> 4 stroke(s), thr=192, cand=8, font=MarckScript-Regular.ttf, size=12.00
 TTF centerline postprocess: 70 -> 47 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
 TTF centerline method3 text: 'даём направления контурных т' -> 47 stroke(s), thr=96, cand=8, font=MarckScript-Regular.ttf, size=12.00
-Handwriting TTF centerline mode: replaced 10 text node(s), generated 408 stroke path(s) using 'MarckScript-Regular.ttf'.
+Handwriting TTF centerline mode: replaced 10 text node(s), generated 373 stroke path(s) using 'MarckScript-Regular.ttf'.
 Text nodes after stroke-font replacement: 52
 Handwriting mode: applied font 'C:\plotter_pdf\data\fonts\MarckScript-Regular.ttf' to 52 text node(s).
-Text->path conversion #1: inkscape.exe --batch-process --actions=select-all;export-text-to-path --export-type=svg --export-overwrite --export-filename=C:\plotter_pdf\_tmp\tmpqib15vn_\source.svg C:\plotter_pdf\_tmp\tmpqib15vn_\source.svg
+Text->path conversion #1: inkscape.exe --batch-process --actions=select-all;export-text-to-path --export-type=svg --export-overwrite --export-filename=C:\plotter_pdf\_tmp\tmp_2_dkhf5\source.svg C:\plotter_pdf\_tmp\tmp_2_dkhf5\source.svg
 Text converted to SVG paths.
 Text nodes after conversion: 0
 Extracting paths from SVG ...
@@ -79,28 +79,28 @@ Image vectorization mode: centerline (added 60 path(s), simplify=0.04 mm).
 Image contour tracing: +54 path(s) from embedded raster.
 Image vectorization mode: centerline (added 54 path(s), simplify=0.04 mm).
 Image contour tracing: total +690 path(s).
-Raw geometry bounds: x(25.663, 191.754) y(14.104, 272.678)
+Raw geometry bounds: x(25.527, 191.754) y(14.104, 272.678)
 SVG page: 210.016 x 297.011 mm
 Auto trim: no outer border detected.
 Applied content area crop: x(20.5,205.0) y(10.0,292.0) dropped segments=0
-Bounds after content margin crop: x(25.663, 191.754) y(14.104, 272.678)
-SVG geometry: paths=1098, segments=9263.
-Source bounds: x(25.663, 191.754) y(14.104, 272.678)
-Fit to work area: scale=1.0829, translate=(-27.717,-310.273), from (25.663, 14.104)-(191.754, 272.678)
-Stitch: polylines 1098 -> 1093 (eps=0.080 mm, gap_eps=0.150 mm, angle<=20.0 deg)
-Reorder: 1093 polylines ordered (nearest-end).
-Pencil naturalization: adjusted 601/1093 stroke(s).
-Pencil naturalization segments: 9263 -> 7377
-Polyline optimization: 1098 -> 1093
-Segment counts: source=9263, fitted=9263, clipped=9263
-Drawable segments after clip: 9263 (100.0% of source)
-Prepared bounds: x(0.073, 179.859) y(-295.000, -15.074)
-Estimated draw length: 3.62 m
+Bounds after content margin crop: x(25.527, 191.754) y(14.104, 272.678)
+SVG geometry: paths=1063, segments=9149.
+Source bounds: x(25.527, 191.754) y(14.104, 272.678)
+Fit to work area: scale=1.0829, translate=(-27.642,-310.272), from (25.527, 14.104)-(191.754, 272.678)
+Stitch: polylines 1063 -> 1057 (eps=0.080 mm, gap_eps=0.150 mm, angle<=20.0 deg)
+Reorder: 1057 polylines ordered (nearest-end).
+Pencil naturalization: adjusted 592/1057 stroke(s).
+Pencil naturalization segments: 9149 -> 7176
+Polyline optimization: 1063 -> 1057
+Segment counts: source=9149, fitted=9149, clipped=9149
+Drawable segments after clip: 9149 (100.0% of source)
+Prepared bounds: x(0.000, 179.932) y(-294.999, -15.130)
+Estimated draw length: 3.55 m
 Pencil mode: base_z=11.900, wear=0.000 mm, z_comp_start=0.000, z_down_start=11.900, dyn(rate=0.0100 mm/m, comp=1.000, slope=0.0100 Zmm/m, max=0.800), est_remaining_to_sharpen=120.0 m (wear=120.0, interval=inf)
 Applying pen-up / pen-down ...
-G-code stats: lines=10048, draw=9239, travel=269, bounds=0.000..179.859 x, -295.000..0.000 y
-Preflight: ok: lines=10048, draw=9239, travel=269, ratio=0.03
-Saved file stats: lines=10048, draw=9239, travel=269, bounds=0.000..179.859 x, -295.000..0.000 y
+G-code stats: lines=9829, draw=9011, travel=272, bounds=0.000..179.932 x, -294.999..0.000 y
+Preflight: ok: lines=9829, draw=9011, travel=272, ratio=0.03
+Saved file stats: lines=9829, draw=9011, travel=272, bounds=0.000..179.932 x, -294.999..0.000 y
 Saved: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_11_pack\_candidates\page_05\marck_script\page_05.nc
 Preview SVG: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_11_pack\_candidates\page_05\marck_script\page_05.svg
 Preview PDF: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_11_pack\_candidates\page_05\marck_script\page_05.pdf
@@ -109,6 +109,6 @@ selected_primary_font=Marck Script
 selected_font=Marck Script
 selected_variant=always
 selected_contours=always
-selected_score=1.411822
+selected_score=1.432250
 selection_reason=source_strategy=formula_heavy; primary_font=Marck Script; selected_font=Marck Script; selected_variant=always; selected_contours=always; font_first_preferred=false; fallback_threshold=0.946; selection=base
 quality_gate=accepted=False; dup_ok=True; tiny_ok=False; mask_iou_ok=True

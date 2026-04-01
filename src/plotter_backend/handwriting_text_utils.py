@@ -151,9 +151,10 @@ def normalize_handwriting_sentence_case(
     src = str(text or "")
     if not src:
         return src
-    if bool(text_contains_formula_script_fn(src)):
-        return src
-    if _HANDWRITING_CASE_SKIP_MATH_RE.search(src):
+    if text_content_routing.text_looks_formula_like(
+        src,
+        text_contains_formula_script_fn=text_contains_formula_script_fn,
+    ):
         return src
 
     letters = [ch for ch in src if ch.isalpha()]
@@ -235,11 +236,13 @@ def text_prefers_print_font(
     text: str,
     *,
     font_size: Optional[float],
+    font_names: Optional[list[str]] = None,
     text_contains_formula_script_fn: Callable[[str], bool],
 ) -> bool:
     return text_content_routing.text_prefers_print_font(
         text,
         font_size=font_size,
+        font_names=font_names,
         text_contains_formula_script_fn=text_contains_formula_script_fn,
     )
 

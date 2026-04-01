@@ -18,9 +18,7 @@ TTF centerline method3 text: 'Где' -> 5 stroke(s), thr=224, cand=8, font=Marc
 Handwriting TTF centerline mode: replaced 7 text node(s), generated 162 stroke path(s) using 'MarckScript-Regular.ttf'.
 Text nodes after stroke-font replacement: 48
 Handwriting mode: applied font 'C:\plotter_pdf\data\fonts\MarckScript-Regular.ttf' to 48 text node(s).
-Text->path conversion #1: inkscape.exe --batch-process --actions=select-all;export-text-to-path --export-type=svg --export-overwrite --export-filename=C:\plotter_pdf\_tmp\tmppx76t2mn\source.svg C:\plotter_pdf\_tmp\tmppx76t2mn\source.svg
-Text->path conversion #1 failed or no effect: Failed to register: Время ожидания истекло
-Text->path conversion #2: inkscape.exe --batch-process --actions=select-all;export-text-to-path --export-plain-svg --export-overwrite --export-filename=C:\plotter_pdf\_tmp\tmppx76t2mn\source.svg C:\plotter_pdf\_tmp\tmppx76t2mn\source.svg
+Text->path conversion #1: inkscape.exe --batch-process --actions=select-all;export-text-to-path --export-type=svg --export-overwrite --export-filename=C:\plotter_pdf\_tmp\tmpnc0bdu39\source.svg C:\plotter_pdf\_tmp\tmpnc0bdu39\source.svg
 Text converted to SVG paths.
 Text nodes after conversion: 0
 Extracting paths from SVG ...

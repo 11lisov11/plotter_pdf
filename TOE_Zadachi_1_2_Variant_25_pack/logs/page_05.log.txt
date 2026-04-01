@@ -22,7 +22,7 @@ TTF centerline method3 text: 'Проверяем восстановление т
 Handwriting TTF centerline mode: replaced 9 text node(s), generated 432 stroke path(s) using 'MarckScript-Regular.ttf'.
 Text nodes after stroke-font replacement: 32
 Handwriting mode: applied font 'C:\plotter_pdf\data\fonts\MarckScript-Regular.ttf' to 32 text node(s).
-Text->path conversion #1: inkscape.exe --batch-process --actions=select-all;export-text-to-path --export-type=svg --export-overwrite --export-filename=C:\plotter_pdf\_tmp\tmprvpx4gdd\source.svg C:\plotter_pdf\_tmp\tmprvpx4gdd\source.svg
+Text->path conversion #1: inkscape.exe --batch-process --actions=select-all;export-text-to-path --export-type=svg --export-overwrite --export-filename=C:\plotter_pdf\_tmp\tmpwldbn6lk\source.svg C:\plotter_pdf\_tmp\tmpwldbn6lk\source.svg
 Text converted to SVG paths.
 Text nodes after conversion: 0
 Extracting paths from SVG ...
