@@ -1,0 +1,111 @@
+Text render mode: handwriting=on font='C:\plotter_pdf\data\fonts\MarckScript-Regular.ttf'; image_contours=always
+Handwriting mode: Cyrillic text profile tokens=114, short=26%, digits=18%, long=67%, style=paragraph.
+Handwriting mode: Cyrillic detected, trying TTF single-line pipeline first ('C:\plotter_pdf\data\fonts\MarckScript-Regular.ttf').
+TTF centerline postprocess: 2 -> 2 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '3' -> 2 stroke(s), thr=224, cand=8, font=times.ttf, size=14.04
+TTF centerline postprocess: 31 -> 20 stroke(s) (eps=0.13, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Рисунок 1.6' -> 20 stroke(s), thr=224, cand=8, font=times.ttf, size=11.04
+TTF centerline postprocess: 31 -> 18 stroke(s) (eps=0.13, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Рисунок 1.7' -> 18 stroke(s), thr=224, cand=8, font=times.ttf, size=11.04
+TTF centerline postprocess: 32 -> 21 stroke(s) (eps=0.13, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Рисунок 1.8' -> 21 stroke(s), thr=224, cand=8, font=times.ttf, size=11.04
+TTF centerline postprocess: 113 -> 77 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Для выбранного дерева состав' -> 77 stroke(s), thr=96, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 55 -> 38 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Составим матрицу соединений.' -> 38 stroke(s), thr=96, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 16 -> 12 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Матрица' -> 12 stroke(s), thr=64, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 31 -> 21 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'ветвей дерева:' -> 21 stroke(s), thr=224, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 49 -> 35 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Матрица ветвей дополнения:' -> 35 stroke(s), thr=96, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 68 -> 47 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'Составим матрицу главных кон' -> 47 stroke(s), thr=96, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 111 -> 71 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: '2. Расчёт токов во всех ветв' -> 71 stroke(s), thr=160, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 135 -> 92 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'На рисунке 1.9 изображена сх' -> 92 stroke(s), thr=96, cand=8, font=MarckScript-Regular.ttf, size=12.00
+TTF centerline postprocess: 91 -> 64 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline method3 text: 'алы определяем относительно ' -> 64 stroke(s), thr=96, cand=8, font=MarckScript-Regular.ttf, size=12.00
+Handwriting TTF centerline mode: replaced 13 text node(s), generated 518 stroke path(s) using 'MarckScript-Regular.ttf'.
+Text nodes after stroke-font replacement: 56
+Handwriting mode: applied font 'C:\plotter_pdf\data\fonts\MarckScript-Regular.ttf' to 56 text node(s).
+Text->path conversion #1: inkscape.exe --batch-process --actions=select-all;export-text-to-path --export-type=svg --export-overwrite --export-filename=C:\plotter_pdf\_tmp\tmpl8zrexta\source.svg C:\plotter_pdf\_tmp\tmpl8zrexta\source.svg
+Text converted to SVG paths.
+Text nodes after conversion: 0
+Extracting paths from SVG ...
+Image contour tracing: +26 path(s) from embedded raster.
+Image vectorization mode: centerline (added 26 path(s), simplify=0.04 mm).
+Image contour tracing: +28 path(s) from embedded raster.
+Image vectorization mode: centerline (added 28 path(s), simplify=0.04 mm).
+Image contour tracing: +27 path(s) from embedded raster.
+Image vectorization mode: centerline (added 27 path(s), simplify=0.04 mm).
+Image contour tracing: +27 path(s) from embedded raster.
+Image vectorization mode: centerline (added 27 path(s), simplify=0.04 mm).
+Image contour tracing: +24 path(s) from embedded raster.
+Image vectorization mode: centerline (added 19 path(s), simplify=0.04 mm).
+Image node circle recovery: +5 closed path(s).
+Image contour tracing: +25 path(s) from embedded raster.
+Image vectorization mode: centerline (added 19 path(s), simplify=0.04 mm).
+Image node circle recovery: +6 closed path(s).
+Image contour tracing: +25 path(s) from embedded raster.
+Image vectorization mode: centerline (added 19 path(s), simplify=0.04 mm).
+Image node circle recovery: +6 closed path(s).
+Image contour tracing: +21 path(s) from embedded raster.
+Image vectorization mode: centerline (added 17 path(s), simplify=0.04 mm).
+Image node circle recovery: +4 closed path(s).
+Image contour tracing: +23 path(s) from embedded raster.
+Image vectorization mode: centerline (added 17 path(s), simplify=0.04 mm).
+Image node circle recovery: +6 closed path(s).
+Image contour tracing: +24 path(s) from embedded raster.
+Image vectorization mode: centerline (added 22 path(s), simplify=0.04 mm).
+Image node circle recovery: +2 closed path(s).
+Image contour tracing: +21 path(s) from embedded raster.
+Image vectorization mode: centerline (added 18 path(s), simplify=0.04 mm).
+Image node circle recovery: +3 closed path(s).
+Image contour tracing: +23 path(s) from embedded raster.
+Image vectorization mode: centerline (added 20 path(s), simplify=0.04 mm).
+Image node circle recovery: +3 closed path(s).
+Image contour tracing: +24 path(s) from embedded raster.
+Image vectorization mode: centerline (added 19 path(s), simplify=0.04 mm).
+Image node circle recovery: +5 closed path(s).
+Image contour tracing: +25 path(s) from embedded raster.
+Image vectorization mode: centerline (added 25 path(s), simplify=0.04 mm).
+Image contour tracing: +26 path(s) from embedded raster.
+Image vectorization mode: centerline (added 26 path(s), simplify=0.04 mm).
+Image contour tracing: +26 path(s) from embedded raster.
+Image vectorization mode: centerline (added 26 path(s), simplify=0.04 mm).
+Image contour tracing: total +395 path(s).
+Raw geometry bounds: x(25.505, 191.713) y(13.997, 200.532)
+SVG page: 210.016 x 297.011 mm
+Auto trim: no outer border detected.
+Applied content area crop: x(20.5,205.0) y(10.0,292.0) dropped segments=0
+Bounds after content margin crop: x(25.505, 191.713) y(13.997, 200.532)
+SVG geometry: paths=913, segments=10313.
+Source bounds: x(25.505, 191.713) y(13.997, 200.532)
+Fit to work area: scale=1.0830, translate=(-27.621,-271.165), from (25.505, 13.997)-(191.713, 200.532)
+Stitch: polylines 913 -> 910 (eps=0.080 mm, gap_eps=0.150 mm, angle<=20.0 deg)
+Reorder: 910 polylines ordered (nearest-end).
+Pencil naturalization: adjusted 520/910 stroke(s).
+Pencil naturalization segments: 10313 -> 6984
+Polyline optimization: 913 -> 910
+Segment counts: source=10313, fitted=10313, clipped=10313
+Drawable segments after clip: 10313 (100.0% of source)
+Prepared bounds: x(0.170, 179.954) y(-255.958, -54.064)
+Estimated draw length: 3.15 m
+Pencil mode: base_z=11.900, wear=0.000 mm, z_comp_start=0.000, z_down_start=11.900, dyn(rate=0.0100 mm/m, comp=1.000, slope=0.0100 Zmm/m, max=0.800), est_remaining_to_sharpen=120.0 m (wear=120.0, interval=inf)
+Applying pen-up / pen-down ...
+G-code stats: lines=9597, draw=8734, travel=287, bounds=0.000..179.954 x, -255.958..0.000 y
+Preflight: ok: lines=9597, draw=8734, travel=287, ratio=0.03
+Saved file stats: lines=9597, draw=8734, travel=287, bounds=0.000..179.954 x, -255.958..0.000 y
+Saved: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_14_pack\_candidates\page_03\marck_script\page_03.nc
+Preview SVG: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_14_pack\_candidates\page_03\marck_script\page_03.svg
+Preview PDF: C:\plotter_pdf\TOE_Zadachi_1_2_Variant_14_pack\_candidates\page_03\marck_script\page_03.pdf
+source_profile=images=32; texts=41; paths=62
+selected_primary_font=Marck Script
+selected_font=Marck Script
+selected_variant=always
+selected_contours=always
+selected_score=1.380041
+selection_reason=source_strategy=formula_heavy; primary_font=Marck Script; selected_font=Marck Script; selected_variant=always; selected_contours=always; font_first_preferred=false; fallback_threshold=0.946; selection=base
+quality_gate=accepted=False; dup_ok=True; tiny_ok=False; mask_iou_ok=True

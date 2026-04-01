@@ -51,6 +51,8 @@ class ToeFontPolicyModuleTests(unittest.TestCase):
         self.assertTrue(settings["HANDWRITING_CYRILLIC_PREFER_TTF"])
         self.assertTrue(settings["HANDWRITING_ALLOW_TTF_FALLBACK"])
         self.assertEqual(settings["IMAGE_CONTOUR_FORMULA_VECTORIZE_MODE"], "centerline")
+        self.assertTrue(settings["IMAGE_CONTOUR_FORMULA_OCR_ENABLED"])
+        self.assertEqual(settings["IMAGE_CONTOUR_FORMULA_OCR_MIN_CONFIDENCE"], 0.88)
         self.assertEqual(settings["TOOL_MODE"], "pencil")
 
 

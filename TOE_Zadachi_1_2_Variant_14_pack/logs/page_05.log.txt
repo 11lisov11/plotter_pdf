@@ -1,0 +1,41 @@
+table_vector_overlay_count=0
+Render mode: handwriting; ExactGeometry=off; Handwriting=on
+Sheet 210.0x297.0 mm is larger than workspace 180.0x280.0 mm. Using the overlapped sheet/workspace window.
+Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-295.000,-15.000), sheet_bounds x(0.000,210.000) y(-295.000,2.000), sheet=a4, anchor=lower_left, offset=(0.00,0.00)
+Text render mode: handwriting=on font='C:\plotter_pdf\data\fonts\MarckScript-Regular.ttf'; image_contours=always
+Extracting paths from SVG ...
+Image contour tracing: +964 path(s) from embedded raster.
+Image vectorization mode: centerline (added 964 path(s), simplify=0.05 mm).
+Image contour tracing: total +964 path(s).
+Raw geometry bounds: x(25.575, 191.840) y(14.179, 270.074)
+SVG page: 210.016 x 297.011 mm
+Auto trim: no outer border detected.
+Applied content area crop: x(20.5,205.0) y(10.0,292.0) dropped segments=0
+Bounds after content margin crop: x(25.575, 191.840) y(14.179, 270.074)
+SVG geometry: paths=964, segments=3705.
+Source bounds: x(25.575, 191.840) y(14.179, 270.074)
+Fit to work area: scale=1.0826, translate=(-27.687,-308.867), from (25.575, 14.179)-(191.840, 270.074)
+Reorder: source order preserved (964 polylines).
+Handwriting fallback: skipping word-merge/smoothing for contour-only text source.
+Pencil naturalization: adjusted 655/964 stroke(s).
+Pencil naturalization segments: 3705 -> 5229
+Segment counts: source=3705, fitted=3705, clipped=3705
+Drawable segments after clip: 3705 (100.0% of source)
+Prepared bounds: x(0.000, 179.929) y(-293.516, -16.484)
+Estimated draw length: 2.84 m
+Pencil mode: base_z=11.900, wear=0.000 mm, z_comp_start=0.000, z_down_start=11.900, dyn(rate=0.0100 mm/m, comp=1.000, slope=0.0100 Zmm/m, max=0.800), est_remaining_to_sharpen=120.0 m (wear=120.0, interval=inf)
+Applying pen-up / pen-down ...
+G-code stats: lines=11132, draw=8652, travel=826, bounds=0.000..179.929 x, -293.516..0.000 y
+Preflight: ok: lines=11132, draw=8652, travel=826, ratio=0.10
+Saved file stats: lines=11132, draw=8652, travel=826, bounds=0.000..179.929 x, -293.516..0.000 y
+Saved: C:\plotter_pdf\_tmp\latest_preview_preview-1775037498256226200.nc
+Preview SVG: C:\plotter_pdf\_tmp\latest_preview_preview-1775037498256226200_vector.svg
+Preview PDF: C:\plotter_pdf\_tmp\latest_preview_preview-1775037498256226200_vector.pdf
+source_profile=images=42; texts=33; paths=55
+selected_primary_font=Marck Script
+selected_font=Marck Script
+selected_variant=raster_safe
+selected_contours=always
+selected_score=1.305520
+selection_reason=source_strategy=formula_heavy; primary_font=Marck Script; selected_font=Marck Script; selected_variant=raster_safe; selected_contours=always; font_first_preferred=false; fallback_threshold=0.946; selection=override; reason=dominating_candidate
+quality_gate=accepted=True; dup_ok=True; tiny_ok=True; mask_iou_ok=True

@@ -13,6 +13,8 @@ DEFAULT_HANDWRITING_BACKEND = "autotrace3"
 DEFAULT_IMAGE_CONTOUR_MODE = "always"
 DEFAULT_IMAGE_VECTORIZE_MODE = "centerline"
 DEFAULT_FORMULA_VECTORIZE_MODE = "centerline"
+DEFAULT_FORMULA_OCR_ENABLED = True
+DEFAULT_FORMULA_OCR_MIN_CONFIDENCE = 0.88
 DEFAULT_TOOL_MODE = "pencil"
 
 
@@ -31,6 +33,8 @@ class ToeFontFirstPolicy:
     image_contours_mode: str = DEFAULT_IMAGE_CONTOUR_MODE
     image_vectorize_mode: str = DEFAULT_IMAGE_VECTORIZE_MODE
     formula_vectorize_mode: str = DEFAULT_FORMULA_VECTORIZE_MODE
+    formula_ocr_enabled: bool = DEFAULT_FORMULA_OCR_ENABLED
+    formula_ocr_min_confidence: float = DEFAULT_FORMULA_OCR_MIN_CONFIDENCE
     tool_mode: str = DEFAULT_TOOL_MODE
     direct_vector_text_enabled: bool = True
     handwriting_text_enabled: bool = True
@@ -51,6 +55,8 @@ class ToeFontFirstPolicy:
             "IMAGE_CONTOUR_WORD_ONLY": False,
             "IMAGE_CONTOUR_VECTORIZE_MODE": str(self.image_vectorize_mode),
             "IMAGE_CONTOUR_FORMULA_VECTORIZE_MODE": str(self.formula_vectorize_mode),
+            "IMAGE_CONTOUR_FORMULA_OCR_ENABLED": bool(self.formula_ocr_enabled),
+            "IMAGE_CONTOUR_FORMULA_OCR_MIN_CONFIDENCE": float(self.formula_ocr_min_confidence),
             "FORCE_TEXT_TO_PATH": False,
             "USE_INKSCAPE_PDF_IMPORT": False,
             "EXACT_GEOMETRY_MODE": False,

@@ -1,0 +1,88 @@
+{
+  "source_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 1.pdf",
+  "kind": "drawing",
+  "page_count": 1,
+  "page_size_mm": [
+    210.016,
+    297.011
+  ],
+  "a3_two_pass": false,
+  "items": [
+    {
+      "variant": "a4_hybrid_frame",
+      "ok": true,
+      "message": "Done: prepared file saved to C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 1_pack\\_candidates\\a4_hybrid_frame.nc",
+      "logs": [
+        "Source pages: 1, selected: 1",
+        "Method3 centerline: threshold=128, candidates=9, paths=673",
+        "Method3 PDF vector graphics: drawings=195, paths=87, thick_paths=40",
+        "Method3 layer split: text_paths=578, graphics_source=pdf_vector, graphics_paths=86",
+        "Method3 cleanup: restored overlap text paths=4",
+        "Method3 cleanup: removed left-column text paths=90",
+        "Method3 cleanup: removed outer-frame paths=1",
+        "Method3 detail thick-lines multipass: skipped reason=exact_geometry_mode, candidates=86",
+        "Method3 filled accents: paths=40, segments=40",
+        "Method3 cleanup: hard-clipped geometry left of frame x<20.50 mm: paths=2",
+        "Method3 cleanup: restored left vertical frame line.",
+        "Method3 cleanup: removed tiny bottom artifacts=5",
+        "--- hybrid fit: detail=1:1, frame=fit-to-work-area ---",
+        "Text render mode: handwriting=on font='Marck Script'; image_contours=off",
+        "Extracting paths from SVG ...",
+        "Raw geometry bounds: x(0.000, 180.000) y(0.000, 280.000)",
+        "SVG page: 180.000 x 280.000 mm",
+        "Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).",
+        "SVG geometry: paths=700, segments=7265.",
+        "Source bounds: x(0.000, 180.000) y(0.000, 280.000)",
+        "Fit to work area: scale=1.0000, translate=(0.000,-295.000), from (0.000, 0.000)-(180.000, 280.000)",
+        "Reorder: source order preserved (700 polylines).",
+        "Handwriting fallback: skipping word-merge/smoothing for contour-only text source.",
+        "Segment counts: source=7265, fitted=7265, clipped=7265",
+        "Drawable segments after clip: 7265 (100.0% of source)",
+        "Prepared bounds: x(0.000, 180.000) y(-295.000, -15.000)",
+        "Estimated draw length: 7.47 m",
+        "Applying pen-up / pen-down ...",
+        "G-code stats: lines=8629, draw=8282, travel=333, bounds=0.000..180.000 x, -295.000..0.000 y",
+        "Preflight: ok: lines=8629, draw=8282, travel=333, ratio=0.04",
+        "Saved file stats: lines=8629, draw=8282, travel=333, bounds=0.000..180.000 x, -295.000..0.000 y",
+        "Saved: C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 1_pack\\_candidates\\a4_hybrid_frame.nc",
+        "Preview SVG: C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 1_pack\\_candidates\\a4_hybrid_frame.svg",
+        "Preview PDF: C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 1_pack\\_candidates\\a4_hybrid_frame.pdf"
+      ],
+      "fit_scale": 1.0,
+      "clipping_warning": false,
+      "layout_similarity": 0.957609,
+      "metrics": {
+        "draw_length_mm": 8035.354,
+        "segments_total": 7628,
+        "segments_duplicate": 1,
+        "bounds": {
+          "x_min": 0.0,
+          "x_max": 180.0,
+          "y_min": -295.0,
+          "y_max": -15.0
+        }
+      },
+      "svg": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 1_pack\\_candidates\\a4_hybrid_frame.svg",
+      "pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 1_pack\\_candidates\\a4_hybrid_frame.pdf",
+      "nc": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 1_pack\\_candidates\\a4_hybrid_frame.nc",
+      "gcode": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 1_pack\\_candidates\\a4_hybrid_frame.gcode",
+      "notes": "detail_scale=1.0; frame_scale_x=1.0941; frame_scale_y=0.9822; detail_bbox=153.25x219.22 mm; left_strip_removed=True; outer_border_removed=True"
+    }
+  ],
+  "selected_variant": "a4_hybrid_frame",
+  "selected_layout_similarity": 0.957609,
+  "task_number": 1,
+  "task_name": "Задача 1",
+  "source_meta": {
+    "source_kind": "frw",
+    "task_number": 1,
+    "kompas_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 1__kompas.pdf",
+    "page_count": 1,
+    "page_sizes_mm": [
+      [
+        210.016,
+        297.011
+      ]
+    ]
+  }
+}

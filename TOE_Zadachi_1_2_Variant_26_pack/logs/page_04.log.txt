@@ -14,7 +14,7 @@ TTF centerline method3 text: 'Определяем токи ветвей:' -> 34
 Handwriting TTF centerline mode: replaced 5 text node(s), generated 111 stroke path(s) using 'MarckScript-Regular.ttf'.
 Text nodes after stroke-font replacement: 52
 Handwriting mode: applied font 'C:\plotter_pdf\data\fonts\MarckScript-Regular.ttf' to 52 text node(s).
-Text->path conversion #1: inkscape.exe --batch-process --actions=select-all;export-text-to-path --export-type=svg --export-overwrite --export-filename=C:\plotter_pdf\_tmp\tmpcd05_uwf\source.svg C:\plotter_pdf\_tmp\tmpcd05_uwf\source.svg
+Text->path conversion #1: inkscape.exe --batch-process --actions=select-all;export-text-to-path --export-type=svg --export-overwrite --export-filename=C:\plotter_pdf\_tmp\tmphiyq5gqp\source.svg C:\plotter_pdf\_tmp\tmphiyq5gqp\source.svg
 Text converted to SVG paths.
 Text nodes after conversion: 0
 Extracting paths from SVG ...

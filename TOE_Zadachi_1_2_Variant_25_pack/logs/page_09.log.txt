@@ -28,9 +28,9 @@ Applying pen-up / pen-down ...
 G-code stats: lines=8717, draw=7014, travel=567, bounds=0.000..174.228 x, -294.952..0.000 y
 Preflight: ok: lines=8717, draw=7014, travel=567, ratio=0.08
 Saved file stats: lines=8717, draw=7014, travel=567, bounds=0.000..174.228 x, -294.952..0.000 y
-Saved: C:\plotter_pdf\_tmp\latest_preview_preview-1774953334493383300.nc
-Preview SVG: C:\plotter_pdf\_tmp\latest_preview_preview-1774953334493383300_vector.svg
-Preview PDF: C:\plotter_pdf\_tmp\latest_preview_preview-1774953334493383300_vector.pdf
+Saved: C:\plotter_pdf\_tmp\latest_preview_preview-1775075866513653000.nc
+Preview SVG: C:\plotter_pdf\_tmp\latest_preview_preview-1775075866513653000_vector.svg
+Preview PDF: C:\plotter_pdf\_tmp\latest_preview_preview-1775075866513653000_vector.pdf
 source_profile=images=12; texts=26; paths=34
 selected_primary_font=Marck Script
 selected_font=Marck Script

@@ -1,0 +1,86 @@
+{
+  "source_pdf": "C:\\plotter_pdf\\Начерт\\24 варинт\\_generated_pdf\\Задача 4.pdf",
+  "kind": "drawing",
+  "page_count": 1,
+  "page_size_mm": [
+    211.074,
+    298.111
+  ],
+  "a3_two_pass": false,
+  "items": [
+    {
+      "variant": "a4_hybrid_frame",
+      "ok": true,
+      "message": "Done: prepared file saved to C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 4_pack\\_candidates\\a4_hybrid_frame.nc",
+      "logs": [
+        "Source pages: 1, selected: 1",
+        "Method3 centerline: threshold=160, candidates=9, paths=567",
+        "Method3 PDF vector graphics: drawings=121, paths=981, thick_paths=68",
+        "Method3 layer split: text_paths=528, graphics_source=pdf_vector, graphics_paths=971",
+        "Method3 cleanup: restored overlap text paths=19",
+        "Method3 cleanup: removed left-column text paths=18",
+        "Method3 cleanup: removed left-column graphics-glyph paths=2",
+        "Method3 cleanup: removed outer-frame paths=9",
+        "Method3 detail thick-lines multipass: skipped reason=exact_geometry_mode, candidates=971",
+        "Method3 cleanup: hard-clipped geometry left of frame x<20.50 mm: paths=14",
+        "Method3 cleanup: restored left vertical frame line.",
+        "Method3 micro-segment prune: segments=7936->7930, min=0.03 mm",
+        "--- hybrid fit: detail=1:1, frame=fit-to-work-area ---",
+        "Text render mode: handwriting=on font='Marck Script'; image_contours=off",
+        "Extracting paths from SVG ...",
+        "Raw geometry bounds: x(0.000, 180.000) y(0.000, 280.000)",
+        "SVG page: 180.000 x 280.000 mm",
+        "Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).",
+        "SVG geometry: paths=1345, segments=7819.",
+        "Source bounds: x(0.000, 180.000) y(0.000, 280.000)",
+        "Fit to work area: scale=1.0000, translate=(0.000,-295.000), from (0.000, 0.000)-(180.000, 280.000)",
+        "Reorder: source order preserved (1345 polylines).",
+        "Handwriting fallback: skipping word-merge/smoothing for contour-only text source.",
+        "Segment counts: source=7819, fitted=7819, clipped=7819",
+        "Drawable segments after clip: 7819 (100.0% of source)",
+        "Prepared bounds: x(0.000, 180.000) y(-295.000, -15.000)",
+        "Estimated draw length: 9.33 m",
+        "Applying pen-up / pen-down ...",
+        "G-code stats: lines=9958, draw=9532, travel=412, bounds=0.000..180.000 x, -295.000..0.000 y",
+        "Preflight: ok: lines=9958, draw=9532, travel=412, ratio=0.04",
+        "Saved file stats: lines=9958, draw=9532, travel=412, bounds=0.000..180.000 x, -295.000..0.000 y",
+        "Saved: C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 4_pack\\_candidates\\a4_hybrid_frame.nc",
+        "Preview SVG: C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 4_pack\\_candidates\\a4_hybrid_frame.svg",
+        "Preview PDF: C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 4_pack\\_candidates\\a4_hybrid_frame.pdf"
+      ],
+      "fit_scale": 1.0,
+      "clipping_warning": false,
+      "layout_similarity": 0.953785,
+      "metrics": {
+        "draw_length_mm": 10430.664,
+        "segments_total": 8720,
+        "segments_duplicate": 4,
+        "bounds": {
+          "x_min": 0.0,
+          "x_max": 180.0,
+          "y_min": -295.0,
+          "y_max": -15.0
+        }
+      },
+      "svg": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 4_pack\\_candidates\\a4_hybrid_frame.svg",
+      "pdf": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 4_pack\\_candidates\\a4_hybrid_frame.pdf",
+      "nc": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 4_pack\\_candidates\\a4_hybrid_frame.nc",
+      "gcode": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 4_pack\\_candidates\\a4_hybrid_frame.gcode",
+      "notes": "detail_scale=1.0; frame_scale_x=0.9728; frame_scale_y=0.9753; detail_bbox=176.23x225.88 mm; left_strip_removed=True; outer_border_removed=True"
+    }
+  ],
+  "selected_variant": "a4_hybrid_frame",
+  "selected_layout_similarity": 0.953785,
+  "task_number": 4,
+  "task_name": "Задача 4",
+  "source_meta": {
+    "source_kind": "pdf_split",
+    "source_pdf": "C:\\plotter_pdf\\Начерт\\24 варинт\\Varian_24.pdf",
+    "task_number": 4,
+    "page_index": 3,
+    "page_size_mm": [
+      211.074,
+      298.111
+    ]
+  }
+}

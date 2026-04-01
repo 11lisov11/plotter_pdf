@@ -5,15 +5,15 @@
     {
       "font_label": "Marck Script",
       "pages_ok": 16,
-      "avg_layout_similarity": 0.976224,
-      "min_layout_similarity": 0.950251,
-      "avg_score": 1.356866,
-      "doc_score": 1.375872
+      "avg_layout_similarity": 0.97379,
+      "min_layout_similarity": 0.942449,
+      "avg_score": 1.319906,
+      "doc_score": 1.338755
     }
   ],
   "pages_ok": 16,
   "page_count": 16,
-  "elapsed_s": 1019.696,
-  "avg_layout_similarity": 0.976674,
-  "min_layout_similarity": 0.950251
+  "elapsed_s": 1609.356,
+  "avg_layout_similarity": 0.974786,
+  "min_layout_similarity": 0.943971
 }

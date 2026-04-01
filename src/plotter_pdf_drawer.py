@@ -46,6 +46,7 @@ try:
     from src.plotter_backend import cli_entry as cli_entry_mod
     from src.plotter_backend import common_utils as common_utils_mod
     from src.plotter_backend import discovery as discovery_mod
+    from src.plotter_backend import formula_image_ocr as formula_image_ocr_mod
     from src.plotter_backend import handwriting_text_utils as handwriting_text_utils_mod
     from src.plotter_backend import pencil_state as pencil_state_mod
     from src.plotter_backend import process_utils as process_utils_mod
@@ -78,6 +79,7 @@ except Exception:
     from plotter_backend import cli_entry as cli_entry_mod
     from plotter_backend import common_utils as common_utils_mod
     from plotter_backend import discovery as discovery_mod
+    from plotter_backend import formula_image_ocr as formula_image_ocr_mod
     from plotter_backend import handwriting_text_utils as handwriting_text_utils_mod
     from plotter_backend import pencil_state as pencil_state_mod
     from plotter_backend import process_utils as process_utils_mod
@@ -399,6 +401,8 @@ IMAGE_CONTOUR_FORMULA_TINY_BBOX_MM = 0.18
 IMAGE_CONTOUR_FORMULA_MIN_COMPONENT_PX = 2
 IMAGE_CONTOUR_FORMULA_RDP_PX = 0.42
 IMAGE_CONTOUR_FORMULA_VECTORIZE_MODE = "centerline"  # edge | centerline | auto
+IMAGE_CONTOUR_FORMULA_OCR_ENABLED = True
+IMAGE_CONTOUR_FORMULA_OCR_MIN_CONFIDENCE = 0.88
 IMAGE_CONTOUR_LINEART_MIN_PATH_MM = 0.45
 IMAGE_CONTOUR_LINEART_SIMPLIFY_MM = 0.080
 IMAGE_CONTOUR_LINEART_TINY_BBOX_MM = 0.35
@@ -1315,6 +1319,175 @@ def _extract_image_tone_hatch_segments_px(
     return out
 
 
+def _resolve_formula_print_ttf_path() -> Optional[Path]:
+    return (
+        _resolve_handwriting_ttf_path("Times New Roman")
+        or _resolve_handwriting_ttf_path("Cambria")
+        or _resolve_handwriting_ttf_path("Arial")
+    )
+
+
+def _measure_ttf_text_bbox_units(
+    text: str,
+    *,
+    ttf_path: Path,
+    font_size: float,
+) -> Optional[Tuple[float, float, float, float]]:
+    if Image is None or ImageDraw is None or ImageFont is None:
+        return None
+    render_scale = max(2.0, float(HANDWRITING_SINGLELINE_TTF_RENDER_SCALE))
+    font_px = max(24, int(round(max(1.0, float(font_size)) * render_scale)))
+    font = _get_cached_handwriting_pil_font(ttf_path, font_px)
+    if font is None:
+        return None
+    probe = Image.new("L", (10, 10), 255)
+    draw_probe = ImageDraw.Draw(probe)
+    try:
+        left, top, right, bottom = draw_probe.textbbox((0, 0), text, font=font, anchor="ls")
+    except Exception:
+        return None
+    inv_scale = 1.0 / max(1e-9, float(render_scale))
+    return (
+        float(left) * inv_scale,
+        float(top) * inv_scale,
+        float(right) * inv_scale,
+        float(bottom) * inv_scale,
+    )
+
+
+def _fit_formula_ocr_font_size_units(
+    text: str,
+    *,
+    ttf_path: Path,
+    target_w_u: float,
+    target_h_u: float,
+) -> Optional[Tuple[float, Tuple[float, float, float, float]]]:
+    target_w = max(0.4, float(target_w_u))
+    target_h = max(0.4, float(target_h_u))
+    font_size = max(4.0, target_h * 0.96)
+    best: Optional[Tuple[float, Tuple[float, float, float, float]]] = None
+    for _ in range(6):
+        bbox = _measure_ttf_text_bbox_units(text, ttf_path=ttf_path, font_size=font_size)
+        if bbox is None:
+            return None
+        left, top, right, bottom = bbox
+        width = max(1e-6, float(right - left))
+        height = max(1e-6, float(bottom - top))
+        best = (font_size, bbox)
+        scale_fit = min((target_w * 0.985) / width, (target_h * 0.92) / height)
+        if 0.96 <= scale_fit <= 1.04:
+            return best
+        next_size = max(3.2, font_size * max(0.55, min(1.45, scale_fit)))
+        if abs(next_size - font_size) < 0.08:
+            return best
+        font_size = next_size
+    return best
+
+
+def _map_formula_ocr_bbox_to_user_units(
+    *,
+    bbox_px: Tuple[float, float, float, float],
+    image_x_u: float,
+    image_y_u: float,
+    image_w_u: float,
+    image_h_u: float,
+    image_w_px: int,
+    image_h_px: int,
+) -> Tuple[float, float, float, float]:
+    x0_px, y0_px, x1_px, y1_px = bbox_px
+    denom_x = max(1.0, float(image_w_px))
+    denom_y = max(1.0, float(image_h_px))
+    x0_u = image_x_u + (max(0.0, x0_px) / denom_x) * image_w_u
+    x1_u = image_x_u + (max(0.0, x1_px) / denom_x) * image_w_u
+    y0_u = image_y_u + (max(0.0, y0_px) / denom_y) * image_h_u
+    y1_u = image_y_u + (max(0.0, y1_px) / denom_y) * image_h_u
+    return (x0_u, y0_u, x1_u, y1_u)
+
+
+def _extract_formula_ocr_polylines_mm(
+    img: "np.ndarray",
+    *,
+    x_u: float,
+    y_u: float,
+    w_u: float,
+    h_u: float,
+    matrix: Tuple[float, float, float, float, float, float],
+    scale: float,
+    logger,
+) -> List[List[Tuple[float, float]]]:
+    if not IMAGE_CONTOUR_FORMULA_OCR_ENABLED:
+        return []
+    if formula_image_ocr_mod is None or not formula_image_ocr_mod.rapidocr_available():
+        return []
+    result = formula_image_ocr_mod.ocr_formula_image(img)
+    if result is None or result.confidence < float(IMAGE_CONTOUR_FORMULA_OCR_MIN_CONFIDENCE):
+        return []
+    ttf_path = _resolve_formula_print_ttf_path()
+    if ttf_path is None:
+        return []
+
+    img_h_px, img_w_px = img.shape[:2]
+    out: List[List[Tuple[float, float]]] = []
+    for line in result.lines:
+        if float(line.confidence) < float(IMAGE_CONTOUR_FORMULA_OCR_MIN_CONFIDENCE):
+            continue
+        text = str(line.text or "").strip()
+        if len(text) < 4:
+            continue
+        box_x0_u, box_y0_u, box_x1_u, box_y1_u = _map_formula_ocr_bbox_to_user_units(
+            bbox_px=line.bbox_px,
+            image_x_u=x_u,
+            image_y_u=y_u,
+            image_w_u=w_u,
+            image_h_u=h_u,
+            image_w_px=img_w_px,
+            image_h_px=img_h_px,
+        )
+        target_w_u = max(0.6, box_x1_u - box_x0_u)
+        target_h_u = max(0.6, box_y1_u - box_y0_u)
+        fit = _fit_formula_ocr_font_size_units(
+            text,
+            ttf_path=ttf_path,
+            target_w_u=target_w_u,
+            target_h_u=target_h_u,
+        )
+        if fit is None:
+            continue
+        font_size_u, bbox_u = fit
+        left_u, top_u, right_u, bottom_u = bbox_u
+        text_w_u = max(1e-6, right_u - left_u)
+        text_h_u = max(1e-6, bottom_u - top_u)
+        pad_x_u = max(0.0, (target_w_u - text_w_u) * 0.04)
+        pad_y_u = max(0.0, (target_h_u - text_h_u) * 0.08)
+        baseline_x_u = box_x0_u - left_u + pad_x_u
+        baseline_y_u = box_y0_u - top_u + pad_y_u
+        polylines_u = _render_singleline_text_polylines_ttf(
+            text,
+            ttf_path=ttf_path,
+            font_size=font_size_u,
+            baseline_x=baseline_x_u,
+            baseline_y=baseline_y_u,
+            force_cyrillic_mode=False,
+            logger=logger,
+        )
+        for poly_u in polylines_u:
+            if len(poly_u) < 2:
+                continue
+            mm_poly: List[Tuple[float, float]] = []
+            for ux, uy in poly_u:
+                tx, ty = mat_apply(matrix, (ux, uy))
+                mm_poly.append((tx * scale, ty * scale))
+            if len(mm_poly) >= 2 and polyline_length(mm_poly) >= 0.18:
+                out.append(mm_poly)
+
+    if out and logger:
+        logger(
+            f"Formula OCR image route: {len(result.lines)} line(s), "
+            f"conf={result.confidence:.3f}, variant={result.variant}, polylines={len(out)}"
+        )
+    return out
+
+
 def extract_image_contour_items(
     svg_path: Path,
     logger=print,
@@ -1433,6 +1606,38 @@ def extract_image_contour_items(
                         formula_mode = str(IMAGE_CONTOUR_FORMULA_VECTORIZE_MODE or "centerline").strip().lower()
                         if formula_mode in {"edge", "centerline", "auto"}:
                             mode = formula_mode
+
+                    ocr_formula_polys_mm: List[List[Tuple[float, float]]] = []
+                    if HANDWRITING_TEXT_ENABLED and profile_kind == "formula":
+                        ocr_formula_polys_mm = _extract_formula_ocr_polylines_mm(
+                            img,
+                            x_u=x_u,
+                            y_u=y_u,
+                            w_u=w_u,
+                            h_u=h_u,
+                            matrix=cur_matrix,
+                            scale=scale,
+                            logger=logger,
+                        )
+                    if ocr_formula_polys_mm:
+                        added = 0
+                        for mm_poly in ocr_formula_polys_mm:
+                            out.append(
+                                PathItem(
+                                    points=mm_poly,
+                                    closed=False,
+                                    is_fill=False,
+                                    is_stroke=True,
+                                    source_id=source_id_seq,
+                                )
+                            )
+                            source_id_seq += 1
+                            added += 1
+                        if added > 0 and logger:
+                            logger(f"Image contour tracing: formula OCR +{added} path(s).")
+                        for child in list(node):
+                            walk(child, cur_matrix)
+                        return
 
                     px_centerlines: List[List[Tuple[float, float]]] = []
                     if mode in {"centerline", "auto"}:

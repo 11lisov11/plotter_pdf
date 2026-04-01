@@ -267,6 +267,76 @@ class BackendGeometryTests(unittest.TestCase):
             backend.HANDWRITING_TEXT_ENABLED = old_handwriting
             backend.IMAGE_CONTOUR_FORMULA_VECTORIZE_MODE = old_formula_mode
 
+    def test_extract_image_contour_items_prefers_formula_ocr_route_when_available(self) -> None:
+        image = Image.new("RGB", (40, 10), "black")
+        buf = io.BytesIO()
+        image.save(buf, format="PNG")
+        png_b64 = base64.b64encode(buf.getvalue()).decode("ascii")
+        svg = f"""<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="10mm" height="4mm" viewBox="0 0 10 4">
+  <image width="40" height="10" xlink:href="data:image/png;base64,{png_b64}"/>
+</svg>
+"""
+        old_enabled = backend.IMAGE_CONTOUR_ENABLED
+        old_mode = backend.IMAGE_CONTOUR_MODE
+        old_handwriting = backend.HANDWRITING_TEXT_ENABLED
+        old_formula_ocr = backend.IMAGE_CONTOUR_FORMULA_OCR_ENABLED
+        try:
+            backend.IMAGE_CONTOUR_ENABLED = True
+            backend.IMAGE_CONTOUR_MODE = "always"
+            backend.HANDWRITING_TEXT_ENABLED = True
+            backend.IMAGE_CONTOUR_FORMULA_OCR_ENABLED = True
+            with tempfile.TemporaryDirectory() as td:
+                path = Path(td) / "sample.svg"
+                path.write_text(svg, encoding="utf-8")
+                with (
+                    mock.patch.object(
+                        backend,
+                        "_analyze_embedded_image_profile",
+                        return_value={"kind": "formula", "line_art": True, "formula_like": True},
+                    ),
+                    mock.patch.object(
+                        backend.formula_image_ocr_mod,
+                        "rapidocr_available",
+                        return_value=True,
+                    ),
+                    mock.patch.object(
+                        backend.formula_image_ocr_mod,
+                        "ocr_formula_image",
+                        return_value=backend.formula_image_ocr_mod.FormulaOCRResult(
+                            lines=(
+                                backend.formula_image_ocr_mod.FormulaOCRLine(
+                                    text="P=Re(S)",
+                                    confidence=0.93,
+                                    bbox_px=(0.0, 0.0, 40.0, 10.0),
+                                ),
+                            ),
+                            confidence=0.93,
+                            variant="orig",
+                            engine="rapidocr",
+                        ),
+                    ),
+                    mock.patch.object(
+                        backend,
+                        "_render_singleline_text_polylines_ttf",
+                        return_value=[[(0.0, 0.0), (5.0, 0.0)]],
+                    ) as render_mock,
+                    mock.patch.object(backend, "_extract_image_centerline_paths_px_autotrace", return_value=[]) as auto_mock,
+                    mock.patch.object(backend, "_extract_image_centerline_paths_px", return_value=[]) as center_mock,
+                ):
+                    items = backend.extract_image_contour_items(path, logger=lambda *_: None)
+            self.assertTrue(render_mock.called)
+            self.assertFalse(auto_mock.called)
+            self.assertFalse(center_mock.called)
+            self.assertTrue(items)
+            self.assertFalse(items[0].closed)
+        finally:
+            backend.IMAGE_CONTOUR_ENABLED = old_enabled
+            backend.IMAGE_CONTOUR_MODE = old_mode
+            backend.HANDWRITING_TEXT_ENABLED = old_handwriting
+            backend.IMAGE_CONTOUR_FORMULA_OCR_ENABLED = old_formula_ocr
+
     def test_extract_image_contour_items_uses_threshold_floor_for_light_line_art(self) -> None:
         image = Image.new("RGB", (20, 20), "white")
         image.putpixel((10, 10), (190, 190, 190))

@@ -4,39 +4,39 @@ Sheet 210.0x297.0 mm is larger than workspace 180.0x280.0 mm. Using the overlapp
 Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-295.000,-15.000), sheet_bounds x(0.000,210.000) y(-295.000,2.000), sheet=a4, anchor=lower_left, offset=(0.00,0.00)
 Text render mode: handwriting=on font='C:\plotter_pdf\data\fonts\MarckScript-Regular.ttf'; image_contours=always
 Extracting paths from SVG ...
-Image contour tracing: +575 path(s) from embedded raster.
-Image vectorization mode: centerline (added 575 path(s), simplify=0.08 mm).
-Image contour tracing: total +575 path(s).
-Raw geometry bounds: x(38.393, 191.812) y(14.103, 92.142)
+Image contour tracing: +578 path(s) from embedded raster.
+Image vectorization mode: centerline (added 578 path(s), simplify=0.05 mm).
+Image contour tracing: total +578 path(s).
+Raw geometry bounds: x(38.310, 191.812) y(14.103, 92.142)
 SVG page: 210.016 x 297.011 mm
 Auto trim: no outer border detected.
 Applied content area crop: x(20.5,205.0) y(10.0,292.0) dropped segments=0
-Bounds after content margin crop: x(38.393, 191.812) y(14.103, 92.142)
-SVG geometry: paths=575, segments=2246.
-Source bounds: x(38.393, 191.812) y(14.103, 92.142)
-Fit to work area: scale=1.1733, translate=(-45.045,-217.326), from (38.393, 14.103)-(191.812, 92.142)
-Reorder: source order preserved (575 polylines).
+Bounds after content margin crop: x(38.310, 191.812) y(14.103, 92.142)
+SVG geometry: paths=578, segments=2255.
+Source bounds: x(38.310, 191.812) y(14.103, 92.142)
+Fit to work area: scale=1.1726, translate=(-44.923,-217.293), from (38.310, 14.103)-(191.812, 92.142)
+Reorder: source order preserved (578 polylines).
 Handwriting fallback: skipping word-merge/smoothing for contour-only text source.
-Pencil naturalization: adjusted 434/575 stroke(s).
-Pencil naturalization segments: 2246 -> 3653
-Polyline optimization: 575 -> 576
-Segment counts: source=2246, fitted=2246, clipped=2246
-Drawable segments after clip: 2246 (100.0% of source)
-Prepared bounds: x(0.000, 179.934) y(-200.730, -109.224)
+Pencil naturalization: adjusted 433/578 stroke(s).
+Pencil naturalization segments: 2255 -> 3663
+Polyline optimization: 578 -> 579
+Segment counts: source=2255, fitted=2255, clipped=2255
+Drawable segments after clip: 2255 (100.0% of source)
+Prepared bounds: x(0.000, 179.935) y(-200.706, -109.249)
 Estimated draw length: 1.97 m
 Pencil mode: base_z=11.900, wear=0.000 mm, z_comp_start=0.000, z_down_start=11.900, dyn(rate=0.0100 mm/m, comp=1.000, slope=0.0100 Zmm/m, max=0.800), est_remaining_to_sharpen=120.0 m (wear=120.0, interval=inf)
 Applying pen-up / pen-down ...
-G-code stats: lines=7506, draw=5857, travel=549, bounds=0.000..179.935 x, -200.730..0.000 y
-Preflight: ok: lines=7506, draw=5857, travel=549, ratio=0.09
-Saved file stats: lines=7506, draw=5857, travel=549, bounds=0.000..179.935 x, -200.730..0.000 y
-Saved: C:\plotter_pdf\_tmp\latest_preview_preview-1774954544795103500.nc
-Preview SVG: C:\plotter_pdf\_tmp\latest_preview_preview-1774954544795103500_vector.svg
-Preview PDF: C:\plotter_pdf\_tmp\latest_preview_preview-1774954544795103500_vector.pdf
+G-code stats: lines=7531, draw=5876, travel=551, bounds=0.000..179.935 x, -200.706..0.000 y
+Preflight: ok: lines=7531, draw=5876, travel=551, ratio=0.09
+Saved file stats: lines=7531, draw=5876, travel=551, bounds=0.000..179.935 x, -200.706..0.000 y
+Saved: C:\plotter_pdf\_tmp\latest_preview_preview-1775077770815214000.nc
+Preview SVG: C:\plotter_pdf\_tmp\latest_preview_preview-1775077770815214000_vector.svg
+Preview PDF: C:\plotter_pdf\_tmp\latest_preview_preview-1775077770815214000_vector.pdf
 source_profile=images=18; texts=15; paths=25
 selected_primary_font=Marck Script
 selected_font=Marck Script
 selected_variant=raster_safe
 selected_contours=always
-selected_score=1.409429
-selection_reason=source_strategy=image_heavy; primary_font=Marck Script; selected_font=Marck Script; selected_variant=raster_safe; selected_contours=always; font_first_preferred=false; fallback_threshold=0.946; selection=override; reason=dominating_candidate
+selected_score=1.415213
+selection_reason=source_strategy=image_heavy; primary_font=Marck Script; selected_font=Marck Script; selected_variant=raster_safe; selected_contours=always; font_first_preferred=false; fallback_threshold=0.946; selection=override; reason=image_heavy_fallback
 quality_gate=accepted=True; dup_ok=True; tiny_ok=True; mask_iou_ok=True
