@@ -24,6 +24,43 @@ def _load_module():
 
 
 class PrepareToeHandwritingPackageModuleTests(unittest.TestCase):
+    def test_load_page_overrides_supports_pages_mapping(self) -> None:
+        mod = _load_module()
+        with tempfile.TemporaryDirectory(prefix="toe_overrides_") as td:
+            path = Path(td) / "page_overrides.json"
+            path.write_text(
+                '{"pages":{"1":{"variant_label":"lineart_safe","font_label":"Marck Script"},"x":{"variant_label":"always"}}}',
+                encoding="utf-8",
+            )
+            overrides = mod._load_page_overrides(path)
+        self.assertEqual(overrides, {1: {"variant_label": "lineart_safe", "font_label": "Marck Script"}})
+
+    def test_manual_override_matches_variant_and_font(self) -> None:
+        mod = _load_module()
+        row = {
+            "ok": True,
+            "variant_label": "lineart_safe",
+            "font_label": "Marck Script",
+            "image_contours_mode": "always",
+        }
+        self.assertTrue(mod._manual_override_matches(row, {"variant_label": "lineart_safe"}))
+        self.assertTrue(mod._manual_override_matches(row, {"font_label": "Marck Script"}))
+        self.assertFalse(mod._manual_override_matches(row, {"variant_label": "graph_safe"}))
+
+    def test_selection_reason_parts_include_manual_override(self) -> None:
+        mod = _load_module()
+        parts = mod._selection_reason_parts(
+            source_profile={"text_count": 100, "image_count": 0},
+            selected={"font_label": "Marck Script", "variant_label": "always", "image_contours_mode": "always"},
+            primary_font="Marck Script",
+            changed_from_base=False,
+            manual_override={"variant_label": "always", "font_label": "Marck Script"},
+            manual_override_applied=True,
+        )
+        self.assertIn("page_override=yes", parts)
+        self.assertIn("reason=manual_override", parts)
+        self.assertIn("override_variant=always", parts)
+
     def test_filter_candidate_fonts_defaults_to_marck_script(self) -> None:
         mod = _load_module()
         fonts = [

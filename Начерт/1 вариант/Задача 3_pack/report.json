@@ -1,5 +1,5 @@
 {
-  "source_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 3.pdf",
+  "source_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 3__regen_1.pdf",
   "kind": "drawing",
   "page_count": 1,
   "page_size_mm": [
@@ -11,7 +11,7 @@
     {
       "item": "pass_01",
       "ok": true,
-      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1775081058854744800_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1775081058854744800.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1775081058854744800_vector.pdf",
+      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1775127623226023800_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1775127623226023800.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1775127623226023800_vector.pdf",
       "logs": [
         "Source pages: 1, selected: 1",
         "Method3 centerline: threshold=160, candidates=9, paths=508",
@@ -50,9 +50,9 @@
         "G-code stats: lines=2039, draw=1639, travel=386, bounds=0.000..180.000 x, -295.000..0.000 y",
         "Preflight: ok: lines=2039, draw=1639, travel=386, ratio=0.24",
         "Saved file stats: lines=2039, draw=1639, travel=386, bounds=0.000..180.000 x, -295.000..0.000 y",
-        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1775081058854744800.nc",
-        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1775081058854744800_vector.svg",
-        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1775081058854744800_vector.pdf"
+        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1775127623226023800.nc",
+        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1775127623226023800_vector.svg",
+        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1775127623226023800_vector.pdf"
       ],
       "fit_scale": 1.0,
       "clipping_warning": true,
@@ -77,7 +77,7 @@
     {
       "item": "pass_02",
       "ok": true,
-      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1775081067566614600_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1775081067566614600.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1775081067566614600_vector.pdf",
+      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1775127628836155600_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1775127628836155600.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1775127628836155600_vector.pdf",
       "logs": [
         "Source pages: 1, selected: 1",
         "Method3 centerline: threshold=160, candidates=9, paths=508",
@@ -120,9 +120,9 @@
         "G-code stats: lines=3645, draw=3073, travel=558, bounds=0.000..180.000 x, -291.000..0.000 y",
         "Preflight: ok: lines=3645, draw=3073, travel=558, ratio=0.18",
         "Saved file stats: lines=3645, draw=3073, travel=558, bounds=0.000..180.000 x, -291.000..0.000 y",
-        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1775081067566614600.nc",
-        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1775081067566614600_vector.svg",
-        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1775081067566614600_vector.pdf"
+        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1775127628836155600.nc",
+        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1775127628836155600_vector.svg",
+        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1775127628836155600_vector.pdf"
       ],
       "fit_scale": 1.0,
       "clipping_warning": true,
@@ -150,6 +150,12 @@
     "svg": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 3_pack\\_candidates\\a3_clean_source.svg",
     "pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 3_pack\\_candidates\\a3_clean_source.pdf"
   },
+  "combined_preview": {
+    "reference_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 3_pack\\_candidates\\a3_clean_source.pdf",
+    "svg": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 3_pack\\combined_preview.svg",
+    "pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 3_pack\\combined_preview.pdf",
+    "layout_similarity": 0.994947
+  },
   "task_number": 3,
   "task_name": "Задача 3",
   "source_meta": {
@@ -167,6 +173,6 @@
         297.011
       ]
     ],
-    "merged_a3_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 3.pdf"
+    "merged_a3_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 3__regen_1.pdf"
   }
 }

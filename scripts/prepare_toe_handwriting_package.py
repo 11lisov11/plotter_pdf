@@ -84,11 +84,84 @@ REGION_RESCUE_TILE_GAIN_MIN = 0.012
 REGION_RESCUE_MAX_REGIONS = 3
 REGION_RESCUE_MARGIN_MM = 1.6
 REGION_RESCUE_MAX_ALTERNATIVES = 2
+DEFAULT_PAGE_OVERRIDES_FILENAME = "page_overrides.json"
+MANUAL_OVERRIDE_VARIANTS = {
+    "always",
+    "contours_off",
+    "raster_safe",
+    "lineart_safe",
+    "graph_safe",
+    "region_safe",
+    "blank_safe",
+}
 
 
 def _slugify(value: str) -> str:
     text = re.sub(r"[^A-Za-z0-9]+", "_", str(value or "").strip().lower())
     return text.strip("_") or "font"
+
+
+def _default_page_overrides_path(package_dir: Path) -> Path:
+    return package_dir / DEFAULT_PAGE_OVERRIDES_FILENAME
+
+
+def _normalize_page_override(raw: dict[str, Any]) -> dict[str, Any]:
+    normalized: dict[str, Any] = {}
+    variant_label = str(raw.get("variant_label", "") or "").strip()
+    if variant_label:
+        normalized["variant_label"] = variant_label
+    font_label = str(raw.get("font_label", "") or "").strip()
+    if font_label:
+        normalized["font_label"] = font_label
+    contours_mode = str(raw.get("image_contours_mode", "") or "").strip()
+    if contours_mode:
+        normalized["image_contours_mode"] = contours_mode
+    notes = str(raw.get("notes", "") or "").strip()
+    if notes:
+        normalized["notes"] = notes
+    return normalized
+
+
+def _load_page_overrides(overrides_path: Path) -> dict[int, dict[str, Any]]:
+    if not overrides_path.exists() or not overrides_path.is_file():
+        return {}
+    try:
+        payload = json.loads(overrides_path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+    if isinstance(payload, dict) and isinstance(payload.get("pages"), dict):
+        page_map = payload.get("pages", {})
+    elif isinstance(payload, dict):
+        page_map = payload
+    else:
+        return {}
+    out: dict[int, dict[str, Any]] = {}
+    for key, value in page_map.items():
+        try:
+            page_index = int(str(key).strip())
+        except Exception:
+            continue
+        if page_index <= 0 or not isinstance(value, dict):
+            continue
+        normalized = _normalize_page_override(value)
+        if normalized:
+            out[page_index] = normalized
+    return out
+
+
+def _manual_override_matches(row: dict[str, Any], override: dict[str, Any]) -> bool:
+    if not bool(row.get("ok")):
+        return False
+    variant_label = str(override.get("variant_label", "") or "").strip()
+    if variant_label and str(row.get("variant_label", "always") or "always") != variant_label:
+        return False
+    font_label = str(override.get("font_label", "") or "").strip()
+    if font_label and str(row.get("font_label", "") or "") != font_label:
+        return False
+    contours_mode = str(override.get("image_contours_mode", "") or "").strip()
+    if contours_mode and str(row.get("image_contours_mode", "always") or "always") != contours_mode:
+        return False
+    return True
 
 
 def _candidate_fonts() -> list[tuple[str, Path]]:
@@ -188,6 +261,9 @@ def _selection_reason_parts(
     graph_rescue_selected: bool = False,
     region_rescue_selected: bool = False,
     dominating_promoted: bool = False,
+    manual_override: dict[str, Any] | None = None,
+    manual_override_applied: bool = False,
+    manual_override_error: str = "",
 ) -> list[str]:
     parts = [f"source_strategy={_source_profile_strategy(source_profile)}"]
     parts.append(f"primary_font={primary_font}")
@@ -214,6 +290,20 @@ def _selection_reason_parts(
         parts.append("reason=region_rescue")
     if dominating_promoted:
         parts.append("reason=dominating_candidate")
+    if manual_override:
+        parts.append("page_override=yes")
+        if manual_override.get("variant_label"):
+            parts.append(f"override_variant={manual_override.get('variant_label')}")
+        if manual_override.get("font_label"):
+            parts.append(f"override_font={manual_override.get('font_label')}")
+        if manual_override.get("image_contours_mode"):
+            parts.append(f"override_contours={manual_override.get('image_contours_mode')}")
+        if manual_override_applied:
+            parts.append("reason=manual_override")
+        elif manual_override_error:
+            parts.append(f"override_error={manual_override_error}")
+    else:
+        parts.append("page_override=no")
     return parts
 
 
@@ -1329,10 +1419,106 @@ def _build_graph_rescue_candidate(
     return row
 
 
+def _ensure_manual_override_candidate(
+    *,
+    override: dict[str, Any],
+    page_results: list[dict[str, Any]],
+    source_pdf: Path,
+    page_index: int,
+    package_dir: Path,
+    page_svg: Path,
+    source_profile: dict[str, Any],
+    primary_font: str,
+    font_path_by_label: dict[str, Path],
+    max_duplicate_ratio: float,
+    max_tiny_ratio: float,
+    resume: bool,
+) -> tuple[dict[str, Any] | None, str]:
+    variant_label = str(override.get("variant_label", "") or "").strip() or "always"
+    font_label = str(override.get("font_label", "") or "").strip() or str(primary_font)
+    if variant_label not in MANUAL_OVERRIDE_VARIANTS:
+        return None, f"unsupported_variant:{variant_label}"
+    font_path = font_path_by_label.get(font_label)
+    if font_path is None:
+        return None, f"unknown_font:{font_label}"
+
+    matched = next((row for row in page_results if _manual_override_matches(row, override)), None)
+    if matched is not None:
+        return matched, ""
+
+    if variant_label == "raster_safe":
+        return (
+            _build_image_heavy_fallback_candidate(
+                source_pdf=source_pdf,
+                page_index=page_index,
+                page_svg=page_svg,
+                package_dir=package_dir,
+                font_label=font_label,
+                font_path=font_path,
+                source_profile=source_profile,
+                max_duplicate_ratio=float(max_duplicate_ratio),
+                max_tiny_ratio=float(max_tiny_ratio),
+                resume=bool(resume),
+            ),
+            "",
+        )
+    if variant_label == "lineart_safe":
+        return (
+            _build_lineart_rescue_candidate(
+                source_pdf=source_pdf,
+                page_index=page_index,
+                page_svg=page_svg,
+                package_dir=package_dir,
+                font_label=font_label,
+                font_path=font_path,
+                source_profile=source_profile,
+                max_duplicate_ratio=float(max_duplicate_ratio),
+                max_tiny_ratio=float(max_tiny_ratio),
+                resume=bool(resume),
+            ),
+            "",
+        )
+    if variant_label == "graph_safe":
+        return (
+            _build_graph_rescue_candidate(
+                source_pdf=source_pdf,
+                page_index=page_index,
+                page_svg=page_svg,
+                package_dir=package_dir,
+                font_label=font_label,
+                font_path=font_path,
+                source_profile=source_profile,
+                max_duplicate_ratio=float(max_duplicate_ratio),
+                max_tiny_ratio=float(max_tiny_ratio),
+                resume=bool(resume),
+            ),
+            "",
+        )
+    if variant_label == "blank_safe":
+        return (
+            _build_blank_like_candidate(
+                source_pdf=source_pdf,
+                page_index=page_index,
+                package_dir=package_dir,
+                font_label=font_label,
+                source_profile=source_profile,
+            ),
+            "",
+        )
+    if variant_label == "region_safe":
+        return None, "region_safe_requires_existing_candidate"
+    return None, "candidate_not_found"
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Prepare a root TOE PDF handwriting package with self-check and font search.")
     parser.add_argument("--pdf", default="TOE_Zadachi_1_2_Variant_4.pdf", help="Source TOE PDF in project root.")
     parser.add_argument("--out-dir", default="", help="Optional output package directory. Defaults to <pdf>_pack.")
+    parser.add_argument(
+        "--overrides-file",
+        default="",
+        help="Optional page overrides JSON. Defaults to <package>/page_overrides.json.",
+    )
     parser.add_argument("--max-duplicate-ratio", type=float, default=0.002)
     parser.add_argument("--max-tiny-ratio", type=float, default=0.015)
     parser.add_argument("--override-similarity-gain", type=float, default=0.012)
@@ -1354,6 +1540,12 @@ def main() -> int:
         package_dir.mkdir(parents=True, exist_ok=True)
     else:
         prep._ensure_clean_dir(package_dir)
+    overrides_path = (
+        (PROJECT_ROOT / str(args.overrides_file)).resolve()
+        if str(args.overrides_file).strip()
+        else _default_page_overrides_path(package_dir)
+    )
+    page_overrides = _load_page_overrides(overrides_path)
     pages_dir = package_dir / "pages"
     logs_dir = package_dir / "logs"
     candidates_dir = package_dir / "_candidates"
@@ -1518,6 +1710,7 @@ def main() -> int:
     report: dict[str, Any] = {
         "source_pdf": str(source_pdf),
         "package_dir": str(package_dir),
+        "page_overrides_file": str(overrides_path),
         "kind": "toe_handwriting",
         "page_count": page_count,
         "fonts_evaluated": font_report_rows,
@@ -1528,6 +1721,7 @@ def main() -> int:
 
     for page_index in range(1, page_count + 1):
         page_results = all_page_results[page_index]
+        page_svg = page_svg_dir / f"page_{page_index:02d}.svg"
         selected = _select_page_result(
             primary_label=str(primary_font),
             page_results=page_results,
@@ -1542,6 +1736,9 @@ def main() -> int:
         graph_rescue_selected = False
         region_rescue_selected = False
         dominating_promoted = False
+        manual_override = page_overrides.get(page_index)
+        manual_override_applied = False
+        manual_override_error = ""
         if bool(source_profile.get("blank_like")):
             blank_candidate = _build_blank_like_candidate(
                 source_pdf=source_pdf,
@@ -1559,7 +1756,7 @@ def main() -> int:
             fallback = _build_image_heavy_fallback_candidate(
                 source_pdf=source_pdf,
                 page_index=page_index,
-                page_svg=page_svg_dir / f"page_{page_index:02d}.svg",
+                page_svg=page_svg,
                 package_dir=package_dir,
                 font_label=fallback_font_label,
                 font_path=fallback_font_path,
@@ -1586,7 +1783,7 @@ def main() -> int:
             fallback = _build_image_heavy_fallback_candidate(
                 source_pdf=source_pdf,
                 page_index=page_index,
-                page_svg=page_svg_dir / f"page_{page_index:02d}.svg",
+                page_svg=page_svg,
                 package_dir=package_dir,
                 font_label=fallback_font_label,
                 font_path=fallback_font_path,
@@ -1611,7 +1808,7 @@ def main() -> int:
             rescue = _build_lineart_rescue_candidate(
                 source_pdf=source_pdf,
                 page_index=page_index,
-                page_svg=page_svg_dir / f"page_{page_index:02d}.svg",
+                page_svg=page_svg,
                 package_dir=package_dir,
                 font_label=rescue_font_label,
                 font_path=rescue_font_path,
@@ -1636,7 +1833,7 @@ def main() -> int:
             graph_rescue = _build_graph_rescue_candidate(
                 source_pdf=source_pdf,
                 page_index=page_index,
-                page_svg=page_svg_dir / f"page_{page_index:02d}.svg",
+                page_svg=page_svg,
                 package_dir=package_dir,
                 font_label=rescue_font_label,
                 font_path=rescue_font_path,
@@ -1701,12 +1898,32 @@ def main() -> int:
                 ):
                     selected = best_region
                     region_rescue_selected = True
+        if manual_override:
+            manual_candidate, manual_override_error = _ensure_manual_override_candidate(
+                override=manual_override,
+                page_results=page_results,
+                source_pdf=source_pdf,
+                page_index=page_index,
+                package_dir=package_dir,
+                page_svg=page_svg,
+                source_profile=source_profile,
+                primary_font=str(primary_font),
+                font_path_by_label=font_path_by_label,
+                max_duplicate_ratio=float(args.max_duplicate_ratio),
+                max_tiny_ratio=float(args.max_tiny_ratio),
+                resume=bool(args.resume),
+            )
+            if manual_candidate is not None and manual_candidate not in page_results:
+                page_results.append(manual_candidate)
+            if manual_candidate is not None and bool(manual_candidate.get("ok")):
+                selected = manual_candidate
+                manual_override_applied = True
         pre_dominating_selected = selected
         selected = _prefer_dominating_candidate(
             selected=selected,
             page_results=page_results,
         )
-        dominating_promoted = selected is not pre_dominating_selected
+        dominating_promoted = (selected is not pre_dominating_selected) and (not manual_override_applied)
         changed_from_base = selected is not base_selected
         selection_reason_parts = _selection_reason_parts(
             source_profile=source_profile,
@@ -1720,6 +1937,9 @@ def main() -> int:
             graph_rescue_selected=graph_rescue_selected,
             region_rescue_selected=region_rescue_selected,
             dominating_promoted=dominating_promoted,
+            manual_override=manual_override,
+            manual_override_applied=manual_override_applied,
+            manual_override_error=manual_override_error,
         )
         final_prefix = pages_dir / f"page_{page_index:02d}"
         if bool(selected.get("ok")):
@@ -1770,6 +1990,8 @@ def main() -> int:
                             f"contours={selected.get('image_contours_mode')}",
                             "page_override=yes"
                             if (
+                                manual_override
+                                or
                                 str(selected.get("font_label", "")) != str(primary_font)
                                 or str(selected.get("variant_label", "always")) != "always"
                             )
@@ -1819,6 +2041,9 @@ def main() -> int:
                 "source_strategy": _source_profile_strategy(source_profile),
                 "font_first_preferred": bool(_source_profile_prefers_font_first(source_profile)),
                 "fallback_threshold": _fallback_threshold_for_source_profile(source_profile),
+                "page_override": manual_override,
+                "page_override_applied": bool(manual_override_applied),
+                "page_override_error": manual_override_error,
                 "source_profile": source_profile,
                 "candidates": page_results,
             }

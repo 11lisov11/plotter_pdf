@@ -14,7 +14,7 @@ import prepare_folder1_packages as prep
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_ROOT = PROJECT_ROOT / "Начерт"
+DEFAULT_ROOT = PROJECT_ROOT / "\u041d\u0430\u0447\u0435\u0440\u0442"
 A3_TASK_NUMBERS = {3, 10}
 
 
@@ -28,25 +28,53 @@ def _task_number_from_name(name: str) -> int | None:
         return None
 
 
-def _write_single_page_pdf(source_pdf: Path, page_index0: int, out_pdf: Path) -> None:
-    out_pdf.parent.mkdir(parents=True, exist_ok=True)
+def _reserve_output_path(preferred: Path) -> Path:
+    preferred.parent.mkdir(parents=True, exist_ok=True)
+    if not preferred.exists():
+        return preferred
+    try:
+        preferred.unlink()
+        return preferred
+    except Exception:
+        pass
+    stem = preferred.stem
+    suffix = preferred.suffix
+    for idx in range(1, 1000):
+        candidate = preferred.with_name(f"{stem}__regen_{idx}{suffix}")
+        if candidate.exists():
+            try:
+                candidate.unlink()
+                return candidate
+            except Exception:
+                continue
+        return candidate
+    raise RuntimeError(f"Unable to allocate writable output path near: {preferred}")
+
+
+def _write_single_page_pdf(source_pdf: Path, page_index0: int, out_pdf: Path) -> Path:
+    out_pdf = _reserve_output_path(out_pdf)
     src = fitz.open(source_pdf)
     dst = fitz.open()
     try:
         dst.insert_pdf(src, from_page=page_index0, to_page=page_index0)
+        if dst.page_count:
+            page = dst[0]
+            if int(page.rotation or 0) != 0:
+                page.remove_rotation()
         dst.save(out_pdf)
     finally:
         dst.close()
         src.close()
+    return out_pdf
 
 
-def _merge_split_a3_pdf(source_pdf: Path, out_pdf: Path) -> None:
+def _merge_split_a3_pdf(source_pdf: Path, out_pdf: Path) -> Path:
     src = fitz.open(source_pdf)
     if src.page_count != 2:
         raise ValueError(f"Expected exactly 2 pages for split A3 source: {source_pdf}")
     left = src[0]
     right = src[1]
-    out_pdf.parent.mkdir(parents=True, exist_ok=True)
+    out_pdf = _reserve_output_path(out_pdf)
     dst = fitz.open()
     try:
         page = dst.new_page(width=float(left.rect.width + right.rect.width), height=float(max(left.rect.height, right.rect.height)))
@@ -60,11 +88,12 @@ def _merge_split_a3_pdf(source_pdf: Path, out_pdf: Path) -> None:
     finally:
         dst.close()
         src.close()
+    return out_pdf
 
 
 def _prepare_frw_source_pdf(source_path: Path, generated_dir: Path) -> tuple[Path, dict[str, object]]:
     generated_dir.mkdir(parents=True, exist_ok=True)
-    raw_pdf = generated_dir / f"{source_path.stem}__kompas.pdf"
+    raw_pdf = _reserve_output_path(generated_dir / f"{source_path.stem}__kompas.pdf")
     prep.backend.frw_to_pdf(source_path, raw_pdf, lambda *_args, **_kwargs: None)
     doc = fitz.open(raw_pdf)
     page_count = int(doc.page_count)
@@ -79,8 +108,7 @@ def _prepare_frw_source_pdf(source_path: Path, generated_dir: Path) -> tuple[Pat
 
     task_number = _task_number_from_name(source_path.stem)
     if task_number in A3_TASK_NUMBERS and page_count == 2:
-        merged_pdf = generated_dir / f"{source_path.stem}.pdf"
-        _merge_split_a3_pdf(raw_pdf, merged_pdf)
+        merged_pdf = _merge_split_a3_pdf(raw_pdf, generated_dir / f"{source_path.stem}.pdf")
         return merged_pdf, {
             "source_kind": "frw",
             "task_number": task_number,
@@ -95,7 +123,7 @@ def _prepare_frw_source_pdf(source_path: Path, generated_dir: Path) -> tuple[Pat
             f"Unexpected FRW->PDF page count for {source_path.name}: {page_count}. "
             "Only 1-page A4 or 2-page split A3 are supported."
         )
-    final_pdf = generated_dir / f"{source_path.stem}.pdf"
+    final_pdf = _reserve_output_path(generated_dir / f"{source_path.stem}.pdf")
     shutil.copy2(raw_pdf, final_pdf)
     return final_pdf, {
         "source_kind": "frw",
@@ -131,8 +159,7 @@ def _iter_variant_sources(variant_dir: Path, generated_dir: Path) -> list[tuple[
     for page_index in range(page_count):
         task_number = page_index + 1
         task_name = f"Задача {task_number}"
-        page_pdf = generated_dir / f"{task_name}.pdf"
-        _write_single_page_pdf(multi_pdf, page_index, page_pdf)
+        page_pdf = _write_single_page_pdf(multi_pdf, page_index, generated_dir / f"{task_name}.pdf")
         page = doc[page_index]
         meta = {
             "source_kind": "pdf_split",

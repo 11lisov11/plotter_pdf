@@ -26,13 +26,17 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from plotter_studio.core.protocol import BackendBridge, SheetConfig, _gcode_to_polylines, _is_detail_polyline_mm
+from plotter_studio.core.protocol import BackendBridge, SheetConfig, _gcode_to_polylines, _is_detail_polyline_mm, _write_svg_preview
 from plotter_studio.core.serial_worker import OperationContext
 from src.plotter_backend import text_content_routing, toe_font_policy
 from src import plotter_pdf_drawer as backend
 
 
 TOE_FALLBACK_LAYOUT_THRESHOLD = 0.93
+_A3_FIT_RE = re.compile(r"Fit to work area: scale=([0-9.]+), translate=\(([-0-9.]+),([-0-9.]+)\)")
+_A3_PASS_RE = re.compile(r"Pass window: .* shift=\(([-0-9.]+),([-0-9.]+)\)")
+_A3_AREA_RE = re.compile(r"bounds x\(([-0-9.]+),([-0-9.]+)\) y\(([-0-9.]+),([-0-9.]+)\)")
+_A3_POST_TRANSLATE_RE = re.compile(r"translating geometry by \(([-0-9.]+),([-0-9.]+)\) mm")
 
 
 class _DummySignal:
@@ -307,6 +311,158 @@ def _copy_latest_preview_artifacts(prefix: Path, *, op_id: str | None = None) ->
     _copy_file(src_pdf, dst_pdf)
     _copy_nc_and_gcode(src_nc, dst_nc, dst_gcode)
     return dst_svg, dst_pdf, dst_nc, dst_gcode
+
+
+def _pdf_first_page_size_mm(pdf_path: Path) -> tuple[float, float]:
+    doc = fitz.open(pdf_path)
+    try:
+        page = doc[0]
+        return (
+            float(page.rect.width) * 25.4 / 72.0,
+            float(page.rect.height) * 25.4 / 72.0,
+        )
+    finally:
+        doc.close()
+
+
+def _parse_a3_pass_log(log_path: Path) -> dict[str, float | int]:
+    text = log_path.read_text(encoding="utf-8", errors="ignore")
+    fit_match = _A3_FIT_RE.search(text)
+    pass_match = _A3_PASS_RE.search(text)
+    if fit_match is None or pass_match is None:
+        raise ValueError(f"Cannot parse A3 pass transform from log: {log_path}")
+    area_match = _A3_AREA_RE.search(text)
+    if area_match is not None:
+        area_min_x, area_max_x, area_min_y, area_max_y = [float(area_match.group(i)) for i in range(1, 5)]
+    else:
+        area_min_x, area_max_x, area_min_y, area_max_y = backend.work_area_bounds()
+    translate_match = _A3_POST_TRANSLATE_RE.search(text)
+    post_tx = float(translate_match.group(1)) if translate_match is not None else 0.0
+    post_ty = float(translate_match.group(2)) if translate_match is not None else 0.0
+    return {
+        "scale": float(fit_match.group(1)),
+        "fit_tx": float(fit_match.group(2)),
+        "fit_ty": float(fit_match.group(3)),
+        "shift_x": float(pass_match.group(1)),
+        "shift_y": float(pass_match.group(2)),
+        "rotation_deg": 180 if "rotating geometry by 180 deg" in text else 0,
+        "post_tx": post_tx,
+        "post_ty": post_ty,
+        "area_min_x": float(area_min_x),
+        "area_max_x": float(area_max_x),
+        "area_min_y": float(area_min_y),
+        "area_max_y": float(area_max_y),
+    }
+
+
+def _inverse_a3_pass_polylines_to_sheet(
+    *,
+    nc_path: Path,
+    log_path: Path,
+) -> list[list[tuple[float, float]]]:
+    info = _parse_a3_pass_log(log_path)
+    scale = float(info["scale"])
+    tx = float(info["fit_tx"]) + float(info["shift_x"])
+    ty = float(info["fit_ty"]) + float(info["shift_y"])
+    rotation_deg = int(info["rotation_deg"])
+    post_tx = float(info["post_tx"])
+    post_ty = float(info["post_ty"])
+    center_x = 0.5 * (float(info["area_min_x"]) + float(info["area_max_x"]))
+    center_y = 0.5 * (float(info["area_min_y"]) + float(info["area_max_y"]))
+
+    polylines = _gcode_to_polylines(
+        nc_path.read_text(encoding="utf-8", errors="ignore").splitlines(),
+        z_up=float(backend.Z_UP),
+        z_down=float(backend.Z_DOWN),
+    )
+    out: list[list[tuple[float, float]]] = []
+    for poly in polylines:
+        recon: list[tuple[float, float]] = []
+        for x, y in poly:
+            px = float(x) - post_tx
+            py = float(y) - post_ty
+            if rotation_deg == 180:
+                px = (2.0 * center_x) - px
+                py = (2.0 * center_y) - py
+            recon.append(((px - tx) / scale, (py - ty) / scale))
+        if len(recon) >= 2:
+            out.append(recon)
+    return out
+
+
+def _render_polylines_pdf(
+    *,
+    polylines: list[list[tuple[float, float]]],
+    out_pdf: Path,
+    canvas_bounds_mm: tuple[float, float, float, float],
+) -> None:
+    x0, x1, y0, y1 = [float(value) for value in canvas_bounds_mm]
+    width_mm = max(1.0, x1 - x0)
+    height_mm = max(1.0, y1 - y0)
+    mm_to_pt = 72.0 / 25.4
+    doc = fitz.open()
+    try:
+        page = doc.new_page(width=width_mm * mm_to_pt, height=height_mm * mm_to_pt)
+        shape = page.new_shape()
+        for poly in polylines:
+            if len(poly) < 2:
+                continue
+            prev = None
+            for x_mm, y_mm in poly:
+                px = (float(x_mm) - x0) * mm_to_pt
+                py = (float(y_mm) - y0) * mm_to_pt
+                point = fitz.Point(px, py)
+                if prev is not None:
+                    shape.draw_line(prev, point)
+                prev = point
+        shape.finish(color=(0.0, 0.0, 0.0), width=0.45)
+        shape.commit()
+        out_pdf.parent.mkdir(parents=True, exist_ok=True)
+        doc.save(out_pdf)
+    finally:
+        doc.close()
+
+
+def _build_a3_combined_preview(
+    *,
+    source_pdf: Path,
+    package_dir: Path,
+    report: dict[str, Any],
+) -> dict[str, Any] | None:
+    pass01_nc = package_dir / "pages" / "pass_01.nc"
+    pass02_nc = package_dir / "pages" / "pass_02.nc"
+    pass01_log = package_dir / "logs" / "pass_01.log.txt"
+    pass02_log = package_dir / "logs" / "pass_02.log.txt"
+    if not all(path.exists() for path in (pass01_nc, pass02_nc, pass01_log, pass02_log)):
+        return None
+
+    reference_pdf = source_pdf
+    clean_meta = dict(report.get("a3_clean_source", {}) or {})
+    clean_pdf_str = str(clean_meta.get("pdf", "") or "").strip()
+    if clean_pdf_str:
+        clean_pdf = Path(clean_pdf_str)
+        if clean_pdf.exists() and clean_pdf.is_file():
+            reference_pdf = clean_pdf
+
+    polylines = [
+        *_inverse_a3_pass_polylines_to_sheet(nc_path=pass01_nc, log_path=pass01_log),
+        *_inverse_a3_pass_polylines_to_sheet(nc_path=pass02_nc, log_path=pass02_log),
+    ]
+    if not polylines:
+        return None
+
+    ref_w_mm, ref_h_mm = _pdf_first_page_size_mm(reference_pdf)
+    combined_svg = package_dir / "combined_preview.svg"
+    combined_pdf = package_dir / "combined_preview.pdf"
+    _write_svg_preview(polylines, combined_svg, canvas_bounds_mm=(0.0, ref_w_mm, 0.0, ref_h_mm))
+    _render_polylines_pdf(polylines=polylines, out_pdf=combined_pdf, canvas_bounds_mm=(0.0, ref_w_mm, 0.0, ref_h_mm))
+    similarity = _layout_similarity_pdf(reference_pdf, combined_pdf, source_page_index=0)
+    return {
+        "reference_pdf": str(reference_pdf),
+        "svg": str(combined_svg),
+        "pdf": str(combined_pdf),
+        "layout_similarity": float(similarity),
+    }
 
 
 @contextmanager
@@ -1028,7 +1184,7 @@ def _run_hybrid_svg_to_gcode(
         setattr(backend, "EMIT_ARCS", False)
         setattr(backend, "PENCIL_NATURAL_STROKES_ENABLED", False)
         setattr(backend, "PAGE_MARGIN_ENABLED", False)
-        setattr(backend, "HANDWRITING_TEXT_ENABLED", True)
+        setattr(backend, "HANDWRITING_TEXT_ENABLED", False)
         setattr(backend, "HANDWRITING_STITCH_EPS_MM", min(prev_state["HANDWRITING_STITCH_EPS_MM"], 0.03))
         setattr(backend, "HANDWRITING_STITCH_GAP_EPS_MM", min(prev_state["HANDWRITING_STITCH_GAP_EPS_MM"], 0.03))
         setattr(backend, "HANDWRITING_STITCH_GAP_MAX_ANGLE_DEG", min(prev_state["HANDWRITING_STITCH_GAP_MAX_ANGLE_DEG"], 14.0))
@@ -1707,7 +1863,21 @@ def _prepare_drawing_package(source_pdf: Path, package_dir: Path) -> tuple[dict[
                 ),
             )
         )
+    combined_preview = _build_a3_combined_preview(
+        source_pdf=source_pdf,
+        package_dir=package_dir,
+        report=report,
+    )
+    if combined_preview:
+        report["combined_preview"] = combined_preview
     _mirror_package_root_artifacts(package_dir, rows)
+    if combined_preview:
+        for artifact_key in ("pdf", "svg"):
+            artifact_path = Path(str(combined_preview[artifact_key]))
+            if artifact_path.exists() and artifact_path.is_file():
+                dst_path = package_dir / artifact_path.name
+                if artifact_path.resolve() != dst_path.resolve():
+                    _copy_file(artifact_path, dst_path)
     return report, rows
 
 

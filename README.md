@@ -470,3 +470,21 @@ Windows wrapper:
 ```bat
 scripts\audit_toe_packages.bat --all-known --top-k 6
 ```
+
+TOE package editor / manual overrides:
+
+```powershell
+python scripts\toe_package_editor.py --pdf TOE_Zadachi_1_2_Variant_11.pdf show --page 12
+python scripts\toe_package_editor.py --pdf TOE_Zadachi_1_2_Variant_11.pdf set --page 12 --variant-label lineart_safe --font-label "Marck Script"
+python scripts\toe_package_editor.py --pdf TOE_Zadachi_1_2_Variant_11.pdf rebuild
+python scripts\toe_package_editor.py --pdf TOE_Zadachi_1_2_Variant_11.pdf suggest --write page_overrides.suggested.json
+scripts\toe_package_editor.bat --pdf TOE_Zadachi_1_2_Variant_11.pdf show --page 12
+```
+
+Что делает editor-слой:
+
+- хранит page-level manual overrides в `*_pack/page_overrides.json`;
+- позволяет руками зафиксировать `variant_label` и `font_label` для конкретной страницы;
+- не требует вручную лезть в `report.json`;
+- позволяет точечно пересобрать пакет тем же `prepare_toe_handwriting_package.py`;
+- умеет построить черновик suggestions из текущего `report.json`, если в пакете уже есть кандидат, доминирующий над выбранным.

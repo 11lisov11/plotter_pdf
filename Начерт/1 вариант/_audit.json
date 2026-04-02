@@ -1,0 +1,89 @@
+{
+  "variant_dir": "C:\\plotter_pdf\\Начерт\\1 вариант",
+  "items": [
+    {
+      "task": "Задача 10_pack",
+      "kind": "a3_two_pass",
+      "reference_source": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 10_pack\\_candidates\\a3_clean_source.pdf",
+      "combined_preview": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 10_pack\\combined_preview.pdf",
+      "combined_layout_similarity": 0.985592,
+      "pass_01_preview": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 10_pack\\pages\\pass_01.pdf",
+      "pass_02_preview": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 10_pack\\pages\\pass_02.pdf",
+      "source": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 10.pdf",
+      "notes": [
+        "scale=1.0; clipping=True; source_cleanup=method3; left_strip_removed=True; outer_border_removed=True",
+        "scale=1.0; clipping=True; source_cleanup=method3; left_strip_removed=True; outer_border_removed=True; pass_02_rotated_180_for_sheet_flip=True"
+      ]
+    },
+    {
+      "task": "Задача 1_pack",
+      "kind": "a4",
+      "layout_similarity": 0.958407,
+      "preview": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 1_pack\\pages\\page_01.pdf",
+      "source": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 1.pdf"
+    },
+    {
+      "task": "Задача 2_pack",
+      "kind": "a4",
+      "layout_similarity": 0.971837,
+      "preview": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 2_pack\\pages\\page_01.pdf",
+      "source": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 2__regen_1.pdf"
+    },
+    {
+      "task": "Задача 3_pack",
+      "kind": "a3_two_pass",
+      "reference_source": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 3_pack\\_candidates\\a3_clean_source.pdf",
+      "combined_preview": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 3_pack\\combined_preview.pdf",
+      "combined_layout_similarity": 0.994947,
+      "pass_01_preview": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 3_pack\\pages\\pass_01.pdf",
+      "pass_02_preview": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 3_pack\\pages\\pass_02.pdf",
+      "source": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 3__regen_1.pdf",
+      "notes": [
+        "scale=1.0; clipping=True; source_cleanup=method3; left_strip_removed=True; outer_border_removed=True",
+        "scale=1.0; clipping=True; source_cleanup=method3; left_strip_removed=True; outer_border_removed=True; pass_02_rotated_180_for_sheet_flip=True"
+      ]
+    },
+    {
+      "task": "Задача 4_pack",
+      "kind": "a4",
+      "layout_similarity": 0.961437,
+      "preview": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 4_pack\\pages\\page_01.pdf",
+      "source": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 4.pdf"
+    },
+    {
+      "task": "Задача 5_pack",
+      "kind": "a4",
+      "layout_similarity": 0.954388,
+      "preview": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 5_pack\\pages\\page_01.pdf",
+      "source": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 5.pdf"
+    },
+    {
+      "task": "Задача 6_pack",
+      "kind": "a4",
+      "layout_similarity": 0.966685,
+      "preview": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 6_pack\\pages\\page_01.pdf",
+      "source": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 6.pdf"
+    },
+    {
+      "task": "Задача 7_pack",
+      "kind": "a4",
+      "layout_similarity": 0.9701,
+      "preview": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 7_pack\\pages\\page_01.pdf",
+      "source": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 7.pdf"
+    },
+    {
+      "task": "Задача 8_pack",
+      "kind": "a4",
+      "layout_similarity": 0.961341,
+      "preview": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 8_pack\\pages\\page_01.pdf",
+      "source": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 8.pdf"
+    },
+    {
+      "task": "Задача 9_pack",
+      "kind": "a4",
+      "layout_similarity": 0.964627,
+      "preview": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 9_pack\\pages\\page_01.pdf",
+      "source": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 9.pdf"
+    }
+  ]
+}

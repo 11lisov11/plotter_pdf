@@ -1,0 +1,1219 @@
+{
+  "generated_at_epoch": 1775127391.679494,
+  "sources": [
+    {
+      "task_number": 1,
+      "task_name": "Задача 1",
+      "prepared_source_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 1.pdf",
+      "source_kind": "frw",
+      "kompas_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 1__kompas.pdf",
+      "page_count": 1,
+      "page_sizes_mm": [
+        [
+          210.016,
+          297.011
+        ]
+      ]
+    },
+    {
+      "task_number": 2,
+      "task_name": "Задача 2",
+      "prepared_source_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 2__regen_1.pdf",
+      "source_kind": "frw",
+      "kompas_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 2__kompas.pdf",
+      "page_count": 1,
+      "page_sizes_mm": [
+        [
+          210.016,
+          297.011
+        ]
+      ]
+    },
+    {
+      "task_number": 3,
+      "task_name": "Задача 3",
+      "prepared_source_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 3__regen_1.pdf",
+      "source_kind": "frw",
+      "kompas_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 3__kompas.pdf",
+      "page_count": 2,
+      "page_sizes_mm": [
+        [
+          210.016,
+          297.011
+        ],
+        [
+          210.016,
+          297.011
+        ]
+      ],
+      "merged_a3_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 3__regen_1.pdf"
+    },
+    {
+      "task_number": 4,
+      "task_name": "Задача 4",
+      "prepared_source_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 4.pdf",
+      "source_kind": "frw",
+      "kompas_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 4__kompas.pdf",
+      "page_count": 1,
+      "page_sizes_mm": [
+        [
+          210.016,
+          297.011
+        ]
+      ]
+    },
+    {
+      "task_number": 5,
+      "task_name": "Задача 5",
+      "prepared_source_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 5.pdf",
+      "source_kind": "frw",
+      "kompas_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 5__kompas.pdf",
+      "page_count": 1,
+      "page_sizes_mm": [
+        [
+          210.016,
+          297.011
+        ]
+      ]
+    },
+    {
+      "task_number": 6,
+      "task_name": "Задача 6",
+      "prepared_source_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 6.pdf",
+      "source_kind": "frw",
+      "kompas_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 6__kompas.pdf",
+      "page_count": 1,
+      "page_sizes_mm": [
+        [
+          210.016,
+          297.011
+        ]
+      ]
+    },
+    {
+      "task_number": 7,
+      "task_name": "Задача 7",
+      "prepared_source_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 7.pdf",
+      "source_kind": "frw",
+      "kompas_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 7__kompas.pdf",
+      "page_count": 1,
+      "page_sizes_mm": [
+        [
+          210.016,
+          297.011
+        ]
+      ]
+    },
+    {
+      "task_number": 8,
+      "task_name": "Задача 8",
+      "prepared_source_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 8.pdf",
+      "source_kind": "frw",
+      "kompas_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 8__kompas.pdf",
+      "page_count": 1,
+      "page_sizes_mm": [
+        [
+          210.016,
+          297.011
+        ]
+      ]
+    },
+    {
+      "task_number": 9,
+      "task_name": "Задача 9",
+      "prepared_source_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 9.pdf",
+      "source_kind": "frw",
+      "kompas_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 9__kompas.pdf",
+      "page_count": 1,
+      "page_sizes_mm": [
+        [
+          210.016,
+          297.011
+        ]
+      ]
+    },
+    {
+      "task_number": 10,
+      "task_name": "Задача 10",
+      "prepared_source_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 10.pdf",
+      "source_kind": "frw",
+      "kompas_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 10__kompas.pdf",
+      "page_count": 2,
+      "page_sizes_mm": [
+        [
+          210.016,
+          297.011
+        ],
+        [
+          210.016,
+          297.011
+        ]
+      ],
+      "merged_a3_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 10.pdf"
+    }
+  ],
+  "reports": [
+    {
+      "source_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 1.pdf",
+      "kind": "drawing",
+      "page_count": 1,
+      "page_size_mm": [
+        210.016,
+        297.011
+      ],
+      "a3_two_pass": false,
+      "items": [
+        {
+          "variant": "a4_hybrid_frame",
+          "ok": true,
+          "message": "Done: prepared file saved to C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 1_pack\\_candidates\\a4_hybrid_frame.nc",
+          "logs": [
+            "Source pages: 1, selected: 1",
+            "Method3 centerline: threshold=128, candidates=9, paths=673",
+            "Method3 PDF vector graphics: drawings=195, paths=87, thick_paths=40",
+            "Method3 layer split: text_paths=578, graphics_source=pdf_vector, graphics_paths=86",
+            "Method3 cleanup: restored overlap text paths=4",
+            "Method3 cleanup: removed left-column text paths=90",
+            "Method3 cleanup: removed outer-frame paths=1",
+            "Method3 detail thick-lines multipass: skipped reason=exact_geometry_mode, candidates=86",
+            "Method3 filled accents: paths=40, segments=40",
+            "Method3 cleanup: hard-clipped geometry left of frame x<20.50 mm: paths=2",
+            "Method3 cleanup: restored left vertical frame line.",
+            "Method3 cleanup: removed tiny bottom artifacts=5",
+            "--- hybrid fit: detail=1:1, frame=fit-to-work-area ---",
+            "Text render mode: handwriting=off font='Marck Script'; image_contours=off",
+            "Extracting paths from SVG ...",
+            "Raw geometry bounds: x(0.000, 180.000) y(0.000, 280.000)",
+            "SVG page: 180.000 x 280.000 mm",
+            "Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).",
+            "SVG geometry: paths=700, segments=7265.",
+            "Source bounds: x(0.000, 180.000) y(0.000, 280.000)",
+            "Fit to work area: scale=1.0000, translate=(0.000,-295.000), from (0.000, 0.000)-(180.000, 280.000)",
+            "Reorder: source order preserved (700 polylines).",
+            "Segment counts: source=7265, fitted=7265, clipped=7265",
+            "Drawable segments after clip: 7265 (100.0% of source)",
+            "Prepared bounds: x(0.000, 180.000) y(-295.000, -15.000)",
+            "Estimated draw length: 7.47 m",
+            "Applying pen-up / pen-down ...",
+            "G-code stats: lines=9364, draw=8651, travel=699, bounds=0.000..180.000 x, -295.000..0.000 y",
+            "Preflight: ok: lines=9364, draw=8651, travel=699, ratio=0.08",
+            "Saved file stats: lines=9364, draw=8651, travel=699, bounds=0.000..180.000 x, -295.000..0.000 y",
+            "Saved: C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 1_pack\\_candidates\\a4_hybrid_frame.nc",
+            "Preview SVG: C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 1_pack\\_candidates\\a4_hybrid_frame.svg",
+            "Preview PDF: C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 1_pack\\_candidates\\a4_hybrid_frame.pdf"
+          ],
+          "fit_scale": 1.0,
+          "clipping_warning": false,
+          "layout_similarity": 0.958407,
+          "metrics": {
+            "draw_length_mm": 7465.677,
+            "segments_total": 7265,
+            "segments_duplicate": 0,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -295.0,
+              "y_max": -15.0
+            }
+          },
+          "svg": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 1_pack\\_candidates\\a4_hybrid_frame.svg",
+          "pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 1_pack\\_candidates\\a4_hybrid_frame.pdf",
+          "nc": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 1_pack\\_candidates\\a4_hybrid_frame.nc",
+          "gcode": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 1_pack\\_candidates\\a4_hybrid_frame.gcode",
+          "notes": "detail_scale=1.0; frame_scale_x=1.0941; frame_scale_y=0.9822; detail_bbox=153.25x219.22 mm; left_strip_removed=True; outer_border_removed=True"
+        }
+      ],
+      "selected_variant": "a4_hybrid_frame",
+      "selected_layout_similarity": 0.958407,
+      "task_number": 1,
+      "task_name": "Задача 1",
+      "source_meta": {
+        "source_kind": "frw",
+        "task_number": 1,
+        "kompas_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 1__kompas.pdf",
+        "page_count": 1,
+        "page_sizes_mm": [
+          [
+            210.016,
+            297.011
+          ]
+        ]
+      }
+    },
+    {
+      "source_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 2__regen_1.pdf",
+      "kind": "drawing",
+      "page_count": 1,
+      "page_size_mm": [
+        210.016,
+        297.011
+      ],
+      "a3_two_pass": false,
+      "items": [
+        {
+          "variant": "a4_hybrid_frame",
+          "ok": true,
+          "message": "Done: prepared file saved to C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 2_pack\\_candidates\\a4_hybrid_frame.nc",
+          "logs": [
+            "Source pages: 1, selected: 1",
+            "Method3 centerline: threshold=224, candidates=9, paths=506",
+            "Method3 PDF vector graphics: drawings=53, paths=27, thick_paths=20",
+            "Method3 layer split: text_paths=464, graphics_source=pdf_vector, graphics_paths=25",
+            "Method3 cleanup: restored overlap text paths=4",
+            "Method3 cleanup: removed left-column text paths=34",
+            "Method3 cleanup: removed left-column graphics-glyph paths=1",
+            "Method3 cleanup: removed outer-frame paths=1",
+            "Method3 detail thick-lines multipass: skipped reason=exact_geometry_mode, candidates=25",
+            "Method3 filled accents: paths=10, segments=10",
+            "Method3 cleanup: removed left-of-frame leftovers=2",
+            "Method3 cleanup: hard-clipped geometry left of frame x<20.50 mm: paths=9",
+            "Method3 cleanup: restored left vertical frame line.",
+            "Method3 cleanup: removed tiny bottom artifacts=7",
+            "--- hybrid fit: detail=1:1, frame=fit-to-work-area ---",
+            "Text render mode: handwriting=off font='Marck Script'; image_contours=off",
+            "Extracting paths from SVG ...",
+            "Raw geometry bounds: x(0.000, 180.000) y(0.000, 280.000)",
+            "SVG page: 180.000 x 280.000 mm",
+            "Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).",
+            "SVG geometry: paths=472, segments=6334.",
+            "Source bounds: x(0.000, 180.000) y(0.000, 280.000)",
+            "Fit to work area: scale=1.0000, translate=(0.000,-295.000), from (0.000, 0.000)-(180.000, 280.000)",
+            "Reorder: source order preserved (472 polylines).",
+            "Segment counts: source=6334, fitted=6334, clipped=6334",
+            "Drawable segments after clip: 6334 (100.0% of source)",
+            "Prepared bounds: x(0.000, 180.000) y(-295.000, -15.000)",
+            "Estimated draw length: 5.18 m",
+            "Applying pen-up / pen-down ...",
+            "G-code stats: lines=7767, draw=7276, travel=477, bounds=0.000..180.000 x, -295.000..0.000 y",
+            "Preflight: ok: lines=7767, draw=7276, travel=477, ratio=0.07",
+            "Saved file stats: lines=7767, draw=7276, travel=477, bounds=0.000..180.000 x, -295.000..0.000 y",
+            "Saved: C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 2_pack\\_candidates\\a4_hybrid_frame.nc",
+            "Preview SVG: C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 2_pack\\_candidates\\a4_hybrid_frame.svg",
+            "Preview PDF: C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 2_pack\\_candidates\\a4_hybrid_frame.pdf"
+          ],
+          "fit_scale": 1.0,
+          "clipping_warning": false,
+          "layout_similarity": 0.971837,
+          "metrics": {
+            "draw_length_mm": 5183.184,
+            "segments_total": 6334,
+            "segments_duplicate": 0,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -295.0,
+              "y_max": -15.0
+            }
+          },
+          "svg": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 2_pack\\_candidates\\a4_hybrid_frame.svg",
+          "pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 2_pack\\_candidates\\a4_hybrid_frame.pdf",
+          "nc": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 2_pack\\_candidates\\a4_hybrid_frame.nc",
+          "gcode": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 2_pack\\_candidates\\a4_hybrid_frame.gcode",
+          "notes": "detail_scale=1.0; frame_scale_x=1.0941; frame_scale_y=0.9822; detail_bbox=164.50x207.38 mm; left_strip_removed=True; outer_border_removed=True"
+        }
+      ],
+      "selected_variant": "a4_hybrid_frame",
+      "selected_layout_similarity": 0.971837,
+      "task_number": 2,
+      "task_name": "Задача 2",
+      "source_meta": {
+        "source_kind": "frw",
+        "task_number": 2,
+        "kompas_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 2__kompas.pdf",
+        "page_count": 1,
+        "page_sizes_mm": [
+          [
+            210.016,
+            297.011
+          ]
+        ]
+      }
+    },
+    {
+      "source_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 3__regen_1.pdf",
+      "kind": "drawing",
+      "page_count": 1,
+      "page_size_mm": [
+        420.031,
+        297.011
+      ],
+      "a3_two_pass": true,
+      "items": [
+        {
+          "item": "pass_01",
+          "ok": true,
+          "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1775127623226023800_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1775127623226023800.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1775127623226023800_vector.pdf",
+          "logs": [
+            "Source pages: 1, selected: 1",
+            "Method3 centerline: threshold=160, candidates=9, paths=508",
+            "Method3 PDF vector graphics: drawings=884, paths=730, thick_paths=507",
+            "Method3 layer split: text_paths=489, graphics_source=pdf_vector, graphics_paths=708",
+            "Method3 cleanup: restored overlap text paths=9",
+            "Method3 cleanup: removed left-column text paths=6",
+            "Method3 cleanup: removed left-column graphics-glyph paths=19",
+            "Method3 cleanup: removed outer-frame paths=3",
+            "Method3 detail thick-lines multipass: skipped reason=exact_geometry_mode, candidates=708",
+            "Method3 filled accents: paths=32, segments=32",
+            "Method3 cleanup: removed tiny bottom artifacts=5",
+            "Method3 cleanup: A3 two-pass hybrid canvas detail=1:1 paths=724, detail_bbox=318.85x221.99 mm, frame_scale_x=0.9242, frame_scale_y=0.9653, target=360.00x280.00 mm",
+            "Method3 micro-segment prune: segments=7922->7921, min=0.03 mm",
+            "--- a3 clean pass ---",
+            "Render mode: drawing; ExactGeometry=on; Handwriting=off",
+            "Sheet 420.0x297.0 mm is larger than workspace 180.0x280.0 mm. Using the overlapped sheet/workspace window.",
+            "Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-295.000,-15.000), sheet_bounds x(0.000,420.000) y(-295.000,2.000), sheet=a3, anchor=lower_left, offset=(0.00,0.00)",
+            "Text render mode: handwriting=off font='Marck Script'; image_contours=off",
+            "Extracting paths from SVG ...",
+            "Raw geometry bounds: x(0.000, 360.000) y(0.000, 280.000)",
+            "SVG page: 360.000 x 280.000 mm",
+            "Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).",
+            "SVG geometry: paths=1176, segments=2879.",
+            "Source bounds: x(0.000, 360.000) y(0.000, 280.000)",
+            "Fit to work area: scale=1.0000, translate=(-90.000,-295.000), from (0.000, 0.000)-(360.000, 280.000)",
+            "Pass window: col 1/2, row 1/1, source=360.000x280.000 mm, window=180.000x280.000 mm, offset=(0.000,0.000), shift=(90.000,0.000)",
+            "Work area clipping: kept 886 visible segments, dropped 1993 out-of-area segments.",
+            "Reorder: source order preserved (560 polylines).",
+            "Segment counts: source=2879, fitted=2879, clipped=886",
+            "Drawable segments after clip: 886 (30.8% of source)",
+            "Warning: significant clipping/transforming occurred. Check that page is inside target work area.",
+            "Prepared bounds: x(0.000, 180.000) y(-295.000, -15.000)",
+            "Estimated draw length: 7.48 m",
+            "Applying pen-up / pen-down ...",
+            "G-code stats: lines=2039, draw=1639, travel=386, bounds=0.000..180.000 x, -295.000..0.000 y",
+            "Preflight: ok: lines=2039, draw=1639, travel=386, ratio=0.24",
+            "Saved file stats: lines=2039, draw=1639, travel=386, bounds=0.000..180.000 x, -295.000..0.000 y",
+            "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1775127623226023800.nc",
+            "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1775127623226023800_vector.svg",
+            "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1775127623226023800_vector.pdf"
+          ],
+          "fit_scale": 1.0,
+          "clipping_warning": true,
+          "layout_similarity": null,
+          "metrics": {
+            "draw_length_mm": 7479.772,
+            "segments_total": 879,
+            "segments_duplicate": 0,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -295.0,
+              "y_max": -15.0
+            }
+          },
+          "svg": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 3_pack\\pages\\pass_01.svg",
+          "pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 3_pack\\pages\\pass_01.pdf",
+          "nc": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 3_pack\\pages\\pass_01.nc",
+          "gcode": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 3_pack\\pages\\pass_01.gcode",
+          "notes": "source_cleanup=method3; left_strip_removed=True; outer_border_removed=True"
+        },
+        {
+          "item": "pass_02",
+          "ok": true,
+          "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1775127628836155600_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1775127628836155600.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1775127628836155600_vector.pdf",
+          "logs": [
+            "Source pages: 1, selected: 1",
+            "Method3 centerline: threshold=160, candidates=9, paths=508",
+            "Method3 PDF vector graphics: drawings=884, paths=730, thick_paths=507",
+            "Method3 layer split: text_paths=489, graphics_source=pdf_vector, graphics_paths=708",
+            "Method3 cleanup: restored overlap text paths=9",
+            "Method3 cleanup: removed left-column text paths=6",
+            "Method3 cleanup: removed left-column graphics-glyph paths=19",
+            "Method3 cleanup: removed outer-frame paths=3",
+            "Method3 detail thick-lines multipass: skipped reason=exact_geometry_mode, candidates=708",
+            "Method3 filled accents: paths=32, segments=32",
+            "Method3 cleanup: removed tiny bottom artifacts=5",
+            "Method3 cleanup: A3 two-pass hybrid canvas detail=1:1 paths=724, detail_bbox=318.85x221.99 mm, frame_scale_x=0.9242, frame_scale_y=0.9653, target=360.00x280.00 mm",
+            "Method3 micro-segment prune: segments=7922->7921, min=0.03 mm",
+            "pass_02_rotated_180_for_sheet_flip=True",
+            "--- a3 clean pass ---",
+            "Render mode: drawing; ExactGeometry=on; Handwriting=off",
+            "Sheet 420.0x297.0 mm is larger than workspace 180.0x280.0 mm. Using the overlapped sheet/workspace window.",
+            "Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-295.000,-15.000), sheet_bounds x(0.000,420.000) y(-295.000,2.000), sheet=a3, anchor=lower_left, offset=(0.00,0.00)",
+            "Text render mode: handwriting=off font='Marck Script'; image_contours=off",
+            "Extracting paths from SVG ...",
+            "Raw geometry bounds: x(0.000, 360.000) y(0.000, 280.000)",
+            "SVG page: 360.000 x 280.000 mm",
+            "Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).",
+            "SVG geometry: paths=1176, segments=2879.",
+            "Source bounds: x(0.000, 360.000) y(0.000, 280.000)",
+            "Fit to work area: scale=1.0000, translate=(-90.000,-295.000), from (0.000, 0.000)-(360.000, 280.000)",
+            "Pass window: col 2/2, row 1/1, source=360.000x280.000 mm, window=180.000x280.000 mm, offset=(180.000,0.000), shift=(-90.000,0.000)",
+            "Sheet pass transform: rotating geometry by 180 deg for a3 pass 2/2 x 1/1 around active area center (90.000,-155.000).",
+            "Sheet pass transform: translating geometry by (0.000,4.000) mm for a3 pass 2/2 x 1/1.",
+            "Work area clipping: kept 2003 visible segments, dropped 876 out-of-area segments.",
+            "Segment dedup: dropped 1/2003 retraced segments (0.0%), kept=2002, eps=0.010 mm",
+            "Reorder: source order preserved (626 polylines).",
+            "Segment counts: source=2879, fitted=2879, clipped=2003",
+            "Drawable segments after clip: 2003 (69.6% of source)",
+            "Warning: significant clipping/transforming occurred. Check that page is inside target work area.",
+            "Prepared bounds: x(0.000, 180.000) y(-291.000, -15.000)",
+            "Estimated draw length: 6.99 m",
+            "Applying pen-up / pen-down ...",
+            "G-code stats: lines=3645, draw=3073, travel=558, bounds=0.000..180.000 x, -291.000..0.000 y",
+            "Preflight: ok: lines=3645, draw=3073, travel=558, ratio=0.18",
+            "Saved file stats: lines=3645, draw=3073, travel=558, bounds=0.000..180.000 x, -291.000..0.000 y",
+            "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1775127628836155600.nc",
+            "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1775127628836155600_vector.svg",
+            "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1775127628836155600_vector.pdf"
+          ],
+          "fit_scale": 1.0,
+          "clipping_warning": true,
+          "layout_similarity": null,
+          "metrics": {
+            "draw_length_mm": 6968.828,
+            "segments_total": 1969,
+            "segments_duplicate": 0,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -291.0,
+              "y_max": -15.0
+            }
+          },
+          "svg": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 3_pack\\pages\\pass_02.svg",
+          "pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 3_pack\\pages\\pass_02.pdf",
+          "nc": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 3_pack\\pages\\pass_02.nc",
+          "gcode": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 3_pack\\pages\\pass_02.gcode",
+          "notes": "source_cleanup=method3; left_strip_removed=True; outer_border_removed=True; pass_02_rotated_180_for_sheet_flip=True"
+        }
+      ],
+      "a3_clean_source": {
+        "ok": true,
+        "svg": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 3_pack\\_candidates\\a3_clean_source.svg",
+        "pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 3_pack\\_candidates\\a3_clean_source.pdf"
+      },
+      "combined_preview": {
+        "reference_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 3_pack\\_candidates\\a3_clean_source.pdf",
+        "svg": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 3_pack\\combined_preview.svg",
+        "pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 3_pack\\combined_preview.pdf",
+        "layout_similarity": 0.994947
+      },
+      "task_number": 3,
+      "task_name": "Задача 3",
+      "source_meta": {
+        "source_kind": "frw",
+        "task_number": 3,
+        "kompas_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 3__kompas.pdf",
+        "page_count": 2,
+        "page_sizes_mm": [
+          [
+            210.016,
+            297.011
+          ],
+          [
+            210.016,
+            297.011
+          ]
+        ],
+        "merged_a3_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 3__regen_1.pdf"
+      }
+    },
+    {
+      "source_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 4.pdf",
+      "kind": "drawing",
+      "page_count": 1,
+      "page_size_mm": [
+        210.016,
+        297.011
+      ],
+      "a3_two_pass": false,
+      "items": [
+        {
+          "variant": "a4_hybrid_frame",
+          "ok": true,
+          "message": "Done: prepared file saved to C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 4_pack\\_candidates\\a4_hybrid_frame.nc",
+          "logs": [
+            "Source pages: 1, selected: 1",
+            "Method3 centerline: threshold=224, candidates=9, paths=643",
+            "Method3 PDF vector graphics: drawings=148, paths=90, thick_paths=39",
+            "Method3 layer split: text_paths=548, graphics_source=pdf_vector, graphics_paths=88",
+            "Method3 cleanup: restored overlap text paths=18",
+            "Method3 cleanup: removed left-column text paths=74",
+            "Method3 cleanup: removed left-column graphics-glyph paths=1",
+            "Method3 cleanup: removed outer-frame paths=1",
+            "Method3 detail thick-lines multipass: skipped reason=exact_geometry_mode, candidates=88",
+            "Method3 filled accents: paths=23, segments=23",
+            "Method3 cleanup: hard-clipped geometry left of frame x<20.50 mm: paths=6",
+            "Method3 cleanup: restored left vertical frame line.",
+            "Method3 cleanup: removed tiny bottom artifacts=7",
+            "--- hybrid fit: detail=1:1, frame=fit-to-work-area ---",
+            "Text render mode: handwriting=off font='Marck Script'; image_contours=off",
+            "Extracting paths from SVG ...",
+            "Raw geometry bounds: x(0.000, 180.000) y(0.000, 280.000)",
+            "SVG page: 180.000 x 280.000 mm",
+            "Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).",
+            "SVG geometry: paths=648, segments=7058.",
+            "Source bounds: x(0.000, 180.000) y(0.000, 280.000)",
+            "Fit to work area: scale=1.0000, translate=(0.000,-295.000), from (0.000, 0.000)-(180.000, 280.000)",
+            "Reorder: source order preserved (648 polylines).",
+            "Segment counts: source=7058, fitted=7058, clipped=7058",
+            "Drawable segments after clip: 7058 (100.0% of source)",
+            "Prepared bounds: x(0.000, 180.000) y(-295.000, -15.000)",
+            "Estimated draw length: 7.46 m",
+            "Applying pen-up / pen-down ...",
+            "G-code stats: lines=9022, draw=8354, travel=654, bounds=0.000..180.000 x, -295.000..0.000 y",
+            "Preflight: ok: lines=9022, draw=8354, travel=654, ratio=0.08",
+            "Saved file stats: lines=9022, draw=8354, travel=654, bounds=0.000..180.000 x, -295.000..0.000 y",
+            "Saved: C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 4_pack\\_candidates\\a4_hybrid_frame.nc",
+            "Preview SVG: C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 4_pack\\_candidates\\a4_hybrid_frame.svg",
+            "Preview PDF: C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 4_pack\\_candidates\\a4_hybrid_frame.pdf"
+          ],
+          "fit_scale": 1.0,
+          "clipping_warning": false,
+          "layout_similarity": 0.961437,
+          "metrics": {
+            "draw_length_mm": 7459.802,
+            "segments_total": 7058,
+            "segments_duplicate": 0,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -295.0,
+              "y_max": -15.0
+            }
+          },
+          "svg": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 4_pack\\_candidates\\a4_hybrid_frame.svg",
+          "pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 4_pack\\_candidates\\a4_hybrid_frame.pdf",
+          "nc": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 4_pack\\_candidates\\a4_hybrid_frame.nc",
+          "gcode": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 4_pack\\_candidates\\a4_hybrid_frame.gcode",
+          "notes": "detail_scale=1.0; frame_scale_x=1.0941; frame_scale_y=0.9822; detail_bbox=164.50x219.41 mm; left_strip_removed=True; outer_border_removed=True"
+        }
+      ],
+      "selected_variant": "a4_hybrid_frame",
+      "selected_layout_similarity": 0.961437,
+      "task_number": 4,
+      "task_name": "Задача 4",
+      "source_meta": {
+        "source_kind": "frw",
+        "task_number": 4,
+        "kompas_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 4__kompas.pdf",
+        "page_count": 1,
+        "page_sizes_mm": [
+          [
+            210.016,
+            297.011
+          ]
+        ]
+      }
+    },
+    {
+      "source_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 5.pdf",
+      "kind": "drawing",
+      "page_count": 1,
+      "page_size_mm": [
+        210.016,
+        297.011
+      ],
+      "a3_two_pass": false,
+      "items": [
+        {
+          "variant": "a4_hybrid_frame",
+          "ok": true,
+          "message": "Done: prepared file saved to C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 5_pack\\_candidates\\a4_hybrid_frame.nc",
+          "logs": [
+            "Source pages: 1, selected: 1",
+            "Method3 centerline: threshold=160, candidates=9, paths=472",
+            "Method3 PDF vector graphics: drawings=115, paths=54, thick_paths=26",
+            "Method3 layer split: text_paths=400, graphics_source=pdf_vector, graphics_paths=40",
+            "Method3 cleanup: restored overlap text paths=13",
+            "Method3 cleanup: removed left-column text paths=51",
+            "Method3 cleanup: removed left-column graphics-glyph paths=13",
+            "Method3 cleanup: removed outer-frame paths=1",
+            "Method3 detail thick-lines multipass: skipped reason=exact_geometry_mode, candidates=40",
+            "Method3 filled accents: paths=24, segments=24",
+            "Method3 cleanup: removed left-of-frame leftovers=2",
+            "Method3 cleanup: hard-clipped geometry left of frame x<20.50 mm: paths=9",
+            "Method3 cleanup: restored left vertical frame line.",
+            "Method3 cleanup: removed tiny bottom artifacts=5",
+            "--- hybrid fit: detail=1:1, frame=fit-to-work-area ---",
+            "Text render mode: handwriting=off font='Marck Script'; image_contours=off",
+            "Extracting paths from SVG ...",
+            "Raw geometry bounds: x(0.000, 180.000) y(0.000, 280.000)",
+            "SVG page: 180.000 x 280.000 mm",
+            "Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).",
+            "SVG geometry: paths=459, segments=5793.",
+            "Source bounds: x(0.000, 180.000) y(0.000, 280.000)",
+            "Fit to work area: scale=1.0000, translate=(0.000,-295.000), from (0.000, 0.000)-(180.000, 280.000)",
+            "Reorder: source order preserved (459 polylines).",
+            "Segment counts: source=5793, fitted=5793, clipped=5793",
+            "Drawable segments after clip: 5793 (100.0% of source)",
+            "Prepared bounds: x(0.000, 180.000) y(-295.000, -15.000)",
+            "Estimated draw length: 7.77 m",
+            "Applying pen-up / pen-down ...",
+            "G-code stats: lines=7190, draw=6711, travel=465, bounds=0.000..180.000 x, -295.000..0.000 y",
+            "Preflight: ok: lines=7190, draw=6711, travel=465, ratio=0.07",
+            "Saved file stats: lines=7190, draw=6711, travel=465, bounds=0.000..180.000 x, -295.000..0.000 y",
+            "Saved: C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 5_pack\\_candidates\\a4_hybrid_frame.nc",
+            "Preview SVG: C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 5_pack\\_candidates\\a4_hybrid_frame.svg",
+            "Preview PDF: C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 5_pack\\_candidates\\a4_hybrid_frame.pdf"
+          ],
+          "fit_scale": 1.0,
+          "clipping_warning": false,
+          "layout_similarity": 0.954388,
+          "metrics": {
+            "draw_length_mm": 7773.339,
+            "segments_total": 5793,
+            "segments_duplicate": 0,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -295.0,
+              "y_max": -15.0
+            }
+          },
+          "svg": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 5_pack\\_candidates\\a4_hybrid_frame.svg",
+          "pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 5_pack\\_candidates\\a4_hybrid_frame.pdf",
+          "nc": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 5_pack\\_candidates\\a4_hybrid_frame.nc",
+          "gcode": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 5_pack\\_candidates\\a4_hybrid_frame.gcode",
+          "notes": "detail_scale=1.0; frame_scale_x=1.0941; frame_scale_y=0.9822; detail_bbox=164.50x219.58 mm; left_strip_removed=True; outer_border_removed=True"
+        }
+      ],
+      "selected_variant": "a4_hybrid_frame",
+      "selected_layout_similarity": 0.954388,
+      "task_number": 5,
+      "task_name": "Задача 5",
+      "source_meta": {
+        "source_kind": "frw",
+        "task_number": 5,
+        "kompas_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 5__kompas.pdf",
+        "page_count": 1,
+        "page_sizes_mm": [
+          [
+            210.016,
+            297.011
+          ]
+        ]
+      }
+    },
+    {
+      "source_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 6.pdf",
+      "kind": "drawing",
+      "page_count": 1,
+      "page_size_mm": [
+        210.016,
+        297.011
+      ],
+      "a3_two_pass": false,
+      "items": [
+        {
+          "variant": "a4_hybrid_frame",
+          "ok": true,
+          "message": "Done: prepared file saved to C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 6_pack\\_candidates\\a4_hybrid_frame.nc",
+          "logs": [
+            "Source pages: 1, selected: 1",
+            "Method3 centerline: threshold=160, candidates=9, paths=375",
+            "Method3 PDF vector graphics: drawings=87, paths=54, thick_paths=21",
+            "Method3 layer split: text_paths=293, graphics_source=pdf_vector, graphics_paths=51",
+            "Method3 cleanup: restored overlap text paths=8",
+            "Method3 cleanup: removed left-column text paths=69",
+            "Method3 cleanup: removed left-column graphics-glyph paths=2",
+            "Method3 cleanup: removed outer-frame paths=1",
+            "Method3 detail thick-lines multipass: skipped reason=exact_geometry_mode, candidates=51",
+            "Method3 filled accents: paths=15, segments=15",
+            "Method3 cleanup: hard-clipped geometry left of frame x<20.50 mm: paths=4",
+            "Method3 cleanup: restored left vertical frame line.",
+            "Method3 cleanup: removed tiny bottom artifacts=5",
+            "--- hybrid fit: detail=1:1, frame=fit-to-work-area ---",
+            "Text render mode: handwriting=off font='Marck Script'; image_contours=off",
+            "Extracting paths from SVG ...",
+            "Raw geometry bounds: x(0.000, 180.000) y(0.000, 280.000)",
+            "SVG page: 180.000 x 280.000 mm",
+            "Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).",
+            "SVG geometry: paths=354, segments=4621.",
+            "Source bounds: x(0.000, 180.000) y(0.000, 280.000)",
+            "Fit to work area: scale=1.0000, translate=(0.000,-295.000), from (0.000, 0.000)-(180.000, 280.000)",
+            "Reorder: source order preserved (354 polylines).",
+            "Segment counts: source=4621, fitted=4621, clipped=4621",
+            "Drawable segments after clip: 4621 (100.0% of source)",
+            "Prepared bounds: x(0.000, 180.000) y(-295.000, -15.000)",
+            "Estimated draw length: 5.72 m",
+            "Applying pen-up / pen-down ...",
+            "G-code stats: lines=5703, draw=5329, travel=360, bounds=0.000..180.000 x, -295.000..0.000 y",
+            "Preflight: ok: lines=5703, draw=5329, travel=360, ratio=0.07",
+            "Saved file stats: lines=5703, draw=5329, travel=360, bounds=0.000..180.000 x, -295.000..0.000 y",
+            "Saved: C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 6_pack\\_candidates\\a4_hybrid_frame.nc",
+            "Preview SVG: C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 6_pack\\_candidates\\a4_hybrid_frame.svg",
+            "Preview PDF: C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 6_pack\\_candidates\\a4_hybrid_frame.pdf"
+          ],
+          "fit_scale": 1.0,
+          "clipping_warning": false,
+          "layout_similarity": 0.966685,
+          "metrics": {
+            "draw_length_mm": 5720.691,
+            "segments_total": 4621,
+            "segments_duplicate": 0,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -295.0,
+              "y_max": -15.0
+            }
+          },
+          "svg": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 6_pack\\_candidates\\a4_hybrid_frame.svg",
+          "pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 6_pack\\_candidates\\a4_hybrid_frame.pdf",
+          "nc": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 6_pack\\_candidates\\a4_hybrid_frame.nc",
+          "gcode": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 6_pack\\_candidates\\a4_hybrid_frame.gcode",
+          "notes": "detail_scale=1.0; frame_scale_x=1.0941; frame_scale_y=0.9822; detail_bbox=164.50x193.00 mm; left_strip_removed=True; outer_border_removed=True"
+        }
+      ],
+      "selected_variant": "a4_hybrid_frame",
+      "selected_layout_similarity": 0.966685,
+      "task_number": 6,
+      "task_name": "Задача 6",
+      "source_meta": {
+        "source_kind": "frw",
+        "task_number": 6,
+        "kompas_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 6__kompas.pdf",
+        "page_count": 1,
+        "page_sizes_mm": [
+          [
+            210.016,
+            297.011
+          ]
+        ]
+      }
+    },
+    {
+      "source_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 7.pdf",
+      "kind": "drawing",
+      "page_count": 1,
+      "page_size_mm": [
+        210.016,
+        297.011
+      ],
+      "a3_two_pass": false,
+      "items": [
+        {
+          "variant": "a4_hybrid_frame",
+          "ok": true,
+          "message": "Done: prepared file saved to C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 7_pack\\_candidates\\a4_hybrid_frame.nc",
+          "logs": [
+            "Source pages: 1, selected: 1",
+            "Method3 centerline: threshold=224, candidates=9, paths=553",
+            "Method3 PDF vector graphics: drawings=61, paths=31, thick_paths=19",
+            "Method3 layer split: text_paths=496, graphics_source=pdf_vector, graphics_paths=30",
+            "Method3 cleanup: restored overlap text paths=5",
+            "Method3 cleanup: removed left-column text paths=46",
+            "Method3 cleanup: removed outer-frame paths=1",
+            "Method3 detail thick-lines multipass: skipped reason=exact_geometry_mode, candidates=30",
+            "Method3 filled accents: paths=13, segments=13",
+            "Method3 cleanup: hard-clipped geometry left of frame x<20.50 mm: paths=2",
+            "Method3 cleanup: restored left vertical frame line.",
+            "Method3 cleanup: removed tiny bottom artifacts=7",
+            "Method3 micro-segment prune: segments=6459->6457, min=0.03 mm",
+            "--- hybrid fit: detail=1:1, frame=fit-to-work-area ---",
+            "Text render mode: handwriting=off font='Marck Script'; image_contours=off",
+            "Extracting paths from SVG ...",
+            "Raw geometry bounds: x(0.000, 180.000) y(0.000, 280.000)",
+            "SVG page: 180.000 x 280.000 mm",
+            "Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).",
+            "SVG geometry: paths=514, segments=6457.",
+            "Source bounds: x(0.000, 180.000) y(0.000, 280.000)",
+            "Fit to work area: scale=1.0000, translate=(0.000,-295.000), from (0.000, 0.000)-(180.000, 280.000)",
+            "Reorder: source order preserved (514 polylines).",
+            "Segment counts: source=6457, fitted=6457, clipped=6457",
+            "Drawable segments after clip: 6457 (100.0% of source)",
+            "Prepared bounds: x(0.000, 180.000) y(-295.000, -15.000)",
+            "Estimated draw length: 5.39 m",
+            "Applying pen-up / pen-down ...",
+            "G-code stats: lines=8019, draw=7485, travel=520, bounds=0.000..180.000 x, -295.000..0.000 y",
+            "Preflight: ok: lines=8019, draw=7485, travel=520, ratio=0.07",
+            "Saved file stats: lines=8019, draw=7485, travel=520, bounds=0.000..180.000 x, -295.000..0.000 y",
+            "Saved: C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 7_pack\\_candidates\\a4_hybrid_frame.nc",
+            "Preview SVG: C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 7_pack\\_candidates\\a4_hybrid_frame.svg",
+            "Preview PDF: C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 7_pack\\_candidates\\a4_hybrid_frame.pdf"
+          ],
+          "fit_scale": 1.0,
+          "clipping_warning": false,
+          "layout_similarity": 0.9701,
+          "metrics": {
+            "draw_length_mm": 5387.296,
+            "segments_total": 6457,
+            "segments_duplicate": 0,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -295.0,
+              "y_max": -15.0
+            }
+          },
+          "svg": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 7_pack\\_candidates\\a4_hybrid_frame.svg",
+          "pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 7_pack\\_candidates\\a4_hybrid_frame.pdf",
+          "nc": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 7_pack\\_candidates\\a4_hybrid_frame.nc",
+          "gcode": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 7_pack\\_candidates\\a4_hybrid_frame.gcode",
+          "notes": "detail_scale=1.0; frame_scale_x=1.0941; frame_scale_y=0.9822; detail_bbox=164.50x209.86 mm; left_strip_removed=True; outer_border_removed=True"
+        }
+      ],
+      "selected_variant": "a4_hybrid_frame",
+      "selected_layout_similarity": 0.9701,
+      "task_number": 7,
+      "task_name": "Задача 7",
+      "source_meta": {
+        "source_kind": "frw",
+        "task_number": 7,
+        "kompas_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 7__kompas.pdf",
+        "page_count": 1,
+        "page_sizes_mm": [
+          [
+            210.016,
+            297.011
+          ]
+        ]
+      }
+    },
+    {
+      "source_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 8.pdf",
+      "kind": "drawing",
+      "page_count": 1,
+      "page_size_mm": [
+        210.016,
+        297.011
+      ],
+      "a3_two_pass": false,
+      "items": [
+        {
+          "variant": "a4_hybrid_frame",
+          "ok": true,
+          "message": "Done: prepared file saved to C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 8_pack\\_candidates\\a4_hybrid_frame.nc",
+          "logs": [
+            "Source pages: 1, selected: 1",
+            "Method3 centerline: threshold=224, candidates=9, paths=551",
+            "Method3 PDF vector graphics: drawings=282, paths=253, thick_paths=136",
+            "Method3 layer split: text_paths=446, graphics_source=pdf_vector, graphics_paths=239",
+            "Method3 cleanup: restored overlap text paths=6",
+            "Method3 cleanup: removed left-column text paths=91",
+            "Method3 cleanup: removed left-column graphics-glyph paths=13",
+            "Method3 cleanup: removed outer-frame paths=1",
+            "Method3 detail thick-lines multipass: skipped reason=exact_geometry_mode, candidates=239",
+            "Method3 filled accents: paths=9, segments=9",
+            "Method3 cleanup: removed left-of-frame leftovers=1",
+            "Method3 cleanup: hard-clipped geometry left of frame x<20.50 mm: paths=4",
+            "Method3 cleanup: restored left vertical frame line.",
+            "Method3 cleanup: removed tiny bottom artifacts=7",
+            "--- hybrid fit: detail=1:1, frame=fit-to-work-area ---",
+            "Text render mode: handwriting=off font='Marck Script'; image_contours=off",
+            "Extracting paths from SVG ...",
+            "Raw geometry bounds: x(0.000, 180.000) y(0.000, 280.000)",
+            "SVG page: 180.000 x 280.000 mm",
+            "Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).",
+            "SVG geometry: paths=679, segments=5804.",
+            "Source bounds: x(0.000, 180.000) y(0.000, 280.000)",
+            "Fit to work area: scale=1.0000, translate=(0.000,-295.000), from (0.000, 0.000)-(180.000, 280.000)",
+            "Reorder: source order preserved (679 polylines).",
+            "Segment counts: source=5804, fitted=5804, clipped=5804",
+            "Drawable segments after clip: 5804 (100.0% of source)",
+            "Prepared bounds: x(0.000, 180.000) y(-295.000, -15.000)",
+            "Estimated draw length: 6.91 m",
+            "Applying pen-up / pen-down ...",
+            "G-code stats: lines=7642, draw=7016, travel=612, bounds=0.000..180.000 x, -295.000..0.000 y",
+            "Preflight: ok: lines=7642, draw=7016, travel=612, ratio=0.09",
+            "Saved file stats: lines=7642, draw=7016, travel=612, bounds=0.000..180.000 x, -295.000..0.000 y",
+            "Saved: C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 8_pack\\_candidates\\a4_hybrid_frame.nc",
+            "Preview SVG: C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 8_pack\\_candidates\\a4_hybrid_frame.svg",
+            "Preview PDF: C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 8_pack\\_candidates\\a4_hybrid_frame.pdf"
+          ],
+          "fit_scale": 1.0,
+          "clipping_warning": false,
+          "layout_similarity": 0.961341,
+          "metrics": {
+            "draw_length_mm": 6910.429,
+            "segments_total": 5804,
+            "segments_duplicate": 0,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -295.0,
+              "y_max": -15.0
+            }
+          },
+          "svg": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 8_pack\\_candidates\\a4_hybrid_frame.svg",
+          "pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 8_pack\\_candidates\\a4_hybrid_frame.pdf",
+          "nc": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 8_pack\\_candidates\\a4_hybrid_frame.nc",
+          "gcode": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 8_pack\\_candidates\\a4_hybrid_frame.gcode",
+          "notes": "detail_scale=1.0; frame_scale_x=1.0941; frame_scale_y=0.9822; detail_bbox=164.50x195.75 mm; left_strip_removed=True; outer_border_removed=True"
+        }
+      ],
+      "selected_variant": "a4_hybrid_frame",
+      "selected_layout_similarity": 0.961341,
+      "task_number": 8,
+      "task_name": "Задача 8",
+      "source_meta": {
+        "source_kind": "frw",
+        "task_number": 8,
+        "kompas_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 8__kompas.pdf",
+        "page_count": 1,
+        "page_sizes_mm": [
+          [
+            210.016,
+            297.011
+          ]
+        ]
+      }
+    },
+    {
+      "source_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 9.pdf",
+      "kind": "drawing",
+      "page_count": 1,
+      "page_size_mm": [
+        210.016,
+        297.011
+      ],
+      "a3_two_pass": false,
+      "items": [
+        {
+          "variant": "a4_hybrid_frame",
+          "ok": true,
+          "message": "Done: prepared file saved to C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 9_pack\\_candidates\\a4_hybrid_frame.nc",
+          "logs": [
+            "Source pages: 1, selected: 1",
+            "Method3 centerline: threshold=160, candidates=9, paths=427",
+            "Method3 PDF vector graphics: drawings=350, paths=312, thick_paths=244",
+            "Method3 layer split: text_paths=357, graphics_source=pdf_vector, graphics_paths=311",
+            "Method3 cleanup: restored overlap text paths=10",
+            "Method3 cleanup: removed left-column text paths=59",
+            "Method3 cleanup: removed outer-frame paths=1",
+            "Method3 detail thick-lines multipass: skipped reason=exact_geometry_mode, candidates=311",
+            "Method3 filled accents: paths=14, segments=14",
+            "Method3 cleanup: hard-clipped geometry left of frame x<20.50 mm: paths=2",
+            "Method3 cleanup: restored left vertical frame line.",
+            "Method3 cleanup: removed tiny bottom artifacts=5",
+            "--- hybrid fit: detail=1:1, frame=fit-to-work-area ---",
+            "Text render mode: handwriting=off font='Marck Script'; image_contours=off",
+            "Extracting paths from SVG ...",
+            "Raw geometry bounds: x(0.000, 180.000) y(0.000, 280.000)",
+            "SVG page: 180.000 x 280.000 mm",
+            "Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).",
+            "SVG geometry: paths=677, segments=5634.",
+            "Source bounds: x(0.000, 180.000) y(0.000, 280.000)",
+            "Fit to work area: scale=1.0000, translate=(0.000,-295.000), from (0.000, 0.000)-(180.000, 280.000)",
+            "Reorder: source order preserved (677 polylines).",
+            "Segment counts: source=5634, fitted=5634, clipped=5634",
+            "Drawable segments after clip: 5634 (100.0% of source)",
+            "Prepared bounds: x(0.000, 180.000) y(-295.000, -15.000)",
+            "Estimated draw length: 6.32 m",
+            "Applying pen-up / pen-down ...",
+            "G-code stats: lines=7226, draw=6682, travel=530, bounds=0.000..180.000 x, -295.000..0.000 y",
+            "Preflight: ok: lines=7226, draw=6682, travel=530, ratio=0.08",
+            "Saved file stats: lines=7226, draw=6682, travel=530, bounds=0.000..180.000 x, -295.000..0.000 y",
+            "Saved: C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 9_pack\\_candidates\\a4_hybrid_frame.nc",
+            "Preview SVG: C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 9_pack\\_candidates\\a4_hybrid_frame.svg",
+            "Preview PDF: C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 9_pack\\_candidates\\a4_hybrid_frame.pdf"
+          ],
+          "fit_scale": 1.0,
+          "clipping_warning": false,
+          "layout_similarity": 0.964627,
+          "metrics": {
+            "draw_length_mm": 6321.883,
+            "segments_total": 5634,
+            "segments_duplicate": 0,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -295.0,
+              "y_max": -15.0
+            }
+          },
+          "svg": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 9_pack\\_candidates\\a4_hybrid_frame.svg",
+          "pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 9_pack\\_candidates\\a4_hybrid_frame.pdf",
+          "nc": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 9_pack\\_candidates\\a4_hybrid_frame.nc",
+          "gcode": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 9_pack\\_candidates\\a4_hybrid_frame.gcode",
+          "notes": "detail_scale=1.0; frame_scale_x=1.0941; frame_scale_y=0.9822; detail_bbox=164.50x218.98 mm; left_strip_removed=True; outer_border_removed=True"
+        }
+      ],
+      "selected_variant": "a4_hybrid_frame",
+      "selected_layout_similarity": 0.964627,
+      "task_number": 9,
+      "task_name": "Задача 9",
+      "source_meta": {
+        "source_kind": "frw",
+        "task_number": 9,
+        "kompas_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 9__kompas.pdf",
+        "page_count": 1,
+        "page_sizes_mm": [
+          [
+            210.016,
+            297.011
+          ]
+        ]
+      }
+    },
+    {
+      "source_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 10.pdf",
+      "kind": "drawing",
+      "page_count": 1,
+      "page_size_mm": [
+        420.031,
+        297.011
+      ],
+      "a3_two_pass": true,
+      "items": [
+        {
+          "item": "pass_01",
+          "ok": true,
+          "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1775127945621738100_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1775127945621738100.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1775127945621738100_vector.pdf",
+          "logs": [
+            "Source pages: 1, selected: 1",
+            "Method3 centerline: threshold=32, candidates=9, paths=1258",
+            "Method3 PDF vector graphics: drawings=2551, paths=2398, thick_paths=407",
+            "Method3 layer split: text_paths=1190, graphics_source=pdf_vector, graphics_paths=2384",
+            "Method3 cleanup: restored overlap text paths=9",
+            "Method3 cleanup: removed left-column text paths=58",
+            "Method3 cleanup: removed left-column graphics-glyph paths=11",
+            "Method3 cleanup: removed outer-frame paths=3",
+            "Method3 detail thick-lines multipass: skipped reason=exact_geometry_mode, candidates=2384",
+            "Method3 filled accents: paths=113, segments=113",
+            "Method3 cleanup: removed tiny bottom artifacts=4",
+            "Method3 cleanup: A3 two-pass hybrid canvas detail=1:1 paths=3118, detail_bbox=302.54x221.91 mm, frame_scale_x=0.9242, frame_scale_y=0.9653, target=360.00x280.00 mm",
+            "Method3 micro-segment prune: segments=15598->15586, min=0.03 mm",
+            "--- a3 clean pass ---",
+            "Render mode: drawing; ExactGeometry=on; Handwriting=off",
+            "Sheet 420.0x297.0 mm is larger than workspace 180.0x280.0 mm. Using the overlapped sheet/workspace window.",
+            "Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-295.000,-15.000), sheet_bounds x(0.000,420.000) y(-295.000,2.000), sheet=a3, anchor=lower_left, offset=(0.00,0.00)",
+            "Text render mode: handwriting=off font='Marck Script'; image_contours=off",
+            "Extracting paths from SVG ...",
+            "Raw geometry bounds: x(0.000, 360.000) y(0.000, 280.000)",
+            "SVG page: 360.000 x 280.000 mm",
+            "Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).",
+            "SVG geometry: paths=3602, segments=7359.",
+            "Source bounds: x(0.000, 360.000) y(0.000, 280.000)",
+            "Fit to work area: scale=1.0000, translate=(-90.000,-295.000), from (0.000, 0.000)-(360.000, 280.000)",
+            "Pass window: col 1/2, row 1/1, source=360.000x280.000 mm, window=180.000x280.000 mm, offset=(0.000,0.000), shift=(90.000,0.000)",
+            "Work area clipping: kept 5394 visible segments, dropped 1965 out-of-area segments.",
+            "Segment dedup: dropped 25/5394 retraced segments (0.5%), kept=5369, eps=0.010 mm",
+            "Reorder: source order preserved (2969 polylines).",
+            "Segment counts: source=7359, fitted=7359, clipped=5394",
+            "Drawable segments after clip: 5394 (73.3% of source)",
+            "Warning: significant clipping/transforming occurred. Check that page is inside target work area.",
+            "Prepared bounds: x(0.000, 180.000) y(-295.000, -15.000)",
+            "Estimated draw length: 28.40 m",
+            "Applying pen-up / pen-down ...",
+            "G-code stats: lines=13539, draw=10788, travel=2737, bounds=0.000..180.000 x, -295.000..0.000 y",
+            "Preflight: ok: lines=13539, draw=10788, travel=2737, ratio=0.25",
+            "Saved file stats: lines=13539, draw=10788, travel=2737, bounds=0.000..180.000 x, -295.000..0.000 y",
+            "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1775127945621738100.nc",
+            "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1775127945621738100_vector.svg",
+            "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1775127945621738100_vector.pdf"
+          ],
+          "fit_scale": 1.0,
+          "clipping_warning": true,
+          "layout_similarity": null,
+          "metrics": {
+            "draw_length_mm": 28400.316,
+            "segments_total": 5326,
+            "segments_duplicate": 0,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -295.0,
+              "y_max": -15.0
+            }
+          },
+          "svg": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 10_pack\\pages\\pass_01.svg",
+          "pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 10_pack\\pages\\pass_01.pdf",
+          "nc": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 10_pack\\pages\\pass_01.nc",
+          "gcode": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 10_pack\\pages\\pass_01.gcode",
+          "notes": "source_cleanup=method3; left_strip_removed=True; outer_border_removed=True"
+        },
+        {
+          "item": "pass_02",
+          "ok": true,
+          "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1775127953051201700_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1775127953051201700.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1775127953051201700_vector.pdf",
+          "logs": [
+            "Source pages: 1, selected: 1",
+            "Method3 centerline: threshold=32, candidates=9, paths=1258",
+            "Method3 PDF vector graphics: drawings=2551, paths=2398, thick_paths=407",
+            "Method3 layer split: text_paths=1190, graphics_source=pdf_vector, graphics_paths=2384",
+            "Method3 cleanup: restored overlap text paths=9",
+            "Method3 cleanup: removed left-column text paths=58",
+            "Method3 cleanup: removed left-column graphics-glyph paths=11",
+            "Method3 cleanup: removed outer-frame paths=3",
+            "Method3 detail thick-lines multipass: skipped reason=exact_geometry_mode, candidates=2384",
+            "Method3 filled accents: paths=113, segments=113",
+            "Method3 cleanup: removed tiny bottom artifacts=4",
+            "Method3 cleanup: A3 two-pass hybrid canvas detail=1:1 paths=3118, detail_bbox=302.54x221.91 mm, frame_scale_x=0.9242, frame_scale_y=0.9653, target=360.00x280.00 mm",
+            "Method3 micro-segment prune: segments=15598->15586, min=0.03 mm",
+            "pass_02_rotated_180_for_sheet_flip=True",
+            "--- a3 clean pass ---",
+            "Render mode: drawing; ExactGeometry=on; Handwriting=off",
+            "Sheet 420.0x297.0 mm is larger than workspace 180.0x280.0 mm. Using the overlapped sheet/workspace window.",
+            "Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-295.000,-15.000), sheet_bounds x(0.000,420.000) y(-295.000,2.000), sheet=a3, anchor=lower_left, offset=(0.00,0.00)",
+            "Text render mode: handwriting=off font='Marck Script'; image_contours=off",
+            "Extracting paths from SVG ...",
+            "Raw geometry bounds: x(0.000, 360.000) y(0.000, 280.000)",
+            "SVG page: 360.000 x 280.000 mm",
+            "Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).",
+            "SVG geometry: paths=3602, segments=7359.",
+            "Source bounds: x(0.000, 360.000) y(0.000, 280.000)",
+            "Fit to work area: scale=1.0000, translate=(-90.000,-295.000), from (0.000, 0.000)-(360.000, 280.000)",
+            "Pass window: col 2/2, row 1/1, source=360.000x280.000 mm, window=180.000x280.000 mm, offset=(180.000,0.000), shift=(-90.000,0.000)",
+            "Sheet pass transform: rotating geometry by 180 deg for a3 pass 2/2 x 1/1 around active area center (90.000,-155.000).",
+            "Sheet pass transform: translating geometry by (0.000,4.000) mm for a3 pass 2/2 x 1/1.",
+            "Work area clipping: kept 2078 visible segments, dropped 5281 out-of-area segments.",
+            "Segment dedup: dropped 23/2078 retraced segments (1.1%), kept=2055, eps=0.010 mm",
+            "Reorder: source order preserved (698 polylines).",
+            "Segment counts: source=7359, fitted=7359, clipped=2078",
+            "Drawable segments after clip: 2078 (28.2% of source)",
+            "Warning: significant clipping/transforming occurred. Check that page is inside target work area.",
+            "Prepared bounds: x(0.000, 180.000) y(-291.000, -15.000)",
+            "Estimated draw length: 13.76 m",
+            "Applying pen-up / pen-down ...",
+            "G-code stats: lines=3975, draw=3317, travel=644, bounds=0.000..180.000 x, -291.000..0.000 y",
+            "Preflight: ok: lines=3975, draw=3317, travel=644, ratio=0.19",
+            "Saved file stats: lines=3975, draw=3317, travel=644, bounds=0.000..180.000 x, -291.000..0.000 y",
+            "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1775127953051201700.nc",
+            "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1775127953051201700_vector.svg",
+            "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1775127953051201700_vector.pdf"
+          ],
+          "fit_scale": 1.0,
+          "clipping_warning": true,
+          "layout_similarity": null,
+          "metrics": {
+            "draw_length_mm": 13759.299,
+            "segments_total": 2041,
+            "segments_duplicate": 0,
+            "bounds": {
+              "x_min": 0.0,
+              "x_max": 180.0,
+              "y_min": -291.0,
+              "y_max": -15.0
+            }
+          },
+          "svg": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 10_pack\\pages\\pass_02.svg",
+          "pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 10_pack\\pages\\pass_02.pdf",
+          "nc": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 10_pack\\pages\\pass_02.nc",
+          "gcode": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 10_pack\\pages\\pass_02.gcode",
+          "notes": "source_cleanup=method3; left_strip_removed=True; outer_border_removed=True; pass_02_rotated_180_for_sheet_flip=True"
+        }
+      ],
+      "a3_clean_source": {
+        "ok": true,
+        "svg": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 10_pack\\_candidates\\a3_clean_source.svg",
+        "pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 10_pack\\_candidates\\a3_clean_source.pdf"
+      },
+      "combined_preview": {
+        "reference_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 10_pack\\_candidates\\a3_clean_source.pdf",
+        "svg": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 10_pack\\combined_preview.svg",
+        "pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 10_pack\\combined_preview.pdf",
+        "layout_similarity": 0.985592
+      },
+      "task_number": 10,
+      "task_name": "Задача 10",
+      "source_meta": {
+        "source_kind": "frw",
+        "task_number": 10,
+        "kompas_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 10__kompas.pdf",
+        "page_count": 2,
+        "page_sizes_mm": [
+          [
+            210.016,
+            297.011
+          ],
+          [
+            210.016,
+            297.011
+          ]
+        ],
+        "merged_a3_pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 10.pdf"
+      }
+    }
+  ]
+}

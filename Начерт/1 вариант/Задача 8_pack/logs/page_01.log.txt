@@ -1,0 +1,35 @@
+Source pages: 1, selected: 1
+Method3 centerline: threshold=224, candidates=9, paths=551
+Method3 PDF vector graphics: drawings=282, paths=253, thick_paths=136
+Method3 layer split: text_paths=446, graphics_source=pdf_vector, graphics_paths=239
+Method3 cleanup: restored overlap text paths=6
+Method3 cleanup: removed left-column text paths=91
+Method3 cleanup: removed left-column graphics-glyph paths=13
+Method3 cleanup: removed outer-frame paths=1
+Method3 detail thick-lines multipass: skipped reason=exact_geometry_mode, candidates=239
+Method3 filled accents: paths=9, segments=9
+Method3 cleanup: removed left-of-frame leftovers=1
+Method3 cleanup: hard-clipped geometry left of frame x<20.50 mm: paths=4
+Method3 cleanup: restored left vertical frame line.
+Method3 cleanup: removed tiny bottom artifacts=7
+--- hybrid fit: detail=1:1, frame=fit-to-work-area ---
+Text render mode: handwriting=off font='Marck Script'; image_contours=off
+Extracting paths from SVG ...
+Raw geometry bounds: x(0.000, 180.000) y(0.000, 280.000)
+SVG page: 180.000 x 280.000 mm
+Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).
+SVG geometry: paths=679, segments=5804.
+Source bounds: x(0.000, 180.000) y(0.000, 280.000)
+Fit to work area: scale=1.0000, translate=(0.000,-295.000), from (0.000, 0.000)-(180.000, 280.000)
+Reorder: source order preserved (679 polylines).
+Segment counts: source=5804, fitted=5804, clipped=5804
+Drawable segments after clip: 5804 (100.0% of source)
+Prepared bounds: x(0.000, 180.000) y(-295.000, -15.000)
+Estimated draw length: 6.91 m
+Applying pen-up / pen-down ...
+G-code stats: lines=7642, draw=7016, travel=612, bounds=0.000..180.000 x, -295.000..0.000 y
+Preflight: ok: lines=7642, draw=7016, travel=612, ratio=0.09
+Saved file stats: lines=7642, draw=7016, travel=612, bounds=0.000..180.000 x, -295.000..0.000 y
+Saved: C:\plotter_pdf\Начерт\1 вариант\Задача 8_pack\_candidates\a4_hybrid_frame.nc
+Preview SVG: C:\plotter_pdf\Начерт\1 вариант\Задача 8_pack\_candidates\a4_hybrid_frame.svg
+Preview PDF: C:\plotter_pdf\Начерт\1 вариант\Задача 8_pack\_candidates\a4_hybrid_frame.pdf
