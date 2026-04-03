@@ -19,7 +19,7 @@ Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-295.000,-15.000), sheet_
 Text render mode: handwriting=off font='Marck Script'; image_contours=off
 Extracting paths from SVG ...
 Raw geometry bounds: x(20.500, 415.507) y(5.504, 292.584)
-SVG page: 421.096 x 298.148 mm
+SVG page: 421.047 x 298.111 mm
 Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).
 SVG geometry: paths=3160, segments=6052.
 Source bounds: x(20.500, 415.507) y(5.504, 292.584)
@@ -39,6 +39,6 @@ Applying pen-up / pen-down ...
 G-code stats: lines=6899, draw=5609, travel=1276, bounds=0.000..180.000 x, -281.796..0.000 y
 Preflight: ok: lines=6899, draw=5609, travel=1276, ratio=0.23
 Saved file stats: lines=6899, draw=5609, travel=1276, bounds=0.000..180.000 x, -281.796..0.000 y
-Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1775128140353537700.nc
-Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1775128140353537700_vector.svg
-Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1775128140353537700_vector.pdf
+Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1775208988579623600.nc
+Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1775208988579623600_vector.svg
+Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1775208988579623600_vector.pdf

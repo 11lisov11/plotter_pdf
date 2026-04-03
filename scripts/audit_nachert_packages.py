@@ -71,9 +71,14 @@ def _audit_variant(variant_dir: Path) -> None:
 
         if len(package_rows) == 1 and package_rows[0]["item"] == "page_01":
             preview_pdf = Path(package_rows[0]["preview_pdf"])
+            reference_pdf = source_pdf
+            clean_meta = dict(report.get("a4_clean_source", {}) or {})
+            clean_pdf = Path(str(clean_meta.get("pdf", "") or ""))
+            if clean_pdf.exists():
+                reference_pdf = clean_pdf
             panel = _make_panel(
                 [
-                    ("source", _render_pdf(source_pdf, 1.0)),
+                    ("source", _render_pdf(reference_pdf, 1.0)),
                     ("preview", _render_pdf(preview_pdf, 1.0)),
                 ],
                 title,
@@ -85,6 +90,7 @@ def _audit_variant(variant_dir: Path) -> None:
                     "kind": "a4",
                     "layout_similarity": float(layout_similarity) if layout_similarity else None,
                     "preview": str(preview_pdf),
+                    "reference_source": str(reference_pdf),
                     "source": str(source_pdf),
                 }
             )
