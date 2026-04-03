@@ -311,6 +311,42 @@ def _clip_polyline_max_x_mm(
     return clipped
 
 
+def _cleanup_a4_header_gutter_artifacts(
+    polys_mm: list[list[tuple[float, float]]],
+    *,
+    header_thumb_x1_mm: float,
+    header_text_x0_mm: float,
+    top_band_y1_mm: float,
+    gutter_pad_left_mm: float = 1.6,
+    gutter_pad_right_mm: float = 1.8,
+    max_len_mm: float = 2.0,
+    max_w_mm: float = 2.0,
+    max_h_mm: float = 2.0,
+) -> tuple[list[list[tuple[float, float]]], int]:
+    cleaned: list[list[tuple[float, float]]] = []
+    removed = 0
+    gutter_x0 = max(0.0, float(header_thumb_x1_mm) - float(gutter_pad_left_mm))
+    gutter_x1 = max(gutter_x0, float(header_text_x0_mm) + float(gutter_pad_right_mm))
+    for poly in polys_mm:
+        if len(poly) < 2:
+            continue
+        px0, py0, px1, py1 = _poly_bbox_mm(poly)
+        bw = float(px1 - px0)
+        bh = float(py1 - py0)
+        if (
+            float(py1) <= float(top_band_y1_mm)
+            and float(px0) >= float(gutter_x0)
+            and float(px1) <= float(gutter_x1)
+            and bw <= float(max_w_mm)
+            and bh <= float(max_h_mm)
+            and _polyline_length(poly) <= float(max_len_mm)
+        ):
+            removed += 1
+            continue
+        cleaned.append(poly)
+    return cleaned, removed
+
+
 def _extract_a4_header_text_lines_from_pdf(
     source_pdf: Path,
     *,
@@ -2332,6 +2368,19 @@ def _prepare_a4_hybrid_drawing_candidate(
                 logs.append(
                     "A4 header text reroute: restored "
                     f"{len(header_text_polys)} transformed source polyline(s)."
+                )
+
+        if float(hybrid_info.get("header_text_dst_x0", 0.0)) > 0.0:
+            hybrid_polys, removed_gutter_artifacts = _cleanup_a4_header_gutter_artifacts(
+                hybrid_polys,
+                header_thumb_x1_mm=float(hybrid_info.get("header_thumb_target_w", 0.0)),
+                header_text_x0_mm=float(hybrid_info.get("header_text_dst_x0", 0.0)),
+                top_band_y1_mm=float(_A4_HEADER_CONTENT_MAX_Y_MM) + 1.5,
+            )
+            if removed_gutter_artifacts:
+                logs.append(
+                    "A4 header gutter cleanup: removed "
+                    f"{removed_gutter_artifacts} tiny artifact polyline(s) from the thumb/text gap."
                 )
 
         prefix = candidate_dir / variant_name

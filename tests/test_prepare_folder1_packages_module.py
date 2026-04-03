@@ -167,6 +167,26 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
         self.assertAlmostEqual(x1, 18.0, places=3)
         self.assertGreaterEqual(len(clipped[0]), 2)
 
+    def test_cleanup_a4_header_gutter_artifacts_removes_only_tiny_gap_segments(self) -> None:
+        mod = _load_module()
+        polys = [
+            [(46.6, 258.7), (48.1, 258.7)],
+            [(49.4, 264.8), (50.8, 264.7)],
+            [(55.2, 266.1), (55.6, 266.1)],
+            [(60.4, 268.5), (63.8, 271.0), (65.0, 271.2)],
+            [(0.0, 288.0), (171.0, 288.0)],
+        ]
+        cleaned, removed = mod._cleanup_a4_header_gutter_artifacts(
+            polys,
+            header_thumb_x1_mm=47.56,
+            header_text_x0_mm=59.4,
+            top_band_y1_mm=295.0,
+        )
+        self.assertEqual(removed, 3)
+        self.assertEqual(len(cleaned), 2)
+        self.assertIn(polys[3], cleaned)
+        self.assertIn(polys[4], cleaned)
+
     def test_detect_a4_header_thumb_divider_uses_rightmost_top_band_vertical(self) -> None:
         mod = _load_module()
         polys = [
