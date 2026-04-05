@@ -666,17 +666,29 @@ def _render_a4_header_text_polylines(
     header_text_src_x0: float,
     header_text_dst_x0: float,
     header_text_scale_x: float,
+    tight_layout: bool,
     logger,
 ) -> list[list[tuple[float, float]]]:
     if not header_lines:
         return []
     resolve_ttf = getattr(backend, "_resolve_handwriting_ttf_path", lambda _font: None)
-    ttf_path = (
-        resolve_ttf("Arial")
-        or resolve_ttf("Cambria")
-        or resolve_ttf("Times New Roman")
-        or resolve_ttf("Marck Script")
-    )
+    if tight_layout:
+        ttf_path = (
+            resolve_ttf("GOST_BU.ttf")
+            or resolve_ttf("GOST_AU.ttf")
+            or resolve_ttf("GOST_B.TTF")
+            or resolve_ttf("GOST_A.TTF")
+            or resolve_ttf("ARIALNI.TTF")
+            or resolve_ttf("ARIALN.TTF")
+            or resolve_ttf("Arial")
+        )
+    else:
+        ttf_path = (
+            resolve_ttf("Arial")
+            or resolve_ttf("Cambria")
+            or resolve_ttf("Times New Roman")
+            or resolve_ttf("Marck Script")
+        )
     if ttf_path is None:
         return []
     fit_text = getattr(backend, "_fit_formula_ocr_font_size_units", None)
@@ -723,7 +735,9 @@ def _render_a4_header_text_polylines(
             ax0, ay0, ax1, ay1 = _polys_bbox_mm(line_polys)
             actual_w = max(1e-6, float(ax1 - ax0))
             actual_h = max(1e-6, float(ay1 - ay0))
-            fit_scale = min((float(target_w) * 0.985) / actual_w, (float(target_h) * 0.94) / actual_h, 1.0)
+            width_fill = 1.0 if tight_layout else 0.985
+            height_fill = 1.0 if tight_layout else 0.94
+            fit_scale = min((float(target_w) * width_fill) / actual_w, (float(target_h) * height_fill) / actual_h, 1.0)
             if abs(float(fit_scale) - 1.0) > 1e-6:
                 line_polys = [
                     [((float(x) - float(ax0)) * float(fit_scale), (float(y) - float(ay0)) * float(fit_scale)) for x, y in poly]
@@ -732,8 +746,10 @@ def _render_a4_header_text_polylines(
                 ax0, ay0, ax1, ay1 = _polys_bbox_mm(line_polys)
                 actual_w = max(1e-6, float(ax1 - ax0))
                 actual_h = max(1e-6, float(ay1 - ay0))
-            pad_x_u = max(0.0, (float(target_w) - actual_w) * 0.03)
-            pad_y_u = max(0.0, (float(target_h) - actual_h) * 0.06)
+            pad_x_ratio = 0.0 if tight_layout else 0.03
+            pad_y_ratio = 0.0 if tight_layout else 0.06
+            pad_x_u = max(0.0, (float(target_w) - actual_w) * pad_x_ratio)
+            pad_y_u = max(0.0, (float(target_h) - actual_h) * pad_y_ratio)
             shift_x = float(target_x0) - float(ax0) + float(pad_x_u)
             shift_y = float(target_y0) - float(ay0) + float(pad_y_u)
             line_polys = [[(float(x) + float(shift_x), float(y) + float(shift_y)) for x, y in poly] for poly in line_polys]
@@ -2848,6 +2864,7 @@ def _prepare_a4_hybrid_drawing_candidate(
                 header_text_src_x0=float(hybrid_info.get("header_text_src_x0", header_text_src_x0)),
                 header_text_dst_x0=float(hybrid_info.get("header_text_dst_x0", 0.0)),
                 header_text_scale_x=float(hybrid_info.get("header_text_scale_x", 1.0)),
+                tight_layout=bool(preserve_variant1_header_source),
                 logger=logs.append,
             )
             if header_text_polys:
