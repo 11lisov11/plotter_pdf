@@ -149,6 +149,33 @@ def _iter_variant_sources(variant_dir: Path, generated_dir: Path) -> list[tuple[
 
     pdf_files = sorted(variant_dir.glob("*.pdf"), key=lambda p: p.name.lower())
     if not pdf_files:
+        generated_pdfs = sorted(
+            [
+                path
+                for path in generated_dir.glob("*.pdf")
+                if "__kompas" not in path.stem and "__regen_" not in path.stem
+            ],
+            key=lambda p: (_task_number_from_name(p.stem) or 999, p.name.lower()),
+        )
+        if generated_pdfs:
+            for pdf_path in generated_pdfs:
+                task_number = _task_number_from_name(pdf_path.stem)
+                if task_number is None:
+                    continue
+                entries.append(
+                    (
+                        task_number,
+                        pdf_path.stem,
+                        pdf_path,
+                        {
+                            "source_kind": "generated_pdf",
+                            "task_number": task_number,
+                            "generated_pdf": str(pdf_path),
+                        },
+                    )
+                )
+            if entries:
+                return entries
         raise FileNotFoundError(f"No FRW or PDF sources found in {variant_dir}")
     if len(pdf_files) != 1:
         raise RuntimeError(f"Expected exactly one multipage PDF in {variant_dir}, found {len(pdf_files)}")
@@ -196,15 +223,44 @@ def _write_variant_reports(
     )
 
 
-def _prepare_variant(variant_dir: Path) -> None:
+def _load_variant_state(variant_dir: Path) -> tuple[list[prep.ArtifactRow], list[dict[str, object]], list[dict[str, object]]]:
+    rows = prep._read_rows_from_csv(variant_dir / "_prepared_summary.csv")
+    reports_path = variant_dir / "_prepared_reports.json"
+    if not reports_path.exists():
+        return rows, [], []
+    try:
+        payload = json.loads(reports_path.read_text(encoding="utf-8"))
+    except Exception:
+        return rows, [], []
+    reports = list(payload.get("reports", []) or [])
+    source_index = list(payload.get("sources", []) or [])
+    return rows, reports, source_index
+
+
+def _task_number_from_row_package_dir(row: prep.ArtifactRow) -> int | None:
+    try:
+        return _task_number_from_name(Path(row.package_dir).name)
+    except Exception:
+        return None
+
+
+def _prepare_variant(variant_dir: Path, *, only_tasks: set[int] | None = None) -> None:
     started_at = time.time()
     generated_dir = variant_dir / "_generated_pdf"
     generated_dir.mkdir(parents=True, exist_ok=True)
     source_entries = _iter_variant_sources(variant_dir, generated_dir)
+    if only_tasks:
+        only_tasks = {int(v) for v in only_tasks}
+        source_entries = [entry for entry in source_entries if int(entry[0]) in only_tasks]
 
     all_rows: list[prep.ArtifactRow] = []
     all_reports: list[dict[str, object]] = []
     source_index: list[dict[str, object]] = []
+    existing_rows: list[prep.ArtifactRow] = []
+    existing_reports: list[dict[str, object]] = []
+    existing_sources: list[dict[str, object]] = []
+    if only_tasks:
+        existing_rows, existing_reports, existing_sources = _load_variant_state(variant_dir)
 
     for idx, (task_number, task_name, source_pdf, meta) in enumerate(source_entries, start=1):
         print(f"  [{idx}/{len(source_entries)}] {task_name}: {source_pdf.name}")
@@ -226,6 +282,24 @@ def _prepare_variant(variant_dir: Path) -> None:
                 **meta,
             }
         )
+
+    if only_tasks:
+        keep_tasks = {int(v) for v in only_tasks}
+        all_rows = [row for row in existing_rows if _task_number_from_row_package_dir(row) not in keep_tasks] + all_rows
+        all_reports = [
+            report
+            for report in existing_reports
+            if int(report.get("task_number", -1) or -1) not in keep_tasks
+        ] + all_reports
+        source_index = [
+            source
+            for source in existing_sources
+            if int(source.get("task_number", -1) or -1) not in keep_tasks
+        ] + source_index
+
+    all_rows.sort(key=lambda row: (_task_number_from_row_package_dir(row) or 999, row.item))
+    all_reports.sort(key=lambda report: int(report.get("task_number", 999) or 999))
+    source_index.sort(key=lambda item: int(item.get("task_number", 999) or 999))
     _write_variant_reports(
         variant_dir,
         rows=all_rows,
@@ -247,6 +321,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Prepare drawing packages for Начерт variants.")
     parser.add_argument("--root", default=str(DEFAULT_ROOT), help="Root folder with variant subfolders.")
     parser.add_argument("--only-variant", action="append", default=[], help="Optional substring filter for variant dirs.")
+    parser.add_argument("--only-task", type=int, action="append", default=[], help="Optional task number filter.")
     args = parser.parse_args()
 
     root_dir = Path(args.root).resolve()
@@ -261,7 +336,7 @@ def main() -> int:
     started_at = time.time()
     for index, variant_dir in enumerate(variant_dirs, start=1):
         print(f"[{index}/{len(variant_dirs)}] {variant_dir.name}")
-        _prepare_variant(variant_dir)
+        _prepare_variant(variant_dir, only_tasks=set(int(v) for v in args.only_task))
 
     elapsed = time.time() - started_at
     print(f"done in {elapsed / 60.0:.1f} min")

@@ -75,11 +75,14 @@ _A4_HEADER_THUMB_DIVIDER_MAX_W_MM = 2.2
 _A4_HEADER_THUMB_DIVIDER_MIN_H_MM = 10.0
 _A4_HEADER_THUMB_TARGET_MIN_W_MM = 60.0
 _A4_HEADER_TEXT_SRC_MIN_X_MM = 34.0
+_A4_HEADER_TEXT_SRC_PAD_MM = 4.0
 _A4_HEADER_TEXT_GAP_MM = 4.0
 _A4_HEADER_TEXT_SCALE = 0.92
-_A4_HEADER_VARIANT1_THUMB_TARGET_MIN_W_MM = _A4_HEADER_THUMB_TARGET_MIN_W_MM
-_A4_HEADER_VARIANT1_TEXT_GAP_MM = _A4_HEADER_TEXT_GAP_MM
-_A4_HEADER_VARIANT1_TEXT_SCALE = _A4_HEADER_TEXT_SCALE
+_A4_HEADER_VARIANT1_TEXT_SRC_MIN_X_MM = 0.0
+_A4_HEADER_VARIANT1_TEXT_SRC_PAD_MM = 1.0
+_A4_HEADER_VARIANT1_THUMB_TARGET_MIN_W_MM = 64.0
+_A4_HEADER_VARIANT1_TEXT_GAP_MM = 5.0
+_A4_HEADER_VARIANT1_TEXT_SCALE = 0.90
 
 
 class _DummySignal:
@@ -138,6 +141,29 @@ def _technical_drawing_backend_precision() -> Any:
     finally:
         for key, value in prev.items():
             setattr(backend, key, value)
+
+
+@contextmanager
+def _preserve_nachert_variant1_header_context(bridge: BackendBridge, enabled: bool) -> Any:
+    if not enabled:
+        yield
+        return
+    overrides = {
+        "_filter_left_upper_column_text_polylines_px": lambda polys, **_kwargs: (list(polys), 0),
+        "_filter_left_upper_column_polylines_mm": lambda polys, **_kwargs: (list(polys), 0),
+        "_drop_left_of_main_frame_mm": lambda polys, **_kwargs: (list(polys), 0),
+        "_clip_all_left_of_x_mm": lambda polys, min_x: (list(polys), 0),
+    }
+    saved: dict[str, Any] = {}
+    try:
+        for name, replacement in overrides.items():
+            if hasattr(bridge, name):
+                saved[name] = getattr(bridge, name)
+                setattr(bridge, name, replacement)
+        yield
+    finally:
+        for name, value in saved.items():
+            setattr(bridge, name, value)
 
 
 def _ensure_clean_dir(path: Path) -> None:
@@ -243,6 +269,74 @@ def _layout_similarity_pdf(source_pdf: Path, preview_pdf: Path, source_page_inde
     return round(score, 6)
 
 
+def _source_crop_alignment_metrics(source_pdf: Path, preview_pdf: Path, source_page_index: int = 0) -> dict[str, float]:
+    try:
+        src = _render_pdf_page_gray(source_pdf, page_index=source_page_index, dpi=120)
+        cur = _render_pdf_page_gray(preview_pdf, page_index=0, dpi=120)
+    except Exception:
+        return {
+            "source_crop_corr": 0.0,
+            "source_crop_iou": 0.0,
+            "source_crop_x_px": 0.0,
+            "source_crop_y_px": 0.0,
+        }
+
+    if src.size == 0 or cur.size == 0:
+        return {
+            "source_crop_corr": 0.0,
+            "source_crop_iou": 0.0,
+            "source_crop_x_px": 0.0,
+            "source_crop_y_px": 0.0,
+        }
+
+    if src.shape[0] < cur.shape[0] or src.shape[1] < cur.shape[1]:
+        h = min(int(src.shape[0]), int(cur.shape[0]))
+        w = min(int(src.shape[1]), int(cur.shape[1]))
+        src_crop = src[:h, :w]
+        cur_crop = cur[:h, :w]
+        src_mask = src_crop < 245
+        cur_mask = cur_crop < 245
+        union = float(np.logical_or(src_mask, cur_mask).sum())
+        iou = float(np.logical_and(src_mask, cur_mask).sum()) / union if union else 1.0
+        return {
+            "source_crop_corr": 0.0,
+            "source_crop_iou": round(float(iou), 6),
+            "source_crop_x_px": 0.0,
+            "source_crop_y_px": 0.0,
+        }
+
+    src_inv = 255 - src
+    cur_inv = 255 - cur
+    result = cv2.matchTemplate(src_inv, cur_inv, cv2.TM_CCOEFF_NORMED)
+    _min_val, max_val, _min_loc, max_loc = cv2.minMaxLoc(result)
+    x0, y0 = int(max_loc[0]), int(max_loc[1])
+    src_crop = src[y0 : y0 + cur.shape[0], x0 : x0 + cur.shape[1]]
+    if src_crop.shape != cur.shape:
+        h = min(int(src_crop.shape[0]), int(cur.shape[0]))
+        w = min(int(src_crop.shape[1]), int(cur.shape[1]))
+        src_crop = src_crop[:h, :w]
+        cur = cur[:h, :w]
+    src_mask = src_crop < 245
+    cur_mask = cur < 245
+    union = float(np.logical_or(src_mask, cur_mask).sum())
+    iou = float(np.logical_and(src_mask, cur_mask).sum()) / union if union else 1.0
+    return {
+        "source_crop_corr": round(float(max_val), 6),
+        "source_crop_iou": round(float(iou), 6),
+        "source_crop_x_px": float(x0),
+        "source_crop_y_px": float(y0),
+    }
+
+
+def _parse_segment_counts(logs: list[str]) -> tuple[int, int, int] | None:
+    rx = re.compile(r"Segment counts: source=(\d+), fitted=(\d+), clipped=(\d+)")
+    for line in logs:
+        match = rx.search(str(line))
+        if match:
+            return int(match.group(1)), int(match.group(2)), int(match.group(3))
+    return None
+
+
 def _segment_key(a: tuple[float, float], b: tuple[float, float], ndigits: int = 3) -> tuple[tuple[float, float], tuple[float, float]]:
     p0 = (round(float(a[0]), ndigits), round(float(a[1]), ndigits))
     p1 = (round(float(b[0]), ndigits), round(float(b[1]), ndigits))
@@ -344,6 +438,150 @@ def _cleanup_a4_header_gutter_artifacts(
             removed += 1
             continue
         cleaned.append(poly)
+    return cleaned, removed
+
+
+def _ensure_a4_header_bottom_separator(
+    polys_mm: list[list[tuple[float, float]]],
+    *,
+    header_lines: list[dict[str, Any]],
+    src_y0: float,
+    header_scale_y: float,
+    target_w_mm: float,
+) -> tuple[list[list[tuple[float, float]]], bool]:
+    if not polys_mm or not header_lines:
+        return list(polys_mm), False
+
+    text_bottom_y = 0.0
+    for line in header_lines:
+        bbox_mm = tuple(line.get("bbox_mm", ()) or ())
+        if len(bbox_mm) < 4:
+            continue
+        box_y1 = float(bbox_mm[3])
+        text_bottom_y = max(text_bottom_y, (float(box_y1) - float(src_y0)) * float(header_scale_y))
+    if text_bottom_y <= 0.0:
+        return list(polys_mm), False
+
+    separator_y = min(float(_A4_HEADER_CONTENT_MAX_Y_MM), float(text_bottom_y) + 4.0)
+    right_x = 0.0
+    for poly in polys_mm:
+        if len(poly) < 2 or not _poly_is_axis_aligned_mm(poly, eps=0.18):
+            continue
+        x0, y0, x1, y1 = _poly_bbox_mm(poly)
+        bw = float(x1 - x0)
+        bh = float(y1 - y0)
+        if bh <= 0.75 and bw >= 100.0 and float(y1) <= 8.0:
+            right_x = max(right_x, float(x1))
+    if right_x <= 0.0:
+        right_x = float(target_w_mm)
+
+    for poly in polys_mm:
+        if len(poly) < 2 or not _poly_is_axis_aligned_mm(poly, eps=0.18):
+            continue
+        x0, y0, x1, y1 = _poly_bbox_mm(poly)
+        bw = float(x1 - x0)
+        bh = float(y1 - y0)
+        if (
+            bh <= 0.75
+            and bw >= max(70.0, float(right_x) * 0.55)
+            and abs(float(y0) - float(separator_y)) <= 1.25
+            and abs(float(y1) - float(separator_y)) <= 1.25
+        ):
+            return list(polys_mm), False
+
+    out = list(polys_mm)
+    out.append([(0.0, float(separator_y)), (float(right_x), float(separator_y))])
+    return out, True
+
+
+def _remove_a4_header_thumb_full_width_duplicate(
+    polys_mm: list[list[tuple[float, float]]],
+    *,
+    header_thumb_x1_mm: float,
+    separator_y_mm: float,
+) -> tuple[list[list[tuple[float, float]]], int]:
+    cleaned: list[list[tuple[float, float]]] = []
+    removed = 0
+    for poly in polys_mm:
+        if len(poly) < 2 or not _poly_is_axis_aligned_mm(poly, eps=0.18):
+            cleaned.append(poly)
+            continue
+        x0, y0, x1, y1 = _poly_bbox_mm(poly)
+        bw = float(x1 - x0)
+        bh = float(y1 - y0)
+        if (
+            bh <= 0.75
+            and abs(float(y0) - float(separator_y_mm)) <= 1.6
+            and abs(float(y1) - float(separator_y_mm)) <= 1.6
+            and float(x1) <= (float(header_thumb_x1_mm) + 0.5)
+            and bw >= max(20.0, float(header_thumb_x1_mm) * 0.55)
+            and (float(x0) <= 1.0 or float(x1) >= (float(header_thumb_x1_mm) - 1.0))
+        ):
+            removed += 1
+            continue
+        cleaned.append(poly)
+    return cleaned, removed
+
+
+def _dedupe_a4_header_band_axis_lines(
+    polys_mm: list[list[tuple[float, float]]],
+    *,
+    top_band_y1_mm: float,
+    axis_eps_mm: float = 0.9,
+    min_span_mm: float = 12.0,
+    overlap_ratio: float = 0.9,
+) -> tuple[list[list[tuple[float, float]]], int]:
+    def _line_meta(poly: list[tuple[float, float]]) -> tuple[str, float, float, float] | None:
+        if len(poly) < 2 or not _poly_is_axis_aligned_mm(poly, eps=0.18):
+            return None
+        x0, y0, x1, y1 = _poly_bbox_mm(poly)
+        bw = float(x1 - x0)
+        bh = float(y1 - y0)
+        if float(y1) > float(top_band_y1_mm):
+            return None
+        if bh <= 0.75 and bw >= float(min_span_mm):
+            return ("h", (float(y0) + float(y1)) * 0.5, float(x0), float(x1))
+        if bw <= 0.75 and bh >= float(min_span_mm):
+            return ("v", (float(x0) + float(x1)) * 0.5, float(y0), float(y1))
+        return None
+
+    def _overlap_ok(a0: float, a1: float, b0: float, b1: float) -> bool:
+        overlap = min(float(a1), float(b1)) - max(float(a0), float(b0))
+        if overlap <= 0.0:
+            return False
+        shorter = min(float(a1) - float(a0), float(b1) - float(b0))
+        return overlap >= float(shorter) * float(overlap_ratio)
+
+    cleaned: list[list[tuple[float, float]]] = []
+    kept_meta: list[tuple[str, float, float, float, int]] = []
+    removed = 0
+    for poly in polys_mm:
+        meta = _line_meta(poly)
+        if meta is None:
+            cleaned.append(poly)
+            continue
+        orient, pos, span0, span1 = meta
+        duplicate_idx: int | None = None
+        for idx, (k_orient, k_pos, k0, k1, clean_idx) in enumerate(kept_meta):
+            if orient != k_orient:
+                continue
+            if abs(float(pos) - float(k_pos)) > float(axis_eps_mm):
+                continue
+            if not _overlap_ok(float(span0), float(span1), float(k0), float(k1)):
+                continue
+            duplicate_idx = idx
+            break
+        if duplicate_idx is None:
+            cleaned.append(poly)
+            kept_meta.append((orient, float(pos), float(span0), float(span1), len(cleaned) - 1))
+            continue
+        _k_orient, _k_pos, k0, k1, clean_idx = kept_meta[duplicate_idx]
+        cur_len = float(span1) - float(span0)
+        kept_len = float(k1) - float(k0)
+        if cur_len > kept_len:
+            cleaned[clean_idx] = poly
+            kept_meta[duplicate_idx] = (orient, float(pos), float(span0), float(span1), clean_idx)
+        removed += 1
     return cleaned, removed
 
 
@@ -1813,6 +2051,136 @@ def _detect_a4_header_thumb_divider_x_mm(
     return float(max(candidates) - float(src_x0))
 
 
+def _compute_a4_header_thumb_content_scale_x(
+    polys_mm: list[list[tuple[float, float]]],
+    *,
+    src_x0: float,
+    src_y0: float,
+    header_text_src_x0: float,
+    header_thumb_target_w_mm: float,
+    default_scale_x: float,
+    right_pad_mm: float = 1.0,
+) -> float:
+    max_rel_x1 = 0.0
+    for poly in polys_mm:
+        if not _is_a4_header_content_poly_mm(poly, src_x0=src_x0, src_y0=src_y0):
+            continue
+        if _header_text_poly_candidate_mm(
+            poly,
+            src_x0=src_x0,
+            src_y0=src_y0,
+            header_text_src_x0=header_text_src_x0,
+        ):
+            continue
+        _x0, _y0, x1, _y1 = _poly_bbox_mm(poly)
+        max_rel_x1 = max(max_rel_x1, float(x1) - float(src_x0))
+
+    if max_rel_x1 <= 0.0:
+        return float(default_scale_x)
+
+    fit_width = max(1.0, float(header_thumb_target_w_mm) - float(right_pad_mm))
+    fit_scale = float(fit_width) / float(max_rel_x1)
+    return float(min(float(default_scale_x), float(fit_scale)))
+
+
+def _is_a4_header_thumb_frame_poly_mm(
+    poly: list[tuple[float, float]],
+    *,
+    src_x0: float,
+    src_y0: float,
+    header_thumb_divider_x: float,
+) -> bool:
+    if len(poly) < 2 or not _poly_is_axis_aligned_mm(poly, eps=0.18):
+        return False
+    x0, y0, x1, y1 = _poly_bbox_mm(poly)
+    bw = float(x1 - x0)
+    bh = float(y1 - y0)
+    if max(bw, bh) <= 0.0 or min(bw, bh) > 0.75:
+        return False
+    divider_abs_x = float(src_x0) + float(header_thumb_divider_x)
+    if bw <= 0.85 and bh >= 10.0:
+        center_x = (float(x0) + float(x1)) * 0.5
+        return abs(center_x - float(src_x0)) <= 1.2 or abs(center_x - float(divider_abs_x)) <= 1.2
+    if bh <= 0.85 and bw >= max(8.0, float(header_thumb_divider_x) * 0.60):
+        return float(x0) <= (float(src_x0) + 1.2) and float(x1) >= (float(divider_abs_x) - 1.2)
+    return False
+
+
+def _strip_a4_header_thumb_source_content_polys(
+    polys_mm: list[list[tuple[float, float]]],
+    *,
+    src_x0: float,
+    src_y0: float,
+    header_thumb_divider_x: float,
+    header_text_src_x0: float,
+) -> tuple[list[list[tuple[float, float]]], int]:
+    if not polys_mm or header_thumb_divider_x <= 0.0 or header_text_src_x0 <= 0.0:
+        return list(polys_mm), 0
+    thumb_limit_abs_x = float(src_x0) + float(header_text_src_x0) + 1.0
+    thumb_soft_limit_abs_x = float(thumb_limit_abs_x) + 8.0
+    kept: list[list[tuple[float, float]]] = []
+    removed = 0
+    for poly in polys_mm:
+        if not _is_a4_header_content_poly_mm(poly, src_x0=float(src_x0), src_y0=float(src_y0)):
+            kept.append(poly)
+            continue
+        if _is_a4_header_thumb_frame_poly_mm(
+            poly,
+            src_x0=float(src_x0),
+            src_y0=float(src_y0),
+            header_thumb_divider_x=float(header_thumb_divider_x),
+        ):
+            kept.append(poly)
+            continue
+        _px0, _py0, px1, _py1 = _poly_bbox_mm(poly)
+        px0, _py0, px1, _py1 = _poly_bbox_mm(poly)
+        if float(px1) <= float(thumb_limit_abs_x) or (
+            float(px0) < float(thumb_limit_abs_x) and float(px1) <= float(thumb_soft_limit_abs_x)
+        ):
+            removed += 1
+            continue
+        kept.append(poly)
+    return kept, removed
+
+
+def _fit_a4_header_thumb_overlay_polys(
+    polys_mm: list[list[tuple[float, float]]],
+    *,
+    header_thumb_target_w_mm: float,
+    header_band_h_mm: float,
+    target_w_mm: float,
+    target_h_mm: float,
+    inset_x_mm: float = 2.5,
+    inset_y_mm: float = 2.5,
+) -> list[list[tuple[float, float]]]:
+    if not polys_mm:
+        return []
+    ox0, oy0, ox1, oy1 = _polys_bbox_mm(polys_mm)
+    src_w = max(1e-9, float(ox1 - ox0))
+    src_h = max(1e-9, float(oy1 - oy0))
+    avail_w = max(1e-9, float(header_thumb_target_w_mm) - 2.0 * float(inset_x_mm))
+    avail_h = max(1e-9, float(header_band_h_mm) - 2.0 * float(inset_y_mm))
+    scale = min(float(avail_w) / float(src_w), float(avail_h) / float(src_h))
+    scaled_h = float(src_h) * float(scale)
+    base_x = float(inset_x_mm)
+    base_y = float(inset_y_mm) + max(0.0, (float(avail_h) - float(scaled_h)) * 0.5)
+
+    transformed: list[list[tuple[float, float]]] = []
+    for poly in polys_mm:
+        if len(poly) < 2:
+            continue
+        out_poly: list[tuple[float, float]] = []
+        for x, y in poly:
+            nx = float(base_x) + ((float(x) - float(ox0)) * float(scale))
+            ny = float(base_y) + ((float(y) - float(oy0)) * float(scale))
+            nx = max(0.0, min(float(target_w_mm), nx))
+            ny = max(0.0, min(float(target_h_mm), ny))
+            out_poly.append((nx, ny))
+        if len(out_poly) >= 2:
+            transformed.append(out_poly)
+    return transformed
+
+
 def _compose_a4_hybrid_frame_polylines(
     polys_mm: list[list[tuple[float, float]]],
     *,
@@ -1824,7 +2192,11 @@ def _compose_a4_hybrid_frame_polylines(
     header_thumb_target_min_w_mm: float = _A4_HEADER_THUMB_TARGET_MIN_W_MM,
     header_text_gap_mm: float = _A4_HEADER_TEXT_GAP_MM,
     header_text_scale_x: float = _A4_HEADER_TEXT_SCALE,
+    header_text_src_min_x_mm: float = _A4_HEADER_TEXT_SRC_MIN_X_MM,
+    header_text_src_pad_mm: float = _A4_HEADER_TEXT_SRC_PAD_MM,
     header_thumb_content_scale_x: float | None = None,
+    fit_thumb_overlay_to_box: bool = False,
+    preserve_header_band_layout: bool = False,
 ) -> tuple[list[list[tuple[float, float]]], dict[str, float]]:
     if not polys_mm:
         return [], {}
@@ -1839,8 +2211,12 @@ def _compose_a4_hybrid_frame_polylines(
     src_h = max(1e-9, src_y1 - src_y0)
     frame_scale_x = float(target_w_mm) / float(src_w)
     frame_scale_y = float(target_h_mm) / float(src_h)
-    header_scale_x = min(float(frame_scale_x), 1.0)
-    header_scale_y = min(float(frame_scale_y), 1.0)
+    if preserve_header_band_layout:
+        header_scale_x = min(float(target_w_mm) / max(1e-9, float(page_w_mm)), 1.0)
+        header_scale_y = min(float(target_h_mm) / max(1e-9, float(page_h_mm)), 1.0)
+    else:
+        header_scale_x = min(float(frame_scale_x), 1.0)
+        header_scale_y = min(float(frame_scale_y), 1.0)
     header_thumb_divider_x = _detect_a4_header_thumb_divider_x_mm(
         polys_mm,
         src_x0=float(src_x0),
@@ -1876,13 +2252,19 @@ def _compose_a4_hybrid_frame_polylines(
     if extra_frame_polys:
         title_box = {}
     if header_thumb_divider_x > 0.0:
-        header_text_src_x0 = max(float(header_thumb_divider_x) + 4.0, float(_A4_HEADER_TEXT_SRC_MIN_X_MM))
-        header_thumb_target_w = max(
-            float(header_thumb_divider_x) * float(frame_scale_x),
-            float(header_thumb_target_min_w_mm),
-        )
-        header_thumb_scale_x = float(header_thumb_target_w) / max(1e-9, float(header_thumb_divider_x))
-        header_text_dst_x0 = float(header_thumb_target_w) + float(header_text_gap_mm)
+        header_text_src_x0 = max(float(header_thumb_divider_x) + float(header_text_src_pad_mm), float(header_text_src_min_x_mm))
+        if preserve_header_band_layout:
+            header_thumb_target_w = float(header_thumb_divider_x) * float(header_scale_x)
+            header_thumb_scale_x = float(header_scale_x)
+            header_text_dst_x0 = float(header_text_src_x0) * float(header_scale_x)
+            header_text_scale_x = float(header_scale_x)
+        else:
+            header_thumb_target_w = max(
+                float(header_thumb_divider_x) * float(frame_scale_x),
+                float(header_thumb_target_min_w_mm),
+            )
+            header_thumb_scale_x = float(header_thumb_target_w) / max(1e-9, float(header_thumb_divider_x))
+            header_text_dst_x0 = float(header_thumb_target_w) + float(header_text_gap_mm)
 
     transformed: list[list[tuple[float, float]]] = []
     detail_paths = 0
@@ -1918,21 +2300,46 @@ def _compose_a4_hybrid_frame_polylines(
             src_y0=float(src_y0),
         )
         header_region = ""
-        if use_header_scale and header_thumb_divider_x > 0.0:
+        if not use_header_scale and header_thumb_divider_x > 0.0:
+            if _is_a4_header_thumb_frame_poly_mm(
+                poly,
+                src_x0=float(src_x0),
+                src_y0=float(src_y0),
+                header_thumb_divider_x=float(header_thumb_divider_x),
+            ):
+                use_header_scale = True
+                if not preserve_header_band_layout:
+                    header_region = "thumb_frame"
+        if use_header_scale and header_thumb_divider_x > 0.0 and not header_region and not preserve_header_band_layout:
             rel_x0 = float(px0) - float(src_x0)
             rel_x1 = float(px1) - float(src_x0)
             if rel_x1 >= (float(header_text_src_x0) + 1.5):
                 header_region = "text"
             elif rel_x1 <= max(float(header_text_src_x0) - 1.0, float(header_thumb_divider_x) + 2.0):
-                header_region = "thumb"
+                header_region = (
+                    "thumb_frame"
+                    if _is_a4_header_thumb_frame_poly_mm(
+                        poly,
+                        src_x0=float(src_x0),
+                        src_y0=float(src_y0),
+                        header_thumb_divider_x=float(header_thumb_divider_x),
+                    )
+                    else "thumb"
+                )
         out_poly: list[tuple[float, float]] = []
         for x, y in poly:
             if header_region == "text":
                 nx = float(header_text_dst_x0) + ((float(x) - float(src_x0) - float(header_text_src_x0)) * float(header_text_scale_x))
                 ny = (float(y) - float(src_y0)) * float(header_scale_y)
+            elif header_region == "thumb_frame":
+                nx = (float(x) - float(src_x0)) * float(header_thumb_scale_x)
+                ny = (float(y) - float(src_y0)) * float(header_scale_y)
             elif header_region == "thumb":
                 nx = (float(x) - float(src_x0)) * float(header_thumb_content_scale_x)
                 ny = (float(y) - float(src_y0)) * float(header_scale_y)
+            elif use_header_scale and preserve_header_band_layout:
+                nx = float(x) * float(header_scale_x)
+                ny = float(y) * float(header_scale_y)
             elif use_header_scale:
                 nx = (float(x) - float(src_x0)) * float(header_scale_x)
                 ny = (float(y) - float(src_y0)) * float(header_scale_y)
@@ -1969,54 +2376,87 @@ def _compose_a4_hybrid_frame_polylines(
         )
         frame_paths += 1
 
-    left_overlay_polys: list[list[tuple[float, float]]] = []
-    regular_overlay_polys: list[list[tuple[float, float]]] = []
-    for poly in list(extra_frame_polys or []):
-        if len(poly) < 2:
-            continue
-        px0, _py0, px1, _py1 = _poly_bbox_mm(poly)
-        if float(px1) <= (float(src_x0) + 1.0):
-            left_overlay_polys.append(poly)
-        else:
-            regular_overlay_polys.append(poly)
+    if fit_thumb_overlay_to_box and extra_frame_polys:
+        fitted_overlay_polys = _fit_a4_header_thumb_overlay_polys(
+            list(extra_frame_polys),
+            header_thumb_target_w_mm=float(header_thumb_target_w or header_thumb_target_min_w_mm),
+            header_band_h_mm=float(_A4_HEADER_CONTENT_MAX_Y_MM) * float(header_scale_y),
+            target_w_mm=float(target_w_mm),
+            target_h_mm=float(target_h_mm),
+        )
+        transformed.extend(fitted_overlay_polys)
+        frame_paths += len(fitted_overlay_polys)
+        header_content_paths += len(fitted_overlay_polys)
+    else:
+        left_overlay_polys: list[list[tuple[float, float]]] = []
+        thumb_overlay_polys: list[list[tuple[float, float]]] = []
+        regular_overlay_polys: list[list[tuple[float, float]]] = []
+        for poly in list(extra_frame_polys or []):
+            if len(poly) < 2:
+                continue
+            px0, _py0, px1, _py1 = _poly_bbox_mm(poly)
+            if float(px1) <= (float(src_x0) + 1.0):
+                left_overlay_polys.append(poly)
+            elif header_thumb_divider_x > 0.0 and float(px1) <= (
+                float(src_x0) + max(float(header_text_src_x0) - 1.0, float(header_thumb_divider_x) + 2.0)
+            ):
+                thumb_overlay_polys.append(poly)
+            else:
+                regular_overlay_polys.append(poly)
 
-    left_origin_x = float(src_x0)
-    left_origin_y = float(src_y0)
-    if left_overlay_polys:
-        left_origin_x = min(float(x) for poly in left_overlay_polys for x, _y in poly)
-        left_origin_y = min(float(y) for poly in left_overlay_polys for _x, y in poly)
+        left_origin_x = float(src_x0)
+        left_origin_y = float(src_y0)
+        if left_overlay_polys:
+            left_origin_x = min(float(x) for poly in left_overlay_polys for x, _y in poly)
+            left_origin_y = min(float(y) for poly in left_overlay_polys for _x, y in poly)
 
-    for poly in left_overlay_polys:
-        if len(poly) < 2:
-            continue
-        out_poly: list[tuple[float, float]] = []
-        for x, y in poly:
-            nx = (float(x) - float(left_origin_x)) * float(header_scale_x)
-            ny = (float(y) - float(left_origin_y)) * float(header_scale_y)
-            nx = max(0.0, min(float(target_w_mm), nx))
-            ny = max(0.0, min(float(target_h_mm), ny))
-            out_poly.append((nx, ny))
-        if len(out_poly) < 2:
-            continue
-        transformed.append(out_poly)
-        frame_paths += 1
-        header_content_paths += 1
+        for poly in left_overlay_polys:
+            if len(poly) < 2:
+                continue
+            out_poly: list[tuple[float, float]] = []
+            for x, y in poly:
+                nx = (float(x) - float(left_origin_x)) * float(header_scale_x)
+                ny = (float(y) - float(left_origin_y)) * float(header_scale_y)
+                nx = max(0.0, min(float(target_w_mm), nx))
+                ny = max(0.0, min(float(target_h_mm), ny))
+                out_poly.append((nx, ny))
+            if len(out_poly) < 2:
+                continue
+            transformed.append(out_poly)
+            frame_paths += 1
+            header_content_paths += 1
 
-    for poly in regular_overlay_polys:
-        if len(poly) < 2:
-            continue
-        out_poly: list[tuple[float, float]] = []
-        for x, y in poly:
-            nx = (float(x) - float(src_x0)) * float(header_scale_x)
-            ny = (float(y) - float(src_y0)) * float(header_scale_y)
-            nx = max(0.0, min(float(target_w_mm), nx))
-            ny = max(0.0, min(float(target_h_mm), ny))
-            out_poly.append((nx, ny))
-        if len(out_poly) < 2:
-            continue
-        transformed.append(out_poly)
-        frame_paths += 1
-        header_content_paths += 1
+        for poly in thumb_overlay_polys:
+            if len(poly) < 2:
+                continue
+            out_poly: list[tuple[float, float]] = []
+            for x, y in poly:
+                nx = (float(x) - float(src_x0)) * float(header_thumb_content_scale_x)
+                ny = (float(y) - float(src_y0)) * float(header_scale_y)
+                nx = max(0.0, min(float(target_w_mm), nx))
+                ny = max(0.0, min(float(target_h_mm), ny))
+                out_poly.append((nx, ny))
+            if len(out_poly) < 2:
+                continue
+            transformed.append(out_poly)
+            frame_paths += 1
+            header_content_paths += 1
+
+        for poly in regular_overlay_polys:
+            if len(poly) < 2:
+                continue
+            out_poly: list[tuple[float, float]] = []
+            for x, y in poly:
+                nx = (float(x) - float(src_x0)) * float(header_scale_x)
+                ny = (float(y) - float(src_y0)) * float(header_scale_y)
+                nx = max(0.0, min(float(target_w_mm), nx))
+                ny = max(0.0, min(float(target_h_mm), ny))
+                out_poly.append((nx, ny))
+            if len(out_poly) < 2:
+                continue
+            transformed.append(out_poly)
+            frame_paths += 1
+            header_content_paths += 1
 
     info: dict[str, float] = {
         "src_x0": float(src_x0),
@@ -2036,7 +2476,7 @@ def _compose_a4_hybrid_frame_polylines(
         "header_text_paths": float(header_text_paths),
         "title_box_removed_paths": float(removed_title_box_paths),
     }
-    if header_thumb_divider_x > 0.0:
+    if header_thumb_divider_x > 0.0 and header_text_src_x0 > 0.0:
         info.update(
             {
                 "header_thumb_divider_x": float(header_thumb_divider_x),
@@ -2119,25 +2559,27 @@ def _prepare_a4_hybrid_drawing_candidate(
         td_path = Path(td)
         ascii_pdf = td_path / "input.pdf"
         shutil.copy2(source_pdf, ascii_pdf)
-        variant1_header_cleanup = "1 вариант" in str(source_pdf).casefold()
+        preserve_variant1_header_source = "1 вариант" in str(source_pdf).casefold()
+        variant1_header_cleanup = False
 
         work_w_mm, work_h_mm = _configure_drawing_method3_backend()
         source_svg = td_path / "method3_source.svg"
         source_preview_pdf = td_path / "method3_source.pdf"
         with _technical_drawing_backend_precision():
-            ok, msg = bridge._prepare_method3_page(
-                backend=backend,
-                input_path=ascii_pdf,
-                source_page_index=1,
-                body_font="Marck Script",
-                formula_font="Times New Roman",
-                output_svg=source_svg,
-                output_pdf=source_preview_pdf,
-                output_nc=None,
-                log=logs.append,
-                source_pdf_path=ascii_pdf,
-                source_page_count=1,
-            )
+            with _preserve_nachert_variant1_header_context(bridge, preserve_variant1_header_source):
+                ok, msg = bridge._prepare_method3_page(
+                    backend=backend,
+                    input_path=ascii_pdf,
+                    source_page_index=1,
+                    body_font="Marck Script",
+                    formula_font="Times New Roman",
+                    output_svg=source_svg,
+                    output_pdf=source_preview_pdf,
+                    output_nc=None,
+                    log=logs.append,
+                    source_pdf_path=ascii_pdf,
+                    source_page_count=1,
+                )
         if not ok:
             return {
                 "variant": variant_name,
@@ -2145,11 +2587,14 @@ def _prepare_a4_hybrid_drawing_candidate(
                 "message": msg,
                 "logs": logs,
             }
-        extra_frame_polys, recovered = _extract_small_condition_image_polylines_from_pdf(
-            ascii_pdf,
-            page_index=0,
-            logger=logs.append,
-        )
+        if preserve_variant1_header_source:
+            extra_frame_polys, recovered = [], []
+        else:
+            extra_frame_polys, recovered = _extract_small_condition_image_polylines_from_pdf(
+                ascii_pdf,
+                page_index=0,
+                logger=logs.append,
+            )
         recovery_meta = {
             "image_count": float(len(recovered)),
             "path_count": float(len(extra_frame_polys)),
@@ -2165,6 +2610,8 @@ def _prepare_a4_hybrid_drawing_candidate(
             page_w_mm = float(page.rect.width) * 25.4 / 72.0
             page_h_mm = float(page.rect.height) * 25.4 / 72.0
         header_text_lines = _extract_a4_header_text_lines_from_pdf(ascii_pdf, page_index=0)
+        prefer_source_header_text = False
+        preserve_header_band_layout = bool(preserve_variant1_header_source)
         if header_text_lines:
             logs.append(f"A4 header text extraction: {len(header_text_lines)} line(s) from PDF text blocks.")
 
@@ -2212,9 +2659,32 @@ def _prepare_a4_hybrid_drawing_candidate(
         )
         header_text_src_x0 = 0.0
         if header_thumb_divider_x > 0.0:
-            header_text_src_x0 = max(float(header_thumb_divider_x) + 4.0, float(_A4_HEADER_TEXT_SRC_MIN_X_MM))
+            header_text_src_min_x_mm = (
+                float(_A4_HEADER_VARIANT1_TEXT_SRC_MIN_X_MM)
+                if variant1_header_cleanup
+                else float(_A4_HEADER_TEXT_SRC_MIN_X_MM)
+            )
+            header_text_src_pad_mm = (
+                float(_A4_HEADER_VARIANT1_TEXT_SRC_PAD_MM)
+                if variant1_header_cleanup
+                else float(_A4_HEADER_TEXT_SRC_PAD_MM)
+            )
+            header_text_src_x0 = max(float(header_thumb_divider_x) + float(header_text_src_pad_mm), float(header_text_src_min_x_mm))
+        if variant1_header_cleanup and extra_frame_polys and header_text_src_x0 > 0.0:
+            source_polys, removed_thumb_source = _strip_a4_header_thumb_source_content_polys(
+                source_polys,
+                src_x0=float(src_x0),
+                src_y0=float(src_y0),
+                header_thumb_divider_x=float(header_thumb_divider_x),
+                header_text_src_x0=float(header_text_src_x0),
+            )
+            if removed_thumb_source:
+                logs.append(
+                    "A4 header thumb reroute: removed "
+                    f"{removed_thumb_source} source polyline(s) from the thumbnail block."
+                )
         header_text_source_polys: list[list[tuple[float, float]]] = []
-        if header_text_lines and header_text_src_x0 > 0.0:
+        if (header_text_lines or prefer_source_header_text) and header_text_src_x0 > 0.0:
             filtered_source_polys: list[list[tuple[float, float]]] = []
             removed_header_text_paths = 0
             for poly in source_polys:
@@ -2235,10 +2705,29 @@ def _prepare_a4_hybrid_drawing_candidate(
                     f"{removed_header_text_paths} source polyline(s) from the header text band."
                 )
 
-        header_thumb_target_min_w_mm = _A4_HEADER_VARIANT1_THUMB_TARGET_MIN_W_MM if variant1_header_cleanup else _A4_HEADER_THUMB_TARGET_MIN_W_MM
-        header_text_gap_mm = _A4_HEADER_VARIANT1_TEXT_GAP_MM if variant1_header_cleanup else _A4_HEADER_TEXT_GAP_MM
-        header_text_scale_x = _A4_HEADER_VARIANT1_TEXT_SCALE if variant1_header_cleanup else _A4_HEADER_TEXT_SCALE
+        if preserve_variant1_header_source:
+            header_thumb_target_min_w_mm = 0.0
+            header_text_gap_mm = 1.0
+            header_text_scale_x = _A4_HEADER_TEXT_SCALE
+        else:
+            header_thumb_target_min_w_mm = _A4_HEADER_VARIANT1_THUMB_TARGET_MIN_W_MM if variant1_header_cleanup else _A4_HEADER_THUMB_TARGET_MIN_W_MM
+            header_text_gap_mm = _A4_HEADER_VARIANT1_TEXT_GAP_MM if variant1_header_cleanup else _A4_HEADER_TEXT_GAP_MM
+            header_text_scale_x = _A4_HEADER_VARIANT1_TEXT_SCALE if variant1_header_cleanup else _A4_HEADER_TEXT_SCALE
         header_thumb_content_scale_x = None
+        if variant1_header_cleanup and header_text_src_x0 > 0.0:
+            thumb_content_scale_polys = list(extra_frame_polys or source_polys)
+            header_thumb_target_w_guess = max(
+                float(header_thumb_divider_x) * float(frame_scale_x),
+                float(header_thumb_target_min_w_mm),
+            )
+            header_thumb_content_scale_x = _compute_a4_header_thumb_content_scale_x(
+                thumb_content_scale_polys,
+                src_x0=float(src_x0),
+                src_y0=float(src_y0),
+                header_text_src_x0=float(header_text_src_x0),
+                header_thumb_target_w_mm=float(header_thumb_target_w_guess),
+                default_scale_x=min(float(frame_scale_x), 1.0),
+            )
         hybrid_polys, hybrid_info = _compose_a4_hybrid_frame_polylines(
             source_polys,
             page_w_mm=page_w_mm,
@@ -2249,7 +2738,15 @@ def _prepare_a4_hybrid_drawing_candidate(
             header_thumb_target_min_w_mm=float(header_thumb_target_min_w_mm),
             header_text_gap_mm=float(header_text_gap_mm),
             header_text_scale_x=float(header_text_scale_x),
+            header_text_src_min_x_mm=float(
+                _A4_HEADER_VARIANT1_TEXT_SRC_MIN_X_MM if variant1_header_cleanup else _A4_HEADER_TEXT_SRC_MIN_X_MM
+            ),
+            header_text_src_pad_mm=float(
+                _A4_HEADER_VARIANT1_TEXT_SRC_PAD_MM if variant1_header_cleanup else _A4_HEADER_TEXT_SRC_PAD_MM
+            ),
             header_thumb_content_scale_x=header_thumb_content_scale_x,
+            fit_thumb_overlay_to_box=bool(variant1_header_cleanup and extra_frame_polys),
+            preserve_header_band_layout=preserve_header_band_layout,
         )
         if not hybrid_polys:
             return {
@@ -2258,7 +2755,11 @@ def _prepare_a4_hybrid_drawing_candidate(
                 "message": "Hybrid A4 frame transform produced no polylines.",
                 "logs": logs,
             }
-        if header_text_lines and float(hybrid_info.get("header_text_dst_x0", 0.0)) > 0.0:
+        if (
+            header_text_lines
+            and not prefer_source_header_text
+            and float(hybrid_info.get("header_text_dst_x0", 0.0)) > 0.0
+        ):
             cleaned_hybrid_polys: list[list[tuple[float, float]]] = []
             removed_hybrid_text = 0
             trimmed_thumb_spill = 0
@@ -2334,7 +2835,11 @@ def _prepare_a4_hybrid_drawing_candidate(
                         "A4 header thumb cleanup: clipped "
                         f"{trimmed_thumb_spill} spill polyline(s) to the thumbnail box."
                     )
-        if header_text_lines and float(hybrid_info.get("header_text_dst_x0", 0.0)) > 0.0:
+        if (
+            header_text_lines
+            and not prefer_source_header_text
+            and float(hybrid_info.get("header_text_dst_x0", 0.0)) > 0.0
+        ):
             header_text_polys = _render_a4_header_text_polylines(
                 header_text_lines,
                 src_x0=float(hybrid_info.get("src_x0", src_x0)),
@@ -2381,6 +2886,48 @@ def _prepare_a4_hybrid_drawing_candidate(
                 logs.append(
                     "A4 header gutter cleanup: removed "
                     f"{removed_gutter_artifacts} tiny artifact polyline(s) from the thumb/text gap."
+                )
+
+        restored_header_separator = False
+        if not preserve_variant1_header_source:
+            hybrid_polys, restored_header_separator = _ensure_a4_header_bottom_separator(
+                hybrid_polys,
+                header_lines=header_text_lines,
+                src_y0=float(hybrid_info.get("src_y0", src_y0)),
+                header_scale_y=float(hybrid_info.get("header_scale_y", 1.0)),
+                target_w_mm=float(work_w_mm),
+            )
+            if restored_header_separator:
+                logs.append("A4 header separator restore: added clean bottom separator under the text band.")
+                text_bottom_y = 0.0
+                for line in header_text_lines:
+                    bbox_mm = tuple(line.get("bbox_mm", ()) or ())
+                    if len(bbox_mm) < 4:
+                        continue
+                    text_bottom_y = max(
+                        text_bottom_y,
+                        (float(bbox_mm[3]) - float(hybrid_info.get("src_y0", src_y0))) * float(hybrid_info.get("header_scale_y", 1.0)),
+                    )
+                separator_y = min(float(_A4_HEADER_CONTENT_MAX_Y_MM), float(text_bottom_y) + 4.0)
+                hybrid_polys, removed_thumb_dup = _remove_a4_header_thumb_full_width_duplicate(
+                    hybrid_polys,
+                    header_thumb_x1_mm=float(hybrid_info.get("header_text_dst_x0", hybrid_info.get("header_thumb_target_w", 0.0))),
+                    separator_y_mm=float(separator_y),
+                )
+                if removed_thumb_dup:
+                    logs.append(
+                        "A4 header thumb cleanup: removed "
+                        f"{removed_thumb_dup} full-width duplicate line(s) below the thumbnail."
+                    )
+        else:
+            hybrid_polys, removed_header_dup = _dedupe_a4_header_band_axis_lines(
+                hybrid_polys,
+                top_band_y1_mm=float(_A4_HEADER_CONTENT_MAX_Y_MM) + 2.0,
+            )
+            if removed_header_dup:
+                logs.append(
+                    "A4 header cleanup: removed "
+                    f"{removed_header_dup} duplicate axis-aligned frame line(s) in the preserved top band."
                 )
 
         prefix = candidate_dir / variant_name
@@ -2860,39 +3407,79 @@ def _prepare_drawing_package(source_pdf: Path, package_dir: Path) -> tuple[dict[
     if not is_a3:
         candidate_root = package_dir / "_candidates"
         candidate_root.mkdir(parents=True, exist_ok=True)
-        hybrid_candidate = _prepare_a4_hybrid_drawing_candidate(
-            source_pdf,
-            variant_name="a4_hybrid_frame",
-            candidate_dir=candidate_root,
-        )
-        candidates = [hybrid_candidate]
-        if not bool(hybrid_candidate.get("ok")):
-            candidates.extend(
-                [
-                    _prepare_drawing_candidate(
-                        source_pdf,
-                        variant_name="fit_full",
-                        exact_geometry_mode=False,
-                        strict_one_to_one=False,
-                        candidate_dir=candidate_root,
-                    ),
-                    _prepare_drawing_candidate(
-                        source_pdf,
-                        variant_name="strict_1to1_clip",
-                        exact_geometry_mode=True,
-                        strict_one_to_one=True,
-                        candidate_dir=candidate_root,
-                    ),
-                ]
-            )
+        candidates: list[dict[str, Any]] = []
+        for variant_name, fn in [
+            (
+                "a4_hybrid_frame",
+                lambda: _prepare_a4_hybrid_drawing_candidate(
+                    source_pdf,
+                    variant_name="a4_hybrid_frame",
+                    candidate_dir=candidate_root,
+                ),
+            ),
+            (
+                "fit_full",
+                lambda: _prepare_drawing_candidate(
+                    source_pdf,
+                    variant_name="fit_full",
+                    exact_geometry_mode=False,
+                    strict_one_to_one=False,
+                    candidate_dir=candidate_root,
+                ),
+            ),
+            (
+                "strict_1to1_clip",
+                lambda: _prepare_drawing_candidate(
+                    source_pdf,
+                    variant_name="strict_1to1_clip",
+                    exact_geometry_mode=True,
+                    strict_one_to_one=True,
+                    candidate_dir=candidate_root,
+                ),
+            ),
+        ]:
+            try:
+                candidates.append(fn())
+            except Exception as exc:
+                candidates.append(
+                    {
+                        "variant": variant_name,
+                        "ok": False,
+                        "message": str(exc),
+                        "logs": [f"A4 candidate failed: {variant_name}: {exc}"],
+                    }
+                )
         successful = [row for row in candidates if bool(row.get("ok"))]
         if not successful:
             report["items"] = candidates
+            doc.close()
             return report, rows
 
-        best = next((row for row in successful if str(row.get("variant", "")) == "a4_hybrid_frame"), None)
-        if best is None:
-            best = max(successful, key=lambda row: float(row.get("layout_similarity", 0.0) or 0.0))
+        for row in successful:
+            try:
+                crop_metrics = _source_crop_alignment_metrics(
+                    source_pdf,
+                    Path(str(row.get("pdf", ""))),
+                    source_page_index=0,
+                )
+            except Exception:
+                crop_metrics = {
+                    "source_crop_corr": 0.0,
+                    "source_crop_iou": 0.0,
+                    "source_crop_x_px": 0.0,
+                    "source_crop_y_px": 0.0,
+                }
+            row.update(crop_metrics)
+
+        best = max(successful, key=lambda row: float(row.get("layout_similarity", 0.0) or 0.0))
+        hybrid = next((row for row in successful if str(row.get("variant", "")) == "a4_hybrid_frame"), None)
+        if hybrid is not None:
+            best_sim = float(best.get("layout_similarity", 0.0) or 0.0)
+            hybrid_sim = float(hybrid.get("layout_similarity", 0.0) or 0.0)
+            hybrid_notes = str(hybrid.get("notes", "") or "")
+            hybrid_preserves_detail = "detail_scale=1.0" in hybrid_notes
+            if hybrid_preserves_detail and (best_sim - hybrid_sim) <= 0.01:
+                best = hybrid
         best_prefix = pages_dir / "page_01"
         for src_key, dst_path in zip(
             ["svg", "pdf", "nc", "gcode"],
@@ -2936,6 +3523,8 @@ def _prepare_drawing_package(source_pdf: Path, package_dir: Path) -> tuple[dict[
                         f"variant={best.get('variant')}",
                         f"scale={best.get('fit_scale')}",
                         f"clipping={bool(best.get('clipping_warning'))}",
+                        f"source_crop_iou={float(best.get('source_crop_iou', 0.0) or 0.0):.6f}",
+                        f"source_crop_corr={float(best.get('source_crop_corr', 0.0) or 0.0):.6f}",
                         str(best.get("notes", "")),
                     ]
                     if part
@@ -2944,6 +3533,7 @@ def _prepare_drawing_package(source_pdf: Path, package_dir: Path) -> tuple[dict[
         )
         shutil.rmtree(candidate_root, ignore_errors=True)
         _mirror_package_root_artifacts(package_dir, rows)
+        doc.close()
         return report, rows
 
     a3_clean_logs: list[str] = []
@@ -3045,6 +3635,7 @@ def _prepare_drawing_package(source_pdf: Path, package_dir: Path) -> tuple[dict[
                 dst_path = package_dir / artifact_path.name
                 if artifact_path.resolve() != dst_path.resolve():
                     _copy_file(artifact_path, dst_path)
+    doc.close()
     return report, rows
 
 
@@ -3127,6 +3718,7 @@ def _prepare_toe_package(source_pdf: Path, package_dir: Path) -> tuple[dict[str,
         )
 
     _mirror_package_root_artifacts(package_dir, rows)
+    doc.close()
     return report, rows
 
 

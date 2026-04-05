@@ -187,6 +187,88 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
         self.assertIn(polys[3], cleaned)
         self.assertIn(polys[4], cleaned)
 
+    def test_ensure_a4_header_bottom_separator_adds_missing_long_line(self) -> None:
+        mod = _load_module()
+        polys = [
+            [(0.0, 0.0), (171.0, 0.0)],
+            [(0.0, 35.4), (59.4, 35.4)],
+        ]
+        header_lines = [
+            {"text": "demo", "bbox_mm": (60.0, 8.0, 150.0, 44.0)},
+        ]
+        updated, added = mod._ensure_a4_header_bottom_separator(
+            polys,
+            header_lines=header_lines,
+            src_y0=0.0,
+            header_scale_y=1.0,
+            target_w_mm=180.0,
+        )
+        self.assertTrue(added)
+        sep = self._find_poly_bbox(
+            mod,
+            updated,
+            lambda box: abs(box[1] - 48.0) <= 0.05 and abs(box[3] - 48.0) <= 0.05 and box[2] >= 170.0,
+        )
+        self.assertAlmostEqual(sep[0], 0.0, places=3)
+
+    def test_ensure_a4_header_bottom_separator_skips_when_line_exists(self) -> None:
+        mod = _load_module()
+        polys = [
+            [(0.0, 0.0), (171.0, 0.0)],
+            [(0.0, 48.0), (171.0, 48.0)],
+        ]
+        header_lines = [
+            {"text": "demo", "bbox_mm": (60.0, 8.0, 150.0, 44.0)},
+        ]
+        updated, added = mod._ensure_a4_header_bottom_separator(
+            polys,
+            header_lines=header_lines,
+            src_y0=0.0,
+            header_scale_y=1.0,
+            target_w_mm=180.0,
+        )
+        self.assertFalse(added)
+        self.assertEqual(len(updated), 2)
+
+    def test_remove_a4_header_thumb_full_width_duplicate_drops_only_full_span_line(self) -> None:
+        mod = _load_module()
+        polys = [
+            [(0.0, 48.2), (59.4, 48.2)],
+            [(20.4, 48.0), (59.4, 48.0)],
+            [(0.0, 48.0), (171.0, 48.0)],
+        ]
+        updated, removed = mod._remove_a4_header_thumb_full_width_duplicate(
+            polys,
+            header_thumb_x1_mm=59.4,
+            separator_y_mm=48.0,
+        )
+        self.assertEqual(removed, 2)
+        self.assertEqual(len(updated), 1)
+        self.assertIn(polys[2], updated)
+
+    def test_dedupe_a4_header_band_axis_lines_removes_close_parallel_duplicates(self) -> None:
+        mod = _load_module()
+        polys = [
+            [(0.0, 0.0), (60.0, 0.0)],
+            [(0.0, 0.55), (59.8, 0.55)],
+            [(28.0, 0.0), (28.0, 30.0)],
+            [(28.45, 0.0), (28.45, 29.8)],
+            [(8.0, 10.0), (8.0, 24.0)],
+            [(10.0, 12.0), (12.0, 12.0)],
+        ]
+
+        updated, removed = mod._dedupe_a4_header_band_axis_lines(
+            polys,
+            top_band_y1_mm=35.0,
+        )
+
+        self.assertEqual(removed, 2)
+        self.assertEqual(len(updated), 4)
+        self.assertIn(polys[0], updated)
+        self.assertIn(polys[2], updated)
+        self.assertIn(polys[4], updated)
+        self.assertIn(polys[5], updated)
+
     def test_detect_a4_header_thumb_divider_uses_rightmost_top_band_vertical(self) -> None:
         mod = _load_module()
         polys = [
@@ -299,6 +381,7 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
         mod = _load_module()
         polys = [
             [(0.0, 0.0), (100.0, 0.0)],
+            [(0.0, 0.0), (28.8, 0.0)],
             [(28.8, 18.0), (28.8, 30.0)],
             [(10.0, 20.0), (24.0, 20.0)],
             [(65.0, 18.0), (75.0, 24.0), (85.0, 18.0)],
@@ -327,6 +410,16 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
             transformed,
             lambda box: abs(box[1] - 20.0) <= 0.05 and abs(box[3] - 20.0) <= 0.05 and abs((box[2] - box[0]) - 14.0) <= 0.05,
         )
+        thumb_divider_bbox = self._find_poly_bbox(
+            mod,
+            transformed,
+            lambda box: abs(box[0] - 76.0) <= 0.1 and abs(box[2] - 76.0) <= 0.1 and box[3] >= 29.0,
+        )
+        thumb_top_bbox = self._find_poly_bbox(
+            mod,
+            transformed,
+            lambda box: abs(box[1]) <= 0.1 and abs(box[3]) <= 0.1 and abs(box[2] - 76.0) <= 0.1,
+        )
         text_bbox = self._find_poly_bbox(
             mod,
             transformed,
@@ -334,9 +427,158 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
         )
         self.assertAlmostEqual(info["header_thumb_target_w"], 76.0, places=2)
         self.assertAlmostEqual(thumb_line_bbox[2] - thumb_line_bbox[0], 14.0, places=2)
+        self.assertAlmostEqual(thumb_divider_bbox[0], 76.0, places=2)
+        self.assertAlmostEqual(thumb_top_bbox[2] - thumb_top_bbox[0], 76.0, places=2)
         self.assertGreaterEqual(text_bbox[0], 83.0)
         self.assertAlmostEqual(info["header_text_scale_x"], 0.84, places=2)
         self.assertAlmostEqual(info["header_thumb_content_scale_x"], 1.0, places=2)
+
+    def test_compose_a4_hybrid_frame_scales_thumb_overlay_with_thumb_content(self) -> None:
+        mod = _load_module()
+        polys = [
+            [(0.0, 0.0), (100.0, 0.0)],
+            [(0.0, 0.0), (28.8, 0.0)],
+            [(28.8, 18.0), (28.8, 30.0)],
+            [(65.0, 18.0), (75.0, 24.0), (85.0, 18.0)],
+        ]
+        overlay = [[(4.0, 8.0), (20.0, 8.0)]]
+        with (
+            mock.patch.object(mod, "_detect_a4_title_box_mm", return_value={}),
+            mock.patch.object(mod, "_is_detail_polyline_mm", return_value=False),
+        ):
+            transformed, info = mod._compose_a4_hybrid_frame_polylines(
+                polys,
+                page_w_mm=210.0,
+                page_h_mm=297.0,
+                target_w_mm=180.0,
+                target_h_mm=280.0,
+                extra_frame_polys=overlay,
+                header_thumb_target_min_w_mm=76.0,
+                header_text_gap_mm=7.0,
+                header_text_scale_x=0.84,
+                header_thumb_content_scale_x=2.0,
+            )
+        overlay_bbox = self._find_poly_bbox(
+            mod,
+            transformed,
+            lambda box: abs(box[1] - 8.0) <= 0.1 and abs(box[3] - 8.0) <= 0.1 and abs((box[2] - box[0]) - 32.0) <= 0.1,
+        )
+        self.assertAlmostEqual(overlay_bbox[0], 8.0, places=2)
+        self.assertAlmostEqual(overlay_bbox[2] - overlay_bbox[0], 32.0, places=2)
+
+    def test_compose_a4_hybrid_frame_can_fit_thumb_overlay_to_box(self) -> None:
+        mod = _load_module()
+        polys = [
+            [(0.0, 0.0), (100.0, 0.0)],
+            [(0.0, 0.0), (28.8, 0.0)],
+            [(28.8, 18.0), (28.8, 30.0)],
+            [(65.0, 18.0), (75.0, 24.0), (85.0, 18.0)],
+        ]
+        overlay = [[(2.0, 10.0), (18.0, 10.0)]]
+        with (
+            mock.patch.object(mod, "_detect_a4_title_box_mm", return_value={}),
+            mock.patch.object(mod, "_is_detail_polyline_mm", return_value=False),
+        ):
+            transformed, info = mod._compose_a4_hybrid_frame_polylines(
+                polys,
+                page_w_mm=210.0,
+                page_h_mm=297.0,
+                target_w_mm=180.0,
+                target_h_mm=280.0,
+                extra_frame_polys=overlay,
+                header_thumb_target_min_w_mm=64.0,
+                fit_thumb_overlay_to_box=True,
+            )
+        overlay_bbox = self._find_poly_bbox(
+            mod,
+            transformed,
+            lambda box: box[0] >= 2.0 and box[2] <= 62.5 and (box[2] - box[0]) > 40.0 and abs(box[1] - box[3]) <= 0.1,
+        )
+        self.assertGreater(info["header_thumb_target_w"], 50.0)
+        self.assertGreater(overlay_bbox[2] - overlay_bbox[0], 40.0)
+
+    def test_variant1_header_defaults_expand_thumb_and_reduce_text(self) -> None:
+        mod = _load_module()
+        self.assertGreater(mod._A4_HEADER_VARIANT1_THUMB_TARGET_MIN_W_MM, mod._A4_HEADER_THUMB_TARGET_MIN_W_MM)
+        self.assertGreater(mod._A4_HEADER_VARIANT1_TEXT_GAP_MM, mod._A4_HEADER_TEXT_GAP_MM)
+        self.assertLess(mod._A4_HEADER_VARIANT1_TEXT_SCALE, mod._A4_HEADER_TEXT_SCALE)
+
+    def test_compose_a4_hybrid_frame_can_preserve_header_band_layout(self) -> None:
+        mod = _load_module()
+        polys = [
+            [(0.0, 0.0), (100.0, 0.0)],
+            [(0.0, 0.0), (28.8, 0.0)],
+            [(28.8, 0.0), (28.8, 30.0)],
+            [(10.0, 20.0), (24.0, 20.0)],
+            [(65.0, 18.0), (75.0, 24.0), (85.0, 18.0)],
+        ]
+        with (
+            mock.patch.object(mod, "_detect_a4_title_box_mm", return_value={}),
+            mock.patch.object(mod, "_is_detail_polyline_mm", return_value=False),
+        ):
+            transformed, info = mod._compose_a4_hybrid_frame_polylines(
+                polys,
+                page_w_mm=210.0,
+                page_h_mm=297.0,
+                target_w_mm=100.0,
+                target_h_mm=100.0,
+                preserve_header_band_layout=True,
+            )
+        divider_bbox = self._find_poly_bbox(
+            mod,
+            transformed,
+            lambda box: abs(box[0] - (28.8 * (100.0 / 210.0))) <= 0.1 and abs(box[2] - (28.8 * (100.0 / 210.0))) <= 0.1 and box[3] <= 11.0,
+        )
+        text_bbox = self._find_poly_bbox(
+            mod,
+            transformed,
+            lambda box: 30.0 <= box[0] <= 32.0 and 6.0 <= box[1] <= 8.5,
+        )
+        self.assertAlmostEqual(divider_bbox[0], 28.8 * (100.0 / 210.0), places=2)
+        self.assertAlmostEqual(text_bbox[0], 65.0 * (100.0 / 210.0), places=2)
+        self.assertAlmostEqual(info["header_text_dst_x0"], info["header_text_src_x0"] * (100.0 / 210.0), places=2)
+        self.assertAlmostEqual(info["header_text_scale_x"], 100.0 / 210.0, places=2)
+
+    def test_compute_a4_header_thumb_content_scale_x_shrinks_to_fit(self) -> None:
+        mod = _load_module()
+        polys = [
+            [(0.0, 0.0), (28.8, 0.0)],
+            [(2.0, 8.0), (66.0, 12.0), (60.0, 18.0)],
+            [(35.0, 12.0), (90.0, 12.0), (90.0, 20.0)],
+        ]
+        scale = mod._compute_a4_header_thumb_content_scale_x(
+            polys,
+            src_x0=0.0,
+            src_y0=0.0,
+            header_text_src_x0=80.0,
+            header_thumb_target_w_mm=60.0,
+            default_scale_x=1.0,
+        )
+        self.assertLess(scale, 1.0)
+        self.assertAlmostEqual(scale, 59.0 / 66.0, places=3)
+
+    def test_strip_a4_header_thumb_source_content_polys_keeps_only_frame(self) -> None:
+        mod = _load_module()
+        polys = [
+            [(0.0, 0.0), (28.8, 0.0)],
+            [(28.8, 0.0), (28.8, 30.0)],
+            [(2.0, 8.0), (22.0, 8.0), (22.0, 22.0)],
+            [(31.0, 10.0), (35.0, 10.0), (35.0, 14.0)],
+            [(40.0, 18.0), (60.0, 18.0)],
+        ]
+        kept, removed = mod._strip_a4_header_thumb_source_content_polys(
+            polys,
+            src_x0=0.0,
+            src_y0=0.0,
+            header_thumb_divider_x=28.8,
+            header_text_src_x0=32.8,
+        )
+        self.assertEqual(removed, 2)
+        self.assertIn(polys[0], kept)
+        self.assertIn(polys[1], kept)
+        self.assertIn(polys[4], kept)
+        self.assertNotIn(polys[2], kept)
+        self.assertNotIn(polys[3], kept)
 
     def test_configure_toe_backend_uses_centerline_for_formula_rasters(self) -> None:
         mod = _load_module()
@@ -432,6 +674,211 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
         self.assertEqual(nc_path.name, "latest_preview_preview-123.nc")
         self.assertEqual(svg_path.name, "latest_preview_preview-123_vector.svg")
         self.assertEqual(pdf_path.name, "latest_preview_preview-123_vector.pdf")
+
+    def test_prepare_drawing_package_selects_best_a4_candidate_by_similarity(self) -> None:
+        mod = _load_module()
+        with tempfile.TemporaryDirectory(prefix="nachert_best_a4_") as td:
+            root = Path(td)
+            source_pdf = root / "source.pdf"
+            doc = mod.fitz.open()
+            doc.new_page(width=595, height=842)
+            doc.save(source_pdf)
+            doc.close()
+
+            def _mk_candidate(name: str, sim: float) -> dict[str, object]:
+                prefix = root / name
+                files = {
+                    "svg": prefix.with_suffix(".svg"),
+                    "pdf": prefix.with_suffix(".pdf"),
+                    "nc": prefix.with_suffix(".nc"),
+                    "gcode": prefix.with_suffix(".gcode"),
+                    "ref_pdf": prefix.with_name(prefix.name + "__ref.pdf"),
+                    "ref_svg": prefix.with_name(prefix.name + "__ref.svg"),
+                }
+                files["svg"].write_text("<svg />", encoding="utf-8")
+                files["pdf"].write_bytes(b"%PDF-1.4\n")
+                files["nc"].write_text("G0 X0 Y0\n", encoding="utf-8")
+                files["gcode"].write_text("G0 X0 Y0\n", encoding="utf-8")
+                files["ref_pdf"].write_bytes(b"%PDF-1.4\n")
+                files["ref_svg"].write_text("<svg />", encoding="utf-8")
+                return {
+                    "variant": name,
+                    "ok": True,
+                    "layout_similarity": sim,
+                    "svg": str(files["svg"]),
+                    "pdf": str(files["pdf"]),
+                    "nc": str(files["nc"]),
+                    "gcode": str(files["gcode"]),
+                    "reference_source": str(files["ref_pdf"]),
+                    "reference_source_svg": str(files["ref_svg"]),
+                    "metrics": {"segments_total": 1, "draw_length_mm": 10.0},
+                    "logs": [name],
+                    "fit_scale": 1.0,
+                    "clipping_warning": False,
+                    "notes": "",
+                }
+
+            with (
+                mock.patch.object(mod, "_prepare_a4_hybrid_drawing_candidate", return_value=_mk_candidate("a4_hybrid_frame", 0.91)),
+                mock.patch.object(
+                    mod,
+                    "_prepare_drawing_candidate",
+                    side_effect=[_mk_candidate("fit_full", 0.96), _mk_candidate("strict_1to1_clip", 0.89)],
+                ),
+                mock.patch.object(
+                    mod,
+                    "_source_crop_alignment_metrics",
+                    side_effect=[
+                        {"source_crop_iou": 0.08, "source_crop_corr": 0.11, "source_crop_x_px": 0.0, "source_crop_y_px": 0.0},
+                        {"source_crop_iou": 0.07, "source_crop_corr": 0.10, "source_crop_x_px": 0.0, "source_crop_y_px": 0.0},
+                        {"source_crop_iou": 0.06, "source_crop_corr": 0.09, "source_crop_x_px": 0.0, "source_crop_y_px": 0.0},
+                    ],
+                ),
+            ):
+                report, rows = mod._prepare_drawing_package(source_pdf, root / "pkg")
+
+        self.assertEqual(report["selected_variant"], "fit_full")
+        self.assertEqual(len(rows), 1)
+        self.assertIn("variant=fit_full", rows[0].notes)
+
+    def test_prepare_drawing_package_prefers_hybrid_when_close_and_detail_is_one_to_one(self) -> None:
+        mod = _load_module()
+        with tempfile.TemporaryDirectory(prefix="nachert_prefers_hybrid_") as td:
+            root = Path(td)
+            source_pdf = root / "source.pdf"
+            doc = mod.fitz.open()
+            doc.new_page(width=595, height=842)
+            doc.save(source_pdf)
+            doc.close()
+
+            def _mk_candidate(name: str, sim: float, notes: str = "") -> dict[str, object]:
+                prefix = root / name
+                files = {
+                    "svg": prefix.with_suffix(".svg"),
+                    "pdf": prefix.with_suffix(".pdf"),
+                    "nc": prefix.with_suffix(".nc"),
+                    "gcode": prefix.with_suffix(".gcode"),
+                    "ref_pdf": prefix.with_name(prefix.name + "__ref.pdf"),
+                    "ref_svg": prefix.with_name(prefix.name + "__ref.svg"),
+                }
+                files["svg"].write_text("<svg />", encoding="utf-8")
+                files["pdf"].write_bytes(b"%PDF-1.4\n")
+                files["nc"].write_text("G0 X0 Y0\n", encoding="utf-8")
+                files["gcode"].write_text("G0 X0 Y0\n", encoding="utf-8")
+                files["ref_pdf"].write_bytes(b"%PDF-1.4\n")
+                files["ref_svg"].write_text("<svg />", encoding="utf-8")
+                return {
+                    "variant": name,
+                    "ok": True,
+                    "layout_similarity": sim,
+                    "svg": str(files["svg"]),
+                    "pdf": str(files["pdf"]),
+                    "nc": str(files["nc"]),
+                    "gcode": str(files["gcode"]),
+                    "reference_source": str(files["ref_pdf"]),
+                    "reference_source_svg": str(files["ref_svg"]),
+                    "metrics": {"segments_total": 1, "draw_length_mm": 10.0},
+                    "logs": [name],
+                    "fit_scale": 1.0,
+                    "clipping_warning": False,
+                    "notes": notes,
+                }
+
+            with (
+                mock.patch.object(
+                    mod,
+                    "_prepare_a4_hybrid_drawing_candidate",
+                    return_value=_mk_candidate("a4_hybrid_frame", 0.9596, notes="detail_scale=1.0"),
+                ),
+                mock.patch.object(
+                    mod,
+                    "_prepare_drawing_candidate",
+                    side_effect=[_mk_candidate("fit_full", 0.9635), _mk_candidate("strict_1to1_clip", 0.9409)],
+                ),
+                mock.patch.object(
+                    mod,
+                    "_source_crop_alignment_metrics",
+                    side_effect=[
+                        {"source_crop_iou": 0.20, "source_crop_corr": 0.20, "source_crop_x_px": 0.0, "source_crop_y_px": 0.0},
+                        {"source_crop_iou": 0.18, "source_crop_corr": 0.18, "source_crop_x_px": 0.0, "source_crop_y_px": 0.0},
+                        {"source_crop_iou": 0.15, "source_crop_corr": 0.15, "source_crop_x_px": 0.0, "source_crop_y_px": 0.0},
+                    ],
+                ),
+            ):
+                report, rows = mod._prepare_drawing_package(source_pdf, root / "pkg")
+
+        self.assertEqual(report["selected_variant"], "a4_hybrid_frame")
+        self.assertEqual(len(rows), 1)
+        self.assertIn("variant=a4_hybrid_frame", rows[0].notes)
+
+    def test_prepare_drawing_package_survives_failed_a4_candidate(self) -> None:
+        mod = _load_module()
+        with tempfile.TemporaryDirectory(prefix="nachert_failed_a4_") as td:
+            root = Path(td)
+            source_pdf = root / "source.pdf"
+            doc = mod.fitz.open()
+            doc.new_page(width=595, height=842)
+            doc.save(source_pdf)
+            doc.close()
+
+            def _mk_candidate(name: str, sim: float) -> dict[str, object]:
+                prefix = root / name
+                files = {
+                    "svg": prefix.with_suffix(".svg"),
+                    "pdf": prefix.with_suffix(".pdf"),
+                    "nc": prefix.with_suffix(".nc"),
+                    "gcode": prefix.with_suffix(".gcode"),
+                    "ref_pdf": prefix.with_name(prefix.name + "__ref.pdf"),
+                    "ref_svg": prefix.with_name(prefix.name + "__ref.svg"),
+                }
+                files["svg"].write_text("<svg />", encoding="utf-8")
+                files["pdf"].write_bytes(b"%PDF-1.4\n")
+                files["nc"].write_text("G0 X0 Y0\n", encoding="utf-8")
+                files["gcode"].write_text("G0 X0 Y0\n", encoding="utf-8")
+                files["ref_pdf"].write_bytes(b"%PDF-1.4\n")
+                files["ref_svg"].write_text("<svg />", encoding="utf-8")
+                return {
+                    "variant": name,
+                    "ok": True,
+                    "layout_similarity": sim,
+                    "svg": str(files["svg"]),
+                    "pdf": str(files["pdf"]),
+                    "nc": str(files["nc"]),
+                    "gcode": str(files["gcode"]),
+                    "reference_source": str(files["ref_pdf"]),
+                    "reference_source_svg": str(files["ref_svg"]),
+                    "metrics": {"segments_total": 1, "draw_length_mm": 10.0},
+                    "logs": [name],
+                    "fit_scale": 1.0,
+                    "clipping_warning": False,
+                    "notes": "",
+                }
+
+            with (
+                mock.patch.object(mod, "_prepare_a4_hybrid_drawing_candidate", side_effect=RuntimeError("boom")),
+                mock.patch.object(
+                    mod,
+                    "_prepare_drawing_candidate",
+                    side_effect=[_mk_candidate("fit_full", 0.96), _mk_candidate("strict_1to1_clip", 0.89)],
+                ),
+                mock.patch.object(
+                    mod,
+                    "_source_crop_alignment_metrics",
+                    side_effect=[
+                        {"source_crop_iou": 0.07, "source_crop_corr": 0.10, "source_crop_x_px": 0.0, "source_crop_y_px": 0.0},
+                        {"source_crop_iou": 0.06, "source_crop_corr": 0.09, "source_crop_x_px": 0.0, "source_crop_y_px": 0.0},
+                    ],
+                ),
+            ):
+                report, rows = mod._prepare_drawing_package(source_pdf, root / "pkg")
+
+        self.assertEqual(report["selected_variant"], "fit_full")
+        self.assertEqual(len(report["items"]), 3)
+        failed = next(item for item in report["items"] if item.get("variant") == "a4_hybrid_frame")
+        self.assertFalse(failed["ok"])
+        self.assertIn("boom", failed["message"])
+        self.assertEqual(len(rows), 1)
+
 
 
 if __name__ == "__main__":

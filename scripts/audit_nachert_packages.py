@@ -10,7 +10,17 @@ from PIL import Image, ImageDraw
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_ROOT = PROJECT_ROOT / "\u041d\u0430\u0447\u0435\u0440\u0442"
+DEFAULT_ROOT = PROJECT_ROOT / "Начерт"
+
+
+def _collect_variant_dirs(root: Path) -> list[Path]:
+    if (root / "_prepared_summary.csv").exists():
+        return [root]
+    return [
+        p
+        for p in sorted(root.iterdir(), key=lambda p: p.name.casefold())
+        if p.is_dir() and (p / "_prepared_summary.csv").exists()
+    ]
 
 
 def _render_pdf(pdf_path: Path, zoom: float = 1.25) -> Image.Image:
@@ -73,8 +83,9 @@ def _audit_variant(variant_dir: Path) -> None:
             preview_pdf = Path(package_rows[0]["preview_pdf"])
             reference_pdf = source_pdf
             clean_meta = dict(report.get("a4_clean_source", {}) or {})
-            clean_pdf = Path(str(clean_meta.get("pdf", "") or ""))
-            if clean_pdf.exists():
+            clean_pdf_raw = str(clean_meta.get("pdf", "") or "").strip()
+            clean_pdf = Path(clean_pdf_raw) if clean_pdf_raw else None
+            if clean_pdf and clean_pdf.exists() and clean_pdf.is_file():
                 reference_pdf = clean_pdf
             panel = _make_panel(
                 [
@@ -98,11 +109,13 @@ def _audit_variant(variant_dir: Path) -> None:
             pass1 = next(row for row in package_rows if row["item"] == "pass_01")
             pass2 = next(row for row in package_rows if row["item"] == "pass_02")
             combined_meta = dict(report.get("combined_preview", {}) or {})
-            combined_pdf = Path(str(combined_meta.get("pdf", "") or ""))
-            reference_pdf = Path(str(combined_meta.get("reference_pdf", "") or source_pdf))
-            if not combined_pdf.exists():
+            combined_pdf_raw = str(combined_meta.get("pdf", "") or "").strip()
+            combined_pdf = Path(combined_pdf_raw) if combined_pdf_raw else Path(pass1["preview_pdf"])
+            reference_pdf_raw = str(combined_meta.get("reference_pdf", "") or "").strip()
+            reference_pdf = Path(reference_pdf_raw) if reference_pdf_raw else source_pdf
+            if not combined_pdf.exists() or not combined_pdf.is_file():
                 combined_pdf = Path(pass1["preview_pdf"])
-            if not reference_pdf.exists():
+            if not reference_pdf.exists() or not reference_pdf.is_file():
                 reference_pdf = source_pdf
             panel = _make_panel(
                 [
@@ -143,6 +156,22 @@ def _audit_variant(variant_dir: Path) -> None:
         json.dumps({"variant_dir": str(variant_dir), "items": audit_rows}, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
+    ranked_rows: list[tuple[float, str]] = []
+    for row in audit_rows:
+        sim = row.get("layout_similarity")
+        if sim is None:
+            sim = row.get("combined_layout_similarity")
+        if sim in (None, ""):
+            continue
+        try:
+            ranked_rows.append((float(sim), str(row.get("task", ""))))
+        except (TypeError, ValueError):
+            continue
+    ranked_rows.sort(key=lambda item: item[0])
+    summary_lines = [variant_dir.name]
+    for score, task in ranked_rows:
+        summary_lines.append(f"{task}: {score:.6f}")
+    (variant_dir / "_audit.txt").write_text("\n".join(summary_lines) + "\n", encoding="utf-8")
 
 
 def main() -> int:
@@ -156,7 +185,7 @@ def main() -> int:
         raise FileNotFoundError(f"Root not found: {root}")
 
     tokens = [str(item or "").casefold() for item in args.only_variant if str(item or "").strip()]
-    variant_dirs = [p for p in sorted(root.iterdir(), key=lambda p: p.name.casefold()) if p.is_dir()]
+    variant_dirs = _collect_variant_dirs(root)
     if tokens:
         variant_dirs = [p for p in variant_dirs if any(token in p.name.casefold() for token in tokens)]
 

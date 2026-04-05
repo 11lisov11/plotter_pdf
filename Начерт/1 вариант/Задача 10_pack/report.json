@@ -11,7 +11,7 @@
     {
       "item": "pass_01",
       "ok": true,
-      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1775238325869012600_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1775238325869012600.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1775238325869012600_vector.pdf",
+      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1775357572612626600_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1775357572612626600.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1775357572612626600_vector.pdf",
       "logs": [
         "Source pages: 1, selected: 1",
         "Method3 centerline: threshold=32, candidates=9, paths=1258",
@@ -56,9 +56,9 @@
         "G-code stats: lines=13966, draw=11215, travel=2737, bounds=0.000..180.000 x, -295.000..0.000 y",
         "Preflight: ok: lines=13966, draw=11215, travel=2737, ratio=0.24",
         "Saved file stats: lines=13966, draw=11215, travel=2737, bounds=0.000..180.000 x, -295.000..0.000 y",
-        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1775238325869012600.nc",
-        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1775238325869012600_vector.svg",
-        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1775238325869012600_vector.pdf"
+        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1775357572612626600.nc",
+        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1775357572612626600_vector.svg",
+        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1775357572612626600_vector.pdf"
       ],
       "fit_scale": 1.0,
       "clipping_warning": true,
@@ -83,7 +83,7 @@
     {
       "item": "pass_02",
       "ok": true,
-      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1775238333816224900_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1775238333816224900.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1775238333816224900_vector.pdf",
+      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1775357575232283400_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1775357575232283400.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1775357575232283400_vector.pdf",
       "logs": [
         "Source pages: 1, selected: 1",
         "Method3 centerline: threshold=32, candidates=9, paths=1258",
@@ -131,9 +131,9 @@
         "G-code stats: lines=4638, draw=3911, travel=713, bounds=0.000..180.000 x, -291.000..0.000 y",
         "Preflight: ok: lines=4638, draw=3911, travel=713, ratio=0.18",
         "Saved file stats: lines=4638, draw=3911, travel=713, bounds=0.000..180.000 x, -291.000..0.000 y",
-        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1775238333816224900.nc",
-        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1775238333816224900_vector.svg",
-        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1775238333816224900_vector.pdf"
+        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1775357575232283400.nc",
+        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1775357575232283400_vector.svg",
+        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1775357575232283400_vector.pdf"
       ],
       "fit_scale": 1.0,
       "clipping_warning": true,

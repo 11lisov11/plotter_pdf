@@ -1,115 +1,106 @@
 Source pages: 1, selected: 1
 Method3 centerline: threshold=224, candidates=9, paths=506
 Method3 PDF vector graphics: drawings=53, paths=27, thick_paths=20
-Method3 layer split: text_paths=464, graphics_source=pdf_vector, graphics_paths=25
+Method3 layer split: text_paths=498, graphics_source=pdf_vector, graphics_paths=26
 Method3 cleanup: restored overlap text paths=4
-Method3 cleanup: removed left-column text paths=34
-Method3 cleanup: removed left-column graphics-glyph paths=1
 Method3 cleanup: removed outer-frame paths=1
-Method3 detail thick-lines multipass: skipped reason=exact_geometry_mode, candidates=25
+Method3 detail thick-lines multipass: skipped reason=exact_geometry_mode, candidates=26
 Method3 filled accents: paths=10, segments=10
-Method3 cleanup: removed left-of-frame leftovers=2
-Method3 cleanup: hard-clipped geometry left of frame x<20.50 mm: paths=9
 Method3 cleanup: restored left vertical frame line.
 Method3 cleanup: removed tiny bottom artifacts=7
-Image contour tracing: +32 path(s) from embedded raster.
-Image vectorization mode: centerline (added 32 path(s), simplify=0.08 mm).
-Condition image recovery: rect=1.74,13.38,38.52,45.93 mm -> +32 path(s).
-Condition image recovery summary: 1 image(s), 32 path(s) staged as frame overlay.
 A4 header text extraction: 5 line(s) from PDF text blocks.
-Technical point marker normalization: replaced 17 point-marker loop(s) with compact dot markers.
-A4 header text reroute: removed 289 source polyline(s) from the header text band.
-A4 header text cleanup: removed 61 transformed polyline(s) before rerender.
-A4 header thumb cleanup: clipped 2 spill polyline(s) to the thumbnail box.
-TTF centerline postprocess: 32 -> 3 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'На' -> 3 stroke(s), font=arial.ttf, size=4.07
-TTF centerline postprocess: 128 -> 7 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'эпюре' -> 7 stroke(s), font=arial.ttf, size=4.07
-TTF centerline postprocess: 16 -> 1 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'в' -> 1 stroke(s), font=arial.ttf, size=4.07
-TTF centerline postprocess: 154 -> 6 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'системе' -> 6 stroke(s), font=arial.ttf, size=4.07
-TTF centerline postprocess: 138 -> 7 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'двух' -> 7 stroke(s), font=arial.ttf, size=4.07
-TTF centerline postprocess: 222 -> 10 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'плоскостей' -> 10 stroke(s), font=arial.ttf, size=4.07
-TTF centerline postprocess: 177 -> 11 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'проекций' -> 11 stroke(s), font=arial.ttf, size=4.07
-TTF centerline postprocess: 76 -> 3 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'найти' -> 3 stroke(s), font=arial.ttf, size=4.07
-TTF centerline postprocess: 85 -> 5 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'следы' -> 5 stroke(s), font=arial.ttf, size=4.07
-TTF centerline postprocess: 143 -> 2 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'прямой,' -> 2 stroke(s), font=arial.ttf, size=4.08
-TTF centerline postprocess: 170 -> 11 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'заданной' -> 11 stroke(s), font=arial.ttf, size=4.08
-TTF centerline postprocess: 222 -> 12 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'отрезком' -> 12 stroke(s), font=arial.ttf, size=4.08
-TTF centerline postprocess: 42 -> 7 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
-TTF centerline text: '[AB].' -> 7 stroke(s), font=arial.ttf, size=4.08
-TTF centerline postprocess: 152 -> 7 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'Показать' -> 7 stroke(s), font=arial.ttf, size=4.08
-TTF centerline postprocess: 187 -> 9 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'видимость' -> 9 stroke(s), font=arial.ttf, size=4.08
+Technical point marker normalization: replaced 19 point-marker loop(s) with compact dot markers.
+A4 header text reroute: removed 321 source polyline(s) from the header text band.
+A4 header text cleanup: removed 45 transformed polyline(s) before rerender.
+A4 header thumb cleanup: clipped 3 spill polyline(s) to the thumbnail box.
+TTF centerline postprocess: 28 -> 3 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'На' -> 3 stroke(s), font=arial.ttf, size=3.77
+TTF centerline postprocess: 61 -> 3 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'эпюре' -> 3 stroke(s), font=arial.ttf, size=3.77
+TTF centerline postprocess: 15 -> 1 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'в' -> 1 stroke(s), font=arial.ttf, size=3.77
+TTF centerline postprocess: 128 -> 11 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'системе' -> 11 stroke(s), font=arial.ttf, size=3.77
+TTF centerline postprocess: 82 -> 6 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'двух' -> 6 stroke(s), font=arial.ttf, size=3.77
+TTF centerline postprocess: 174 -> 9 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'плоскостей' -> 9 stroke(s), font=arial.ttf, size=3.77
+TTF centerline postprocess: 151 -> 5 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'проекций' -> 5 stroke(s), font=arial.ttf, size=3.77
+TTF centerline postprocess: 100 -> 4 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'найти' -> 4 stroke(s), font=arial.ttf, size=3.77
+TTF centerline postprocess: 61 -> 7 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'следы' -> 7 stroke(s), font=arial.ttf, size=3.77
+TTF centerline postprocess: 110 -> 6 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'прямой,' -> 6 stroke(s), font=arial.ttf, size=3.78
+TTF centerline postprocess: 157 -> 11 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'заданной' -> 11 stroke(s), font=arial.ttf, size=3.78
+TTF centerline postprocess: 138 -> 6 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'отрезком' -> 6 stroke(s), font=arial.ttf, size=3.78
+TTF centerline postprocess: 30 -> 4 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: '[AB].' -> 4 stroke(s), font=arial.ttf, size=3.78
+TTF centerline postprocess: 128 -> 4 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Показать' -> 4 stroke(s), font=arial.ttf, size=3.78
+TTF centerline postprocess: 153 -> 7 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'видимость' -> 7 stroke(s), font=arial.ttf, size=3.78
+TTF centerline postprocess: 33 -> 2 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'и' -> 2 stroke(s), font=arial.ttf, size=3.78
+TTF centerline postprocess: 56 -> 2 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'дать' -> 2 stroke(s), font=arial.ttf, size=3.78
+TTF centerline postprocess: 344 -> 16 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'характеристику' -> 16 stroke(s), font=arial.ttf, size=3.88
+TTF centerline postprocess: 186 -> 12 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'положения' -> 12 stroke(s), font=arial.ttf, size=3.88
+TTF centerline postprocess: 52 -> 3 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'ее' -> 3 stroke(s), font=arial.ttf, size=3.88
 TTF centerline postprocess: 23 -> 1 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'и' -> 1 stroke(s), font=arial.ttf, size=4.08
-TTF centerline postprocess: 57 -> 4 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'дать' -> 4 stroke(s), font=arial.ttf, size=4.08
-TTF centerline postprocess: 376 -> 14 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'характеристику' -> 14 stroke(s), font=arial.ttf, size=4.19
-TTF centerline postprocess: 241 -> 8 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'положения' -> 8 stroke(s), font=arial.ttf, size=4.19
-TTF centerline postprocess: 78 -> 2 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'ее' -> 2 stroke(s), font=arial.ttf, size=4.19
-TTF centerline postprocess: 16 -> 1 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'в' -> 1 stroke(s), font=arial.ttf, size=4.19
-TTF centerline postprocess: 289 -> 10 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'пространстве' -> 10 stroke(s), font=arial.ttf, size=4.19
-TTF centerline postprocess: 267 -> 13 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'относительно' -> 13 stroke(s), font=arial.ttf, size=4.19
-TTF centerline postprocess: 222 -> 9 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'плоскостей' -> 9 stroke(s), font=arial.ttf, size=4.07
-TTF centerline postprocess: 177 -> 6 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'проекций.' -> 6 stroke(s), font=arial.ttf, size=4.07
-TTF centerline postprocess: 128 -> 5 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'Через' -> 5 stroke(s), font=arial.ttf, size=4.07
-TTF centerline postprocess: 127 -> 7 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'точку' -> 7 stroke(s), font=arial.ttf, size=4.07
-TTF centerline postprocess: 14 -> 2 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
-TTF centerline text: 'C' -> 2 stroke(s), font=arial.ttf, size=4.07
-TTF centerline postprocess: 158 -> 9 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'провести' -> 9 stroke(s), font=arial.ttf, size=4.07
-TTF centerline postprocess: 133 -> 9 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'прямую,' -> 9 stroke(s), font=arial.ttf, size=4.07
-TTF centerline postprocess: 268 -> 17 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'пересекающую' -> 17 stroke(s), font=arial.ttf, size=3.88
-TTF centerline postprocess: 148 -> 9 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'заданный' -> 9 stroke(s), font=arial.ttf, size=3.88
-TTF centerline postprocess: 110 -> 11 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'отрезок' -> 11 stroke(s), font=arial.ttf, size=3.88
-TTF centerline postprocess: 108 -> 8 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'прямой.' -> 8 stroke(s), font=arial.ttf, size=3.88
-A4 header text reroute: rendered 246 polyline(s) from PDF text blocks.
-A4 header gutter cleanup: removed 4 tiny artifact polyline(s) from the thumb/text gap.
+TTF centerline text: 'в' -> 1 stroke(s), font=arial.ttf, size=3.88
+TTF centerline postprocess: 165 -> 14 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'пространстве' -> 14 stroke(s), font=arial.ttf, size=3.88
+TTF centerline postprocess: 163 -> 13 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'относительно' -> 13 stroke(s), font=arial.ttf, size=3.88
+TTF centerline postprocess: 174 -> 4 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'плоскостей' -> 4 stroke(s), font=arial.ttf, size=3.77
+TTF centerline postprocess: 151 -> 6 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'проекций.' -> 6 stroke(s), font=arial.ttf, size=3.77
+TTF centerline postprocess: 56 -> 4 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Через' -> 4 stroke(s), font=arial.ttf, size=3.77
+TTF centerline postprocess: 100 -> 5 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'точку' -> 5 stroke(s), font=arial.ttf, size=3.77
+TTF centerline postprocess: 13 -> 2 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: 'C' -> 2 stroke(s), font=arial.ttf, size=3.77
+TTF centerline postprocess: 116 -> 5 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'провести' -> 5 stroke(s), font=arial.ttf, size=3.77
+TTF centerline postprocess: 113 -> 6 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'прямую,' -> 6 stroke(s), font=arial.ttf, size=3.77
+TTF centerline postprocess: 265 -> 10 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'пересекающую' -> 10 stroke(s), font=arial.ttf, size=3.59
+TTF centerline postprocess: 130 -> 8 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'заданный' -> 8 stroke(s), font=arial.ttf, size=3.59
+TTF centerline postprocess: 125 -> 8 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'отрезок' -> 8 stroke(s), font=arial.ttf, size=3.59
+TTF centerline postprocess: 126 -> 5 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'прямой.' -> 5 stroke(s), font=arial.ttf, size=3.59
+A4 header text reroute: rendered 213 polyline(s) from PDF text blocks.
+A4 header gutter cleanup: removed 2 tiny artifact polyline(s) from the thumb/text gap.
 --- hybrid fit: detail=1:1, frame=fit-to-work-area ---
 Text render mode: handwriting=off font='Marck Script'; image_contours=off
 Extracting paths from SVG ...
 Raw geometry bounds: x(0.000, 180.000) y(0.000, 280.000)
 SVG page: 180.000 x 280.000 mm
 Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).
-SVG geometry: paths=396, segments=5454.
+SVG geometry: paths=350, segments=5427.
 Source bounds: x(0.000, 180.000) y(0.000, 280.000)
 Fit to work area: scale=1.0000, translate=(0.000,-295.000), from (0.000, 0.000)-(180.000, 280.000)
-Segment dedup: dropped 4/5454 retraced segments (0.1%), kept=5450, eps=0.010 mm
-Reorder: source order preserved (399 polylines).
-Segment counts: source=5454, fitted=5454, clipped=5454
-Drawable segments after clip: 5454 (100.0% of source)
+Reorder: source order preserved (350 polylines).
+Segment counts: source=5427, fitted=5427, clipped=5427
+Drawable segments after clip: 5427 (100.0% of source)
 Prepared bounds: x(0.000, 180.000) y(-295.000, -15.000)
-Estimated draw length: 4.96 m
+Estimated draw length: 4.52 m
 Applying pen-up / pen-down ...
-G-code stats: lines=6661, draw=6244, travel=403, bounds=0.000..180.000 x, -295.000..0.000 y
-Preflight: ok: lines=6661, draw=6244, travel=403, ratio=0.06
-Saved file stats: lines=6661, draw=6244, travel=403, bounds=0.000..180.000 x, -295.000..0.000 y
+G-code stats: lines=6494, draw=6125, travel=355, bounds=0.000..180.000 x, -295.000..0.000 y
+Preflight: ok: lines=6494, draw=6125, travel=355, ratio=0.06
+Saved file stats: lines=6494, draw=6125, travel=355, bounds=0.000..180.000 x, -295.000..0.000 y
 Saved: C:\plotter_pdf\Начерт\1 вариант\Задача 2_pack\_candidates\a4_hybrid_frame.nc
 Preview SVG: C:\plotter_pdf\Начерт\1 вариант\Задача 2_pack\_candidates\a4_hybrid_frame.svg
 Preview PDF: C:\plotter_pdf\Начерт\1 вариант\Задача 2_pack\_candidates\a4_hybrid_frame.pdf
