@@ -8064,14 +8064,14 @@ def apply_penlift(
         z_soft_up_eff = float(PEN_FAST_Z_SOFT_UP_MM)
 
     travel_lift_mm = float(Z_TRAVEL_LIFT_MM)
-    if TOOL_MODE == "pencil":
+    if force_full_lift or SAFE_PEN_TRAVEL_UP:
+        # Full-lift must win even in pencil mode; otherwise a caller asking for
+        # a safe contour-to-contour lift still gets the short travel lift.
+        travel_lift_mm = max(travel_lift_mm, abs(float(z_down) - float(Z_UP)) + 0.1)
+    elif TOOL_MODE == "pencil":
         # Pencil plotting is much faster and still stable with a short travel lift.
         # Keep lift inside requested operational band (3..4 mm).
         travel_lift_mm = min(4.0, max(3.0, travel_lift_mm))
-    elif force_full_lift or SAFE_PEN_TRAVEL_UP:
-        # Optional full-lift mode for pen/marker to minimize drag risk.
-        # A tiny extra margin prevents edge cases with float rounding.
-        travel_lift_mm = max(travel_lift_mm, abs(float(z_down) - float(Z_UP)) + 0.1)
     gcode_penlift_mod.run_penlift_postprocess(
         xy_gcode,
         pen_gcode,
@@ -8831,6 +8831,9 @@ def run_pipeline(
                 dynamic_base_z_down=PENCIL_BASE_Z_DOWN if TOOL_MODE == "pencil" else None,
                 dynamic_initial_wear_mm=dynamic_wear_start,
                 handwriting_mode=HANDWRITING_TEXT_ENABLED,
+                # Technical drawing jobs must fully lift between contours to
+                # avoid dragging on paper and smearing geometry.
+                force_full_lift=(not HANDWRITING_TEXT_ENABLED),
             )
             make_final_with_preamble(pen_path, final_path)
             gcode_lines, gcode_draw, gcode_travel, gcode_bounds = summarize_gcode_file(final_path)

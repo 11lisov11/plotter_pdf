@@ -40,6 +40,46 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
         self.assertFalse(mod._is_small_condition_image_rect_mm(5.0, 5.0, 40.0, 80.0))
         self.assertFalse(mod._is_small_condition_image_rect_mm(5.0, 5.0, 10.0, 10.0))
 
+    def test_a3_header_band_image_rect_filter_accepts_wide_top_banner(self) -> None:
+        mod = _load_module()
+        self.assertTrue(
+            mod._is_a3_header_band_image_rect_mm(
+                10.0,
+                13.5,
+                195.5,
+                53.8,
+                page_w_mm=420.0,
+                page_h_mm=297.0,
+            )
+        )
+        self.assertFalse(
+            mod._is_a3_header_band_image_rect_mm(
+                25.0,
+                13.5,
+                195.5,
+                53.8,
+                page_w_mm=420.0,
+                page_h_mm=297.0,
+            )
+        )
+
+    def test_detect_a3_header_miniature_crop_px_finds_left_thumbnail(self) -> None:
+        mod = _load_module()
+        img = mod.Image.new("L", (1200, 260), 255)
+        draw = mod.ImageDraw.Draw(img)
+        draw.rectangle((25, 20, 75, 70), outline=0, width=3)
+        draw.rectangle((120, 55, 300, 235), outline=0, width=4)
+        draw.line((300, 0, 300, 259), fill=0, width=5)
+        draw.text((420, 70), "header text", fill=0)
+        crop = mod._detect_a3_header_miniature_crop_px(img)
+        self.assertIsNotNone(crop)
+        x0, y0, x1, y1 = crop
+        self.assertLess(x0, 180)
+        self.assertGreater(x1, 260)
+        self.assertLess(x1, 320)
+        self.assertLess(y0, 80)
+        self.assertGreater(y1, 200)
+
     def test_technical_point_box_detection_matches_square_loop(self) -> None:
         mod = _load_module()
         square = [
@@ -86,6 +126,97 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
         self.assertLess(x1 - x0, 1.0)
         self.assertLess(y1 - y0, 1.0)
         self.assertTrue(mod._poly_is_closed_mm(out[1]))
+
+    def test_normalize_technical_point_boxes_replaces_larger_supported_square_marker_and_skips_nested_duplicate(self) -> None:
+        mod = _load_module()
+        outer = [
+            (76.8482, 174.7894),
+            (80.2352, 174.7894),
+            (80.2352, 178.2613),
+            (76.8482, 178.2613),
+            (76.8482, 174.7894),
+        ]
+        inner = [
+            (77.3500, 175.3200),
+            (79.7100, 175.3200),
+            (79.7100, 177.6900),
+            (77.3500, 177.6900),
+            (77.3500, 175.3200),
+        ]
+        support = [(74.0, 176.5), (83.0, 176.5)]
+        out, meta = mod._normalize_technical_point_boxes(
+            [support, outer, inner],
+            page_w_mm=420.0,
+            page_h_mm=297.0,
+        )
+        self.assertGreaterEqual(meta["point_boxes_replaced"], 2.0)
+        self.assertEqual(len(out), 2)
+        self.assertEqual(out[0], support)
+        x0, y0, x1, y1 = mod._poly_bbox_mm(out[1])
+        self.assertLess(x1 - x0, 1.0)
+        self.assertLess(y1 - y0, 1.0)
+
+    def test_normalize_technical_point_boxes_converts_compact_arrowhead_polygon_to_v_stroke(self) -> None:
+        mod = _load_module()
+        arrow_poly = [
+            (172.2609, 244.9782),
+            (172.4212, 245.3397),
+            (172.8365, 245.2856),
+            (173.2037, 244.6137),
+            (172.8089, 244.1948),
+            (172.4474, 244.3840),
+            (172.2609, 244.9782),
+        ]
+        support = [(171.0, 244.8), (174.8, 244.8)]
+        out, meta = mod._normalize_technical_point_boxes(
+            [support, arrow_poly],
+            page_w_mm=420.0,
+            page_h_mm=500.0,
+        )
+        self.assertGreaterEqual(meta["point_boxes_replaced"], 1.0)
+        self.assertEqual(len(out), 2)
+        self.assertEqual(out[0], support)
+        self.assertEqual(len(out[1]), 3)
+
+    def test_normalize_technical_point_boxes_drops_supported_arrow_bbox_artifact(self) -> None:
+        mod = _load_module()
+        support_a = [(76.7212, 174.6200), (79.1767, 179.0234)]
+        support_b = [(76.7212, 174.6200), (80.2352, 178.2613)]
+        support_c = [(75.7051, 175.3821), (78.2877, 173.4768)]
+        bbox_artifact = [
+            (76.8059, 174.7470),
+            (79.3884, 174.7470),
+            (79.3884, 179.0234),
+            (76.8059, 179.0234),
+            (76.8059, 174.7470),
+        ]
+        out, meta = mod._normalize_technical_point_boxes(
+            [support_a, support_b, support_c, bbox_artifact],
+            page_w_mm=420.0,
+            page_h_mm=500.0,
+        )
+        self.assertGreaterEqual(meta["point_boxes_replaced"], 1.0)
+        self.assertEqual(out, [support_a, support_b, support_c])
+
+    def test_normalize_technical_point_boxes_drops_supported_arrow_bbox_artifact_outside_detail_band(self) -> None:
+        mod = _load_module()
+        support_a = [(135.5073, 256.9006), (137.0427, 259.0021), (138.9726, 261.6874)]
+        support_b = [(135.7645, 258.2502), (139.0120, 261.7242)]
+        support_c = [(137.2122, 263.0729), (139.5989, 261.2746)]
+        bbox_artifact = [
+            (136.5079, 257.4737),
+            (138.9729, 257.4737),
+            (138.9729, 261.6016),
+            (136.5079, 261.6016),
+            (136.5079, 257.4737),
+        ]
+        out, meta = mod._normalize_technical_point_boxes(
+            [support_a, support_b, support_c, bbox_artifact],
+            page_w_mm=420.0,
+            page_h_mm=297.0,
+        )
+        self.assertGreaterEqual(meta["point_boxes_replaced"], 1.0)
+        self.assertEqual(out, [support_a, support_b, support_c])
 
     def test_normalize_technical_point_boxes_replaces_supported_repeated_marker_loops(self) -> None:
         mod = _load_module()
@@ -156,6 +287,35 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
         self.assertLessEqual(x1, 360.0)
         self.assertGreaterEqual(y0, 0.0)
         self.assertLessEqual(y1, 280.0)
+
+    def test_maybe_reanchor_a3_clean_source_polylines_shifts_hybrid_canvas_into_source_bbox(self) -> None:
+        mod = _load_module()
+        polys = [
+            [(0.0, 0.0), (360.0, 0.0), (360.0, 280.0), (0.0, 280.0), (0.0, 0.0)],
+            [(120.0, 60.0), (180.0, 60.0)],
+        ]
+        shifted, changed = mod._maybe_reanchor_a3_clean_source_polylines(
+            polys,
+            ref_bbox_mm=(0.0, 6.614, 410.243, 296.922),
+        )
+        self.assertTrue(changed)
+        x0, y0, x1, y1 = mod._polys_bbox_mm(shifted)
+        self.assertAlmostEqual(x0, 25.1215, places=3)
+        self.assertAlmostEqual(y0, 6.6140, places=3)
+        self.assertAlmostEqual(x1, 385.1215, places=3)
+        self.assertAlmostEqual(y1, 286.6140, places=3)
+
+    def test_maybe_reanchor_a3_clean_source_polylines_keeps_regular_page_layout_unchanged(self) -> None:
+        mod = _load_module()
+        polys = [
+            [(20.5, 5.5), (415.5, 5.5), (415.5, 292.6), (20.5, 292.6), (20.5, 5.5)],
+        ]
+        shifted, changed = mod._maybe_reanchor_a3_clean_source_polylines(
+            polys,
+            ref_bbox_mm=(0.353, 0.353, 420.518, 297.494),
+        )
+        self.assertFalse(changed)
+        self.assertEqual(shifted, polys)
 
     def test_clip_polyline_max_x_trims_spill_but_keeps_left_segment(self) -> None:
         mod = _load_module()
@@ -878,6 +1038,33 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
         self.assertFalse(failed["ok"])
         self.assertIn("boom", failed["message"])
         self.assertEqual(len(rows), 1)
+
+    def test_append_overlay_polylines_to_existing_svg_appends_paths(self) -> None:
+        mod = _load_module()
+        with tempfile.TemporaryDirectory(prefix="svg_overlay_append_") as td:
+            root = Path(td)
+            svg_path = root / "source.svg"
+            svg_path.write_text(
+                '<?xml version="1.0" encoding="utf-8"?>\n'
+                '<svg xmlns="http://www.w3.org/2000/svg" version="1.1" '
+                'width="420.000mm" height="297.000mm" viewBox="0 0 1190.64 841.92">\n'
+                '  <path d="M 0 0 L 1190.64 0" fill="none" stroke="#000000" stroke-width="1"/>\n'
+                '</svg>\n',
+                encoding="utf-8",
+            )
+            appended = mod._append_overlay_polylines_to_existing_svg(
+                svg_path,
+                [[(10.0, 20.0), (30.0, 40.0)]],
+                page_w_mm=420.0,
+                page_h_mm=297.0,
+            )
+            self.assertEqual(appended, 1)
+            root = mod.ET.parse(str(svg_path)).getroot()
+            ns = {"svg": "http://www.w3.org/2000/svg"}
+            paths = root.findall(".//svg:path", ns)
+            self.assertGreaterEqual(len(paths), 2)
+            text = svg_path.read_text(encoding="utf-8")
+            self.assertIn("stroke-linecap", text)
 
 
 

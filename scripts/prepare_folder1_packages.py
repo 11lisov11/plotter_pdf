@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 from contextlib import contextmanager
 import csv
+import io
 import json
 import math
 import os
@@ -50,14 +51,31 @@ _CONDITION_IMAGE_MIN_H_MM = 8.0
 _CONDITION_IMAGE_MAX_W_MM = 70.0
 _CONDITION_IMAGE_MAX_H_MM = 60.0
 _CONDITION_IMAGE_MAX_AREA_MM2 = 3200.0
+_A3_HEADER_IMAGE_MAX_X0_MM = 20.0
+_A3_HEADER_IMAGE_MAX_Y0_MM = 70.0
+_A3_HEADER_IMAGE_MIN_W_MM = 100.0
+_A3_HEADER_IMAGE_MAX_W_MM = 260.0
+_A3_HEADER_IMAGE_MIN_H_MM = 20.0
+_A3_HEADER_IMAGE_MAX_H_MM = 70.0
 _TECH_POINT_BOX_MIN_MM = 0.75
 _TECH_POINT_BOX_MAX_MM = 2.40
+_TECH_POINT_BOX_EXTENDED_MAX_MM = 4.20
 _TECH_POINT_BOX_MAX_ASPECT = 1.35
 _TECH_POINT_BOX_CLOSURE_EPS_MM = 0.20
 _TECH_POINT_BOX_AXIS_EPS_MM = 0.18
 _TECH_POINT_BOX_DOT_MIN_R_MM = 0.20
 _TECH_POINT_BOX_DOT_MAX_R_MM = 0.34
 _TECH_POINT_BOX_DOT_SEGMENTS = 10
+_TECH_POINT_BOX_DUPLICATE_CENTER_EPS_MM = 0.90
+_TECH_ARROWHEAD_MAX_BBOX_MM = 4.20
+_TECH_ARROWHEAD_MAX_VERTICES = 12
+_TECH_ARROWHEAD_MAX_FILL_RATIO = 0.90
+_TECH_ARROWHEAD_MIN_AREA_MM2 = 0.05
+_TECH_ARROWHEAD_MAX_AREA_MM2 = 8.00
+_TECH_ARROW_BBOX_ARTIFACT_MAX_MM = 4.40
+_TECH_ARROW_BBOX_ARTIFACT_MIN_MM = 1.00
+_TECH_ARROW_BBOX_ARTIFACT_MIN_ASPECT = 1.40
+_TECH_ARROW_BBOX_ARTIFACT_SUPPORTS_MIN = 2
 _TECH_POINT_MARKER_MIN_MM = 0.70
 _TECH_POINT_MARKER_MAX_W_MM = 3.80
 _TECH_POINT_MARKER_MAX_H_MM = 4.40
@@ -1006,6 +1024,219 @@ def _render_polylines_pdf(
         doc.close()
 
 
+def _center_polylines_on_page(
+    polylines: list[list[tuple[float, float]]],
+    *,
+    page_w_mm: float,
+    page_h_mm: float,
+) -> tuple[list[list[tuple[float, float]]], dict[str, float]]:
+    if not polylines:
+        return [], {"offset_x_mm": 0.0, "offset_y_mm": 0.0}
+    x0, y0, x1, y1 = _polys_bbox_mm(polylines)
+    width = max(1e-9, float(x1 - x0))
+    height = max(1e-9, float(y1 - y0))
+    offset_x = (float(page_w_mm) - float(width)) * 0.5 - float(x0)
+    offset_y = (float(page_h_mm) - float(height)) * 0.5 - float(y0)
+    shifted: list[list[tuple[float, float]]] = []
+    for poly in polylines:
+        if len(poly) < 2:
+            continue
+        shifted.append([(float(x) + float(offset_x), float(y) + float(offset_y)) for x, y in poly])
+    return shifted, {
+        "offset_x_mm": float(offset_x),
+        "offset_y_mm": float(offset_y),
+        "bounds_x0": float(x0),
+        "bounds_y0": float(y0),
+        "bounds_x1": float(x1),
+        "bounds_y1": float(y1),
+    }
+
+
+def _center_polylines_on_page_x(
+    polylines: list[list[tuple[float, float]]],
+    *,
+    page_w_mm: float,
+) -> tuple[list[list[tuple[float, float]]], dict[str, float]]:
+    if not polylines:
+        return [], {"offset_x_mm": 0.0}
+    x0, _y0, x1, _y1 = _polys_bbox_mm(polylines)
+    width = max(1e-9, float(x1 - x0))
+    offset_x = (float(page_w_mm) - float(width)) * 0.5 - float(x0)
+    shifted: list[list[tuple[float, float]]] = []
+    for poly in polylines:
+        if len(poly) < 2:
+            continue
+        shifted.append([(float(x) + float(offset_x), float(y)) for x, y in poly])
+    return shifted, {
+        "offset_x_mm": float(offset_x),
+        "bounds_x0": float(x0),
+        "bounds_x1": float(x1),
+    }
+
+
+def _translate_polylines_mm(
+    polylines: list[list[tuple[float, float]]],
+    *,
+    offset_x_mm: float,
+    offset_y_mm: float,
+) -> list[list[tuple[float, float]]]:
+    shifted: list[list[tuple[float, float]]] = []
+    dx = float(offset_x_mm)
+    dy = float(offset_y_mm)
+    for poly in polylines:
+        if len(poly) < 2:
+            continue
+        shifted.append([(float(x) + dx, float(y) + dy) for x, y in poly])
+    return shifted
+
+
+def _maybe_reanchor_a3_clean_source_polylines(
+    polylines: list[list[tuple[float, float]]],
+    *,
+    ref_bbox_mm: tuple[float, float, float, float] | None,
+    logger=None,
+) -> tuple[list[list[tuple[float, float]]], bool]:
+    if not polylines or ref_bbox_mm is None:
+        return polylines, False
+    src_x0, src_y0, src_x1, src_y1 = _polys_bbox_mm(polylines)
+    src_w = max(1e-9, float(src_x1 - src_x0))
+    src_h = max(1e-9, float(src_y1 - src_y0))
+    ref_x0, ref_y0, ref_x1, ref_y1 = [float(v) for v in ref_bbox_mm]
+    ref_w = max(1e-9, float(ref_x1 - ref_x0))
+    if not (
+        float(src_x0) <= 2.0
+        and float(src_y0) <= 2.0
+        and float(src_w) <= 360.5
+        and float(src_h) <= 280.5
+        and (float(ref_w) - float(src_w)) >= 35.0
+    ):
+        return polylines, False
+    target_x0 = float(ref_x0) + max(0.0, (float(ref_w) - float(src_w)) * 0.5)
+    target_y0 = float(ref_y0)
+    shift_x = float(target_x0) - float(src_x0)
+    shift_y = float(target_y0) - float(src_y0)
+    if abs(float(shift_x)) < 0.05 and abs(float(shift_y)) < 0.05:
+        return polylines, False
+    shifted = _translate_polylines_mm(
+        polylines,
+        offset_x_mm=float(shift_x),
+        offset_y_mm=float(shift_y),
+    )
+    if logger is not None:
+        logger(
+            "A3 clean source re-anchored to original source bbox: "
+            f"shift=({float(shift_x):.3f},{float(shift_y):.3f}) mm, "
+            f"ref_bbox=({float(ref_x0):.3f},{float(ref_y0):.3f})..({float(ref_x1):.3f},{float(ref_y1):.3f}) mm"
+        )
+    return shifted, True
+
+
+def _pdf_visible_bbox_mm(pdf_path: Path, *, threshold: int = 245, zoom: float = 4.0) -> tuple[float, float, float, float] | None:
+    doc = fitz.open(pdf_path)
+    try:
+        page = doc[0]
+        pix = page.get_pixmap(matrix=fitz.Matrix(float(zoom), float(zoom)), alpha=False)
+        img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples).convert("L")
+        xs: list[int] = []
+        ys: list[int] = []
+        width_px, height_px = img.size
+        for y_px in range(height_px):
+            for x_px in range(width_px):
+                if int(img.getpixel((x_px, y_px))) < int(threshold):
+                    xs.append(int(x_px))
+                    ys.append(int(y_px))
+        if not xs or not ys:
+            return None
+        page_w_mm = float(page.rect.width) * 25.4 / 72.0
+        page_h_mm = float(page.rect.height) * 25.4 / 72.0
+        mm_per_px_x = float(page_w_mm) / float(width_px)
+        mm_per_px_y = float(page_h_mm) / float(height_px)
+        return (
+            float(min(xs)) * float(mm_per_px_x),
+            float(min(ys)) * float(mm_per_px_y),
+            float(max(xs)) * float(mm_per_px_x),
+            float(max(ys)) * float(mm_per_px_y),
+        )
+    finally:
+        doc.close()
+
+
+def _build_sheet_preview_from_gcode(
+    *,
+    gcode_path: Path,
+    reference_pdf: Path,
+    out_svg: Path,
+    out_pdf: Path,
+    logs: list[str],
+) -> tuple[bool, str]:
+    try:
+        lines = gcode_path.read_text(encoding="utf-8", errors="ignore").splitlines()
+    except Exception as exc:
+        return False, f"Failed to read G-code for sheet preview: {exc}"
+
+    z_values: list[float] = []
+    for line in lines:
+        match = re.search(r"(?:^|\s)Z(-?\d+(?:\.\d+)?)", str(line))
+        if match:
+            try:
+                z_values.append(float(match.group(1)))
+            except Exception:
+                pass
+    if not z_values:
+        return False, "No Z values found while building sheet preview."
+
+    z_up = float(min(z_values))
+    z_down = float(max(z_values))
+    try:
+        polylines = _gcode_to_polylines(lines, z_up=z_up, z_down=z_down)
+    except Exception as exc:
+        return False, f"Failed to convert G-code to polylines for sheet preview: {exc}"
+    if not polylines:
+        return False, "No drawing polylines recovered from G-code for sheet preview."
+
+    page_w_mm, page_h_mm = _pdf_first_page_size_mm(reference_pdf)
+    ref_bbox = _pdf_visible_bbox_mm(reference_pdf)
+    if ref_bbox is None:
+        shifted, meta = _center_polylines_on_page(polylines, page_w_mm=float(page_w_mm), page_h_mm=float(page_h_mm))
+        logs.append(
+            "Sheet preview fallback: centered on source page because visible reference bbox was not detected."
+        )
+    else:
+        src_x0, src_y0, src_x1, src_y1 = _polys_bbox_mm(polylines)
+        width_mm = max(1e-9, float(src_x1 - src_x0))
+        height_mm = max(1e-9, float(src_y1 - src_y0))
+        ref_x0, ref_y0, _ref_x1, _ref_y1 = [float(v) for v in ref_bbox]
+        target_x0 = max(0.0, (float(page_w_mm) - float(width_mm)) * 0.5)
+        target_x0 = min(float(target_x0), max(0.0, float(page_w_mm) - float(width_mm)))
+        target_y0 = min(max(0.0, float(ref_y0)), max(0.0, float(page_h_mm) - float(height_mm)))
+        offset_x = float(target_x0) - float(src_x0)
+        offset_y = float(target_y0) - float(src_y0)
+        shifted = [
+            [(float(x) + float(offset_x), float(y) + float(offset_y)) for x, y in poly]
+            for poly in polylines
+            if len(poly) >= 2
+        ]
+        meta = {
+            "offset_x_mm": float(offset_x),
+            "offset_y_mm": float(offset_y),
+            "reference_x0_mm": float(ref_x0),
+            "reference_y0_mm": float(ref_y0),
+            "reference_x1_mm": float(_ref_x1),
+            "reference_y1_mm": float(_ref_y1),
+        }
+        logs.append(
+            "Sheet preview aligned to reference bbox Y and centered on page X: "
+            f"ref=({float(ref_x0):.3f},{float(ref_y0):.3f})..({float(_ref_x1):.3f},{float(_ref_y1):.3f}) mm"
+        )
+    _write_svg_preview(shifted, out_svg, canvas_bounds_mm=(0.0, float(page_w_mm), 0.0, float(page_h_mm)))
+    _render_polylines_pdf(polylines=shifted, out_pdf=out_pdf, canvas_bounds_mm=(0.0, float(page_w_mm), 0.0, float(page_h_mm)))
+    logs.append(
+        "Sheet preview placed on source page: "
+        f"offset=({float(meta.get('offset_x_mm', 0.0)):.3f},{float(meta.get('offset_y_mm', 0.0)):.3f}) mm"
+    )
+    return True, ""
+
+
 def _build_a3_combined_preview(
     *,
     source_pdf: Path,
@@ -1020,12 +1251,6 @@ def _build_a3_combined_preview(
         return None
 
     reference_pdf = source_pdf
-    clean_meta = dict(report.get("a3_clean_source", {}) or {})
-    clean_pdf_str = str(clean_meta.get("pdf", "") or "").strip()
-    if clean_pdf_str:
-        clean_pdf = Path(clean_pdf_str)
-        if clean_pdf.exists() and clean_pdf.is_file():
-            reference_pdf = clean_pdf
 
     polylines = [
         *_inverse_a3_pass_polylines_to_sheet(nc_path=pass01_nc, log_path=pass01_log),
@@ -1555,6 +1780,67 @@ def _is_small_condition_image_rect_mm(
     return True
 
 
+def _is_a3_header_band_image_rect_mm(
+    x0_mm: float,
+    y0_mm: float,
+    x1_mm: float,
+    y1_mm: float,
+    *,
+    page_w_mm: float,
+    page_h_mm: float,
+) -> bool:
+    if float(page_w_mm) < 350.0 or float(page_h_mm) < 250.0:
+        return False
+    w_mm = max(0.0, float(x1_mm) - float(x0_mm))
+    h_mm = max(0.0, float(y1_mm) - float(y0_mm))
+    if float(x0_mm) > float(_A3_HEADER_IMAGE_MAX_X0_MM):
+        return False
+    if float(y0_mm) > float(_A3_HEADER_IMAGE_MAX_Y0_MM):
+        return False
+    if w_mm < float(_A3_HEADER_IMAGE_MIN_W_MM) or w_mm > float(_A3_HEADER_IMAGE_MAX_W_MM):
+        return False
+    if h_mm < float(_A3_HEADER_IMAGE_MIN_H_MM) or h_mm > float(_A3_HEADER_IMAGE_MAX_H_MM):
+        return False
+    return True
+
+
+def _detect_a3_header_miniature_crop_px(image: Image.Image) -> tuple[int, int, int, int] | None:
+    gray = image.convert("L")
+    arr = np.array(gray, dtype=np.uint8)
+    if arr.ndim != 2:
+        return None
+    height, width = arr.shape
+    if width < 80 or height < 40:
+        return None
+    dark = arr < 230
+    col_density = dark.mean(axis=0)
+    search_left = max(0, int(round(width * 0.08)))
+    search_right = min(width - 1, int(round(width * 0.40)))
+    if search_right <= search_left:
+        return None
+    rel_idx = int(np.argmax(col_density[search_left:search_right]))
+    divider_x = search_left + rel_idx
+    if float(col_density[divider_x]) < 0.30:
+        divider_x = min(width - 1, int(round(height * 1.25)))
+    divider_x = max(1, min(divider_x, width - 1))
+    work_left = max(0, min(int(round(height * 0.14)), divider_x - 4))
+    work_right = max(work_left + 4, divider_x - 2)
+    top_exclude = min(height - 1, max(0, int(round(height * 0.12))))
+    roi = dark[top_exclude:, work_left:work_right]
+    if roi.size == 0 or not bool(roi.any()):
+        return None
+    ys, xs = np.nonzero(roi)
+    margin_x = max(2, int(round(height * 0.03)))
+    margin_y = max(2, int(round(height * 0.03)))
+    x0 = max(search_left, work_left + int(xs.min()) - margin_x)
+    x1 = min(divider_x, work_left + int(xs.max()) + 1 + margin_x)
+    y0 = max(top_exclude, top_exclude + int(ys.min()) - margin_y)
+    y1 = min(height, top_exclude + int(ys.max()) + 1 + margin_y)
+    if (x1 - x0) < 20 or (y1 - y0) < 20:
+        return None
+    return (x0, y0, x1, y1)
+
+
 def _extract_small_condition_image_polylines_from_pdf(
     source_pdf: Path,
     *,
@@ -1582,6 +1868,9 @@ def _extract_small_condition_image_polylines_from_pdf(
             "IMAGE_CONTOUR_MODE": str(getattr(backend, "IMAGE_CONTOUR_MODE", "off")),
             "IMAGE_CONTOUR_VECTORIZE_MODE": str(getattr(backend, "IMAGE_CONTOUR_VECTORIZE_MODE", "centerline")),
             "IMAGE_CONTOUR_FORMULA_VECTORIZE_MODE": str(getattr(backend, "IMAGE_CONTOUR_FORMULA_VECTORIZE_MODE", "centerline")),
+            "IMAGE_CONTOUR_MM_SIMPLIFY_EPS": float(getattr(backend, "IMAGE_CONTOUR_MM_SIMPLIFY_EPS", 0.12)),
+            "IMAGE_CONTOUR_LINEART_SIMPLIFY_MM": float(getattr(backend, "IMAGE_CONTOUR_LINEART_SIMPLIFY_MM", 0.08)),
+            "IMAGE_CONTOUR_SMALL_LINEART_SIMPLIFY_MM": float(getattr(backend, "IMAGE_CONTOUR_SMALL_LINEART_SIMPLIFY_MM", 0.035)),
         }
         try:
             setattr(backend, "HANDWRITING_TEXT_ENABLED", True)
@@ -1591,10 +1880,20 @@ def _extract_small_condition_image_polylines_from_pdf(
             setattr(backend, "IMAGE_CONTOUR_MODE", "always")
             setattr(backend, "IMAGE_CONTOUR_VECTORIZE_MODE", "centerline")
             setattr(backend, "IMAGE_CONTOUR_FORMULA_VECTORIZE_MODE", "centerline")
+            setattr(backend, "IMAGE_CONTOUR_MM_SIMPLIFY_EPS", 0.02)
+            setattr(backend, "IMAGE_CONTOUR_LINEART_SIMPLIFY_MM", 0.02)
+            setattr(backend, "IMAGE_CONTOUR_SMALL_LINEART_SIMPLIFY_MM", 0.015)
             with tempfile.TemporaryDirectory(prefix="plotter_condimg_") as td:
                 td_path = Path(td)
                 for img_idx, img in enumerate(page.get_images(full=True)):
                     xref = int(img[0])
+                    extracted_image = None
+                    try:
+                        meta = doc.extract_image(xref)
+                        if meta and meta.get("image"):
+                            extracted_image = Image.open(io.BytesIO(meta["image"])).convert("L")
+                    except Exception:
+                        extracted_image = None
                     for rect_idx, rect in enumerate(page.get_image_rects(xref)):
                         x0_mm = float(rect.x0) * 25.4 / 72.0
                         y0_mm = float(rect.y0) * 25.4 / 72.0
@@ -1609,19 +1908,62 @@ def _extract_small_condition_image_polylines_from_pdf(
                         if key in seen:
                             continue
                         seen.add(key)
-                        if not _is_small_condition_image_rect_mm(x0_mm, y0_mm, x1_mm, y1_mm):
+                        is_small = _is_small_condition_image_rect_mm(x0_mm, y0_mm, x1_mm, y1_mm)
+                        is_header_band = _is_a3_header_band_image_rect_mm(
+                            x0_mm,
+                            y0_mm,
+                            x1_mm,
+                            y1_mm,
+                            page_w_mm=page_w_mm,
+                            page_h_mm=page_h_mm,
+                        )
+                        if not is_small and not is_header_band:
                             continue
 
                         png_path = td_path / f"condimg_{img_idx}_{rect_idx}.png"
                         svg_path = td_path / f"condimg_{img_idx}_{rect_idx}.svg"
-                        page.get_pixmap(matrix=fitz.Matrix(4.0, 4.0), clip=rect, alpha=False).save(png_path)
+                        source_img = extracted_image
+                        if source_img is None:
+                            pix_scale = 6.0 if is_header_band else 4.0
+                            pix = page.get_pixmap(matrix=fitz.Matrix(pix_scale, pix_scale), clip=rect, alpha=False)
+                            pix.save(png_path)
+                            source_img = Image.open(png_path).convert("L")
+                        image_x0_mm = float(x0_mm)
+                        image_y0_mm = float(y0_mm)
+                        image_x1_mm = float(x1_mm)
+                        image_y1_mm = float(y1_mm)
+                        if is_header_band:
+                            crop_box = None
+                            try:
+                                crop_box = _detect_a3_header_miniature_crop_px(source_img)
+                                if crop_box is not None:
+                                    crop_x0, crop_y0, crop_x1, crop_y1 = crop_box
+                                    full_width_px = max(1, int(source_img.size[0]))
+                                    full_height_px = max(1, int(source_img.size[1]))
+                                    source_img = source_img.crop(crop_box)
+                                    full_width_px = max(1, int(extracted_image.size[0] if extracted_image is not None else source_img.size[0]))
+                                    full_height_px = max(1, int(extracted_image.size[1] if extracted_image is not None else source_img.size[1]))
+                                    rect_w_mm = max(0.0, float(x1_mm) - float(x0_mm))
+                                    rect_h_mm = max(0.0, float(y1_mm) - float(y0_mm))
+                                    image_x0_mm = float(x0_mm) + rect_w_mm * (float(crop_x0) / float(full_width_px))
+                                    image_x1_mm = float(x0_mm) + rect_w_mm * (float(crop_x1) / float(full_width_px))
+                                    image_y0_mm = float(y0_mm) + rect_h_mm * (float(crop_y0) / float(full_height_px))
+                                    image_y1_mm = float(y0_mm) + rect_h_mm * (float(crop_y1) / float(full_height_px))
+                                    logger(
+                                        "A3 header miniature crop: "
+                                        f"rect={x0_mm:.2f},{y0_mm:.2f},{x1_mm:.2f},{y1_mm:.2f} mm -> "
+                                        f"crop_px={crop_x0},{crop_y0},{crop_x1},{crop_y1}."
+                                    )
+                            except Exception as exc:
+                                logger(f"A3 header miniature crop skipped: {exc}")
+                        source_img.save(png_path)
                         svg_path.write_text(
                             "\n".join(
                                 [
                                     '<?xml version="1.0" encoding="UTF-8"?>',
                                     '<svg xmlns="http://www.w3.org/2000/svg" version="1.1"',
                                     f'     width="{page_w_mm:.3f}mm" height="{page_h_mm:.3f}mm" viewBox="0 0 {page_w_mm:.6f} {page_h_mm:.6f}">',
-                                    f'  <image href="{png_path.name}" x="{x0_mm:.4f}" y="{y0_mm:.4f}" width="{(x1_mm - x0_mm):.4f}" height="{(y1_mm - y0_mm):.4f}" preserveAspectRatio="none" />',
+                                    f'  <image href="{png_path.name}" x="{image_x0_mm:.4f}" y="{image_y0_mm:.4f}" width="{(image_x1_mm - image_x0_mm):.4f}" height="{(image_y1_mm - image_y0_mm):.4f}" preserveAspectRatio="none" />',
                                     '</svg>',
                                     "",
                                 ]
@@ -1785,7 +2127,11 @@ def _quantized_axis_values(vals: list[float], *, eps: float) -> list[float]:
     return out
 
 
-def _is_technical_point_box_poly(poly: list[tuple[float, float]]) -> bool:
+def _is_technical_point_box_poly(
+    poly: list[tuple[float, float]],
+    *,
+    max_mm: float | None = None,
+) -> bool:
     if len(poly) < 5 or not _poly_is_closed_mm(poly):
         return False
     ring = poly[:-1]
@@ -1796,9 +2142,10 @@ def _is_technical_point_box_poly(poly: list[tuple[float, float]]) -> bool:
     x0, y0, x1, y1 = _poly_bbox_mm(poly)
     w = float(x1 - x0)
     h = float(y1 - y0)
+    max_side = float(_TECH_POINT_BOX_MAX_MM if max_mm is None else max_mm)
     if w < float(_TECH_POINT_BOX_MIN_MM) or h < float(_TECH_POINT_BOX_MIN_MM):
         return False
-    if w > float(_TECH_POINT_BOX_MAX_MM) or h > float(_TECH_POINT_BOX_MAX_MM):
+    if w > float(max_side) or h > float(max_side):
         return False
     aspect = max(w, h) / max(1e-9, min(w, h))
     if aspect > float(_TECH_POINT_BOX_MAX_ASPECT):
@@ -1821,6 +2168,140 @@ def _technical_point_dot_poly_from_box(poly: list[tuple[float, float]]) -> list[
         pts.append((cx + (r * math.cos(ang)), cy + (r * math.sin(ang))))
     pts.append(pts[0])
     return pts
+
+
+def _technical_point_box_center_mm(poly: list[tuple[float, float]]) -> tuple[float, float]:
+    x0, y0, x1, y1 = _poly_bbox_mm(poly)
+    return ((float(x0) + float(x1)) * 0.5, (float(y0) + float(y1)) * 0.5)
+
+
+def _is_small_arrow_bbox_artifact_poly(poly: list[tuple[float, float]]) -> bool:
+    if len(poly) < 5 or not _poly_is_closed_mm(poly):
+        return False
+    ring = poly[:-1]
+    if len(ring) != 4:
+        return False
+    if not _poly_is_axis_aligned_mm(poly, eps=float(_TECH_POINT_BOX_AXIS_EPS_MM)):
+        return False
+    x0, y0, x1, y1 = _poly_bbox_mm(poly)
+    w = float(x1 - x0)
+    h = float(y1 - y0)
+    if min(w, h) < float(_TECH_ARROW_BBOX_ARTIFACT_MIN_MM):
+        return False
+    if max(w, h) > float(_TECH_ARROW_BBOX_ARTIFACT_MAX_MM):
+        return False
+    aspect = max(w, h) / max(1e-9, min(w, h))
+    if aspect < float(_TECH_ARROW_BBOX_ARTIFACT_MIN_ASPECT):
+        return False
+    xs = _quantized_axis_values([pt[0] for pt in ring], eps=float(_TECH_POINT_BOX_AXIS_EPS_MM))
+    ys = _quantized_axis_values([pt[1] for pt in ring], eps=float(_TECH_POINT_BOX_AXIS_EPS_MM))
+    return len(xs) == 2 and len(ys) == 2
+
+
+def _poly_area_mm2(poly: list[tuple[float, float]]) -> float:
+    ring = poly[:-1] if _poly_is_closed_mm(poly) else poly
+    if len(ring) < 3:
+        return 0.0
+    total = 0.0
+    for idx in range(len(ring)):
+        x1, y1 = ring[idx]
+        x2, y2 = ring[(idx + 1) % len(ring)]
+        total += (float(x1) * float(y2)) - (float(x2) * float(y1))
+    return abs(float(total)) * 0.5
+
+
+def _is_convex_ring_mm(ring: list[tuple[float, float]]) -> bool:
+    n = len(ring)
+    if n < 3:
+        return False
+    sign = 0
+    for idx in range(n):
+        p0 = ring[idx - 1]
+        p1 = ring[idx]
+        p2 = ring[(idx + 1) % n]
+        z = (float(p1[0]) - float(p0[0])) * (float(p2[1]) - float(p1[1])) - (float(p1[1]) - float(p0[1])) * (float(p2[0]) - float(p1[0]))
+        if abs(float(z)) <= 1e-9:
+            continue
+        cur = 1 if z > 0 else -1
+        if sign == 0:
+            sign = cur
+        elif sign != cur:
+            return False
+    return True
+
+
+def _vertex_angle_deg_mm(prev_pt: tuple[float, float], pt: tuple[float, float], next_pt: tuple[float, float]) -> float:
+    ux = float(prev_pt[0]) - float(pt[0])
+    uy = float(prev_pt[1]) - float(pt[1])
+    vx = float(next_pt[0]) - float(pt[0])
+    vy = float(next_pt[1]) - float(pt[1])
+    nu = math.hypot(float(ux), float(uy))
+    nv = math.hypot(float(vx), float(vy))
+    if nu <= 1e-12 or nv <= 1e-12:
+        return 180.0
+    dot = ((ux * vx) + (uy * vy)) / (nu * nv)
+    dot = max(-1.0, min(1.0, float(dot)))
+    return float(math.degrees(math.acos(dot)))
+
+
+def _compact_arrowhead_v_polyline_mm(poly: list[tuple[float, float]]) -> list[tuple[float, float]] | None:
+    if len(poly) < 4 or not _poly_is_closed_mm(poly):
+        return None
+    ring = poly[:-1]
+    n = len(ring)
+    if n < 3 or n > int(_TECH_ARROWHEAD_MAX_VERTICES):
+        return None
+    if not _is_convex_ring_mm(ring):
+        return None
+    x0, y0, x1, y1 = _poly_bbox_mm(poly)
+    w = float(x1 - x0)
+    h = float(y1 - y0)
+    if w <= 1e-9 or h <= 1e-9:
+        return None
+    if w > float(_TECH_ARROWHEAD_MAX_BBOX_MM) or h > float(_TECH_ARROWHEAD_MAX_BBOX_MM):
+        return None
+    area = _poly_area_mm2(poly)
+    if area < float(_TECH_ARROWHEAD_MIN_AREA_MM2) or area > float(_TECH_ARROWHEAD_MAX_AREA_MM2):
+        return None
+    fill_ratio = float(area) / max(1e-9, float(w) * float(h))
+    if fill_ratio > float(_TECH_ARROWHEAD_MAX_FILL_RATIO):
+        return None
+
+    tip_idx = -1
+    tip_angle = 180.0
+    for idx in range(n):
+        angle = _vertex_angle_deg_mm(ring[idx - 1], ring[idx], ring[(idx + 1) % n])
+        if angle < tip_angle:
+            tip_angle = angle
+            tip_idx = idx
+    if tip_idx < 0:
+        return None
+
+    other_ids = [idx for idx in range(n) if idx != tip_idx]
+    if len(other_ids) < 2:
+        return None
+    tip = ring[tip_idx]
+    best_pair: tuple[int, int] | None = None
+    best_pair_dist = -1.0
+    for i_pos in range(len(other_ids)):
+        for j_pos in range(i_pos + 1, len(other_ids)):
+            ii = other_ids[i_pos]
+            jj = other_ids[j_pos]
+            dist = math.hypot(float(ring[ii][0]) - float(ring[jj][0]), float(ring[ii][1]) - float(ring[jj][1]))
+            if dist > best_pair_dist:
+                best_pair_dist = dist
+                best_pair = (ii, jj)
+    if best_pair is None:
+        return None
+    base_l = ring[best_pair[0]]
+    base_r = ring[best_pair[1]]
+    if math.hypot(float(base_l[0]) - float(tip[0]), float(base_l[1]) - float(tip[1])) < 0.15:
+        return None
+    if math.hypot(float(base_r[0]) - float(tip[0]), float(base_r[1]) - float(tip[1])) < 0.15:
+        return None
+    if math.hypot(float(base_l[0]) - float(base_r[0]), float(base_l[1]) - float(base_r[1])) < 0.08:
+        return None
+    return [base_l, tip, base_r]
 
 
 def _poly_perimeter_mm(poly: list[tuple[float, float]]) -> float:
@@ -1916,6 +2397,7 @@ def _normalize_technical_point_boxes(
 ) -> tuple[list[list[tuple[float, float]]], dict[str, float]]:
     out: list[list[tuple[float, float]]] = []
     replaced = 0
+    replaced_centers: list[tuple[float, float]] = []
     compact_signature_counts: dict[tuple[int, int, int], int] = {}
     candidate_info: dict[int, tuple[float, float, tuple[int, int, int]]] = {}
     for idx, poly in enumerate(polys_mm):
@@ -1927,7 +2409,7 @@ def _normalize_technical_point_boxes(
         candidate_info[idx] = (((x0 + x1) * 0.5), ((y0 + y1) * 0.5), sig)
 
     for idx, poly in enumerate(polys_mm):
-        if _is_technical_point_box_poly(poly) and _is_detail_polyline_mm(
+        is_detail = _is_detail_polyline_mm(
             poly,
             page_w_mm=float(page_w_mm),
             page_h_mm=float(page_h_mm),
@@ -1935,19 +2417,55 @@ def _normalize_technical_point_boxes(
             crop_right_mm=float(getattr(backend, "PAGE_MARGIN_RIGHT_MM", 0.0)),
             crop_top_mm=float(getattr(backend, "PAGE_MARGIN_TOP_MM", 0.0)),
             crop_bottom_mm=float(getattr(backend, "PAGE_MARGIN_BOTTOM_MM", 0.0)),
-        ):
+        )
+        if _is_technical_point_box_poly(poly) and is_detail:
+            cx, cy = _technical_point_box_center_mm(poly)
+            if any(
+                math.hypot(float(cx) - float(px), float(cy) - float(py)) <= float(_TECH_POINT_BOX_DUPLICATE_CENTER_EPS_MM)
+                for px, py in replaced_centers
+            ):
+                replaced += 1
+                continue
             out.append(_technical_point_dot_poly_from_box(poly))
+            replaced_centers.append((float(cx), float(cy)))
             replaced += 1
             continue
-        if idx in candidate_info and _is_detail_polyline_mm(
-            poly,
-            page_w_mm=float(page_w_mm),
-            page_h_mm=float(page_h_mm),
-            crop_left_mm=float(getattr(backend, "PAGE_MARGIN_LEFT_MM", 0.0)),
-            crop_right_mm=float(getattr(backend, "PAGE_MARGIN_RIGHT_MM", 0.0)),
-            crop_top_mm=float(getattr(backend, "PAGE_MARGIN_TOP_MM", 0.0)),
-            crop_bottom_mm=float(getattr(backend, "PAGE_MARGIN_BOTTOM_MM", 0.0)),
-        ):
+        if _is_technical_point_box_poly(poly, max_mm=float(_TECH_POINT_BOX_EXTENDED_MAX_MM)) and is_detail:
+            cx, cy = _technical_point_box_center_mm(poly)
+            supports = _count_marker_supports(float(cx), float(cy), polys_mm, skip_idx=idx)
+            if supports >= 1:
+                bx0, by0, bx1, by1 = _poly_bbox_mm(poly)
+                bw = float(bx1 - bx0)
+                bh = float(by1 - by0)
+                aspect = max(float(bw), float(bh)) / max(1e-9, min(float(bw), float(bh)))
+                if any(
+                    math.hypot(float(cx) - float(px), float(cy) - float(py)) <= float(_TECH_POINT_BOX_DUPLICATE_CENTER_EPS_MM)
+                    for px, py in replaced_centers
+                ):
+                    replaced += 1
+                    continue
+                if aspect > float(_TECH_POINT_BOX_MAX_ASPECT):
+                    replaced += 1
+                    continue
+                out.append(_technical_point_dot_poly_from_box(poly))
+                replaced_centers.append((float(cx), float(cy)))
+                replaced += 1
+                continue
+        if _is_small_arrow_bbox_artifact_poly(poly):
+            cx, cy = _technical_point_box_center_mm(poly)
+            supports = _count_marker_supports(float(cx), float(cy), polys_mm, skip_idx=idx)
+            if supports >= int(_TECH_ARROW_BBOX_ARTIFACT_SUPPORTS_MIN):
+                replaced += 1
+                continue
+        arrow_v = _compact_arrowhead_v_polyline_mm(poly)
+        if arrow_v is not None and is_detail:
+            cx, cy = _technical_point_box_center_mm(poly)
+            supports = _count_marker_supports(float(cx), float(cy), polys_mm, skip_idx=idx)
+            if supports >= 1:
+                out.append(arrow_v)
+                replaced += 1
+                continue
+        if idx in candidate_info and is_detail:
             center_x, center_y, sig = candidate_info[idx]
             repeated = int(compact_signature_counts.get(sig, 0)) >= int(_TECH_POINT_MARKER_REPEAT_MIN)
             supports = _count_marker_supports(center_x, center_y, polys_mm, skip_idx=idx)
@@ -2650,6 +3168,14 @@ def _prepare_a4_hybrid_drawing_candidate(
             clean_reference_polys.extend(list(extra_frame_polys))
         clean_reference_svg = candidate_dir / f"{variant_name}__method3_source.svg"
         clean_reference_pdf = candidate_dir / f"{variant_name}__method3_source.pdf"
+        clean_reference_polys, clean_reference_meta = _center_polylines_on_page_x(
+            clean_reference_polys,
+            page_w_mm=page_w_mm,
+        )
+        logs.append(
+            "A4 clean source centered on page X: "
+            f"offset_x={float(clean_reference_meta.get('offset_x_mm', 0.0)):.3f} mm"
+        )
         bridge._write_method3_svg(
             clean_reference_svg,
             clean_reference_polys,
@@ -2966,12 +3492,12 @@ def _prepare_a4_hybrid_drawing_candidate(
                 "logs": logs,
             }
 
-        preview_ok, preview_err = bridge._build_vector_preview_from_gcode(
-            nc_path,
-            svg_path,
-            pdf_path,
-            backend=backend,
-            log=logs.append,
+        preview_ok, preview_err = _build_sheet_preview_from_gcode(
+            gcode_path=nc_path,
+            reference_pdf=source_pdf,
+            out_svg=svg_path,
+            out_pdf=pdf_path,
+            logs=logs,
         )
         if not preview_ok:
             return {
@@ -3058,6 +3584,20 @@ def _prepare_drawing_candidate(
             }
         prefix = candidate_dir / variant_name
         svg_path, pdf_path, nc_path, gcode_path = _copy_latest_preview_artifacts(prefix, op_id=ctx.op_id)
+        preview_ok, preview_err = _build_sheet_preview_from_gcode(
+            gcode_path=nc_path,
+            reference_pdf=source_pdf,
+            out_svg=svg_path,
+            out_pdf=pdf_path,
+            logs=logs,
+        )
+        if not preview_ok:
+            return {
+                "variant": variant_name,
+                "ok": False,
+                "message": preview_err,
+                "logs": logs,
+            }
         metrics = _analyze_gcode(nc_path)
         similarity = _layout_similarity_pdf(source_pdf, pdf_path, source_page_index=0)
         return {
@@ -3140,8 +3680,45 @@ def _prepare_a3_clean_source_svg(
     source_svg: Path,
     source_preview_pdf: Path,
 ) -> tuple[bool, str, list[str]]:
-    bridge = BackendBridge(PROJECT_ROOT)
     logs: list[str] = []
+    try:
+        page_w_mm, page_h_mm = _export_pdf_page_to_mupdf_svg(
+            source_pdf,
+            0,
+            source_svg,
+            text_as_path=True,
+        )
+        with fitz.open(str(source_pdf)) as src_doc:
+            if int(src_doc.page_count) < 1:
+                return False, "Source A3 PDF has no pages.", logs
+            out_doc = fitz.open()
+            try:
+                out_doc.insert_pdf(src_doc, from_page=0, to_page=0)
+                out_doc.save(str(source_preview_pdf))
+            finally:
+                out_doc.close()
+        extra_polys, recovered = _extract_small_condition_image_polylines_from_pdf(
+            source_pdf,
+            page_index=0,
+            logger=logs.append,
+        )
+        if extra_polys:
+            appended = _append_overlay_polylines_to_existing_svg(
+                source_svg,
+                extra_polys,
+                page_w_mm=float(page_w_mm),
+                page_h_mm=float(page_h_mm),
+            )
+            logs.append(
+                "A3 condition image recovery summary: "
+                f"{len(recovered)} image(s), {len(extra_polys)} path(s), appended={int(appended)}."
+            )
+        logs.append("A3 clean source route: direct PDF vector SVG export (text_as_path=True).")
+        return True, "A3 clean source prepared from direct PDF vector export.", logs
+    except Exception as exc:
+        logs.append(f"A3 direct PDF vector export failed, falling back to Method3: {exc}")
+
+    bridge = BackendBridge(PROJECT_ROOT)
     _configure_drawing_method3_backend(sheet_format="a3", pass_cols=2, pass_rows=1, pass_col=1, pass_row=1)
     with _technical_drawing_backend_precision():
         ok, msg = bridge._prepare_method3_page(
@@ -3175,6 +3752,11 @@ def _prepare_a3_clean_source_svg(
             source_polys,
             page_w_mm=page_w_mm,
             page_h_mm=page_h_mm,
+            logger=logs.append,
+        )
+        source_polys, _ = _maybe_reanchor_a3_clean_source_polylines(
+            source_polys,
+            ref_bbox_mm=_pdf_visible_bbox_mm(source_pdf),
             logger=logs.append,
         )
         bridge._write_method3_svg(source_svg, source_polys, page_w_mm=page_w_mm, page_h_mm=page_h_mm)
@@ -3228,6 +3810,9 @@ def _prepare_a3_pass_from_clean_svg(
         }
     svg_path, pdf_path, nc_path, gcode_path = _copy_latest_preview_artifacts(prefix, op_id=ctx.op_id)
     metrics = _analyze_gcode(nc_path)
+    source_route = "direct_pdf_svg" if any(
+        "direct PDF vector SVG export" in str(line) for line in (prep_logs or [])
+    ) else "method3"
     return {
         "item": f"pass_{pass_index:02d}",
         "ok": True,
@@ -3244,7 +3829,7 @@ def _prepare_a3_pass_from_clean_svg(
         "notes": "; ".join(
             part
             for part in [
-                "source_cleanup=method3",
+                f"source_cleanup={source_route}",
                 "left_strip_removed=True",
                 "outer_border_removed=True",
                 *pass_notes,
@@ -3254,10 +3839,16 @@ def _prepare_a3_pass_from_clean_svg(
     }
 
 
-def _export_pdf_page_to_mupdf_svg(pdf_path: Path, page_index: int, out_svg: Path) -> None:
+def _export_pdf_page_to_mupdf_svg(
+    pdf_path: Path,
+    page_index: int,
+    out_svg: Path,
+    *,
+    text_as_path: bool = False,
+) -> tuple[float, float]:
     doc = fitz.open(pdf_path)
     page = doc[page_index]
-    svg_text = page.get_svg_image(text_as_path=False)
+    svg_text = page.get_svg_image(text_as_path=bool(text_as_path))
     page_w_mm = float(page.rect.width) * 25.4 / 72.0
     page_h_mm = float(page.rect.height) * 25.4 / 72.0
     out_svg.parent.mkdir(parents=True, exist_ok=True)
@@ -3267,6 +3858,60 @@ def _export_pdf_page_to_mupdf_svg(pdf_path: Path, page_index: int, out_svg: Path
     root.set("width", f"{page_w_mm:.3f}mm")
     root.set("height", f"{page_h_mm:.3f}mm")
     tree.write(out_svg, encoding="utf-8", xml_declaration=True)
+    doc.close()
+    return float(page_w_mm), float(page_h_mm)
+
+
+def _append_overlay_polylines_to_existing_svg(
+    svg_path: Path,
+    polylines_mm: list[list[tuple[float, float]]],
+    *,
+    page_w_mm: float,
+    page_h_mm: float,
+) -> int:
+    if not polylines_mm:
+        return 0
+    tree = ET.parse(svg_path)
+    root = tree.getroot()
+    view_box = str(root.get("viewBox", "") or "").strip().replace(",", " ").split()
+    if len(view_box) != 4:
+        return 0
+    try:
+        vb_x = float(view_box[0])
+        vb_y = float(view_box[1])
+        vb_w = float(view_box[2])
+        vb_h = float(view_box[3])
+    except Exception:
+        return 0
+    sx = float(vb_w) / max(1e-9, float(page_w_mm))
+    sy = float(vb_h) / max(1e-9, float(page_h_mm))
+    ns_svg = "{http://www.w3.org/2000/svg}"
+    appended = 0
+    for poly in polylines_mm:
+        if len(poly) < 2:
+            continue
+        cmds: list[str] = []
+        for idx, (x_mm, y_mm) in enumerate(poly):
+            x_u = float(vb_x) + (float(x_mm) * float(sx))
+            y_u = float(vb_y) + (float(y_mm) * float(sy))
+            prefix = "M" if idx == 0 else "L"
+            cmds.append(f"{prefix} {x_u:.4f} {y_u:.4f}")
+        path_el = ET.Element(
+            f"{ns_svg}path",
+            {
+                "d": " ".join(cmds),
+                "fill": "none",
+                "stroke": "#000000",
+                "stroke-width": "1",
+                "stroke-linecap": "round",
+                "stroke-linejoin": "round",
+            },
+        )
+        root.append(path_el)
+        appended += 1
+    if appended:
+        tree.write(svg_path, encoding="utf-8", xml_declaration=True)
+    return int(appended)
 
 
 def _configure_toe_backend(font_path: Path, *, backend_overrides: dict[str, Any] | None = None) -> None:

@@ -222,6 +222,62 @@ class ProtocolBackendBridgeTests(unittest.TestCase):
             outlines = bridge._extract_graphics_outline_polylines_px(backend_mod, graphics_mask)
             self.assertTrue(outlines)
 
+    def test_extract_pdf_filled_micro_strokes_skips_square_bbox_arrowhead_artifacts(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="plotter_proto_fill_rect_") as td:
+            root = Path(td)
+            bridge = BackendBridge(root)
+            pdf_path = root / "dummy.pdf"
+            pdf_path.write_bytes(b"%PDF-1.4\n")
+
+            class _Rect:
+                def __init__(self, x0, y0, x1, y1):
+                    self.x0 = x0
+                    self.y0 = y0
+                    self.x1 = x1
+                    self.y1 = y1
+                    self.width = x1 - x0
+                    self.height = y1 - y0
+
+            class _Page:
+                rect = _Rect(0.0, 0.0, 420.0 * 72.0 / 25.4, 297.0 * 72.0 / 25.4)
+
+                @staticmethod
+                def get_drawings():
+                    return [
+                        {
+                            "fill": (0.0, 0.0, 0.0),
+                            "rect": _Rect(100.0, 100.0, 108.0, 108.0),
+                            "items": [
+                                ("re", _Rect(100.0, 100.0, 108.0, 108.0)),
+                            ],
+                        }
+                    ]
+
+            class _Doc:
+                page_count = 1
+
+                def __enter__(self):
+                    return self
+
+                def __exit__(self, exc_type, exc, tb):
+                    return False
+
+                def __getitem__(self, index):
+                    self._index = index
+                    return _Page()
+
+            logs: list[str] = []
+            with mock.patch("plotter_studio.core.protocol.fitz.open", return_value=_Doc()):
+                out = bridge._extract_pdf_filled_micro_strokes_mm(
+                    pdf_path=pdf_path,
+                    page_index=1,
+                    page_w_mm=420.0,
+                    page_h_mm=297.0,
+                    log=logs.append,
+                )
+            self.assertEqual(out, [])
+            self.assertTrue(any("skipped square bbox artifacts=1" in line for line in logs))
+
     def test_prepare_method3_page_rejects_unsupported_extension(self) -> None:
         with tempfile.TemporaryDirectory(prefix="plotter_proto_m3_ext_") as td:
             root = Path(td)

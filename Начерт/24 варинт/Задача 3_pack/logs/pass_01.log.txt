@@ -1,40 +1,29 @@
-Source pages: 1, selected: 1
-Method3 centerline: threshold=160, candidates=9, paths=1013
-Method3 PDF vector graphics: drawings=1270, paths=3648, thick_paths=340
-Method3 layer split: text_paths=926, graphics_source=pdf_vector, graphics_paths=3554
-Method3 cleanup: restored overlap text paths=25
-Method3 cleanup: removed left-column text paths=57
-Method3 cleanup: removed left-column graphics-glyph paths=86
-Method3 cleanup: removed outer-frame paths=9
-Method3 detail thick-lines multipass: skipped reason=exact_geometry_mode, candidates=3554
-Method3 cleanup: hard-clipped geometry left of frame x<20.50 mm: paths=4
-Method3 cleanup: restored left vertical frame line.
-Method3 cleanup: skipped A3 two-pass hybrid canvas reason=detail_does_not_fit_1to1, detail_bbox=373.98x219.44 mm, target=360.00x280.00 mm
-Method3 micro-segment prune: segments=15224->15219, min=0.03 mm
+A3 clean source route: direct PDF vector SVG export (text_as_path=True).
 --- a3 clean pass ---
 Render mode: drawing; ExactGeometry=on; Handwriting=off
 Sheet 420.0x297.0 mm is larger than workspace 180.0x280.0 mm. Using the overlapped sheet/workspace window.
 Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-295.000,-15.000), sheet_bounds x(0.000,420.000) y(-295.000,2.000), sheet=a3, anchor=lower_left, offset=(0.00,0.00)
 Text render mode: handwriting=off font='Marck Script'; image_contours=off
 Extracting paths from SVG ...
-Raw geometry bounds: x(20.500, 415.507) y(5.504, 292.584)
+Raw geometry bounds: x(0.508, 420.539) y(0.508, 297.518)
 SVG page: 421.047 x 298.111 mm
 Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).
-SVG geometry: paths=3160, segments=6052.
-Source bounds: x(20.500, 415.507) y(5.504, 292.584)
-Fit to work area: scale=0.9114, translate=(-108.683,-290.835), from (20.500, 5.504)-(415.507, 292.584)
-Pass window: col 1/2, row 1/1, source=360.000x261.638 mm, window=180.000x261.638 mm, offset=(0.000,0.000), shift=(90.000,0.000)
-Work area clipping: kept 3008 visible segments, dropped 3044 out-of-area segments.
-Reorder: source order preserved (1890 polylines).
-Segment counts: source=6052, fitted=6052, clipped=3008
-Drawable segments after clip: 3008 (49.7% of source)
+SVG geometry: paths=4747, segments=6231.
+Source bounds: x(0.508, 420.539) y(0.508, 297.518)
+Fit to work area: scale=0.8571, translate=(-90.435,-282.716), from (0.508, 0.508)-(420.539, 297.518)
+Pass window: col 1/2, row 1/1, source=360.000x254.562 mm, window=180.000x254.562 mm, offset=(0.000,0.000), shift=(90.000,0.000)
+Work area clipping: kept 3026 visible segments, dropped 3205 out-of-area segments.
+Segment dedup: dropped 781/3026 retraced segments (25.8%), kept=2245, eps=0.010 mm
+Reorder: source order preserved (2199 polylines).
+Segment counts: source=6231, fitted=6231, clipped=3026
+Drawable segments after clip: 3026 (48.6% of source)
 Warning: significant clipping/transforming occurred. Check that page is inside target work area.
-Prepared bounds: x(0.000, 180.000) y(-285.819, -24.204)
-Estimated draw length: 16.51 m
+Prepared bounds: x(0.000, 180.000) y(-282.281, -27.719)
+Estimated draw length: 9.92 m
 Applying pen-up / pen-down ...
-G-code stats: lines=8148, draw=6407, travel=1727, bounds=0.000..180.000 x, -285.819..0.000 y
-Preflight: ok: lines=8148, draw=6407, travel=1727, ratio=0.27
-Saved file stats: lines=8148, draw=6407, travel=1727, bounds=0.000..180.000 x, -285.819..0.000 y
-Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1775238551534236300.nc
-Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1775238551534236300_vector.svg
-Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1775238551534236300_vector.pdf
+G-code stats: lines=7060, draw=5439, travel=1607, bounds=0.000..180.000 x, -282.281..0.000 y
+Preflight: ok: lines=7060, draw=5439, travel=1607, ratio=0.30
+Saved file stats: lines=7060, draw=5439, travel=1607, bounds=0.000..180.000 x, -282.281..0.000 y
+Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1775459126646223800.nc
+Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1775459126646223800_vector.svg
+Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1775459126646223800_vector.pdf

@@ -1,19 +1,9 @@
-Source pages: 1, selected: 1
-Method3 centerline: threshold=160, candidates=9, paths=1488
-Method3 PDF vector graphics: drawings=1705, paths=1653, thick_paths=329
-Method3 layer split: text_paths=1158, graphics_source=pdf_vector, graphics_paths=1640
-Method3 cleanup: restored overlap text paths=32
-Method3 cleanup: removed bottom-row text paths=9
-Method3 cleanup: removed left-column text paths=284
-Method3 cleanup: removed left-column graphics-glyph paths=9
-Method3 cleanup: removed outer-frame paths=5
-Method3 detail thick-lines multipass: skipped reason=exact_geometry_mode, candidates=1640
-Method3 cleanup: removed left-of-frame text leftovers=67
-Method3 cleanup: hard-clipped geometry left of frame x<20.50 mm: paths=6
-Method3 cleanup: removed tiny bottom artifacts=40
-Method3 cleanup: skipped A3 two-pass hybrid canvas reason=detail_does_not_fit_1to1, detail_bbox=371.93x226.48 mm, target=360.00x280.00 mm
-Method3 micro-segment prune: segments=12307->12299, min=0.03 mm
-Technical point marker normalization: replaced 4 point-marker loop(s) with compact dot markers.
+A3 header miniature crop: rect=10.02,13.59,195.53,53.81 mm -> crop_px=351,114,1169,950.
+Image contour tracing: +102 path(s) from embedded raster.
+Image vectorization mode: centerline (added 102 path(s), simplify=0.02 mm).
+Condition image recovery: rect=10.02,13.59,195.53,53.81 mm -> +102 path(s).
+A3 condition image recovery summary: 1 image(s), 102 path(s), appended=102.
+A3 clean source route: direct PDF vector SVG export (text_as_path=True).
 pass_02_rotated_180_for_sheet_flip=True
 --- a3 clean pass ---
 Render mode: drawing; ExactGeometry=on; Handwriting=off
@@ -21,26 +11,26 @@ Sheet 420.0x297.0 mm is larger than workspace 180.0x280.0 mm. Using the overlapp
 Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-295.000,-15.000), sheet_bounds x(0.000,420.000) y(-295.000,2.000), sheet=a3, anchor=lower_left, offset=(0.00,0.00)
 Text render mode: handwriting=off font='Marck Script'; image_contours=off
 Extracting paths from SVG ...
-Raw geometry bounds: x(20.500, 415.181) y(4.996, 297.031)
+Raw geometry bounds: x(0.158, 420.147) y(0.000, 297.388)
 SVG page: 420.158 x 297.039 mm
 Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).
-SVG geometry: paths=2649, segments=5314.
-Source bounds: x(20.500, 415.181) y(4.996, 297.031)
-Fit to work area: scale=0.9121, translate=(-108.699,-292.743), from (20.500, 4.996)-(415.181, 297.031)
-Pass window: col 2/2, row 1/1, source=360.000x266.373 mm, window=180.000x266.373 mm, offset=(180.000,0.000), shift=(-90.000,0.000)
+SVG geometry: paths=4474, segments=5028.
+Source bounds: x(0.158, 420.147) y(0.000, 297.295)
+Fit to work area: scale=0.8572, translate=(-90.135,-282.415), from (0.158, 0.000)-(420.147, 297.295)
+Pass window: col 2/2, row 1/1, source=360.000x254.831 mm, window=180.000x254.831 mm, offset=(180.000,0.000), shift=(-90.000,0.000)
 Sheet pass transform: rotating geometry by 180 deg for a3 pass 2/2 x 1/1 around active area center (90.000,-155.000).
 Sheet pass transform: translating geometry by (0.000,4.000) mm for a3 pass 2/2 x 1/1.
-Work area clipping: kept 2122 visible segments, dropped 3192 out-of-area segments.
-Reorder: source order preserved (1104 polylines).
-Segment counts: source=5314, fitted=5314, clipped=2122
-Drawable segments after clip: 2122 (39.9% of source)
+Work area clipping: kept 1322 visible segments, dropped 3706 out-of-area segments.
+Reorder: source order preserved (1264 polylines).
+Segment counts: source=5028, fitted=5028, clipped=1322
+Drawable segments after clip: 1322 (26.3% of source)
 Warning: significant clipping/transforming occurred. Check that page is inside target work area.
-Prepared bounds: x(0.000, 180.000) y(-279.634, -17.813)
-Estimated draw length: 9.65 m
+Prepared bounds: x(0.000, 180.000) y(-278.172, -23.585)
+Estimated draw length: 6.09 m
 Applying pen-up / pen-down ...
-G-code stats: lines=4949, draw=3979, travel=956, bounds=0.000..180.000 x, -279.634..0.000 y
-Preflight: ok: lines=4949, draw=3979, travel=956, ratio=0.24
-Saved file stats: lines=4949, draw=3979, travel=956, bounds=0.000..180.000 x, -279.634..0.000 y
-Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1775238953825408200.nc
-Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1775238953825408200_vector.svg
-Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1775238953825408200_vector.pdf
+G-code stats: lines=3178, draw=2544, travel=620, bounds=0.000..180.000 x, -278.172..0.000 y
+Preflight: ok: lines=3178, draw=2544, travel=620, ratio=0.24
+Saved file stats: lines=3178, draw=2544, travel=620, bounds=0.000..180.000 x, -278.172..0.000 y
+Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1775459139256009700.nc
+Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1775459139256009700_vector.svg
+Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1775459139256009700_vector.pdf

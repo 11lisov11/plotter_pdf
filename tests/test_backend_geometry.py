@@ -803,6 +803,32 @@ class BackendGeometryTests(unittest.TestCase):
             backend.SAFE_PEN_TRAVEL_UP = old_safe
             backend.Z_TRAVEL_LIFT_MM = old_lift
 
+    def test_apply_penlift_force_full_lift_wins_in_pencil_mode(self) -> None:
+        old_tool_mode = backend.TOOL_MODE
+        old_safe = backend.SAFE_PEN_TRAVEL_UP
+        old_lift = backend.Z_TRAVEL_LIFT_MM
+        try:
+            backend.TOOL_MODE = "pencil"
+            backend.SAFE_PEN_TRAVEL_UP = False
+            backend.Z_TRAVEL_LIFT_MM = 3.5
+            with tempfile.TemporaryDirectory() as td:
+                xy_path = Path(td) / "in.nc"
+                pen_path = Path(td) / "out.nc"
+                xy_path.write_text("G21\nG90\nG0 X0 Y0\n", encoding="utf-8")
+                captured: dict[str, object] = {}
+
+                def _fake_run(*_args, **kwargs):
+                    captured.update(kwargs)
+
+                with mock.patch.object(backend.gcode_penlift_mod, "run_penlift_postprocess", side_effect=_fake_run):
+                    backend.apply_penlift(xy_path, pen_path, z_down=11.9, force_full_lift=True)
+
+                self.assertAlmostEqual(float(captured["z_travel_lift_mm"]), 12.0, places=6)
+        finally:
+            backend.TOOL_MODE = old_tool_mode
+            backend.SAFE_PEN_TRAVEL_UP = old_safe
+            backend.Z_TRAVEL_LIFT_MM = old_lift
+
     def test_smooth_handwriting_polylines_preserves_endpoints(self) -> None:
         old_enabled = backend.HANDWRITING_SMOOTH_ENABLED
         try:

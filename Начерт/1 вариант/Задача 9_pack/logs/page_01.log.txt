@@ -11,6 +11,7 @@ Method3 cleanup: removed tiny bottom artifacts=5
 Method3 micro-segment prune: segments=6225->6223, min=0.03 mm
 A4 header text extraction: 3 line(s) from PDF text blocks.
 Technical point marker normalization: replaced 17 point-marker loop(s) with compact dot markers.
+A4 clean source centered on page X: offset_x=12.501 mm
 A4 header text reroute: removed 141 source polyline(s) from the header text band.
 A4 header text cleanup: removed 24 transformed polyline(s) before rerender.
 A4 header thumb cleanup: clipped 2 spill polyline(s) to the thumbnail box.
@@ -68,5 +69,5 @@ G-code stats: lines=6659, draw=6110, travel=535, bounds=0.000..180.000 x, -295.0
 Preflight: ok: lines=6659, draw=6110, travel=535, ratio=0.09
 Saved file stats: lines=6659, draw=6110, travel=535, bounds=0.000..180.000 x, -295.000..0.000 y
 Saved: C:\plotter_pdf\Начерт\1 вариант\Задача 9_pack\_candidates\a4_hybrid_frame.nc
-Preview SVG: C:\plotter_pdf\Начерт\1 вариант\Задача 9_pack\_candidates\a4_hybrid_frame.svg
-Preview PDF: C:\plotter_pdf\Начерт\1 вариант\Задача 9_pack\_candidates\a4_hybrid_frame.pdf
+Sheet preview aligned to reference bbox Y and centered on page X: ref=(0.000,11.641)..(185.152,296.922) mm
+Sheet preview placed on source page: offset=(15.008,306.641) mm

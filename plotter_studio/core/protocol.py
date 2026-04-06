@@ -2417,6 +2417,7 @@ class BackendBridge:
         max_dim_mm = 6.2
         max_box_area_mm2 = 22.0
         bottom_cut_mm = float(page_h_mm) * 0.93
+        skipped_square_bbox_artifacts = 0
 
         def _pt_xy_mm(pt) -> Optional[tuple[float, float]]:
             try:
@@ -2484,7 +2485,16 @@ class BackendBridge:
                     except Exception:
                         continue
                     box_poly = [(x0, y0), (x1, y0), (x1, y1), (x0, y1), (x0, y0)]
-                    if max(abs(x1 - x0), abs(y1 - y0)) < 0.03:
+                    bw = abs(x1 - x0)
+                    bh = abs(y1 - y0)
+                    if max(bw, bh) < 0.03:
+                        continue
+                    aspect = max(bw, bh) / max(1e-9, min(bw, bh))
+                    # Tiny near-square filled rectangles from PDF drawings are
+                    # usually arrowhead bbox artifacts. Drawing them as boxes
+                    # produces the visible square loops on dimension arrows.
+                    if aspect <= 1.45 and max(bw, bh) <= 4.2:
+                        skipped_square_bbox_artifacts += 1
                         continue
                     out.append(box_poly)
                     seg_count += 1
@@ -2493,6 +2503,11 @@ class BackendBridge:
 
         if out:
             log(f"Method3 filled accents: paths={kept_paths}, segments={len(out)}")
+        if skipped_square_bbox_artifacts > 0:
+            log(
+                "Method3 filled accents: skipped square bbox artifacts="
+                f"{int(skipped_square_bbox_artifacts)}"
+            )
         return out
 
     def _drop_tiny_bottom_artifacts_mm(
