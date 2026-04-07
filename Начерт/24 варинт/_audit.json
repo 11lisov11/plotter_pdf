@@ -1,0 +1,33 @@
+{
+  "variant_dir": "C:\\plotter_pdf\\Начерт\\24 варинт",
+  "items": [
+    {
+      "task": "Задача 10_pack",
+      "kind": "a3_two_pass",
+      "reference_source": "C:\\plotter_pdf\\Начерт\\24 варинт\\_generated_pdf\\Задача 10.pdf",
+      "combined_preview": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 10_pack\\combined_preview.pdf",
+      "combined_layout_similarity": 0.988336,
+      "pass_01_preview": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 10_pack\\pages\\pass_01.pdf",
+      "pass_02_preview": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 10_pack\\pages\\pass_02.pdf",
+      "source": "C:\\plotter_pdf\\Начерт\\24 варинт\\_generated_pdf\\Задача 10.pdf",
+      "notes": [
+        "scale=0.8572; clipping=True; source_cleanup=direct_pdf_svg; left_strip_removed=True; outer_border_removed=True",
+        "scale=0.8572; clipping=True; source_cleanup=direct_pdf_svg; left_strip_removed=True; outer_border_removed=True; pass_02_rotated_180_for_sheet_flip=True"
+      ]
+    },
+    {
+      "task": "Задача 3_pack",
+      "kind": "a3_two_pass",
+      "reference_source": "C:\\plotter_pdf\\Начерт\\24 варинт\\_generated_pdf\\Задача 3.pdf",
+      "combined_preview": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 3_pack\\combined_preview.pdf",
+      "combined_layout_similarity": 0.987487,
+      "pass_01_preview": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 3_pack\\pages\\pass_01.pdf",
+      "pass_02_preview": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 3_pack\\pages\\pass_02.pdf",
+      "source": "C:\\plotter_pdf\\Начерт\\24 варинт\\_generated_pdf\\Задача 3.pdf",
+      "notes": [
+        "scale=0.8571; clipping=True; source_cleanup=direct_pdf_svg; left_strip_removed=True; outer_border_removed=True",
+        "scale=0.8571; clipping=True; source_cleanup=direct_pdf_svg; left_strip_removed=True; outer_border_removed=True; pass_02_rotated_180_for_sheet_flip=True"
+      ]
+    }
+  ]
+}

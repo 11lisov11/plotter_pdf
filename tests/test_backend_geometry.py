@@ -48,7 +48,7 @@ class BackendGeometryTests(unittest.TestCase):
         finally:
             backend.PASS_COLS, backend.PASS_ROWS, backend.PASS_COL, backend.PASS_ROW = old
 
-    def test_transform_polylines_for_active_sheet_pass_rotates_a3_second_pass_180_and_raises_y_by_4mm(self) -> None:
+    def test_transform_polylines_for_active_sheet_pass_rotates_a3_second_pass_180_and_raises_y_by_3mm(self) -> None:
         old_cfg = dict(backend.ACTIVE_SHEET_CONFIG)
         old_pass = (backend.PASS_COLS, backend.PASS_ROWS, backend.PASS_COL, backend.PASS_ROW)
         try:
@@ -69,7 +69,7 @@ class BackendGeometryTests(unittest.TestCase):
                     [[(0.0, -280.0), (180.0, 0.0)]],
                     logger=None,
                 )
-            self.assertEqual(out, [[(180.0, 4.0), (0.0, -276.0)]])
+            self.assertEqual(out, [[(180.0, 3.0), (0.0, -277.0)]])
         finally:
             backend.ACTIVE_SHEET_CONFIG = old_cfg
             backend.PASS_COLS, backend.PASS_ROWS, backend.PASS_COL, backend.PASS_ROW = old_pass

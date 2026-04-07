@@ -1,8 +1,8 @@
 A3 header miniature crop: rect=10.02,13.59,195.53,53.81 mm -> crop_px=351,114,1169,950.
-Image contour tracing: +102 path(s) from embedded raster.
-Image vectorization mode: centerline (added 102 path(s), simplify=0.02 mm).
-Condition image recovery: rect=10.02,13.59,195.53,53.81 mm -> +102 path(s).
-A3 condition image recovery summary: 1 image(s), 102 path(s), appended=102.
+Image contour tracing: +101 path(s) from embedded raster.
+Image vectorization mode: centerline (added 101 path(s), simplify=0.02 mm).
+Condition image recovery: rect=10.02,13.59,195.53,53.81 mm -> +101 path(s).
+A3 condition image recovery summary: 1 image(s), 101 path(s), appended=101.
 A3 clean source route: direct PDF vector SVG export (text_as_path=True).
 --- a3 clean pass ---
 Render mode: drawing; ExactGeometry=on; Handwriting=off
@@ -13,22 +13,24 @@ Extracting paths from SVG ...
 Raw geometry bounds: x(0.158, 420.147) y(0.000, 297.388)
 SVG page: 420.158 x 297.039 mm
 Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).
-SVG geometry: paths=4474, segments=5028.
+SVG geometry: paths=4473, segments=4858.
 Source bounds: x(0.158, 420.147) y(0.000, 297.295)
 Fit to work area: scale=0.8572, translate=(-90.135,-282.415), from (0.158, 0.000)-(420.147, 297.295)
 Pass window: col 1/2, row 1/1, source=360.000x254.831 mm, window=180.000x254.831 mm, offset=(0.000,0.000), shift=(90.000,0.000)
-Work area clipping: kept 3740 visible segments, dropped 1288 out-of-area segments.
-Segment dedup: dropped 1/3740 retraced segments (0.0%), kept=3739, eps=0.010 mm
-Reorder: source order preserved (3243 polylines).
-Segment counts: source=5028, fitted=5028, clipped=3740
-Drawable segments after clip: 3740 (74.4% of source)
+Work area clipping: kept 3570 visible segments, dropped 1288 out-of-area segments.
+Segment dedup: dropped 1/3570 retraced segments (0.0%), kept=3569, eps=0.010 mm
+Reorder: source order preserved (3242 polylines).
+Segment counts: source=4858, fitted=4858, clipped=3570
+Drawable segments after clip: 3570 (73.5% of source)
 Warning: significant clipping/transforming occurred. Check that page is inside target work area.
 Prepared bounds: x(0.000, 180.000) y(-282.415, -27.585)
-Estimated draw length: 8.93 m
+Estimated draw length: 8.92 m
 Applying pen-up / pen-down ...
-G-code stats: lines=11352, draw=8793, travel=2545, bounds=0.000..180.000 x, -282.415..0.000 y
-Preflight: ok: lines=11352, draw=8793, travel=2545, ratio=0.29
-Saved file stats: lines=11352, draw=8793, travel=2545, bounds=0.000..180.000 x, -282.415..0.000 y
-Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1775459134832964500.nc
-Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1775459134832964500_vector.svg
-Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1775459134832964500_vector.pdf
+G-code stats: lines=11179, draw=8621, travel=2544, bounds=0.000..180.000 x, -282.415..0.000 y
+Preflight: ok: lines=11179, draw=8621, travel=2544, ratio=0.30
+Saved file stats: lines=11179, draw=8621, travel=2544, bounds=0.000..180.000 x, -282.415..0.000 y
+Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1775575072030911000.nc
+Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1775575072030911000_vector.svg
+Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1775575072030911000_vector.pdf
+Sheet preview aligned to reference bbox Y and centered on page X: ref=(0.088,0.000)..(420.070,296.951) mm
+Sheet preview placed on source page: offset=(120.079,282.415) mm

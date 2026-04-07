@@ -1,0 +1,205 @@
+{
+  "variant_dir": "C:\\plotter_pdf\\Компьютерная графика",
+  "items": [
+    {
+      "task": "Втулка_pack",
+      "kind": "a4",
+      "layout_similarity": 0.984832,
+      "preview": "C:\\plotter_pdf\\Компьютерная графика\\Втулка_pack\\pages\\page_01.pdf",
+      "reference_source": "C:\\plotter_pdf\\Компьютерная графика\\Втулка_pack\\a4_clean_source.pdf",
+      "source": "C:\\plotter_pdf\\Компьютерная графика\\Втулка.pdf",
+      "compare_png": "C:\\plotter_pdf\\Компьютерная графика\\Втулка_pack\\source_vs_gcode_compare.png",
+      "compare_pdf": "C:\\plotter_pdf\\Компьютерная графика\\Втулка_pack\\source_vs_gcode_compare.pdf"
+    },
+    {
+      "task": "Заглушка_pack",
+      "kind": "a4",
+      "layout_similarity": 0.985235,
+      "preview": "C:\\plotter_pdf\\Компьютерная графика\\Заглушка_pack\\pages\\page_01.pdf",
+      "reference_source": "C:\\plotter_pdf\\Компьютерная графика\\Заглушка_pack\\a4_clean_source.pdf",
+      "source": "C:\\plotter_pdf\\Компьютерная графика\\Заглушка.pdf",
+      "compare_png": "C:\\plotter_pdf\\Компьютерная графика\\Заглушка_pack\\source_vs_gcode_compare.png",
+      "compare_pdf": "C:\\plotter_pdf\\Компьютерная графика\\Заглушка_pack\\source_vs_gcode_compare.pdf"
+    },
+    {
+      "task": "ЛБ 1 Маховик_pack",
+      "kind": "a4",
+      "layout_similarity": 0.985734,
+      "preview": "C:\\plotter_pdf\\Компьютерная графика\\ЛБ 1 Маховик_pack\\pages\\page_01.pdf",
+      "reference_source": "C:\\plotter_pdf\\Компьютерная графика\\ЛБ 1 Маховик_pack\\a4_clean_source.pdf",
+      "source": "C:\\plotter_pdf\\Компьютерная графика\\ЛБ 1 Маховик.pdf",
+      "compare_png": "C:\\plotter_pdf\\Компьютерная графика\\ЛБ 1 Маховик_pack\\source_vs_gcode_compare.png",
+      "compare_pdf": "C:\\plotter_pdf\\Компьютерная графика\\ЛБ 1 Маховик_pack\\source_vs_gcode_compare.pdf"
+    },
+    {
+      "task": "ЛБ 2 (1)_pack",
+      "kind": "a3_two_pass",
+      "reference_source": "C:\\plotter_pdf\\Компьютерная графика\\ЛБ 2 (1).pdf",
+      "combined_preview": "C:\\plotter_pdf\\Компьютерная графика\\ЛБ 2 (1)_pack\\combined_preview.pdf",
+      "combined_layout_similarity": 0.981559,
+      "pass_01_preview": "C:\\plotter_pdf\\Компьютерная графика\\ЛБ 2 (1)_pack\\pages\\pass_01.pdf",
+      "pass_02_preview": "C:\\plotter_pdf\\Компьютерная графика\\ЛБ 2 (1)_pack\\pages\\pass_02.pdf",
+      "source": "C:\\plotter_pdf\\Компьютерная графика\\ЛБ 2 (1).pdf",
+      "notes": [
+        "scale=0.8571; clipping=True; source_cleanup=direct_pdf_svg; left_strip_removed=True; outer_border_removed=True",
+        "scale=0.8571; clipping=True; source_cleanup=direct_pdf_svg; left_strip_removed=True; outer_border_removed=True; pass_02_rotated_180_for_sheet_flip=True"
+      ],
+      "compare_png": "C:\\plotter_pdf\\Компьютерная графика\\ЛБ 2 (1)_pack\\source_vs_gcode_compare.png",
+      "compare_pdf": "C:\\plotter_pdf\\Компьютерная графика\\ЛБ 2 (1)_pack\\source_vs_gcode_compare.pdf"
+    },
+    {
+      "task": "ЛБ 2 (2)_pack",
+      "kind": "a3_two_pass",
+      "reference_source": "C:\\plotter_pdf\\Компьютерная графика\\ЛБ 2 (2).pdf",
+      "combined_preview": "C:\\plotter_pdf\\Компьютерная графика\\ЛБ 2 (2)_pack\\combined_preview.pdf",
+      "combined_layout_similarity": 0.978217,
+      "pass_01_preview": "C:\\plotter_pdf\\Компьютерная графика\\ЛБ 2 (2)_pack\\pages\\pass_01.pdf",
+      "pass_02_preview": "C:\\plotter_pdf\\Компьютерная графика\\ЛБ 2 (2)_pack\\pages\\pass_02.pdf",
+      "source": "C:\\plotter_pdf\\Компьютерная графика\\ЛБ 2 (2).pdf",
+      "notes": [
+        "scale=0.8571; clipping=True; source_cleanup=direct_pdf_svg; left_strip_removed=True; outer_border_removed=True",
+        "scale=0.8571; clipping=True; source_cleanup=direct_pdf_svg; left_strip_removed=True; outer_border_removed=True; pass_02_rotated_180_for_sheet_flip=True"
+      ],
+      "compare_png": "C:\\plotter_pdf\\Компьютерная графика\\ЛБ 2 (2)_pack\\source_vs_gcode_compare.png",
+      "compare_pdf": "C:\\plotter_pdf\\Компьютерная графика\\ЛБ 2 (2)_pack\\source_vs_gcode_compare.pdf"
+    },
+    {
+      "task": "МЧ00.01.00.00 СБ Клапан перепускной_pack",
+      "kind": "a3_two_pass",
+      "reference_source": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.00 СБ Клапан перепускной.pdf",
+      "combined_preview": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.00 СБ Клапан перепускной_pack\\combined_preview.pdf",
+      "combined_layout_similarity": 0.966396,
+      "pass_01_preview": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.00 СБ Клапан перепускной_pack\\pages\\pass_01.pdf",
+      "pass_02_preview": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.00 СБ Клапан перепускной_pack\\pages\\pass_02.pdf",
+      "source": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.00 СБ Клапан перепускной.pdf",
+      "notes": [
+        "scale=0.8571; clipping=True; source_cleanup=direct_pdf_svg; left_strip_removed=True; outer_border_removed=True",
+        "scale=0.8571; clipping=True; source_cleanup=direct_pdf_svg; left_strip_removed=True; outer_border_removed=True; pass_02_rotated_180_for_sheet_flip=True"
+      ],
+      "compare_png": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.00 СБ Клапан перепускной_pack\\source_vs_gcode_compare.png",
+      "compare_pdf": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.00 СБ Клапан перепускной_pack\\source_vs_gcode_compare.pdf"
+    },
+    {
+      "task": "МЧ00.01.00.00 СП Клапан перепускной_pack",
+      "kind": "a4",
+      "layout_similarity": 0.969655,
+      "preview": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.00 СП Клапан перепускной_pack\\pages\\page_01.pdf",
+      "reference_source": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.00 СП Клапан перепускной_pack\\a4_clean_source.pdf",
+      "source": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.00 СП Клапан перепускной.pdf",
+      "compare_png": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.00 СП Клапан перепускной_pack\\source_vs_gcode_compare.png",
+      "compare_pdf": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.00 СП Клапан перепускной_pack\\source_vs_gcode_compare.pdf"
+    },
+    {
+      "task": "МЧ00.01.00.01 Корпус_pack",
+      "kind": "a3_two_pass",
+      "reference_source": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.01 Корпус.pdf",
+      "combined_preview": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.01 Корпус_pack\\combined_preview.pdf",
+      "combined_layout_similarity": 0.978558,
+      "pass_01_preview": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.01 Корпус_pack\\pages\\pass_01.pdf",
+      "pass_02_preview": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.01 Корпус_pack\\pages\\pass_02.pdf",
+      "source": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.01 Корпус.pdf",
+      "notes": [
+        "scale=0.606; clipping=True; source_cleanup=direct_pdf_svg; left_strip_removed=True; outer_border_removed=True",
+        "scale=0.606; clipping=True; source_cleanup=direct_pdf_svg; left_strip_removed=True; outer_border_removed=True; pass_02_rotated_180_for_sheet_flip=True"
+      ],
+      "compare_png": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.01 Корпус_pack\\source_vs_gcode_compare.png",
+      "compare_pdf": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.01 Корпус_pack\\source_vs_gcode_compare.pdf"
+    },
+    {
+      "task": "МЧ00.01.00.02 Крышка_pack",
+      "kind": "a3_two_pass",
+      "reference_source": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.02 Крышка.pdf",
+      "combined_preview": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.02 Крышка_pack\\combined_preview.pdf",
+      "combined_layout_similarity": 0.97873,
+      "pass_01_preview": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.02 Крышка_pack\\pages\\pass_01.pdf",
+      "pass_02_preview": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.02 Крышка_pack\\pages\\pass_02.pdf",
+      "source": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.02 Крышка.pdf",
+      "notes": [
+        "scale=0.6666; clipping=True; source_cleanup=direct_pdf_svg; left_strip_removed=True; outer_border_removed=True",
+        "scale=0.6666; clipping=True; source_cleanup=direct_pdf_svg; left_strip_removed=True; outer_border_removed=True; pass_02_rotated_180_for_sheet_flip=True"
+      ],
+      "compare_png": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.02 Крышка_pack\\source_vs_gcode_compare.png",
+      "compare_pdf": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.02 Крышка_pack\\source_vs_gcode_compare.pdf"
+    },
+    {
+      "task": "МЧ00.01.00.03 Колпак_pack",
+      "kind": "a4",
+      "layout_similarity": 0.982116,
+      "preview": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.03 Колпак_pack\\pages\\page_01.pdf",
+      "reference_source": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.03 Колпак_pack\\a4_clean_source.pdf",
+      "source": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.03 Колпак.pdf",
+      "compare_png": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.03 Колпак_pack\\source_vs_gcode_compare.png",
+      "compare_pdf": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.03 Колпак_pack\\source_vs_gcode_compare.pdf"
+    },
+    {
+      "task": "МЧ00.01.00.04 Клапан_pack",
+      "kind": "a4",
+      "layout_similarity": 0.97824,
+      "preview": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.04 Клапан_pack\\pages\\page_01.pdf",
+      "reference_source": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.04 Клапан_pack\\a4_clean_source.pdf",
+      "source": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.04 Клапан.pdf",
+      "compare_png": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.04 Клапан_pack\\source_vs_gcode_compare.png",
+      "compare_pdf": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.04 Клапан_pack\\source_vs_gcode_compare.pdf"
+    },
+    {
+      "task": "МЧ00.01.00.05 Тарелка_pack",
+      "kind": "a4",
+      "layout_similarity": 0.987063,
+      "preview": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.05 Тарелка_pack\\pages\\page_01.pdf",
+      "reference_source": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.05 Тарелка_pack\\a4_clean_source.pdf",
+      "source": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.05 Тарелка.pdf",
+      "compare_png": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.05 Тарелка_pack\\source_vs_gcode_compare.png",
+      "compare_pdf": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.05 Тарелка_pack\\source_vs_gcode_compare.pdf"
+    },
+    {
+      "task": "МЧ00.01.00.06 Пружина_pack",
+      "kind": "a4",
+      "layout_similarity": 0.982105,
+      "preview": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.06 Пружина_pack\\pages\\page_01.pdf",
+      "reference_source": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.06 Пружина_pack\\a4_clean_source.pdf",
+      "source": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.06 Пружина.pdf",
+      "compare_png": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.06 Пружина_pack\\source_vs_gcode_compare.png",
+      "compare_pdf": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.06 Пружина_pack\\source_vs_gcode_compare.pdf"
+    },
+    {
+      "task": "МЧ00.01.00.07 Винт М16_pack",
+      "kind": "a4",
+      "layout_similarity": 0.988825,
+      "preview": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.07 Винт М16_pack\\pages\\page_01.pdf",
+      "reference_source": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.07 Винт М16_pack\\a4_clean_source.pdf",
+      "source": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.07 Винт М16.pdf",
+      "compare_png": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.07 Винт М16_pack\\source_vs_gcode_compare.png",
+      "compare_pdf": "C:\\plotter_pdf\\Компьютерная графика\\МЧ00.01.00.07 Винт М16_pack\\source_vs_gcode_compare.pdf"
+    },
+    {
+      "task": "Переходник_pack",
+      "kind": "a4",
+      "layout_similarity": 0.978495,
+      "preview": "C:\\plotter_pdf\\Компьютерная графика\\Переходник_pack\\pages\\page_01.pdf",
+      "reference_source": "C:\\plotter_pdf\\Компьютерная графика\\Переходник_pack\\a4_clean_source.pdf",
+      "source": "C:\\plotter_pdf\\Компьютерная графика\\Переходник.pdf",
+      "compare_png": "C:\\plotter_pdf\\Компьютерная графика\\Переходник_pack\\source_vs_gcode_compare.png",
+      "compare_pdf": "C:\\plotter_pdf\\Компьютерная графика\\Переходник_pack\\source_vs_gcode_compare.pdf"
+    },
+    {
+      "task": "СБ_pack",
+      "kind": "a4",
+      "layout_similarity": 0.981289,
+      "preview": "C:\\plotter_pdf\\Компьютерная графика\\СБ_pack\\pages\\page_01.pdf",
+      "reference_source": "C:\\plotter_pdf\\Компьютерная графика\\СБ_pack\\a4_clean_source.pdf",
+      "source": "C:\\plotter_pdf\\Компьютерная графика\\СБ.pdf",
+      "compare_png": "C:\\plotter_pdf\\Компьютерная графика\\СБ_pack\\source_vs_gcode_compare.png",
+      "compare_pdf": "C:\\plotter_pdf\\Компьютерная графика\\СБ_pack\\source_vs_gcode_compare.pdf"
+    },
+    {
+      "task": "Спецификация_pack",
+      "kind": "a4",
+      "layout_similarity": 0.994261,
+      "preview": "C:\\plotter_pdf\\Компьютерная графика\\Спецификация_pack\\pages\\page_01.pdf",
+      "reference_source": "C:\\plotter_pdf\\Компьютерная графика\\Спецификация_pack\\a4_clean_source.pdf",
+      "source": "C:\\plotter_pdf\\Компьютерная графика\\Спецификация.pdf",
+      "compare_png": "C:\\plotter_pdf\\Компьютерная графика\\Спецификация_pack\\source_vs_gcode_compare.png",
+      "compare_pdf": "C:\\plotter_pdf\\Компьютерная графика\\Спецификация_pack\\source_vs_gcode_compare.pdf"
+    }
+  ]
+}

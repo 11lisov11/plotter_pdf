@@ -4,15 +4,15 @@
     {
       "task": "Задача 10_pack",
       "kind": "a3_two_pass",
-      "reference_source": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 10_pack\\_candidates\\a3_clean_source.pdf",
+      "reference_source": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 10.pdf",
       "combined_preview": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 10_pack\\combined_preview.pdf",
-      "combined_layout_similarity": 0.99835,
+      "combined_layout_similarity": 0.981055,
       "pass_01_preview": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 10_pack\\pages\\pass_01.pdf",
       "pass_02_preview": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 10_pack\\pages\\pass_02.pdf",
       "source": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 10.pdf",
       "notes": [
-        "scale=1.0; clipping=True; source_cleanup=method3; left_strip_removed=True; outer_border_removed=True",
-        "scale=1.0; clipping=True; source_cleanup=method3; left_strip_removed=True; outer_border_removed=True; pass_02_rotated_180_for_sheet_flip=True"
+        "scale=0.8781; clipping=True; source_cleanup=direct_pdf_svg; left_strip_removed=True; outer_border_removed=True",
+        "scale=0.8781; clipping=True; source_cleanup=direct_pdf_svg; left_strip_removed=True; outer_border_removed=True; pass_02_rotated_180_for_sheet_flip=True"
       ]
     },
     {
@@ -34,15 +34,15 @@
     {
       "task": "Задача 3_pack",
       "kind": "a3_two_pass",
-      "reference_source": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 3_pack\\_candidates\\a3_clean_source.pdf",
+      "reference_source": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 3.pdf",
       "combined_preview": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 3_pack\\combined_preview.pdf",
-      "combined_layout_similarity": 0.999125,
+      "combined_layout_similarity": 0.980379,
       "pass_01_preview": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 3_pack\\pages\\pass_01.pdf",
       "pass_02_preview": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 3_pack\\pages\\pass_02.pdf",
       "source": "C:\\plotter_pdf\\Начерт\\1 вариант\\_generated_pdf\\Задача 3.pdf",
       "notes": [
-        "scale=1.0; clipping=True; source_cleanup=method3; left_strip_removed=True; outer_border_removed=True",
-        "scale=1.0; clipping=True; source_cleanup=method3; left_strip_removed=True; outer_border_removed=True; pass_02_rotated_180_for_sheet_flip=True"
+        "scale=0.8781; clipping=True; source_cleanup=direct_pdf_svg; left_strip_removed=True; outer_border_removed=True",
+        "scale=0.8781; clipping=True; source_cleanup=direct_pdf_svg; left_strip_removed=True; outer_border_removed=True; pass_02_rotated_180_for_sheet_flip=True"
       ]
     },
     {

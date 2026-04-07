@@ -5,11 +5,10 @@ Method3 layer split: text_paths=668, graphics_source=pdf_vector, graphics_paths=
 Method3 cleanup: restored overlap text paths=4
 Method3 cleanup: removed outer-frame paths=1
 Method3 detail thick-lines multipass: skipped reason=exact_geometry_mode, candidates=86
-Method3 filled accents: paths=40, segments=40
+Method3 filled accents: skipped square bbox artifacts=40
 Method3 cleanup: restored left vertical frame line.
 Method3 cleanup: removed tiny bottom artifacts=5
 A4 header text extraction: 4 line(s) from PDF text blocks.
-Technical point marker normalization: replaced 36 point-marker loop(s) with compact dot markers.
 A4 clean source centered on page X: offset_x=12.501 mm
 A4 header text reroute: removed 299 source polyline(s) from the header text band.
 A4 header text cleanup: removed 28 transformed polyline(s) before rerender.
@@ -84,18 +83,18 @@ Extracting paths from SVG ...
 Raw geometry bounds: x(0.000, 180.000) y(0.000, 280.000)
 SVG page: 180.000 x 280.000 mm
 Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).
-SVG geometry: paths=636, segments=6435.
+SVG geometry: paths=596, segments=6059.
 Source bounds: x(0.000, 180.000) y(0.000, 280.000)
 Fit to work area: scale=1.0000, translate=(0.000,-295.000), from (0.000, 0.000)-(180.000, 280.000)
-Reorder: source order preserved (636 polylines).
-Segment counts: source=6435, fitted=6435, clipped=6435
-Drawable segments after clip: 6435 (100.0% of source)
+Reorder: source order preserved (596 polylines).
+Segment counts: source=6059, fitted=6059, clipped=6059
+Drawable segments after clip: 6059 (100.0% of source)
 Prepared bounds: x(0.000, 180.000) y(-295.000, -15.000)
-Estimated draw length: 6.61 m
+Estimated draw length: 6.52 m
 Applying pen-up / pen-down ...
-G-code stats: lines=8351, draw=7699, travel=638, bounds=0.000..180.000 x, -295.000..0.000 y
-Preflight: ok: lines=8351, draw=7699, travel=638, ratio=0.08
-Saved file stats: lines=8351, draw=7699, travel=638, bounds=0.000..180.000 x, -295.000..0.000 y
+G-code stats: lines=7846, draw=7237, travel=595, bounds=0.000..180.000 x, -295.000..0.000 y
+Preflight: ok: lines=7846, draw=7237, travel=595, ratio=0.08
+Saved file stats: lines=7846, draw=7237, travel=595, bounds=0.000..180.000 x, -295.000..0.000 y
 Saved: C:\plotter_pdf\Начерт\1 вариант\Задача 1_pack\_candidates\a4_hybrid_frame.nc
 Sheet preview aligned to reference bbox Y and centered on page X: ref=(0.000,11.641)..(185.152,296.922) mm
 Sheet preview placed on source page: offset=(15.008,306.641) mm

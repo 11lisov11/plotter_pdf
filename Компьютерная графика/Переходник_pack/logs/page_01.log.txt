@@ -1,0 +1,39 @@
+Source pages: 1, selected: 1
+Method3 centerline: threshold=32, candidates=9, paths=923
+Method3 PDF vector graphics: drawings=531, paths=2168, thick_paths=282
+Method3 layer split: text_paths=768, graphics_source=pdf_vector, graphics_paths=2006
+Method3 cleanup: restored overlap text paths=6
+Method3 cleanup: removed bottom-row text paths=3
+Method3 cleanup: removed left-column text paths=144
+Method3 cleanup: removed left-column graphics-glyph paths=154
+Method3 cleanup: removed outer-frame paths=9
+Method3 detail thick-lines multipass: skipped reason=exact_geometry_mode, candidates=2006
+Method3 filled accents: paths=56, segments=1463
+Method3 cleanup: removed legacy left-strip border lines=8
+Method3 cleanup: removed left-of-frame text leftovers=140
+Method3 cleanup: hard-clipped geometry left of frame x<20.50 mm: paths=30
+Method3 cleanup: restored left vertical frame line.
+Method3 cleanup: removed tiny bottom artifacts=67
+Method3 micro-segment prune: segments=8933->8568, min=0.03 mm
+A4 clean source centered on page X: offset_x=-7.480 mm
+--- hybrid fit: detail=1:1, frame=fit-to-work-area ---
+Text render mode: handwriting=off font='Marck Script'; image_contours=off
+Extracting paths from SVG ...
+Raw geometry bounds: x(0.000, 180.000) y(0.000, 280.000)
+SVG page: 180.000 x 280.000 mm
+Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).
+SVG geometry: paths=2034, segments=7089.
+Source bounds: x(0.000, 180.000) y(0.000, 280.000)
+Fit to work area: scale=1.0000, translate=(0.000,-295.000), from (0.000, 0.000)-(180.000, 280.000)
+Reorder: source order preserved (2034 polylines).
+Segment counts: source=7089, fitted=7089, clipped=7089
+Drawable segments after clip: 7089 (100.0% of source)
+Prepared bounds: x(0.000, 180.000) y(-295.000, -15.000)
+Estimated draw length: 13.23 m
+Applying pen-up / pen-down ...
+G-code stats: lines=13001, draw=11017, travel=1970, bounds=0.000..180.000 x, -295.000..0.000 y
+Preflight: ok: lines=13001, draw=11017, travel=1970, ratio=0.18
+Saved file stats: lines=13001, draw=11017, travel=1970, bounds=0.000..180.000 x, -295.000..0.000 y
+Saved: C:\plotter_pdf\Компьютерная графика\Переходник_pack\_candidates\a4_hybrid_frame.nc
+Sheet preview aligned to reference bbox Y and centered on page X: ref=(0.353,0.353)..(210.457,297.670) mm
+Sheet preview placed on source page: offset=(15.537,295.353) mm

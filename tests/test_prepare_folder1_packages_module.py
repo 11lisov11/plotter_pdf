@@ -63,6 +63,42 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
             )
         )
 
+    def test_force_a3_two_pass_for_large_sheet_matches_corpus_only(self) -> None:
+        mod = _load_module()
+        self.assertTrue(
+            mod._force_a3_two_pass_for_large_sheet(
+                Path(r"C:\plotter_pdf\Компьютерная графика\МЧ00.01.00.01 Корпус.pdf")
+            )
+        )
+        self.assertFalse(
+            mod._force_a3_two_pass_for_large_sheet(
+                Path(r"C:\plotter_pdf\Компьютерная графика\МЧ00.01.00.00 СБ Клапан перепускной.pdf")
+            )
+        )
+        self.assertFalse(
+            mod._force_a3_two_pass_for_large_sheet(
+                Path(r"C:\plotter_pdf\Начерт\24 варинт\Задача 10.pdf")
+            )
+        )
+
+    def test_force_a4_single_page_for_drawing_disabled(self) -> None:
+        mod = _load_module()
+        self.assertFalse(
+            mod._force_a4_single_page_for_drawing(
+                Path(r"C:\plotter_pdf\Компьютерная графика\МЧ00.01.00.02 Крышка.pdf")
+            )
+        )
+        self.assertFalse(
+            mod._force_a4_single_page_for_drawing(
+                Path(r"C:\plotter_pdf\Компьютерная графика\МЧ00.01.00.01 Корпус.pdf")
+            )
+        )
+        self.assertFalse(
+            mod._force_a4_single_page_for_drawing(
+                Path(r"C:\plotter_pdf\Компьютерная графика\Втулка.pdf")
+            )
+        )
+
     def test_detect_a3_header_miniature_crop_px_finds_left_thumbnail(self) -> None:
         mod = _load_module()
         img = mod.Image.new("L", (1200, 260), 255)
@@ -971,6 +1007,82 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
         self.assertEqual(len(rows), 1)
         self.assertIn("variant=a4_hybrid_frame", rows[0].notes)
 
+    def test_prepare_drawing_package_prefers_clean_source_direct_for_specification(self) -> None:
+        mod = _load_module()
+        with tempfile.TemporaryDirectory(prefix="cg_spec_clean_source_direct_") as td:
+            root = Path(td)
+            source_pdf = root / "Спецификация.pdf"
+            doc = mod.fitz.open()
+            doc.new_page(width=595, height=842)
+            doc.save(source_pdf)
+            doc.close()
+
+            def _mk_candidate(name: str, sim: float, notes: str = "") -> dict[str, object]:
+                prefix = root / name
+                files = {
+                    "svg": prefix.with_suffix(".svg"),
+                    "pdf": prefix.with_suffix(".pdf"),
+                    "nc": prefix.with_suffix(".nc"),
+                    "gcode": prefix.with_suffix(".gcode"),
+                    "ref_pdf": prefix.with_name(prefix.name + "__ref.pdf"),
+                    "ref_svg": prefix.with_name(prefix.name + "__ref.svg"),
+                }
+                files["svg"].write_text("<svg />", encoding="utf-8")
+                files["pdf"].write_bytes(b"%PDF-1.4\n")
+                files["nc"].write_text("G0 X0 Y0\n", encoding="utf-8")
+                files["gcode"].write_text("G0 X0 Y0\n", encoding="utf-8")
+                files["ref_pdf"].write_bytes(b"%PDF-1.4\n")
+                files["ref_svg"].write_text("<svg />", encoding="utf-8")
+                return {
+                    "variant": name,
+                    "ok": True,
+                    "layout_similarity": sim,
+                    "svg": str(files["svg"]),
+                    "pdf": str(files["pdf"]),
+                    "nc": str(files["nc"]),
+                    "gcode": str(files["gcode"]),
+                    "reference_source": str(files["ref_pdf"]),
+                    "reference_source_svg": str(files["ref_svg"]),
+                    "metrics": {"segments_total": 1, "draw_length_mm": 10.0},
+                    "logs": [name],
+                    "fit_scale": 1.0,
+                    "clipping_warning": False,
+                    "notes": notes,
+                }
+
+            with (
+                mock.patch.object(
+                    mod,
+                    "_prepare_a4_hybrid_drawing_candidate",
+                    return_value=_mk_candidate("a4_hybrid_frame", 0.9723, notes="detail_scale=1.0"),
+                ),
+                mock.patch.object(
+                    mod,
+                    "_prepare_drawing_candidate",
+                    side_effect=[_mk_candidate("fit_full", 0.9466), _mk_candidate("strict_1to1_clip", 0.9219)],
+                ),
+                mock.patch.object(
+                    mod,
+                    "_prepare_reference_pdf_candidate",
+                    return_value=_mk_candidate("clean_source_direct", 0.9940),
+                ),
+                mock.patch.object(
+                    mod,
+                    "_source_crop_alignment_metrics",
+                    side_effect=[
+                        {"source_crop_iou": 0.04, "source_crop_corr": 0.01, "source_crop_x_px": 0.0, "source_crop_y_px": 0.0},
+                        {"source_crop_iou": 0.04, "source_crop_corr": 0.01, "source_crop_x_px": 0.0, "source_crop_y_px": 0.0},
+                        {"source_crop_iou": 0.03, "source_crop_corr": 0.00, "source_crop_x_px": 0.0, "source_crop_y_px": 0.0},
+                        {"source_crop_iou": 0.05, "source_crop_corr": 0.02, "source_crop_x_px": 0.0, "source_crop_y_px": 0.0},
+                    ],
+                ),
+            ):
+                report, rows = mod._prepare_drawing_package(source_pdf, root / "pkg")
+
+        self.assertEqual(report["selected_variant"], "clean_source_direct")
+        self.assertEqual(len(rows), 1)
+        self.assertIn("variant=clean_source_direct", rows[0].notes)
+
     def test_prepare_drawing_package_survives_failed_a4_candidate(self) -> None:
         mod = _load_module()
         with tempfile.TemporaryDirectory(prefix="nachert_failed_a4_") as td:
@@ -1039,6 +1151,54 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
         self.assertIn("boom", failed["message"])
         self.assertEqual(len(rows), 1)
 
+    def test_prepare_drawing_package_uses_custom_tiled_route_for_large_sheet(self) -> None:
+        mod = _load_module()
+        with tempfile.TemporaryDirectory(prefix="large_sheet_tiled_") as td:
+            root = Path(td)
+            source_pdf = root / "source.pdf"
+            doc = mod.fitz.open()
+            doc.new_page(width=1687.0, height=1194.0)
+            doc.save(source_pdf)
+            doc.close()
+
+            def _mk_pass(idx: int) -> dict[str, object]:
+                prefix = root / f"pass_{idx:02d}"
+                prefix.with_suffix(".svg").write_text("<svg />", encoding="utf-8")
+                prefix.with_suffix(".pdf").write_bytes(b"%PDF-1.4\n")
+                prefix.with_suffix(".nc").write_text("G0 X0 Y0\n", encoding="utf-8")
+                prefix.with_suffix(".gcode").write_text("G0 X0 Y0\n", encoding="utf-8")
+                return {
+                    "item": f"pass_{idx:02d}",
+                    "ok": True,
+                    "message": "ok",
+                    "logs": ["ok"],
+                    "fit_scale": 1.0,
+                    "clipping_warning": False,
+                    "layout_similarity": None,
+                    "metrics": {"segments_total": 1, "draw_length_mm": 10.0},
+                    "svg": str(prefix.with_suffix(".svg")),
+                    "pdf": str(prefix.with_suffix(".pdf")),
+                    "nc": str(prefix.with_suffix(".nc")),
+                    "gcode": str(prefix.with_suffix(".gcode")),
+                    "notes": "",
+                }
+
+            with (
+                mock.patch.object(mod, "_prepare_a3_clean_source_svg", return_value=(True, "ok", ["clean"])),
+                mock.patch.object(mod, "_prepare_tiled_pass_from_clean_svg", side_effect=[_mk_pass(i) for i in range(1, 9)]),
+                mock.patch.object(
+                    mod,
+                    "_build_tiled_combined_preview",
+                    return_value={"reference_pdf": str(source_pdf), "svg": str(root / "combined.svg"), "pdf": str(root / "combined.pdf"), "layout_similarity": 0.9},
+                ),
+            ):
+                report, rows = mod._prepare_drawing_package(source_pdf, root / "pkg")
+
+        self.assertTrue(report["custom_tiled"])
+        self.assertEqual(len(report["items"]), 8)
+        self.assertEqual(len(rows), 8)
+        self.assertIn("sheet_tiling", report)
+
     def test_append_overlay_polylines_to_existing_svg_appends_paths(self) -> None:
         mod = _load_module()
         with tempfile.TemporaryDirectory(prefix="svg_overlay_append_") as td:
@@ -1065,6 +1225,155 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
             self.assertGreaterEqual(len(paths), 2)
             text = svg_path.read_text(encoding="utf-8")
             self.assertIn("stroke-linecap", text)
+
+    def test_inverse_a3_pass_polylines_can_keep_fitted_coords(self) -> None:
+        mod = _load_module()
+        with tempfile.TemporaryDirectory(prefix="inverse_a3_keep_fit_") as td:
+            root = Path(td)
+            nc_path = root / "pass_02.nc"
+            log_path = root / "pass_02.log.txt"
+            nc_path.write_text("G0 X0 Y0\n", encoding="utf-8")
+            log_path.write_text("log\n", encoding="utf-8")
+            info = {
+                "scale": 2.0,
+                "fit_tx": 10.0,
+                "fit_ty": 20.0,
+                "shift_x": 1.0,
+                "shift_y": 2.0,
+                "rotation_deg": 180,
+                "post_tx": 3.0,
+                "post_ty": 4.0,
+                "area_min_x": 0.0,
+                "area_max_x": 180.0,
+                "area_min_y": -295.0,
+                "area_max_y": -15.0,
+            }
+            recovered = [[(30.0, -40.0), (32.0, -42.0)]]
+            with (
+                mock.patch.object(mod, "_parse_a3_pass_log", return_value=info),
+                mock.patch.object(mod, "_gcode_to_polylines", return_value=recovered),
+            ):
+                fitted = mod._inverse_a3_pass_polylines_to_sheet(
+                    nc_path=nc_path,
+                    log_path=log_path,
+                    keep_fitted_coords=True,
+                )
+                source = mod._inverse_a3_pass_polylines_to_sheet(
+                    nc_path=nc_path,
+                    log_path=log_path,
+                    keep_fitted_coords=False,
+                )
+
+        self.assertEqual(fitted, [[(153.0, -266.0), (151.0, -264.0)]])
+        self.assertEqual(source, [[(71.0, -144.0), (70.0, -143.0)]])
+
+    def test_should_reroute_title_block_text_disabled_for_computer_graphics_pdf(self) -> None:
+        mod = _load_module()
+        self.assertFalse(
+            mod._should_reroute_title_block_text(
+                Path(r"C:\plotter_pdf\Компьютерная графика\ЛБ 2 (1).pdf")
+            )
+        )
+        self.assertFalse(
+            mod._should_reroute_title_block_text(
+                Path(r"C:\plotter_pdf\Компьютерная графика\МЧ00.01.00.00 СБ Клапан перепускной.pdf")
+            )
+        )
+        self.assertFalse(
+            mod._should_reroute_title_block_text(
+                Path(r"C:\plotter_pdf\Начерт\1 вариант\Задача 1.pdf")
+            )
+        )
+        self.assertFalse(
+            mod._should_reroute_title_block_text(
+                Path(r"C:\plotter_pdf\Компьютерная графика\ЛБ 2 (1).svg")
+            )
+        )
+
+    def test_prepare_a3_clean_source_svg_uses_direct_text_as_path_for_computer_graphics(self) -> None:
+        mod = _load_module()
+        with tempfile.TemporaryDirectory(prefix="a3_svg_text_reroute_") as td:
+            root = Path(td)
+            source_pdf = root / "Компьютерная графика" / "ЛБ 2 (1).pdf"
+            source_pdf.parent.mkdir(parents=True, exist_ok=True)
+            doc = mod.fitz.open()
+            doc.new_page(width=1190.55, height=841.89)
+            doc.save(source_pdf)
+            doc.close()
+
+            source_svg = root / "out.svg"
+            source_preview_pdf = root / "out.pdf"
+            export_calls: list[bool] = []
+            removed_regions: list[tuple[float, float, float, float]] = []
+            appended_counts: list[int] = []
+
+            def _fake_export(pdf_path, page_index, out_svg, *, text_as_path=False):
+                export_calls.append(bool(text_as_path))
+                out_svg.write_text(
+                    '<?xml version="1.0" encoding="utf-8"?>\n'
+                    '<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="420mm" height="297mm" viewBox="0 0 420 297">\n'
+                    '  <text x="300" y="280">Лист</text>\n'
+                    '</svg>\n',
+                    encoding="utf-8",
+                )
+                return 420.0, 297.0
+
+            with (
+                mock.patch.object(mod, "_export_pdf_page_to_mupdf_svg", side_effect=_fake_export),
+                mock.patch.object(mod, "_extract_small_condition_image_polylines_from_pdf", return_value=([], [])),
+                mock.patch.object(
+                    mod,
+                    "_extract_title_block_text_lines_from_pdf",
+                    return_value=[{"text": "Лист", "bbox_mm": (260.0, 250.0, 320.0, 285.0)}],
+                ),
+                mock.patch.object(
+                    mod,
+                    "_remove_svg_text_nodes_in_region",
+                    side_effect=lambda svg_path, *, region_mm, page_w_mm, page_h_mm: (removed_regions.append(region_mm) or 1),
+                ),
+                mock.patch.object(mod, "_render_pdf_text_lines_polylines_in_place", return_value=[[(1.0, 2.0), (3.0, 4.0)]]),
+                mock.patch.object(
+                    mod,
+                    "_append_overlay_polylines_to_existing_svg",
+                    side_effect=lambda svg_path, polylines_mm, *, page_w_mm, page_h_mm: (appended_counts.append(len(polylines_mm)) or len(polylines_mm)),
+                ),
+            ):
+                ok, msg, logs = mod._prepare_a3_clean_source_svg(
+                    source_pdf,
+                    source_svg=source_svg,
+                    source_preview_pdf=source_preview_pdf,
+                )
+
+            self.assertTrue(ok)
+            self.assertIn("prepared", msg.lower())
+            self.assertEqual(export_calls, [True])
+            self.assertEqual(len(removed_regions), 0)
+            self.assertEqual(appended_counts, [])
+            self.assertFalse(any("A3 title block text reroute" in line for line in logs))
+
+    def test_remove_svg_text_nodes_in_region_removes_only_targeted_title_block_text(self) -> None:
+        mod = _load_module()
+        with tempfile.TemporaryDirectory(prefix="svg_text_region_remove_") as td:
+            root = Path(td)
+            svg_path = root / "source.svg"
+            svg_path.write_text(
+                '<?xml version="1.0" encoding="utf-8"?>\n'
+                '<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="420.000mm" height="297.000mm" viewBox="0 0 420 297">\n'
+                '  <text x="300" y="280"><tspan x="300" y="280">Лист</tspan></text>\n'
+                '  <text x="40" y="40"><tspan x="40" y="40">R10</tspan></text>\n'
+                '</svg>\n',
+                encoding="utf-8",
+            )
+            removed = mod._remove_svg_text_nodes_in_region(
+                svg_path,
+                region_mm=(250.0, 240.0, 340.0, 290.0),
+                page_w_mm=420.0,
+                page_h_mm=297.0,
+            )
+            self.assertEqual(removed, 1)
+            text = svg_path.read_text(encoding="utf-8")
+            self.assertNotIn(">Лист<", text)
+            self.assertIn(">R10<", text)
 
 
 

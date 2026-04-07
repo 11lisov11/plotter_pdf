@@ -1,0 +1,31 @@
+A3 clean source route: direct PDF vector SVG export (text_as_path=True).
+--- a3 clean pass ---
+Render mode: drawing; ExactGeometry=on; Handwriting=off
+Sheet 420.0x297.0 mm is larger than workspace 180.0x280.0 mm. Using the overlapped sheet/workspace window.
+Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-295.000,-15.000), sheet_bounds x(0.000,420.000) y(-295.000,2.000), sheet=a3, anchor=lower_left, offset=(0.00,0.00)
+Text render mode: handwriting=off font='Marck Script'; image_contours=off
+Extracting paths from SVG ...
+Raw geometry bounds: x(0.508, 420.539) y(0.508, 297.711)
+SVG page: 421.047 x 298.111 mm
+Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).
+SVG geometry: paths=8953, segments=13244.
+Source bounds: x(0.508, 420.539) y(0.508, 297.518)
+Fit to work area: scale=0.8571, translate=(-90.435,-282.716), from (0.508, 0.508)-(420.539, 297.518)
+Pass window: col 1/2, row 1/1, source=360.000x254.562 mm, window=180.000x254.562 mm, offset=(0.000,0.000), shift=(90.000,0.000)
+Work area clipping: kept 7164 visible segments, dropped 6080 out-of-area segments.
+Segment dedup: dropped 1819/7164 retraced segments (25.4%), kept=5345, eps=0.010 mm
+Reorder: source order preserved (4824 polylines).
+Segment counts: source=13244, fitted=13244, clipped=7164
+Drawable segments after clip: 7164 (54.1% of source)
+Warning: significant clipping/transforming occurred. Check that page is inside target work area.
+Prepared bounds: x(0.000, 180.000) y(-282.281, -27.719)
+Estimated draw length: 9.39 m
+Applying pen-up / pen-down ...
+G-code stats: lines=16496, draw=12745, travel=3737, bounds=0.000..180.000 x, -282.281..0.000 y
+Preflight: ok: lines=16496, draw=12745, travel=3737, ratio=0.29
+Saved file stats: lines=16496, draw=12745, travel=3737, bounds=0.000..180.000 x, -282.281..0.000 y
+Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1775578277801492700.nc
+Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1775578277801492700_vector.svg
+Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1775578277801492700_vector.pdf
+Sheet preview aligned to reference bbox Y and centered on page X: ref=(0.353,0.353)..(420.518,297.670) mm
+Sheet preview placed on source page: offset=(120.524,282.633) mm

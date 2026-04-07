@@ -171,8 +171,8 @@ def sheet_pass_post_translation_mm(
 
     # Canonical physical A3 workflow on the current machine:
     # after the 180 deg sheet flip, the second pass must be drawn
-    # 4 mm higher relative to the machine home point.
+    # 3 mm higher relative to the machine home point.
     if fmt == "a3" and cols == 2 and rows == 1 and col == 2 and row == 1:
-        return 0.0, 4.0
+        return 0.0, 3.0
     return 0.0, 0.0
 

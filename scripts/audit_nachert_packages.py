@@ -57,6 +57,14 @@ def _make_panel(images: list[tuple[str, Image.Image]], title: str) -> Image.Imag
     return panel
 
 
+def _save_package_compare_artifacts(package_dir: Path, panel: Image.Image) -> tuple[Path, Path]:
+    png_path = package_dir / "source_vs_gcode_compare.png"
+    pdf_path = package_dir / "source_vs_gcode_compare.pdf"
+    panel.save(png_path)
+    panel.convert("RGB").save(pdf_path, "PDF", resolution=150.0)
+    return png_path, pdf_path
+
+
 def _audit_variant(variant_dir: Path) -> None:
     summary_path = variant_dir / "_prepared_summary.csv"
     if not summary_path.exists():
@@ -94,6 +102,7 @@ def _audit_variant(variant_dir: Path) -> None:
                 ],
                 title,
             )
+            compare_png, compare_pdf = _save_package_compare_artifacts(package_dir, panel)
             layout_similarity = package_rows[0]["layout_similarity"]
             audit_rows.append(
                 {
@@ -103,6 +112,8 @@ def _audit_variant(variant_dir: Path) -> None:
                     "preview": str(preview_pdf),
                     "reference_source": str(reference_pdf),
                     "source": str(source_pdf),
+                    "compare_png": str(compare_png),
+                    "compare_pdf": str(compare_pdf),
                 }
             )
         else:
@@ -126,6 +137,7 @@ def _audit_variant(variant_dir: Path) -> None:
                 ],
                 title,
             )
+            compare_png, compare_pdf = _save_package_compare_artifacts(package_dir, panel)
             audit_rows.append(
                 {
                     "task": title,
@@ -137,6 +149,8 @@ def _audit_variant(variant_dir: Path) -> None:
                     "pass_02_preview": pass2["preview_pdf"],
                     "source": str(source_pdf),
                     "notes": [pass1["notes"], pass2["notes"]],
+                    "compare_png": str(compare_png),
+                    "compare_pdf": str(compare_pdf),
                 }
             )
 

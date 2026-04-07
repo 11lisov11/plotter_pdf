@@ -38,6 +38,7 @@ from plotter_studio.core.protocol import (
 )
 from plotter_studio.core.serial_worker import OperationContext
 from src.plotter_backend import text_content_routing, toe_font_policy
+from src.plotter_backend.geometry.sheet_tiling import plan_tiled_passes_for_sheet
 from src import plotter_pdf_drawer as backend
 
 
@@ -247,6 +248,17 @@ def _copy_file(src: Path, dst: Path) -> None:
 def _copy_nc_and_gcode(src_nc: Path, dst_nc: Path, dst_gcode: Path) -> None:
     _copy_file(src_nc, dst_nc)
     _copy_file(src_nc, dst_gcode)
+
+
+def _force_a3_two_pass_for_large_sheet(source_pdf: Path) -> bool:
+    stem = str(source_pdf.stem).strip().lower()
+    if "компьютерная графика" not in str(source_pdf.parent).lower():
+        return False
+    return stem == "мч00.01.00.01 корпус"
+
+
+def _force_a4_single_page_for_drawing(source_pdf: Path) -> bool:
+    return False
 
 
 def _render_pdf_page_gray(pdf_path: Path, page_index: int = 0, dpi: int = 140) -> np.ndarray:
@@ -656,6 +668,64 @@ def _extract_a4_header_text_lines_from_pdf(
         doc.close()
 
 
+def _extract_title_block_text_lines_from_pdf(
+    source_pdf: Path,
+    *,
+    page_index: int,
+) -> list[dict[str, Any]]:
+    if fitz is None:
+        return []
+    doc = fitz.open(str(source_pdf))
+    try:
+        if page_index < 0 or page_index >= int(doc.page_count):
+            return []
+        page = doc[page_index]
+        page_w_mm = float(page.rect.width) * 25.4 / 72.0
+        page_h_mm = float(page.rect.height) * 25.4 / 72.0
+        min_y_mm = max(float(page_h_mm) - max(82.0, float(page_h_mm) * 0.26), float(page_h_mm) * 0.66)
+        min_x_mm = max(0.0, float(page_w_mm) * 0.14)
+        lines: list[dict[str, Any]] = []
+        for block in page.get_text("dict").get("blocks", []):
+            if block.get("type") != 0:
+                continue
+            for line in block.get("lines", []):
+                line_bbox = list(line.get("bbox", []) or [])
+                if len(line_bbox) < 4:
+                    continue
+                text = "".join(str(span.get("text", "")) for span in line.get("spans", [])).strip()
+                if not text:
+                    continue
+                lx0_mm, ly0_mm, lx1_mm, ly1_mm = [float(v) * 25.4 / 72.0 for v in line_bbox]
+                if float(ly0_mm) < float(min_y_mm):
+                    continue
+                if float(lx1_mm) < float(min_x_mm):
+                    continue
+                if (float(lx1_mm) - float(lx0_mm)) < 3.0 and (float(ly1_mm) - float(ly0_mm)) < 3.0:
+                    continue
+                lines.append(
+                    {
+                        "text": text,
+                        "bbox_mm": (float(lx0_mm), float(ly0_mm), float(lx1_mm), float(ly1_mm)),
+                    }
+                )
+        lines.sort(key=lambda row: (float(row["bbox_mm"][1]), float(row["bbox_mm"][0]), str(row["text"])))
+        return lines
+    finally:
+        doc.close()
+
+
+def _should_reroute_title_block_text(source_pdf: Path) -> bool:
+    try:
+        path_text = str(source_pdf).lower()
+    except Exception:
+        return False
+    if "компьютерная графика" in path_text:
+        # For these technical drawings the direct PDF->SVG text-as-path route
+        # preserves the title block more faithfully than single-line rerender.
+        return False
+    return False
+
+
 def _header_text_poly_candidate_mm(
     poly: list[tuple[float, float]],
     *,
@@ -777,6 +847,268 @@ def _render_a4_header_text_polylines(
         return out
     finally:
         setattr(backend, "HANDWRITING_SINGLELINE_TTF_BACKEND", prev_ttf_backend)
+
+
+def _render_pdf_text_lines_polylines_in_place(
+    text_lines: list[dict[str, Any]],
+    *,
+    tight_layout: bool,
+    ttf_backend: str = "autotrace3",
+    logger,
+) -> list[list[tuple[float, float]]]:
+    if not text_lines:
+        return []
+    resolve_ttf = getattr(backend, "_resolve_handwriting_ttf_path", lambda _font: None)
+    if tight_layout:
+        ttf_path = (
+            resolve_ttf("GOST_BU.ttf")
+            or resolve_ttf("GOST_AU.ttf")
+            or resolve_ttf("GOST_B.TTF")
+            or resolve_ttf("GOST_A.TTF")
+            or resolve_ttf("ARIALNI.TTF")
+            or resolve_ttf("ARIALN.TTF")
+            or resolve_ttf("Arial")
+        )
+    else:
+        ttf_path = (
+            resolve_ttf("Arial")
+            or resolve_ttf("Cambria")
+            or resolve_ttf("Times New Roman")
+            or resolve_ttf("Marck Script")
+        )
+    if ttf_path is None:
+        return []
+    fit_text = getattr(backend, "_fit_formula_ocr_font_size_units", None)
+    render_line = getattr(backend, "_render_singleline_text_line_ttf", None)
+    if fit_text is None or render_line is None:
+        return []
+
+    prev_ttf_backend = str(getattr(backend, "HANDWRITING_SINGLELINE_TTF_BACKEND", "autotrace3"))
+    out: list[list[tuple[float, float]]] = []
+    try:
+        setattr(backend, "HANDWRITING_SINGLELINE_TTF_BACKEND", str(ttf_backend))
+        for line in text_lines:
+            text = str(line.get("text", "")).strip()
+            bbox_mm = tuple(line.get("bbox_mm", ()) or ())
+            if not text or len(bbox_mm) < 4:
+                continue
+            box_x0, box_y0, box_x1, box_y1 = [float(v) for v in bbox_mm[:4]]
+            target_w = max(1.0, float(box_x1 - box_x0))
+            target_h = max(1.0, float(box_y1 - box_y0))
+            fit = fit_text(
+                text,
+                ttf_path=ttf_path,
+                target_w_u=target_w,
+                target_h_u=target_h,
+            )
+            if fit is None:
+                continue
+            font_size_u, _bbox_u = fit
+            line_polys = render_line(
+                text,
+                ttf_path=ttf_path,
+                font_size=float(font_size_u),
+                baseline_x=0.0,
+                baseline_y=0.0,
+                logger=logger,
+            )
+            line_polys = [[(float(x), float(y)) for x, y in poly] for poly in list(line_polys or []) if len(poly) >= 2]
+            if not line_polys:
+                continue
+            ax0, ay0, ax1, ay1 = _polys_bbox_mm(line_polys)
+            actual_w = max(1e-6, float(ax1 - ax0))
+            actual_h = max(1e-6, float(ay1 - ay0))
+            width_fill = 1.0 if tight_layout else 0.985
+            height_fill = 1.0 if tight_layout else 0.94
+            fit_scale = min((float(target_w) * width_fill) / actual_w, (float(target_h) * height_fill) / actual_h, 1.0)
+            if abs(float(fit_scale) - 1.0) > 1e-6:
+                line_polys = [
+                    [((float(x) - float(ax0)) * float(fit_scale), (float(y) - float(ay0)) * float(fit_scale)) for x, y in poly]
+                    for poly in line_polys
+                ]
+                ax0, ay0, ax1, ay1 = _polys_bbox_mm(line_polys)
+                actual_w = max(1e-6, float(ax1 - ax0))
+                actual_h = max(1e-6, float(ay1 - ay0))
+            pad_x_u = 0.0 if tight_layout else max(0.0, (float(target_w) - actual_w) * 0.03)
+            pad_y_u = 0.0 if tight_layout else max(0.0, (float(target_h) - actual_h) * 0.06)
+            shift_x = float(box_x0) - float(ax0) + float(pad_x_u)
+            shift_y = float(box_y0) - float(ay0) + float(pad_y_u)
+            for poly in line_polys:
+                if len(poly) >= 2:
+                    out.append([(float(x) + float(shift_x), float(y) + float(shift_y)) for x, y in poly])
+        return out
+    finally:
+        setattr(backend, "HANDWRITING_SINGLELINE_TTF_BACKEND", prev_ttf_backend)
+
+
+def _parse_svg_matrix_transform(transform_text: str) -> tuple[float, float, float, float, float, float]:
+    text = str(transform_text or "").strip()
+    if not text.startswith("matrix(") or not text.endswith(")"):
+        return (1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+    try:
+        values = [float(v.strip()) for v in text[7:-1].replace(",", " ").split()]
+    except Exception:
+        return (1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+    if len(values) != 6:
+        return (1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+    return (
+        float(values[0]),
+        float(values[1]),
+        float(values[2]),
+        float(values[3]),
+        float(values[4]),
+        float(values[5]),
+    )
+
+
+def _svg_title_block_region_from_pdf_lines(
+    title_lines: list[dict[str, Any]],
+) -> tuple[float, float, float, float] | None:
+    line_boxes = [tuple(line.get("bbox_mm", ()) or ()) for line in title_lines if len(tuple(line.get("bbox_mm", ()) or ())) >= 4]
+    if not line_boxes:
+        return None
+    return (
+        min(float(b[0]) for b in line_boxes) - 1.0,
+        min(float(b[1]) for b in line_boxes) - 1.0,
+        max(float(b[2]) for b in line_boxes) + 1.0,
+        max(float(b[3]) for b in line_boxes) + 1.0,
+    )
+
+
+def _remove_svg_text_nodes_in_region(
+    svg_path: Path,
+    *,
+    region_mm: tuple[float, float, float, float],
+    page_w_mm: float,
+    page_h_mm: float,
+) -> int:
+    tree = ET.parse(svg_path)
+    root = tree.getroot()
+    view_box = str(root.get("viewBox", "") or "").strip().replace(",", " ").split()
+    if len(view_box) != 4:
+        return 0
+    try:
+        vb_x = float(view_box[0])
+        vb_y = float(view_box[1])
+        vb_w = float(view_box[2])
+        vb_h = float(view_box[3])
+    except Exception:
+        return 0
+    sx = float(vb_w) / max(1e-9, float(page_w_mm))
+    sy = float(vb_h) / max(1e-9, float(page_h_mm))
+    rx0, ry0, rx1, ry1 = [float(v) for v in region_mm]
+
+    def _anchor_mm(node: ET.Element) -> tuple[float, float] | None:
+        tspans = [child for child in list(node) if str(child.tag).split("}")[-1].lower() == "tspan"]
+        if tspans:
+            anchor_node = tspans[0]
+            x_text = anchor_node.attrib.get("x", node.attrib.get("x", ""))
+            y_text = anchor_node.attrib.get("y", node.attrib.get("y", ""))
+        else:
+            x_text = node.attrib.get("x", "")
+            y_text = node.attrib.get("y", "")
+        try:
+            x_u = float(str(x_text).replace(",", " ").split()[0])
+            y_u = float(str(y_text).replace(",", " ").split()[0])
+        except Exception:
+            return None
+        a, b, c, d, e, f = _parse_svg_matrix_transform(node.attrib.get("transform", ""))
+        tx = (a * x_u) + (c * y_u) + e
+        ty = (b * x_u) + (d * y_u) + f
+        x_mm = (float(tx) - float(vb_x)) / float(sx)
+        y_mm = (float(ty) - float(vb_y)) / float(sy)
+        return float(x_mm), float(y_mm)
+
+    removed = 0
+    for parent in list(root.iter()):
+        for child in list(parent):
+            if str(child.tag).split("}")[-1].lower() != "text":
+                continue
+            anchor = _anchor_mm(child)
+            if anchor is None:
+                continue
+            x_mm, y_mm = anchor
+            if float(rx0) <= float(x_mm) <= float(rx1) and float(ry0) <= float(y_mm) <= float(ry1):
+                parent.remove(child)
+                removed += 1
+
+    if removed > 0:
+        tree.write(svg_path, encoding="utf-8", xml_declaration=True)
+    return int(removed)
+
+
+def _title_block_text_poly_candidate_mm(
+    poly: list[tuple[float, float]],
+    *,
+    region_x0: float,
+    region_y0: float,
+    region_x1: float,
+    region_y1: float,
+) -> bool:
+    if len(poly) < 2:
+        return False
+    x0, y0, x1, y1 = _poly_bbox_mm(poly)
+    if float(x0) < float(region_x0) or float(y0) < float(region_y0):
+        return False
+    if float(x1) > float(region_x1) or float(y1) > float(region_y1):
+        return False
+    bw = float(x1 - x0)
+    bh = float(y1 - y0)
+    if _poly_is_axis_aligned_mm(poly, eps=0.18) and min(bw, bh) <= 0.70 and max(bw, bh) >= 4.0:
+        return False
+    return True
+
+
+def _reroute_title_block_text_polylines(
+    polys_mm: list[list[tuple[float, float]]],
+    *,
+    source_pdf: Path,
+    page_index: int,
+    ttf_backend: str = "skeleton",
+    logger,
+) -> tuple[list[list[tuple[float, float]]], dict[str, float]]:
+    title_lines = _extract_title_block_text_lines_from_pdf(source_pdf, page_index=page_index)
+    if not title_lines:
+        return list(polys_mm), {"title_block_text_lines": 0.0, "title_block_text_removed": 0.0, "title_block_text_rendered": 0.0}
+    line_boxes = [tuple(line.get("bbox_mm", ()) or ()) for line in title_lines if len(tuple(line.get("bbox_mm", ()) or ())) >= 4]
+    if not line_boxes:
+        return list(polys_mm), {"title_block_text_lines": 0.0, "title_block_text_removed": 0.0, "title_block_text_rendered": 0.0}
+    region_x0 = min(float(b[0]) for b in line_boxes) - 1.0
+    region_y0 = min(float(b[1]) for b in line_boxes) - 1.0
+    region_x1 = max(float(b[2]) for b in line_boxes) + 1.0
+    region_y1 = max(float(b[3]) for b in line_boxes) + 1.0
+
+    kept: list[list[tuple[float, float]]] = []
+    removed = 0
+    for poly in polys_mm:
+        if _title_block_text_poly_candidate_mm(
+            poly,
+            region_x0=float(region_x0),
+            region_y0=float(region_y0),
+            region_x1=float(region_x1),
+            region_y1=float(region_y1),
+        ):
+            removed += 1
+            continue
+        kept.append(poly)
+
+    rerendered = _render_pdf_text_lines_polylines_in_place(
+        title_lines,
+        tight_layout=True,
+        ttf_backend=str(ttf_backend),
+        logger=logger,
+    )
+    if rerendered:
+        kept.extend(rerendered)
+        logger(
+            "Title block text reroute: removed "
+            f"{removed} source polyline(s), rendered {len(rerendered)} polyline(s) from {len(title_lines)} PDF text line(s)."
+        )
+    return kept, {
+        "title_block_text_lines": float(len(title_lines)),
+        "title_block_text_removed": float(removed),
+        "title_block_text_rendered": float(len(rerendered)),
+    }
 
 
 def _transform_a4_header_text_source_polylines(
@@ -960,6 +1292,7 @@ def _inverse_a3_pass_polylines_to_sheet(
     *,
     nc_path: Path,
     log_path: Path,
+    keep_fitted_coords: bool = False,
 ) -> list[list[tuple[float, float]]]:
     info = _parse_a3_pass_log(log_path)
     scale = float(info["scale"])
@@ -985,7 +1318,10 @@ def _inverse_a3_pass_polylines_to_sheet(
             if rotation_deg == 180:
                 px = (2.0 * center_x) - px
                 py = (2.0 * center_y) - py
-            recon.append(((px - tx) / scale, (py - ty) / scale))
+            if keep_fitted_coords:
+                recon.append((px, py))
+            else:
+                recon.append(((px - tx) / scale, (py - ty) / scale))
         if len(recon) >= 2:
             out.append(recon)
     return out
@@ -1237,29 +1573,87 @@ def _build_sheet_preview_from_gcode(
     return True, ""
 
 
-def _build_a3_combined_preview(
+def _build_fixed_canvas_preview_from_gcode(
+    *,
+    gcode_path: Path,
+    out_svg: Path,
+    out_pdf: Path,
+    page_w_mm: float,
+    page_h_mm: float,
+    logs: list[str],
+) -> tuple[bool, str]:
+    try:
+        lines = gcode_path.read_text(encoding="utf-8", errors="ignore").splitlines()
+    except Exception as exc:
+        return False, f"Failed to read G-code for fixed-canvas preview: {exc}"
+
+    z_values: list[float] = []
+    for line in lines:
+        match = re.search(r"(?:^|\s)Z(-?\d+(?:\.\d+)?)", str(line))
+        if match:
+            try:
+                z_values.append(float(match.group(1)))
+            except Exception:
+                pass
+    if not z_values:
+        return False, "No Z values found while building fixed-canvas preview."
+
+    try:
+        polylines = _gcode_to_polylines(lines, z_up=float(min(z_values)), z_down=float(max(z_values)))
+    except Exception as exc:
+        return False, f"Failed to convert G-code to polylines for fixed-canvas preview: {exc}"
+    if not polylines:
+        return False, "No drawing polylines recovered from G-code for fixed-canvas preview."
+
+    shifted, meta = _center_polylines_on_page(
+        polylines,
+        page_w_mm=float(page_w_mm),
+        page_h_mm=float(page_h_mm),
+    )
+    _write_svg_preview(shifted, out_svg, canvas_bounds_mm=(0.0, float(page_w_mm), 0.0, float(page_h_mm)))
+    _render_polylines_pdf(polylines=shifted, out_pdf=out_pdf, canvas_bounds_mm=(0.0, float(page_w_mm), 0.0, float(page_h_mm)))
+    logs.append(
+        "Fixed-canvas preview centered on page: "
+        f"page={float(page_w_mm):.3f}x{float(page_h_mm):.3f} mm, "
+        f"offset=({float(meta.get('offset_x_mm', 0.0)):.3f},{float(meta.get('offset_y_mm', 0.0)):.3f}) mm"
+    )
+    return True, ""
+
+
+def _build_tiled_combined_preview(
     *,
     source_pdf: Path,
     package_dir: Path,
     report: dict[str, Any],
+    canvas_size_mm: tuple[float, float] | None = None,
+    similarity_reference_pdf: Path | None = None,
+    keep_fitted_coords: bool = False,
 ) -> dict[str, Any] | None:
-    pass01_nc = package_dir / "pages" / "pass_01.nc"
-    pass02_nc = package_dir / "pages" / "pass_02.nc"
-    pass01_log = package_dir / "logs" / "pass_01.log.txt"
-    pass02_log = package_dir / "logs" / "pass_02.log.txt"
-    if not all(path.exists() for path in (pass01_nc, pass02_nc, pass01_log, pass02_log)):
+    pass_ncs = sorted((package_dir / "pages").glob("pass_*.nc"))
+    if not pass_ncs:
+        return None
+    pass_logs = [package_dir / "logs" / f"{nc.stem}.log.txt" for nc in pass_ncs]
+    if not all(path.exists() for path in pass_logs):
         return None
 
-    reference_pdf = source_pdf
+    reference_pdf = similarity_reference_pdf or source_pdf
 
-    polylines = [
-        *_inverse_a3_pass_polylines_to_sheet(nc_path=pass01_nc, log_path=pass01_log),
-        *_inverse_a3_pass_polylines_to_sheet(nc_path=pass02_nc, log_path=pass02_log),
-    ]
+    polylines: list[list[tuple[float, float]]] = []
+    for nc_path, log_path in zip(pass_ncs, pass_logs):
+        polylines.extend(
+            _inverse_a3_pass_polylines_to_sheet(
+                nc_path=nc_path,
+                log_path=log_path,
+                keep_fitted_coords=keep_fitted_coords,
+            )
+        )
     if not polylines:
         return None
 
-    ref_w_mm, ref_h_mm = _pdf_first_page_size_mm(reference_pdf)
+    if canvas_size_mm is None:
+        ref_w_mm, ref_h_mm = _pdf_first_page_size_mm(reference_pdf)
+    else:
+        ref_w_mm, ref_h_mm = [float(v) for v in canvas_size_mm]
     combined_svg = package_dir / "combined_preview.svg"
     combined_pdf = package_dir / "combined_preview.pdf"
     _write_svg_preview(polylines, combined_svg, canvas_bounds_mm=(0.0, ref_w_mm, 0.0, ref_h_mm))
@@ -1271,6 +1665,25 @@ def _build_a3_combined_preview(
         "pdf": str(combined_pdf),
         "layout_similarity": float(similarity),
     }
+
+
+def _build_a3_combined_preview(
+    *,
+    source_pdf: Path,
+    package_dir: Path,
+    report: dict[str, Any],
+) -> dict[str, Any] | None:
+    if bool(report.get("forced_a3_two_pass")):
+        # For oversized source sheets forced into a 2-pass A3 workflow, the
+        # stitched preview is primarily a source-vs-output audit artifact.
+        # Keep it in source-sheet coordinates so comparison remains readable;
+        # the actual A3-ready outputs are pass_01/pass_02.
+        return _build_tiled_combined_preview(
+            source_pdf=source_pdf,
+            package_dir=package_dir,
+            report=report,
+        )
+    return _build_tiled_combined_preview(source_pdf=source_pdf, package_dir=package_dir, report=report)
 
 
 @contextmanager
@@ -3163,6 +3576,11 @@ def _prepare_a4_hybrid_drawing_candidate(
             page_h_mm=page_h_mm,
             logger=logs.append,
         )
+        title_block_meta = {
+            "title_block_text_lines": 0.0,
+            "title_block_text_removed": 0.0,
+            "title_block_text_rendered": 0.0,
+        }
         clean_reference_polys = list(source_polys)
         if extra_frame_polys:
             clean_reference_polys.extend(list(extra_frame_polys))
@@ -3523,6 +3941,8 @@ def _prepare_a4_hybrid_drawing_candidate(
             f"detail_bbox={float(hybrid_info.get('detail_w', 0.0)):.2f}x{float(hybrid_info.get('detail_h', 0.0)):.2f} mm; "
             f"condition_images_recovered={int(recovery_meta.get('image_count', 0.0))}; "
             f"point_boxes_replaced={int(point_box_meta.get('point_boxes_replaced', 0.0))}; "
+            f"title_block_text_lines={int(title_block_meta.get('title_block_text_lines', 0.0))}; "
+            f"title_block_text_rendered={int(title_block_meta.get('title_block_text_rendered', 0.0))}; "
             "left_strip_removed=True; outer_border_removed=True"
         )
         return {
@@ -3616,6 +4036,206 @@ def _prepare_drawing_candidate(
         }
 
 
+def _prepare_forced_a4_candidate(
+    source_pdf: Path,
+    *,
+    variant_name: str,
+    candidate_dir: Path,
+) -> dict[str, Any]:
+    with tempfile.TemporaryDirectory(prefix="plotter_ascii_drawing_a4_") as td:
+        td_path = Path(td)
+        ascii_pdf = td_path / "input.pdf"
+        clean_svg = td_path / "forced_a4_source.svg"
+        shutil.copy2(source_pdf, ascii_pdf)
+        removed_nodes = 0
+        appended = 0
+        try:
+            page_w_mm, page_h_mm = _export_pdf_page_to_mupdf_svg(
+                ascii_pdf,
+                0,
+                clean_svg,
+                text_as_path=False,
+            )
+            title_lines = _extract_title_block_text_lines_from_pdf(ascii_pdf, page_index=0)
+            region_mm = _svg_title_block_region_from_pdf_lines(title_lines)
+            if region_mm is not None:
+                removed_nodes = _remove_svg_text_nodes_in_region(
+                    clean_svg,
+                    region_mm=region_mm,
+                    page_w_mm=float(page_w_mm),
+                    page_h_mm=float(page_h_mm),
+                )
+                rerendered = _render_pdf_text_lines_polylines_in_place(
+                    title_lines,
+                    tight_layout=True,
+                    ttf_backend="skeleton",
+                    logger=lambda _msg: None,
+                )
+                appended = _append_overlay_polylines_to_existing_svg(
+                    clean_svg,
+                    rerendered,
+                    page_w_mm=float(page_w_mm),
+                    page_h_mm=float(page_h_mm),
+                )
+        except Exception:
+            clean_svg = ascii_pdf
+        ctx = _ctx(f"preview-{time.time_ns()}")
+        ok, msg, logs = _bridge_run_preview(
+            ctx=ctx,
+            input_path=clean_svg,
+            sheet=SheetConfig(sheet_format="a4", anchor="center"),
+            tool_mode="pen",
+            render_mode="drawing",
+            quality_profile="high",
+            force_text_to_path=True,
+            handwriting_enabled=False,
+            handwriting_font="Marck Script",
+            handwriting_formula_font="Times New Roman",
+            image_contours_mode="off",
+            source_page_index=1,
+            source_all_pages=False,
+            exact_geometry_mode=False,
+            safe_travel_lift=True,
+            strict_one_to_one=False,
+        )
+        if clean_svg != ascii_pdf:
+            logs.insert(0, "Forced A4 direct vector scale: source PDF exported to SVG for A4 fit.")
+        if removed_nodes > 0 or appended > 0:
+            logs.insert(
+                1 if clean_svg != ascii_pdf else 0,
+                "Forced A4 title block single-line reroute: "
+                f"removed {int(removed_nodes)} SVG text node(s), appended {int(appended)} single-line path(s).",
+            )
+        if not ok:
+            return {
+                "variant": variant_name,
+                "ok": False,
+                "message": msg,
+                "logs": logs,
+            }
+        prefix = candidate_dir / variant_name
+        svg_path, pdf_path, nc_path, gcode_path = _copy_latest_preview_artifacts(prefix, op_id=ctx.op_id)
+        preview_ok, preview_err = _build_fixed_canvas_preview_from_gcode(
+            gcode_path=nc_path,
+            out_svg=svg_path,
+            out_pdf=pdf_path,
+            page_w_mm=210.0,
+            page_h_mm=297.0,
+            logs=logs,
+        )
+        if not preview_ok:
+            return {
+                "variant": variant_name,
+                "ok": False,
+                "message": preview_err,
+                "logs": logs,
+            }
+        _copy_file(nc_path, gcode_path)
+        metrics = _analyze_gcode(nc_path)
+        similarity = _layout_similarity_pdf(source_pdf, pdf_path, source_page_index=0)
+        return {
+            "variant": variant_name,
+            "ok": True,
+            "message": msg,
+            "logs": logs,
+            "fit_scale": _parse_fit_scale(logs),
+            "clipping_warning": _has_clipping_warning(logs),
+            "layout_similarity": similarity,
+            "metrics": metrics,
+            "svg": str(svg_path),
+            "pdf": str(pdf_path),
+            "nc": str(nc_path),
+            "gcode": str(gcode_path),
+            "reference_source": str(pdf_path),
+            "reference_source_svg": str(svg_path),
+            "notes": "forced_a4_single_page=True",
+        }
+
+
+def _is_specification_like_drawing(source_pdf: Path) -> bool:
+    try:
+        name = source_pdf.stem.casefold()
+    except Exception:
+        return False
+    return "спецификация" in name
+
+
+def _prepare_reference_pdf_candidate(
+    input_pdf: Path,
+    *,
+    reference_pdf: Path,
+    variant_name: str,
+    candidate_dir: Path,
+    reference_svg: Path | None = None,
+) -> dict[str, Any]:
+    with tempfile.TemporaryDirectory(prefix="plotter_ascii_drawing_ref_") as td:
+        td_path = Path(td)
+        ascii_pdf = td_path / "input.pdf"
+        shutil.copy2(input_pdf, ascii_pdf)
+        ctx = _ctx(f"preview-{time.time_ns()}")
+        ok, msg, logs = _bridge_run_preview(
+            ctx=ctx,
+            input_path=ascii_pdf,
+            sheet=SheetConfig(sheet_format="a4", anchor="center"),
+            tool_mode="pen",
+            render_mode="drawing",
+            quality_profile="high",
+            force_text_to_path=True,
+            handwriting_enabled=False,
+            handwriting_font="Marck Script",
+            handwriting_formula_font="Times New Roman",
+            image_contours_mode="off",
+            source_page_index=1,
+            source_all_pages=False,
+            exact_geometry_mode=False,
+            safe_travel_lift=True,
+            strict_one_to_one=False,
+        )
+        if not ok:
+            return {
+                "variant": variant_name,
+                "ok": False,
+                "message": msg,
+                "logs": logs,
+            }
+        prefix = candidate_dir / variant_name
+        svg_path, pdf_path, nc_path, gcode_path = _copy_latest_preview_artifacts(prefix, op_id=ctx.op_id)
+        preview_ok, preview_err = _build_sheet_preview_from_gcode(
+            gcode_path=nc_path,
+            reference_pdf=reference_pdf,
+            out_svg=svg_path,
+            out_pdf=pdf_path,
+            logs=logs,
+        )
+        if not preview_ok:
+            return {
+                "variant": variant_name,
+                "ok": False,
+                "message": preview_err,
+                "logs": logs,
+            }
+        metrics = _analyze_gcode(nc_path)
+        similarity = _layout_similarity_pdf(reference_pdf, pdf_path, source_page_index=0)
+        result = {
+            "variant": variant_name,
+            "ok": True,
+            "message": msg,
+            "logs": logs,
+            "fit_scale": _parse_fit_scale(logs),
+            "clipping_warning": _has_clipping_warning(logs),
+            "layout_similarity": similarity,
+            "metrics": metrics,
+            "svg": str(svg_path),
+            "pdf": str(pdf_path),
+            "nc": str(nc_path),
+            "gcode": str(gcode_path),
+            "reference_source": str(reference_pdf),
+        }
+        if reference_svg is not None and reference_svg.exists():
+            result["reference_source_svg"] = str(reference_svg)
+        return result
+
+
 def _prepare_a3_pass(
     source_pdf: Path,
     *,
@@ -3682,11 +4302,12 @@ def _prepare_a3_clean_source_svg(
 ) -> tuple[bool, str, list[str]]:
     logs: list[str] = []
     try:
+        reroute_title_block = _should_reroute_title_block_text(source_pdf)
         page_w_mm, page_h_mm = _export_pdf_page_to_mupdf_svg(
             source_pdf,
             0,
             source_svg,
-            text_as_path=True,
+            text_as_path=not reroute_title_block,
         )
         with fitz.open(str(source_pdf)) as src_doc:
             if int(src_doc.page_count) < 1:
@@ -3697,6 +4318,32 @@ def _prepare_a3_clean_source_svg(
                 out_doc.save(str(source_preview_pdf))
             finally:
                 out_doc.close()
+        if reroute_title_block:
+            title_lines = _extract_title_block_text_lines_from_pdf(source_pdf, page_index=0)
+            region_mm = _svg_title_block_region_from_pdf_lines(title_lines)
+            if region_mm is not None:
+                removed_nodes = _remove_svg_text_nodes_in_region(
+                    source_svg,
+                    region_mm=region_mm,
+                    page_w_mm=float(page_w_mm),
+                    page_h_mm=float(page_h_mm),
+                )
+                rerendered = _render_pdf_text_lines_polylines_in_place(
+                    title_lines,
+                    tight_layout=True,
+                    ttf_backend="skeleton",
+                    logger=logs.append,
+                )
+                appended = _append_overlay_polylines_to_existing_svg(
+                    source_svg,
+                    rerendered,
+                    page_w_mm=float(page_w_mm),
+                    page_h_mm=float(page_h_mm),
+                )
+                logs.append(
+                    "A3 title block text reroute: "
+                    f"removed {int(removed_nodes)} SVG text node(s), appended {int(appended)} single-line path(s)."
+                )
         extra_polys, recovered = _extract_small_condition_image_polylines_from_pdf(
             source_pdf,
             page_index=0,
@@ -3713,7 +4360,10 @@ def _prepare_a3_clean_source_svg(
                 "A3 condition image recovery summary: "
                 f"{len(recovered)} image(s), {len(extra_polys)} path(s), appended={int(appended)}."
             )
-        logs.append("A3 clean source route: direct PDF vector SVG export (text_as_path=True).")
+        logs.append(
+            "A3 clean source route: direct PDF vector SVG export "
+            f"(text_as_path={'False' if reroute_title_block else 'True'})."
+        )
         return True, "A3 clean source prepared from direct PDF vector export.", logs
     except Exception as exc:
         logs.append(f"A3 direct PDF vector export failed, falling back to Method3: {exc}")
@@ -3771,6 +4421,7 @@ def _prepare_a3_clean_source_svg(
 def _prepare_a3_pass_from_clean_svg(
     clean_svg: Path,
     *,
+    source_pdf: Path,
     pass_index: int,
     prefix: Path,
     prep_logs: list[str] | None = None,
@@ -3809,6 +4460,20 @@ def _prepare_a3_pass_from_clean_svg(
             "logs": [*(prep_logs or []), *pass_notes, "--- a3 clean pass ---", *logs],
         }
     svg_path, pdf_path, nc_path, gcode_path = _copy_latest_preview_artifacts(prefix, op_id=ctx.op_id)
+    preview_ok, preview_err = _build_sheet_preview_from_gcode(
+        gcode_path=nc_path,
+        reference_pdf=source_pdf,
+        out_svg=svg_path,
+        out_pdf=pdf_path,
+        logs=logs,
+    )
+    if not preview_ok:
+        return {
+            "item": f"pass_{pass_index:02d}",
+            "ok": False,
+            "message": preview_err,
+            "logs": [*(prep_logs or []), *pass_notes, "--- a3 clean pass ---", *logs],
+        }
     metrics = _analyze_gcode(nc_path)
     source_route = "direct_pdf_svg" if any(
         "direct PDF vector SVG export" in str(line) for line in (prep_logs or [])
@@ -3818,6 +4483,95 @@ def _prepare_a3_pass_from_clean_svg(
         "ok": True,
         "message": msg,
         "logs": [*(prep_logs or []), *pass_notes, "--- a3 clean pass ---", *logs],
+        "fit_scale": _parse_fit_scale(logs),
+        "clipping_warning": _has_clipping_warning(logs),
+        "layout_similarity": None,
+        "metrics": metrics,
+        "svg": str(svg_path),
+        "pdf": str(pdf_path),
+        "nc": str(nc_path),
+        "gcode": str(gcode_path),
+        "notes": "; ".join(
+            part
+            for part in [
+                f"source_cleanup={source_route}",
+                "left_strip_removed=True",
+                "outer_border_removed=True",
+                *pass_notes,
+            ]
+            if part
+        ),
+    }
+
+
+def _prepare_tiled_pass_from_clean_svg(
+    clean_svg: Path,
+    *,
+    pass_index: int,
+    pass_cols: int,
+    pass_rows: int,
+    pass_col: int,
+    pass_row: int,
+    sheet_w_mm: float,
+    sheet_h_mm: float,
+    prefix: Path,
+    prep_logs: list[str] | None = None,
+) -> dict[str, Any]:
+    bridge = BackendBridge(PROJECT_ROOT)
+    logs: list[str] = []
+    pass_notes = [
+        f"tile_cols={int(pass_cols)}",
+        f"tile_rows={int(pass_rows)}",
+        f"tile_col={int(pass_col)}",
+        f"tile_row={int(pass_row)}",
+    ]
+    ctx = _ctx(f"tiled-clean-pass-{pass_index}-{time.time_ns()}")
+    with _technical_drawing_backend_precision():
+        ok, msg = bridge.run_preview(
+            ctx=ctx,
+            input_path=clean_svg,
+            sheet=SheetConfig(
+                sheet_format="custom",
+                width_mm=float(sheet_w_mm),
+                height_mm=float(sheet_h_mm),
+                anchor="lower_left",
+                pass_cols=int(pass_cols),
+                pass_rows=int(pass_rows),
+                pass_col=int(pass_col),
+                pass_row=int(pass_row),
+            ),
+            tool_mode="pen",
+            render_mode="drawing",
+            quality_profile="high",
+            force_text_to_path=True,
+            handwriting_enabled=False,
+            handwriting_font="Marck Script",
+            handwriting_formula_font="Times New Roman",
+            image_contours_mode="off",
+            source_page_index=1,
+            source_all_pages=False,
+            exact_geometry_mode=True,
+            safe_travel_lift=True,
+            strict_one_to_one=True,
+            log=logs.append,
+        )
+    if not ok:
+        return {
+            "item": f"pass_{pass_index:02d}",
+            "ok": False,
+            "message": msg,
+            "logs": [*(prep_logs or []), *pass_notes, "--- tiled clean pass ---", *logs],
+        }
+    svg_path, pdf_path, nc_path, gcode_path = _copy_latest_preview_artifacts(prefix, op_id=ctx.op_id)
+    metrics = _analyze_gcode(nc_path)
+    source_route = "direct_pdf_svg" if any(
+        "direct PDF vector SVG export" in str(line) for line in (prep_logs or [])
+    ) else "method3"
+    return {
+        "item": f"pass_{pass_index:02d}",
+        "ok": True,
+        "message": msg,
+        "logs": [*(prep_logs or []), *pass_notes, "--- tiled clean pass ---", *logs],
         "fit_scale": _parse_fit_scale(logs),
         "clipping_warning": _has_clipping_warning(logs),
         "layout_similarity": None,
@@ -4054,7 +4808,10 @@ def _prepare_drawing_package(source_pdf: Path, package_dir: Path) -> tuple[dict[
     page = doc[0]
     page_w_mm = float(page.rect.width) * 25.4 / 72.0
     page_h_mm = float(page.rect.height) * 25.4 / 72.0
-    is_a3 = max(page_w_mm, page_h_mm) > 300.0
+    forced_a4_single_page = _force_a4_single_page_for_drawing(source_pdf)
+    forced_a3_two_pass = _force_a3_two_pass_for_large_sheet(source_pdf)
+    is_large_custom = (max(page_w_mm, page_h_mm) > 430.0) and not forced_a3_two_pass and not forced_a4_single_page
+    is_a3 = (max(page_w_mm, page_h_mm) > 300.0) and not is_large_custom and not forced_a4_single_page
 
     rows: list[ArtifactRow] = []
     report: dict[str, Any] = {
@@ -4063,10 +4820,83 @@ def _prepare_drawing_package(source_pdf: Path, package_dir: Path) -> tuple[dict[
         "page_count": int(doc.page_count),
         "page_size_mm": [round(page_w_mm, 3), round(page_h_mm, 3)],
         "a3_two_pass": bool(is_a3),
+        "custom_tiled": bool(is_large_custom),
+        "forced_a3_two_pass": bool(forced_a3_two_pass),
+        "forced_a4_single_page": bool(forced_a4_single_page),
         "items": [],
     }
 
-    if not is_a3:
+    if forced_a4_single_page:
+        candidate_root = package_dir / "_candidates"
+        candidate_root.mkdir(parents=True, exist_ok=True)
+        candidates = [
+            _prepare_forced_a4_candidate(
+                source_pdf,
+                variant_name="forced_a4_single_page",
+                candidate_dir=candidate_root,
+            )
+        ]
+        successful = [row for row in candidates if bool(row.get("ok"))]
+        if not successful:
+            report["items"] = candidates
+            doc.close()
+            return report, rows
+        best = successful[0]
+        best_prefix = pages_dir / "page_01"
+        for src_key, dst_path in zip(
+            ["svg", "pdf", "nc", "gcode"],
+            _bridge_preview_copy_targets(best_prefix),
+        ):
+            _copy_file(Path(str(best[src_key])), dst_path)
+        chosen_logs = list(best.get("logs", []))
+        _write_text(logs_dir / "page_01.log.txt", "\n".join(chosen_logs) + ("\n" if chosen_logs else ""))
+        report["items"] = candidates
+        report["selected_variant"] = str(best.get("variant", ""))
+        report["selected_layout_similarity"] = best.get("layout_similarity")
+        if str(best.get("reference_source", "")).strip():
+            ref_pdf_dst = package_dir / "a4_clean_source.pdf"
+            ref_svg_dst = package_dir / "a4_clean_source.svg"
+            _copy_file(Path(str(best.get("reference_source", ""))), ref_pdf_dst)
+            if str(best.get("reference_source_svg", "")).strip():
+                _copy_file(Path(str(best.get("reference_source_svg", ""))), ref_svg_dst)
+            report["a4_clean_source"] = {
+                "pdf": str(ref_pdf_dst),
+                "svg": str(ref_svg_dst),
+            }
+        metrics = dict(best.get("metrics", {}))
+        rows.append(
+            ArtifactRow(
+                source_pdf=str(source_pdf),
+                package_dir=str(package_dir),
+                kind="drawing",
+                item="page_01",
+                ok=True,
+                layout_similarity=float(best.get("layout_similarity", 0.0)),
+                draw_length_m=round(float(metrics.get("draw_length_mm", 0.0)) / 1000.0, 3),
+                segments_total=int(metrics.get("segments_total", 0)),
+                bounds=_bounds_text(metrics),
+                nc=str(best_prefix.with_suffix(".nc")),
+                gcode=str(best_prefix.with_suffix(".gcode")),
+                preview_pdf=str(best_prefix.with_suffix(".pdf")),
+                preview_svg=str(best_prefix.with_suffix(".svg")),
+                notes="; ".join(
+                    part
+                    for part in [
+                        f"variant={best.get('variant')}",
+                        f"scale={best.get('fit_scale')}",
+                        f"clipping={bool(best.get('clipping_warning'))}",
+                        str(best.get("notes", "")),
+                    ]
+                    if part
+                ),
+            )
+        )
+        shutil.rmtree(candidate_root, ignore_errors=True)
+        _mirror_package_root_artifacts(package_dir, rows)
+        doc.close()
+        return report, rows
+
+    if not is_a3 and not is_large_custom:
         candidate_root = package_dir / "_candidates"
         candidate_root.mkdir(parents=True, exist_ok=True)
         candidates: list[dict[str, Any]] = []
@@ -4117,6 +4947,41 @@ def _prepare_drawing_package(source_pdf: Path, package_dir: Path) -> tuple[dict[
             doc.close()
             return report, rows
 
+        if _is_specification_like_drawing(source_pdf):
+            hybrid_ref_pdf: Path | None = None
+            hybrid_ref_svg: Path | None = None
+            for row in successful:
+                if str(row.get("variant", "")) != "a4_hybrid_frame":
+                    continue
+                ref_pdf_raw = str(row.get("reference_source", "") or "").strip()
+                ref_svg_raw = str(row.get("reference_source_svg", "") or "").strip()
+                if ref_pdf_raw:
+                    hybrid_ref_pdf = Path(ref_pdf_raw)
+                if ref_svg_raw:
+                    hybrid_ref_svg = Path(ref_svg_raw)
+                break
+            if hybrid_ref_pdf is not None and hybrid_ref_pdf.exists():
+                try:
+                    candidates.append(
+                        _prepare_reference_pdf_candidate(
+                            hybrid_ref_pdf,
+                            reference_pdf=hybrid_ref_pdf,
+                            reference_svg=hybrid_ref_svg,
+                            variant_name="clean_source_direct",
+                            candidate_dir=candidate_root,
+                        )
+                    )
+                except Exception as exc:
+                    candidates.append(
+                        {
+                            "variant": "clean_source_direct",
+                            "ok": False,
+                            "message": str(exc),
+                            "logs": [f"A4 candidate failed: clean_source_direct: {exc}"],
+                        }
+                    )
+                successful = [row for row in candidates if bool(row.get("ok"))]
+
         for row in successful:
             try:
                 crop_metrics = _source_crop_alignment_metrics(
@@ -4142,6 +5007,10 @@ def _prepare_drawing_package(source_pdf: Path, package_dir: Path) -> tuple[dict[
             hybrid_preserves_detail = "detail_scale=1.0" in hybrid_notes
             if hybrid_preserves_detail and (best_sim - hybrid_sim) <= 0.01:
                 best = hybrid
+        if _is_specification_like_drawing(source_pdf):
+            clean_source_direct = next((row for row in successful if str(row.get("variant", "")) == "clean_source_direct"), None)
+            if clean_source_direct is not None:
+                best = clean_source_direct
         best_prefix = pages_dir / "page_01"
         for src_key, dst_path in zip(
             ["svg", "pdf", "nc", "gcode"],
@@ -4221,11 +5090,112 @@ def _prepare_drawing_package(source_pdf: Path, package_dir: Path) -> tuple[dict[
             "logs": clean_logs,
         }
 
+    if is_large_custom:
+        tiling = plan_tiled_passes_for_sheet(
+            page_w_mm,
+            page_h_mm,
+            area_w_mm=180.0,
+            area_h_mm=280.0,
+        )
+        report["sheet_tiling"] = dict(tiling)
+        pass_cols = int(tiling.get("nx", 1) or 1)
+        pass_rows = int(tiling.get("ny", 1) or 1)
+        pass_index = 0
+        for pass_row in range(1, pass_rows + 1):
+            for pass_col in range(1, pass_cols + 1):
+                pass_index += 1
+                prefix = pages_dir / f"pass_{pass_index:02d}"
+                row = _prepare_tiled_pass_from_clean_svg(
+                    clean_svg,
+                    pass_index=pass_index,
+                    pass_cols=pass_cols,
+                    pass_rows=pass_rows,
+                    pass_col=pass_col,
+                    pass_row=pass_row,
+                    sheet_w_mm=page_w_mm,
+                    sheet_h_mm=page_h_mm,
+                    prefix=prefix,
+                    prep_logs=a3_clean_logs,
+                ) if ok_clean else {
+                    "item": f"pass_{pass_index:02d}",
+                    "ok": False,
+                    "message": "Clean source preparation failed for tiled large-sheet route.",
+                    "logs": [*clean_logs],
+                }
+                report["items"].append(row)
+                logs = list(row.get("logs", []))
+                _write_text(logs_dir / f"pass_{pass_index:02d}.log.txt", "\n".join(logs) + ("\n" if logs else ""))
+                if not bool(row.get("ok")):
+                    rows.append(
+                        ArtifactRow(
+                            source_pdf=str(source_pdf),
+                            package_dir=str(package_dir),
+                            kind="drawing",
+                            item=f"pass_{pass_index:02d}",
+                            ok=False,
+                            layout_similarity=None,
+                            draw_length_m=None,
+                            segments_total=None,
+                            bounds="",
+                            nc="",
+                            gcode="",
+                            preview_pdf="",
+                            preview_svg="",
+                            notes=str(row.get("message", "")),
+                        )
+                    )
+                    continue
+                metrics = dict(row.get("metrics", {}))
+                rows.append(
+                    ArtifactRow(
+                        source_pdf=str(source_pdf),
+                        package_dir=str(package_dir),
+                        kind="drawing",
+                        item=f"pass_{pass_index:02d}",
+                        ok=True,
+                        layout_similarity=None,
+                        draw_length_m=round(float(metrics.get("draw_length_mm", 0.0)) / 1000.0, 3),
+                        segments_total=int(metrics.get("segments_total", 0)),
+                        bounds=_bounds_text(metrics),
+                        nc=str(prefix.with_suffix(".nc")),
+                        gcode=str(prefix.with_suffix(".gcode")),
+                        preview_pdf=str(prefix.with_suffix(".pdf")),
+                        preview_svg=str(prefix.with_suffix(".svg")),
+                        notes="; ".join(
+                            part
+                            for part in [
+                                f"scale={row.get('fit_scale')}",
+                                f"clipping={bool(row.get('clipping_warning'))}",
+                                str(row.get("notes", "")),
+                            ]
+                            if part
+                        ),
+                    )
+                )
+        combined_preview = _build_tiled_combined_preview(
+            source_pdf=source_pdf,
+            package_dir=package_dir,
+            report=report,
+        )
+        if combined_preview:
+            report["combined_preview"] = combined_preview
+        _mirror_package_root_artifacts(package_dir, rows)
+        if combined_preview:
+            for artifact_key in ("pdf", "svg"):
+                artifact_path = Path(str(combined_preview[artifact_key]))
+                if artifact_path.exists() and artifact_path.is_file():
+                    dst_path = package_dir / artifact_path.name
+                    if artifact_path.resolve() != dst_path.resolve():
+                        _copy_file(artifact_path, dst_path)
+        doc.close()
+        return report, rows
+
     for pass_index in (1, 2):
         prefix = pages_dir / f"pass_{pass_index:02d}"
         if ok_clean:
             row = _prepare_a3_pass_from_clean_svg(
                 clean_svg,
+                source_pdf=source_pdf,
                 pass_index=pass_index,
                 prefix=prefix,
                 prep_logs=a3_clean_logs,
@@ -4443,6 +5413,18 @@ def main() -> int:
 
     summary_path = folder / "_prepared_summary.csv"
     reports_path = folder / "_prepared_reports.json"
+    if args.only:
+        touched_pdfs = {str(row.source_pdf) for row in all_rows}
+        touched_pdfs.update(str(report.get("source_pdf", "")) for report in all_reports if str(report.get("source_pdf", "")).strip())
+        if summary_path.exists():
+            existing_rows = _read_rows_from_csv(summary_path)
+            all_rows = [row for row in existing_rows if str(row.source_pdf) not in touched_pdfs] + all_rows
+        if reports_path.exists():
+            try:
+                existing_reports = list((json.loads(reports_path.read_text(encoding="utf-8")) or {}).get("reports", []) or [])
+            except Exception:
+                existing_reports = []
+            all_reports = [report for report in existing_reports if str(report.get("source_pdf", "")).strip() not in touched_pdfs] + all_reports
     if all_rows:
         _write_csv(summary_path, all_rows)
     _write_json(reports_path, {"generated_at_epoch": started_at, "reports": all_reports})
