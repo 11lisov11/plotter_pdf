@@ -25,14 +25,16 @@ SVG geometry: paths=1168, segments=5727.
 Source bounds: x(0.000, 180.000) y(0.000, 280.000)
 Fit to work area: scale=1.0000, translate=(0.000,-295.000), from (0.000, 0.000)-(180.000, 280.000)
 Reorder: source order preserved (1168 polylines).
+Technical text join: merged 513 short gaps (gap<=0.55 mm, dy<=0.75 mm), polylines 1168 -> 655
+Polyline optimization: 1168 -> 655
 Segment counts: source=5727, fitted=5727, clipped=5727
 Drawable segments after clip: 5727 (100.0% of source)
 Prepared bounds: x(0.000, 180.000) y(-295.000, -15.000)
-Estimated draw length: 8.35 m
+Estimated draw length: 8.41 m
 Applying pen-up / pen-down ...
-G-code stats: lines=9158, draw=8001, travel=1143, bounds=0.000..180.000 x, -295.000..0.000 y
-Preflight: ok: lines=9158, draw=8001, travel=1143, ratio=0.14
-Saved file stats: lines=9158, draw=8001, travel=1143, bounds=0.000..180.000 x, -295.000..0.000 y
+G-code stats: lines=8179, draw=7510, travel=655, bounds=0.000..180.000 x, -295.000..0.000 y
+Preflight: ok: lines=8179, draw=7510, travel=655, ratio=0.09
+Saved file stats: lines=8179, draw=7510, travel=655, bounds=0.000..180.000 x, -295.000..0.000 y
 Saved: C:\plotter_pdf\Компьютерная графика\МЧ00.01.00.07 Винт М16_pack\_candidates\a4_hybrid_frame.nc
 Sheet preview aligned to reference bbox Y and centered on page X: ref=(0.353,0.353)..(210.457,297.670) mm
 Sheet preview placed on source page: offset=(15.537,295.353) mm

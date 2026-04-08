@@ -899,6 +899,30 @@ class BackendGeometryTests(unittest.TestCase):
         finally:
             backend.HANDWRITING_TEXT_ENABLED = old_hw
 
+    def test_likely_technical_text_group_heuristic(self) -> None:
+        old_hw = backend.HANDWRITING_TEXT_ENABLED
+        try:
+            backend.HANDWRITING_TEXT_ENABLED = False
+            group = [
+                backend.PathItem(
+                    points=self._rect(0.0, 0.0, 7.0, 4.0),
+                    closed=True,
+                    is_fill=True,
+                    is_stroke=False,
+                    source_id=21,
+                ),
+                backend.PathItem(
+                    points=self._rect(7.3, 0.2, 12.0, 4.1),
+                    closed=True,
+                    is_fill=True,
+                    is_stroke=False,
+                    source_id=22,
+                ),
+            ]
+            self.assertTrue(backend._likely_technical_text_group(group))
+        finally:
+            backend.HANDWRITING_TEXT_ENABLED = old_hw
+
     def test_centerline_fill_group_ignores_open_polylines(self) -> None:
         if backend.np is None or backend.cv2 is None:
             self.skipTest("opencv/numpy unavailable")
@@ -1067,6 +1091,64 @@ class BackendGeometryTests(unittest.TestCase):
             self.assertNotEqual(out[0], item.points)
         finally:
             backend.HANDWRITING_TEXT_ENABLED = old_hw
+
+    def test_to_drawing_polylines_uses_tiny_technical_fallback_instead_of_contour(self) -> None:
+        old_hw = backend.HANDWRITING_TEXT_ENABLED
+        try:
+            backend.HANDWRITING_TEXT_ENABLED = False
+            item = backend.PathItem(
+                points=self._rect(0.0, 0.0, 0.7, 0.6),
+                closed=True,
+                is_fill=True,
+                is_stroke=False,
+                source_id=212,
+            )
+            with (
+                mock.patch.object(backend, "centerline_fill_group", return_value=[]),
+                mock.patch.object(backend, "refine_centerline_paths", return_value=[]),
+                mock.patch.object(backend, "centerline_is_usable", return_value=False),
+                mock.patch.object(backend, "centerline_is_usable_relaxed_small_cluster", return_value=False),
+                mock.patch.object(backend, "_centerline_quality_ok_for_technical", return_value=False),
+            ):
+                out = backend.to_drawing_polylines([item])
+
+            self.assertEqual(len(out), 1)
+            self.assertEqual(len(out[0]), 2)
+            self.assertNotEqual(out[0], item.points)
+        finally:
+            backend.HANDWRITING_TEXT_ENABLED = old_hw
+
+    def test_merge_technical_text_strokes_merges_close_tiny_strokes(self) -> None:
+        polys = [
+            [(0.0, 0.0), (0.7, 0.0)],
+            [(1.0, 0.1), (1.6, 0.1)],
+            [(4.0, 0.0), (4.8, 0.0)],
+        ]
+        out = backend.merge_technical_text_strokes(
+            polys,
+            logger=lambda *_: None,
+            join_gap_mm=0.45,
+            join_max_dy_mm=0.25,
+            join_max_backtrack_mm=0.10,
+        )
+        self.assertEqual(len(out), 2)
+        self.assertEqual(out[0][0], polys[0][0])
+        self.assertEqual(out[0][-1], polys[1][-1])
+        self.assertEqual(out[1], polys[2])
+
+    def test_merge_technical_text_strokes_does_not_merge_large_geometry(self) -> None:
+        polys = [
+            [(0.0, 0.0), (15.0, 0.0)],
+            [(15.2, 0.0), (30.0, 0.0)],
+        ]
+        out = backend.merge_technical_text_strokes(
+            polys,
+            logger=lambda *_: None,
+            join_gap_mm=0.50,
+            join_max_dy_mm=0.25,
+            join_max_backtrack_mm=0.10,
+        )
+        self.assertEqual(out, polys)
 
     def test_force_single_stroke_handwriting_group_uses_centerline_even_if_unusable(self) -> None:
         old_hw = backend.HANDWRITING_TEXT_ENABLED

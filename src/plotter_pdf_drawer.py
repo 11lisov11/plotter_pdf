@@ -228,6 +228,16 @@ HANDWRITING_MERGE_SHORT_TRAVEL_FEED = 5000.0
 HANDWRITING_WORD_JOIN_ENABLE = True
 HANDWRITING_WORD_JOIN_GAP_MM = 2.20
 HANDWRITING_WORD_JOIN_MAX_DY_MM = 1.20
+TECH_TEXT_JOIN_ENABLE = True
+TECH_TEXT_JOIN_GAP_MM = 0.55
+TECH_TEXT_JOIN_MAX_DY_MM = 0.75
+TECH_TEXT_JOIN_MAX_BACKTRACK_MM = 0.25
+TECH_TEXT_JOIN_MAX_STROKE_LEN_MM = 10.0
+TECH_TEXT_JOIN_MAX_SPAN_MM = 12.0
+TECH_TEXT_JOIN_MAX_AREA_MM2 = 42.0
+TECH_TEXT_JOIN_MAX_COMBINED_SPAN_X_MM = 12.0
+TECH_TEXT_JOIN_MAX_COMBINED_SPAN_Y_MM = 10.0
+TECH_TEXT_JOIN_MAX_COMBINED_AREA_MM2 = 80.0
 HANDWRITING_PRESERVE_FILL_OUTLINES = False
 # For text readability on plotter, never fallback to contour-outline for handwriting glyph groups.
 HANDWRITING_FORCE_SINGLE_STROKE_TEXT = True
@@ -469,6 +479,21 @@ SINGLE_STROKE_TEXT_ENABLED = True
 SINGLE_STROKE_TEXT_CLUSTER_MAX_BBOX_MM = 13.0
 SINGLE_STROKE_TEXT_CLUSTER_GAP_MM = 0.20
 SINGLE_STROKE_TEXT_CLUSTER_MAX_ITEMS = 1500
+TECH_TEXT_SINGLELINE_ENABLED = True
+TECH_TEXT_MAX_BBOX_W_MM = 32.0
+TECH_TEXT_MAX_BBOX_H_MM = 12.0
+TECH_TEXT_MAX_BBOX_AREA_MM2 = 220.0
+TECH_TEXT_MAX_TOTAL_SOURCE_LEN_MM = 900.0
+TECH_TEXT_MAX_PATHS_PER_GROUP = 80
+TECH_TEXT_MEDIAN_MIN_PATH_MM = 0.22
+TECH_TEXT_SHORT_PATH_MM = 0.18
+TECH_TEXT_SHORT_RATIO_MAX = 0.70
+TECH_TEXT_MIN_PATH_MM = 0.05
+TECH_TEXT_LOCAL_STITCH_EPS_MM = 0.12
+TECH_TEXT_LOCAL_GAP_EPS_MM = 0.28
+TECH_TEXT_LOCAL_ANGLE_DEG = 42.0
+TECH_TEXT_TINY_SYMBOL_MAX_SPAN_MM = 5.2
+TECH_TEXT_TINY_SYMBOL_MAX_AREA_MM2 = 18.0
 # Some converters emit text as stroke-only closed outlines (double contour).
 # Keep this disabled by default: on technical drawings it can collapse narrow
 # glyph loops ("0", "8", degree mark) into single slashes.
@@ -5193,6 +5218,7 @@ def refine_centerline_paths(
     centerlines: List[List[Tuple[float, float]]],
     *,
     handwriting: bool = False,
+    technical: bool = False,
 ) -> List[List[Tuple[float, float]]]:
     if not centerlines:
         return []
@@ -5201,11 +5227,20 @@ def refine_centerline_paths(
         eps = float(FILL_CENTERLINE_HANDWRITING_LOCAL_STITCH_EPS_MM)
         gap = float(FILL_CENTERLINE_HANDWRITING_LOCAL_GAP_EPS_MM)
         ang = float(FILL_CENTERLINE_HANDWRITING_LOCAL_ANGLE_DEG)
+    elif technical:
+        eps = float(TECH_TEXT_LOCAL_STITCH_EPS_MM)
+        gap = float(TECH_TEXT_LOCAL_GAP_EPS_MM)
+        ang = float(TECH_TEXT_LOCAL_ANGLE_DEG)
     else:
         eps = float(FILL_CENTERLINE_LOCAL_STITCH_EPS_MM)
         gap = float(FILL_CENTERLINE_LOCAL_GAP_EPS_MM)
         ang = float(FILL_CENTERLINE_LOCAL_ANGLE_DEG)
-    min_path_mm = float(FILL_CENTERLINE_HANDWRITING_MIN_PATH_MM if handwriting else FILL_CENTERLINE_MIN_PATH_MM)
+    if handwriting:
+        min_path_mm = float(FILL_CENTERLINE_HANDWRITING_MIN_PATH_MM)
+    elif technical:
+        min_path_mm = float(TECH_TEXT_MIN_PATH_MM)
+    else:
+        min_path_mm = float(FILL_CENTERLINE_MIN_PATH_MM)
 
     refined = stitch_polylines(centerlines, eps, logger=None, gap_eps=gap, angle_tol_deg=ang)
     out: List[List[Tuple[float, float]]] = []
@@ -5321,6 +5356,43 @@ def _likely_handwriting_text_group(group: List["PathItem"]) -> bool:
     return True
 
 
+def _likely_technical_text_group(group: List["PathItem"]) -> bool:
+    # Conservative drawing-mode heuristic:
+    # only small fill-only groups, typical for dimensions, notes and tiny symbols.
+    if not TECH_TEXT_SINGLELINE_ENABLED:
+        return False
+    if HANDWRITING_TEXT_ENABLED:
+        return False
+    if not group:
+        return False
+    if not all(bool(it.is_fill) for it in group):
+        return False
+
+    bbox = _handwriting_group_bbox(group)
+    if bbox is None:
+        return False
+    _x0, _x1, _y0, _y1, w, h, area = bbox
+    if w <= 0.0 or h <= 0.0:
+        return False
+    if w > float(TECH_TEXT_MAX_BBOX_W_MM):
+        return False
+    if h > float(TECH_TEXT_MAX_BBOX_H_MM):
+        return False
+    if area > float(TECH_TEXT_MAX_BBOX_AREA_MM2):
+        return False
+    # Avoid near-square filled geometry blocks.
+    if w > 10.0 and h > 8.0:
+        return False
+
+    total_len = 0.0
+    for item in group:
+        if len(item.points) >= 2:
+            total_len += polyline_length(item.points)
+    if total_len > float(TECH_TEXT_MAX_TOTAL_SOURCE_LEN_MM):
+        return False
+    return True
+
+
 def _handwriting_group_bbox(group: List["PathItem"]) -> Optional[Tuple[float, float, float, float, float, float, float]]:
     pts = [p for it in group for p in it.points]
     if not pts:
@@ -5337,6 +5409,24 @@ def _handwriting_group_bbox(group: List["PathItem"]) -> Optional[Tuple[float, fl
 def _clean_handwriting_centerlines(
     centerlines: List[List[Tuple[float, float]]],
     min_len_mm: float = 0.04,
+) -> List[List[Tuple[float, float]]]:
+    cleaned: List[List[Tuple[float, float]]] = []
+    min_len = max(0.0, float(min_len_mm))
+    for poly in centerlines:
+        if len(poly) < 2:
+            continue
+        simp = simplify_polyline(poly, eps=0.01)
+        if len(simp) < 2:
+            continue
+        if polyline_length(simp) < min_len:
+            continue
+        cleaned.append(simp)
+    return cleaned
+
+
+def _clean_technical_centerlines(
+    centerlines: List[List[Tuple[float, float]]],
+    min_len_mm: float = 0.03,
 ) -> List[List[Tuple[float, float]]]:
     cleaned: List[List[Tuple[float, float]]] = []
     min_len = max(0.0, float(min_len_mm))
@@ -5458,18 +5548,29 @@ def _centerline_fill_components_with_fallback(
     converted: List[List[Tuple[float, float]]] = []
     remaining: List["PathItem"] = []
     for comp in components:
+        technical = bool((not handwriting) and _likely_technical_text_group(comp))
         centerlines = centerline_fill_group(comp)
-        centerlines = refine_centerline_paths(centerlines, handwriting=handwriting)
+        centerlines = refine_centerline_paths(centerlines, handwriting=handwriting, technical=technical)
         if centerline_is_usable(comp, centerlines) or centerline_is_usable_relaxed_small_cluster(comp, centerlines) or (
             _likely_handwriting_text_group(comp) and _centerline_quality_ok_for_handwriting(centerlines)
+        ) or (
+            technical and _centerline_quality_ok_for_technical(centerlines)
         ):
             converted.extend(centerlines)
             continue
-        forced_single = force_single_stroke_handwriting_group(comp, centerlines)
+        forced_single: List[List[Tuple[float, float]]] = []
+        if handwriting:
+            forced_single = force_single_stroke_handwriting_group(comp, centerlines)
+        elif technical:
+            forced_single = force_single_stroke_technical_group(comp, centerlines)
         if forced_single:
             converted.extend(forced_single)
             continue
-        tiny_fallback = tiny_handwriting_text_fallback(comp, centerlines)
+        tiny_fallback: List[List[Tuple[float, float]]] = []
+        if handwriting:
+            tiny_fallback = tiny_handwriting_text_fallback(comp, centerlines)
+        elif technical:
+            tiny_fallback = tiny_technical_text_fallback(comp, centerlines)
         if tiny_fallback:
             converted.extend(tiny_fallback)
             continue
@@ -5563,6 +5664,72 @@ def force_single_stroke_handwriting_group(
     return _synthetic_mono_stroke_from_bbox(bbox, max_span_mm=7.0, max_area_mm2=30.0)
 
 
+def tiny_technical_text_fallback(
+    group: List["PathItem"],
+    centerlines: List[List[Tuple[float, float]]],
+) -> List[List[Tuple[float, float]]]:
+    if not _likely_technical_text_group(group):
+        return []
+    bbox = _handwriting_group_bbox(group)
+    if bbox is None:
+        return []
+    _x0, _x1, _y0, _y1, w, h, area = bbox
+    if w <= 0.0 or h <= 0.0:
+        return []
+    if (
+        w > float(TECH_TEXT_TINY_SYMBOL_MAX_SPAN_MM)
+        or h > float(TECH_TEXT_TINY_SYMBOL_MAX_SPAN_MM)
+        or area > float(TECH_TEXT_TINY_SYMBOL_MAX_AREA_MM2)
+    ):
+        return []
+    cleaned = _clean_technical_centerlines(centerlines, min_len_mm=0.03)
+    if cleaned:
+        return cleaned
+    return _synthetic_mono_stroke_from_bbox(
+        bbox,
+        max_span_mm=float(TECH_TEXT_TINY_SYMBOL_MAX_SPAN_MM),
+        max_area_mm2=float(TECH_TEXT_TINY_SYMBOL_MAX_AREA_MM2),
+    )
+
+
+def force_single_stroke_technical_group(
+    group: List["PathItem"],
+    centerlines: List[List[Tuple[float, float]]],
+) -> List[List[Tuple[float, float]]]:
+    if not _likely_technical_text_group(group):
+        return []
+
+    cleaned = _clean_technical_centerlines(centerlines, min_len_mm=0.03)
+    if cleaned:
+        ordered = reorder_polylines(cleaned, logger=None)
+        return merge_technical_text_strokes(ordered, logger=None)
+
+    components = _split_handwriting_fill_group_components(group, gap_mm=0.06)
+    if len(components) > 1:
+        merged: List[List[Tuple[float, float]]] = []
+        for comp in components:
+            comp_center = centerline_fill_group(comp)
+            comp_center = refine_centerline_paths(comp_center, technical=True)
+            comp_clean = _clean_technical_centerlines(comp_center, min_len_mm=0.03)
+            if comp_clean:
+                merged.extend(comp_clean)
+                continue
+            comp_tiny = tiny_technical_text_fallback(comp, comp_center)
+            if comp_tiny:
+                merged.extend(comp_tiny)
+                continue
+            return []
+        if merged:
+            merged = reorder_polylines(merged, logger=None)
+            return merge_technical_text_strokes(merged, logger=None)
+
+    tiny = tiny_technical_text_fallback(group, centerlines)
+    if tiny:
+        tiny = reorder_polylines(tiny, logger=None)
+        return merge_technical_text_strokes(tiny, logger=None)
+    return tiny
+
+
 def _centerline_quality_ok_for_handwriting(centerlines: List[List[Tuple[float, float]]]) -> bool:
     # Safety gate for handwriting-only fallback:
     # reject decompositions that are mostly tiny fragments (dot-noise output).
@@ -5580,6 +5747,25 @@ def _centerline_quality_ok_for_handwriting(centerlines: List[List[Tuple[float, f
         return False
     short = sum(1 for L in lengths if L < 0.30)
     if (short / float(n)) > 0.38:
+        return False
+    return True
+
+
+def _centerline_quality_ok_for_technical(centerlines: List[List[Tuple[float, float]]]) -> bool:
+    if not centerlines:
+        return False
+    lengths = [polyline_length(poly) for poly in centerlines if len(poly) >= 2]
+    if not lengths:
+        return False
+    n = len(lengths)
+    if n > int(TECH_TEXT_MAX_PATHS_PER_GROUP):
+        return False
+    s = sorted(lengths)
+    med = s[n // 2]
+    if med < float(TECH_TEXT_MEDIAN_MIN_PATH_MM):
+        return False
+    short = sum(1 for L in lengths if L < float(TECH_TEXT_SHORT_PATH_MM))
+    if (short / float(n)) > float(TECH_TEXT_SHORT_RATIO_MAX):
         return False
     return True
 
@@ -6826,13 +7012,22 @@ def to_drawing_polylines(items: List[PathItem]) -> List[List[Tuple[float, float]
         clusters = cluster_small_fill_items_for_single_stroke(items)
         for comp in clusters:
             group = [items[i] for i in comp]
+            technical = bool((not handwriting) and _likely_technical_text_group(group))
             centerlines = centerline_fill_group(group)
-            centerlines = refine_centerline_paths(centerlines, handwriting=handwriting)
+            centerlines = refine_centerline_paths(centerlines, handwriting=handwriting, technical=technical)
             if centerline_is_usable(group, centerlines) or centerline_is_usable_relaxed_small_cluster(group, centerlines) or (
                 _likely_handwriting_text_group(group) and _centerline_quality_ok_for_handwriting(centerlines)
+            ) or (
+                technical and _centerline_quality_ok_for_technical(centerlines)
             ):
                 out.extend(centerlines)
                 consumed_idx.update(comp)
+                continue
+            if technical:
+                forced = force_single_stroke_technical_group(group, centerlines)
+                if forced:
+                    out.extend(forced)
+                    consumed_idx.update(comp)
 
     if SINGLE_STROKE_OUTLINE_TEXT_ENABLED and not preserve_fill_outlines:
         outline_clusters = cluster_small_outline_items_for_single_stroke(items)
@@ -7508,6 +7703,127 @@ def merge_handwriting_word_strokes(
     if logger and merged_count > 0:
         logger(
             f"Handwriting join: merged {merged_count} short gaps "
+            f"(gap<={gap_max:.2f} mm, dy<={dy_max:.2f} mm), polylines {len(src)} -> {len(out)}"
+        )
+    return out
+
+
+def _technical_stroke_bbox(poly: List[Tuple[float, float]]) -> Optional[Tuple[float, float, float, float, float, float, float]]:
+    if len(poly) < 2 or path_is_closed(poly):
+        return None
+    xs = [float(pt[0]) for pt in poly]
+    ys = [float(pt[1]) for pt in poly]
+    x0 = min(xs)
+    x1 = max(xs)
+    y0 = min(ys)
+    y1 = max(ys)
+    w = max(0.0, x1 - x0)
+    h = max(0.0, y1 - y0)
+    area = w * h
+    return (x0, x1, y0, y1, w, h, area)
+
+
+def _is_technical_join_candidate(poly: List[Tuple[float, float]]) -> bool:
+    if not TECH_TEXT_JOIN_ENABLE:
+        return False
+    bbox = _technical_stroke_bbox(poly)
+    if bbox is None:
+        return False
+    _x0, _x1, _y0, _y1, w, h, area = bbox
+    if w <= 0.0 and h <= 0.0:
+        return False
+    if max(w, h) > float(TECH_TEXT_JOIN_MAX_SPAN_MM):
+        return False
+    if area > float(TECH_TEXT_JOIN_MAX_AREA_MM2):
+        return False
+    if polyline_length(poly) > float(TECH_TEXT_JOIN_MAX_STROKE_LEN_MM):
+        return False
+    return True
+
+
+def merge_technical_text_strokes(
+    polylines: List[List[Tuple[float, float]]],
+    logger=print,
+    *,
+    join_gap_mm: float = TECH_TEXT_JOIN_GAP_MM,
+    join_max_dy_mm: float = TECH_TEXT_JOIN_MAX_DY_MM,
+    join_max_backtrack_mm: float = TECH_TEXT_JOIN_MAX_BACKTRACK_MM,
+    simplify_collinear_eps: Optional[float] = None,
+) -> List[List[Tuple[float, float]]]:
+    # Conservative continuity join for short technical glyph/symbol strokes.
+    # It targets tiny fragmented text/symbol pieces and avoids large geometry.
+    if not TECH_TEXT_JOIN_ENABLE:
+        return polylines
+    if not polylines:
+        return polylines
+
+    gap_max = max(0.0, float(join_gap_mm))
+    dy_max = max(0.0, float(join_max_dy_mm))
+    backtrack_max = max(0.0, float(join_max_backtrack_mm))
+    if gap_max <= 1e-9:
+        return polylines
+
+    src = [p for p in polylines if len(p) >= 2]
+    if not src:
+        return []
+
+    merged_count = 0
+    out: List[List[Tuple[float, float]]] = []
+    current = list(src[0])
+
+    for raw_next in src[1:]:
+        next_fwd = list(raw_next)
+        next_rev = list(reversed(raw_next))
+        cur_end = current[-1]
+
+        d_fwd = points_distance(cur_end, next_fwd[0])
+        d_rev = points_distance(cur_end, next_rev[0])
+        nxt = next_rev if d_rev < d_fwd else next_fwd
+        gap = min(d_fwd, d_rev)
+        dy = abs(nxt[0][1] - cur_end[1])
+        dx = nxt[0][0] - cur_end[0]
+
+        can_merge = _is_technical_join_candidate(current) and _is_technical_join_candidate(nxt)
+        if can_merge:
+            cur_box = _technical_stroke_bbox(current)
+            nxt_box = _technical_stroke_bbox(nxt)
+            if cur_box is None or nxt_box is None:
+                can_merge = False
+            else:
+                comb_x0 = min(cur_box[0], nxt_box[0])
+                comb_x1 = max(cur_box[1], nxt_box[1])
+                comb_y0 = min(cur_box[2], nxt_box[2])
+                comb_y1 = max(cur_box[3], nxt_box[3])
+                comb_w = comb_x1 - comb_x0
+                comb_h = comb_y1 - comb_y0
+                comb_area = comb_w * comb_h
+                if (
+                    comb_w > float(TECH_TEXT_JOIN_MAX_COMBINED_SPAN_X_MM)
+                    or comb_h > float(TECH_TEXT_JOIN_MAX_COMBINED_SPAN_Y_MM)
+                    or comb_area > float(TECH_TEXT_JOIN_MAX_COMBINED_AREA_MM2)
+                ):
+                    can_merge = False
+
+        if can_merge and gap <= gap_max and dy <= dy_max and dx >= (-backtrack_max):
+            if gap > 1e-9:
+                current.append(nxt[0])
+            current.extend(nxt[1:])
+            current = simplify_polyline(current, collinear_eps=simplify_collinear_eps)
+            merged_count += 1
+            continue
+
+        current = simplify_polyline(current, collinear_eps=simplify_collinear_eps)
+        if len(current) >= 2:
+            out.append(current)
+        current = list(nxt)
+
+    current = simplify_polyline(current, collinear_eps=simplify_collinear_eps)
+    if len(current) >= 2:
+        out.append(current)
+
+    if logger and merged_count > 0:
+        logger(
+            f"Technical text join: merged {merged_count} short gaps "
             f"(gap<={gap_max:.2f} mm, dy<={dy_max:.2f} mm), polylines {len(src)} -> {len(out)}"
         )
     return out
@@ -8755,6 +9071,12 @@ def run_pipeline(
                 angle_tol_deg=stitch_angle,
             )
             polylines = reorder_polylines(polylines, logger=log)
+            if not HANDWRITING_TEXT_ENABLED:
+                polylines = merge_technical_text_strokes(
+                    polylines,
+                    logger=log,
+                    simplify_collinear_eps=POLYLINE_COLLINEAR_EPS,
+                )
             if HANDWRITING_TEXT_ENABLED and not HANDWRITING_STROKE_ACTIVE:
                 # Fallback path-only handwriting (no editable text nodes): avoid aggressive
                 # word merge/smoothing that can cross-connect contour fragments.

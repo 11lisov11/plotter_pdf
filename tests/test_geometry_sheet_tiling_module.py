@@ -121,7 +121,7 @@ class GeometrySheetTilingModuleTests(unittest.TestCase):
             0,
         )
 
-    def test_sheet_pass_post_translation_mm_requires_plus_4mm_for_a3_second_pass(self) -> None:
+    def test_sheet_pass_post_translation_mm_requires_plus_3mm_for_a3_second_pass(self) -> None:
         self.assertEqual(
             tiling_mod.sheet_pass_post_translation_mm(
                 sheet_format="a3",
@@ -130,7 +130,7 @@ class GeometrySheetTilingModuleTests(unittest.TestCase):
                 pass_col=2,
                 pass_row=1,
             ),
-            (0.0, 4.0),
+            (0.0, 3.0),
         )
 
     def test_sheet_pass_post_translation_mm_is_zero_for_other_passes(self) -> None:

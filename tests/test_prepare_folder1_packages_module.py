@@ -32,6 +32,42 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
                 return box
         raise AssertionError("Expected polyline bbox not found.")
 
+    def test_analyze_gcode_reports_fragmentation_metrics(self) -> None:
+        mod = _load_module()
+        z_up = float(mod.backend.Z_UP)
+        z_down = float(mod.backend.Z_DOWN)
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "sample.nc"
+            path.write_text(
+                "\n".join(
+                    [
+                        "G21",
+                        "G90",
+                        f"G0 Z{z_up:.4f}",
+                        "G0 X0.0000 Y0.0000",
+                        f"G1 Z{z_down:.4f} F1000.0",
+                        "G1 X0.1000 Y0.0000 F1000.0",
+                        f"G0 Z{z_up:.4f}",
+                        "G0 X1.0000 Y0.0000",
+                        f"G1 Z{z_down:.4f} F1000.0",
+                        "G1 X1.2000 Y0.0000 F1000.0",
+                        "G1 X2.0000 Y0.0000 F1000.0",
+                        f"G0 Z{z_up:.4f}",
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            metrics = mod._analyze_gcode(path)
+
+        self.assertEqual(metrics["pen_down_strokes"], 2)
+        self.assertEqual(metrics["segments_total"], 3)
+        self.assertEqual(metrics["short_segments_lt_035_mm"], 2)
+        self.assertEqual(metrics["micro_segments_lt_015_mm"], 1)
+        self.assertEqual(metrics["tiny_strokes_lt_08_mm"], 1)
+        self.assertEqual(metrics["point_like_strokes"], 1)
+        self.assertGreater(float(metrics["avg_stroke_length_mm"]), 0.0)
+
     def test_condition_image_rect_filter_accepts_only_small_thumbnails(self) -> None:
         mod = _load_module()
         self.assertTrue(mod._is_small_condition_image_rect_mm(5.0, 5.0, 40.0, 34.0))
@@ -83,7 +119,7 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
 
     def test_force_a4_single_page_for_drawing_disabled(self) -> None:
         mod = _load_module()
-        self.assertFalse(
+        self.assertTrue(
             mod._force_a4_single_page_for_drawing(
                 Path(r"C:\plotter_pdf\Компьютерная графика\МЧ00.01.00.02 Крышка.pdf")
             )

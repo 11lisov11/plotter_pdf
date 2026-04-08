@@ -9,26 +9,26 @@ Extracting paths from SVG ...
 Raw geometry bounds: x(0.508, 420.539) y(0.508, 297.711)
 SVG page: 421.047 x 298.111 mm
 Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).
-SVG geometry: paths=5005, segments=5999.
+SVG geometry: paths=3571, segments=4247.
 Source bounds: x(0.508, 420.539) y(0.508, 297.518)
 Fit to work area: scale=0.8571, translate=(-90.435,-282.716), from (0.508, 0.508)-(420.539, 297.518)
 Pass window: col 2/2, row 1/1, source=360.000x254.562 mm, window=180.000x254.562 mm, offset=(180.000,0.000), shift=(-90.000,0.000)
 Sheet pass transform: rotating geometry by 180 deg for a3 pass 2/2 x 1/1 around active area center (90.000,-155.000).
 Sheet pass transform: translating geometry by (0.000,3.000) mm for a3 pass 2/2 x 1/1.
-Work area clipping: kept 3002 visible segments, dropped 2997 out-of-area segments.
-Segment dedup: dropped 244/3002 retraced segments (8.1%), kept=2758, eps=0.010 mm
-Reorder: source order preserved (2447 polylines).
-Segment counts: source=5999, fitted=5999, clipped=3002
-Drawable segments after clip: 3002 (50.0% of source)
+Work area clipping: kept 2173 visible segments, dropped 2074 out-of-area segments.
+Segment dedup: dropped 236/2173 retraced segments (10.9%), kept=1937, eps=0.010 mm
+Reorder: source order preserved (1814 polylines).
+Segment counts: source=4247, fitted=4247, clipped=2173
+Drawable segments after clip: 2173 (51.2% of source)
 Warning: significant clipping/transforming occurred. Check that page is inside target work area.
 Prepared bounds: x(0.000, 180.000) y(-279.281, -24.719)
-Estimated draw length: 5.34 m
+Estimated draw length: 4.98 m
 Applying pen-up / pen-down ...
-G-code stats: lines=9471, draw=7212, travel=2245, bounds=0.000..180.000 x, -279.281..0.000 y
-Preflight: ok: lines=9471, draw=7212, travel=2245, ratio=0.31
-Saved file stats: lines=9471, draw=7212, travel=2245, bounds=0.000..180.000 x, -279.281..0.000 y
-Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1775575153265141000.nc
-Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1775575153265141000_vector.svg
-Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1775575153265141000_vector.pdf
+G-code stats: lines=6810, draw=5169, travel=1627, bounds=0.000..180.000 x, -279.281..0.000 y
+Preflight: ok: lines=6810, draw=5169, travel=1627, ratio=0.31
+Saved file stats: lines=6810, draw=5169, travel=1627, bounds=0.000..180.000 x, -279.281..0.000 y
+Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1775651279707930900.nc
+Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1775651279707930900_vector.svg
+Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1775651279707930900_vector.pdf
 Sheet preview aligned to reference bbox Y and centered on page X: ref=(0.353,0.353)..(420.518,297.670) mm
 Sheet preview placed on source page: offset=(120.524,279.633) mm

@@ -258,7 +258,11 @@ def _force_a3_two_pass_for_large_sheet(source_pdf: Path) -> bool:
 
 
 def _force_a4_single_page_for_drawing(source_pdf: Path) -> bool:
-    return False
+    stem = str(source_pdf.stem).strip().lower()
+    parent = str(source_pdf.parent).lower()
+    if "компьютерная графика" not in parent:
+        return False
+    return stem == "мч00.01.00.02 крышка"
 
 
 def _render_pdf_page_gray(pdf_path: Path, page_index: int = 0, dpi: int = 140) -> np.ndarray:
@@ -1153,25 +1157,55 @@ def _analyze_gcode(nc_path: Path) -> dict[str, Any]:
     polylines = _gcode_to_polylines(lines, z_up=float(backend.Z_UP), z_down=float(backend.Z_DOWN))
     total_segments = 0
     total_draw_len = 0.0
+    pen_down_strokes = 0
+    short_segments_lt_035_mm = 0
+    micro_segments_lt_015_mm = 0
+    tiny_strokes_lt_08_mm = 0
+    point_like_strokes = 0
+    avg_stroke_length_mm = 0.0
     xs: list[float] = []
     ys: list[float] = []
     seen: dict[tuple[tuple[float, float], tuple[float, float]], int] = {}
     for poly in polylines:
         if len(poly) < 2:
             continue
-        total_draw_len += _polyline_length(poly)
+        pen_down_strokes += 1
+        stroke_len = _polyline_length(poly)
+        total_draw_len += stroke_len
+        avg_stroke_length_mm += stroke_len
+        if stroke_len < 0.8:
+            tiny_strokes_lt_08_mm += 1
+        px = [float(pt[0]) for pt in poly]
+        py = [float(pt[1]) for pt in poly]
+        span_x = max(px) - min(px)
+        span_y = max(py) - min(py)
+        if stroke_len < 0.35 or (span_x <= 0.30 and span_y <= 0.30 and stroke_len <= 0.80):
+            point_like_strokes += 1
         for idx in range(1, len(poly)):
             a = poly[idx - 1]
             b = poly[idx]
             total_segments += 1
             seen[_segment_key(a, b)] = seen.get(_segment_key(a, b), 0) + 1
+            seg_len = math.hypot(float(b[0]) - float(a[0]), float(b[1]) - float(a[1]))
+            if seg_len < 0.35:
+                short_segments_lt_035_mm += 1
+            if seg_len < 0.15:
+                micro_segments_lt_015_mm += 1
             xs.extend([float(a[0]), float(b[0])])
             ys.extend([float(a[1]), float(b[1])])
     duplicate_segments = sum(max(0, cnt - 1) for cnt in seen.values())
+    if pen_down_strokes:
+        avg_stroke_length_mm /= float(pen_down_strokes)
     return {
         "draw_length_mm": round(total_draw_len, 3),
         "segments_total": int(total_segments),
         "segments_duplicate": int(duplicate_segments),
+        "pen_down_strokes": int(pen_down_strokes),
+        "short_segments_lt_035_mm": int(short_segments_lt_035_mm),
+        "micro_segments_lt_015_mm": int(micro_segments_lt_015_mm),
+        "tiny_strokes_lt_08_mm": int(tiny_strokes_lt_08_mm),
+        "point_like_strokes": int(point_like_strokes),
+        "avg_stroke_length_mm": round(avg_stroke_length_mm, 3),
         "bounds": {
             "x_min": min(xs) if xs else 0.0,
             "x_max": max(xs) if xs else 0.0,
