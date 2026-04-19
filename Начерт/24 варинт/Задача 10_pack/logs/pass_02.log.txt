@@ -1,8 +1,8 @@
 A3 header miniature crop: rect=10.02,13.59,195.53,53.81 mm -> crop_px=351,114,1169,950.
-Image contour tracing: +101 path(s) from embedded raster.
-Image vectorization mode: centerline (added 101 path(s), simplify=0.02 mm).
-Condition image recovery: rect=10.02,13.59,195.53,53.81 mm -> +101 path(s).
-A3 condition image recovery summary: 1 image(s), 101 path(s), appended=101.
+Image contour tracing: +102 path(s) from embedded raster.
+Image vectorization mode: centerline (added 102 path(s), simplify=0.02 mm).
+Condition image recovery: rect=10.02,13.59,195.53,53.81 mm -> +102 path(s).
+A3 condition image recovery summary: 1 image(s), 102 path(s), appended=102.
 A3 clean source route: direct PDF vector SVG export (text_as_path=True).
 pass_02_rotated_180_for_sheet_flip=True
 --- a3 clean pass ---
@@ -14,25 +14,27 @@ Extracting paths from SVG ...
 Raw geometry bounds: x(0.158, 420.147) y(0.000, 297.388)
 SVG page: 420.158 x 297.039 mm
 Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).
-SVG geometry: paths=4473, segments=4858.
+SVG geometry: paths=4484, segments=4927.
 Source bounds: x(0.158, 420.147) y(0.000, 297.295)
 Fit to work area: scale=0.8572, translate=(-90.135,-282.415), from (0.158, 0.000)-(420.147, 297.295)
 Pass window: col 2/2, row 1/1, source=360.000x254.831 mm, window=180.000x254.831 mm, offset=(180.000,0.000), shift=(-90.000,0.000)
 Sheet pass transform: rotating geometry by 180 deg for a3 pass 2/2 x 1/1 around active area center (90.000,-155.000).
 Sheet pass transform: translating geometry by (0.000,3.000) mm for a3 pass 2/2 x 1/1.
-Work area clipping: kept 1322 visible segments, dropped 3536 out-of-area segments.
-Reorder: source order preserved (1264 polylines).
-Segment counts: source=4858, fitted=4858, clipped=1322
-Drawable segments after clip: 1322 (27.2% of source)
+Work area clipping: kept 1292 visible segments, dropped 3635 out-of-area segments.
+Reorder: source order preserved (1269 polylines).
+Technical text join: merged 652 short gaps (gap<=0.55 mm, dy<=0.75 mm), polylines 1269 -> 617
+Polyline optimization: 1269 -> 617
+Segment counts: source=4927, fitted=4927, clipped=1292
+Drawable segments after clip: 1292 (26.2% of source)
 Warning: significant clipping/transforming occurred. Check that page is inside target work area.
 Prepared bounds: x(0.000, 180.000) y(-279.172, -24.585)
-Estimated draw length: 6.09 m
+Estimated draw length: 6.07 m
 Applying pen-up / pen-down ...
-G-code stats: lines=3178, draw=2544, travel=620, bounds=0.000..180.000 x, -279.172..0.000 y
-Preflight: ok: lines=3178, draw=2544, travel=620, ratio=0.24
-Saved file stats: lines=3178, draw=2544, travel=620, bounds=0.000..180.000 x, -279.172..0.000 y
-Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1775575086047235900.nc
-Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1775575086047235900_vector.svg
-Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1775575086047235900_vector.pdf
+G-code stats: lines=2489, draw=2026, travel=449, bounds=0.000..180.000 x, -279.172..0.000 y
+Preflight: ok: lines=2489, draw=2026, travel=449, ratio=0.22
+Saved file stats: lines=2489, draw=2026, travel=449, bounds=0.000..180.000 x, -279.172..0.000 y
+Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1776593198029285400.nc
+Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1776593198029285400_vector.svg
+Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1776593198029285400_vector.pdf
 Sheet preview aligned to reference bbox Y and centered on page X: ref=(0.088,0.000)..(420.070,296.951) mm
 Sheet preview placed on source page: offset=(120.079,279.172) mm

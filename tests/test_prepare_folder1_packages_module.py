@@ -68,6 +68,53 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
         self.assertEqual(metrics["point_like_strokes"], 1)
         self.assertGreater(float(metrics["avg_stroke_length_mm"]), 0.0)
 
+    def test_build_sheet_preview_centers_compact_source_page(self) -> None:
+        mod = _load_module()
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            gcode_path = root / "sample.nc"
+            ref_pdf = root / "ref.pdf"
+            out_svg = root / "out.svg"
+            out_pdf = root / "out.pdf"
+            gcode_path.write_text(
+                "\n".join(
+                    [
+                        "G21",
+                        "G90",
+                        "G0 Z0.0000",
+                        "G1 Z11.9000 F1000.0",
+                        "G1 X180.0000 Y-15.0000 F1000.0",
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            ref_pdf.write_bytes(b"%PDF-1.4\n")
+            captured: dict[str, object] = {}
+
+            def _capture_svg(polys, *_args, **_kwargs):
+                captured["polys"] = polys
+
+            with mock.patch.object(mod, "_gcode_to_polylines", return_value=[[(0.0, 0.0), (180.0, 280.0)]]), \
+                mock.patch.object(mod, "_pdf_first_page_size_mm", return_value=(186.097, 286.089)), \
+                mock.patch.object(mod, "_pdf_visible_bbox_mm", return_value=(0.176, 0.176, 185.657, 285.736)), \
+                mock.patch.object(mod, "_write_svg_preview", side_effect=_capture_svg), \
+                mock.patch.object(mod, "_render_polylines_pdf", return_value=None):
+                logs: list[str] = []
+                ok, msg = mod._build_sheet_preview_from_gcode(
+                    gcode_path=gcode_path,
+                    reference_pdf=ref_pdf,
+                    out_svg=out_svg,
+                    out_pdf=out_pdf,
+                    logs=logs,
+                )
+
+            self.assertTrue(ok, msg)
+            self.assertTrue(any("centered on compact source page bbox" in line for line in logs))
+            shifted = captured["polys"]
+            self.assertAlmostEqual(shifted[0][0][0], 3.0485, places=3)
+            self.assertAlmostEqual(shifted[0][0][1], 3.0445, places=3)
+
     def test_condition_image_rect_filter_accepts_only_small_thumbnails(self) -> None:
         mod = _load_module()
         self.assertTrue(mod._is_small_condition_image_rect_mm(5.0, 5.0, 40.0, 34.0))
@@ -75,6 +122,19 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
         self.assertFalse(mod._is_small_condition_image_rect_mm(5.0, 5.0, 90.0, 34.0))
         self.assertFalse(mod._is_small_condition_image_rect_mm(5.0, 5.0, 40.0, 80.0))
         self.assertFalse(mod._is_small_condition_image_rect_mm(5.0, 5.0, 10.0, 10.0))
+
+    def test_variant4_nachert_a4_prefers_compact_source_overlay_route(self) -> None:
+        mod = _load_module()
+        self.assertTrue(
+            mod._prefer_direct_fit_full_for_nachert_variant4_a4(
+                Path(r"C:\plotter_pdf\Начерт\4 варинт\_generated_pdf\Задача 4.pdf")
+            )
+        )
+        self.assertFalse(
+            mod._prefer_direct_fit_full_for_nachert_variant4_a4(
+                Path(r"C:\plotter_pdf\Начерт\24 варинт\Задача 4.pdf")
+            )
+        )
 
     def test_a3_header_band_image_rect_filter_accepts_wide_top_banner(self) -> None:
         mod = _load_module()

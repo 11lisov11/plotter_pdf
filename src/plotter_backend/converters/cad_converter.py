@@ -9,6 +9,12 @@ from typing import Callable, Optional
 
 from ..errors import ConversionError, PipelineValidationError, ToolDependencyError
 
+KOMPAS_PDF2D_DLLS = (
+    Path(r"C:\Program Files\ASCON\KOMPAS-3D v23 Study\Bin\Pdf2d.dll"),
+    Path(r"C:\Program Files\ASCON\KOMPAS-3D v24 Study\Bin\Pdf2d.dll"),
+    Path(r"C:\Program Files\ASCON\KOMPAS-3D v22 Study\Bin\Pdf2d.dll"),
+)
+
 def wait_for_nonempty_file(path: Path, timeout_s: float = 15.0, poll_s: float = 0.25, stable_polls: int = 2) -> bool:
     deadline = time.time() + max(0.1, float(timeout_s))
     poll = max(0.05, float(poll_s))
@@ -34,6 +40,14 @@ def wait_for_nonempty_file(path: Path, timeout_s: float = 15.0, poll_s: float = 
     return False
 
 
+def _looks_like_pdf(path: Path) -> bool:
+    try:
+        with path.open("rb") as fh:
+            return fh.read(5) == b"%PDF-"
+    except Exception:
+        return False
+
+
 def kompas_print_to_pdf(
     input_path: Path,
     output_pdf: Path,
@@ -57,7 +71,7 @@ def kompas_print_to_pdf(
     try:
         app = None
         last_exc: Optional[Exception] = None
-        for progid in ("KOMPAS.Application.7", "KOMPAS.Application"):
+        for progid in ("KOMPAS.Application.7", "KOMPAS.Application.5", "KOMPAS.Application"):
             try:
                 logger(f"KOMPAS dispatch: {progid}")
                 app = win32com.client.gencache.EnsureDispatch(progid)
@@ -65,6 +79,13 @@ def kompas_print_to_pdf(
             except Exception as exc:
                 last_exc = exc
                 app = None
+                try:
+                    logger(f"KOMPAS dispatch fallback: {progid}")
+                    app = win32com.client.Dispatch(progid)
+                    break
+                except Exception as dispatch_exc:
+                    last_exc = dispatch_exc
+                    app = None
         if app is None:
             raise ToolDependencyError(f"KOMPAS COM application is unavailable: {last_exc}")
 
@@ -76,6 +97,26 @@ def kompas_print_to_pdf(
             app.SuppressAlerts = True
         except Exception:
             pass
+
+        for converter_dll in KOMPAS_PDF2D_DLLS:
+            if not converter_dll.exists():
+                continue
+            try:
+                logger(f"KOMPAS Pdf2d converter: {converter_dll}")
+                converter = app.Converter(str(converter_dll))
+                for command in range(0, 6):
+                    try:
+                        if output_pdf.exists():
+                            output_pdf.unlink()
+                    except Exception:
+                        pass
+                    logger(f"Pdf2d.Convert (command {command}): {input_path} -> {output_pdf}")
+                    result = converter.Convert(str(input_path), str(output_pdf), command, False)
+                    logger(f"Pdf2d.Convert result (command {command}): {result!r}")
+                    if wait_for_nonempty(output_pdf, timeout_s=6.0) and _looks_like_pdf(output_pdf):
+                        return
+            except Exception as exc:
+                logger(f"Warning: Pdf2d converter failed: {type(exc).__name__}: {exc}")
 
         try:
             print_job = app.PrintJob
@@ -99,7 +140,7 @@ def kompas_print_to_pdf(
             result = print_job.Execute(str(output_pdf))
             logger(f"PrintJob.Execute result (attempt {attempt}): {result!r}")
 
-            if wait_for_nonempty(output_pdf, timeout_s=18.0):
+            if wait_for_nonempty(output_pdf, timeout_s=18.0) and _looks_like_pdf(output_pdf):
                 return
             time.sleep(0.6)
 

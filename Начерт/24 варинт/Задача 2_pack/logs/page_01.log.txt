@@ -96,14 +96,16 @@ Source bounds: x(0.000, 188.820) y(0.000, 280.000)
 Fit to work area: scale=0.9533, translate=(0.000,-288.460), from (0.000, 0.000)-(188.820, 280.000)
 Segment dedup: dropped 2/6911 retraced segments (0.0%), kept=6909, eps=0.010 mm
 Reorder: source order preserved (880 polylines).
+Technical text join: merged 187 short gaps (gap<=0.55 mm, dy<=0.75 mm), polylines 880 -> 693
+Polyline optimization: 880 -> 693
 Segment counts: source=6911, fitted=6911, clipped=6911
 Drawable segments after clip: 6911 (100.0% of source)
 Prepared bounds: x(0.000, 180.000) y(-288.460, -21.540)
-Estimated draw length: 6.03 m
+Estimated draw length: 6.05 m
 Applying pen-up / pen-down ...
-G-code stats: lines=9569, draw=8669, travel=886, bounds=0.000..180.000 x, -288.460..0.000 y
-Preflight: ok: lines=9569, draw=8669, travel=886, ratio=0.10
-Saved file stats: lines=9569, draw=8669, travel=886, bounds=0.000..180.000 x, -288.460..0.000 y
+G-code stats: lines=9192, draw=8480, travel=698, bounds=0.000..180.000 x, -288.460..0.000 y
+Preflight: ok: lines=9192, draw=8480, travel=698, ratio=0.08
+Saved file stats: lines=9192, draw=8480, travel=698, bounds=0.000..180.000 x, -288.460..0.000 y
 Saved: C:\plotter_pdf\Начерт\24 варинт\Задача 2_pack\_candidates\a4_hybrid_frame.nc
 Sheet preview aligned to reference bbox Y and centered on page X: ref=(0.353,0.353)..(210.457,297.494) mm
 Sheet preview placed on source page: offset=(15.537,288.813) mm

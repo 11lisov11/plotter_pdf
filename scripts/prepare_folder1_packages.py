@@ -265,6 +265,11 @@ def _force_a4_single_page_for_drawing(source_pdf: Path) -> bool:
     return stem == "мч00.01.00.02 крышка"
 
 
+def _prefer_direct_fit_full_for_nachert_a4(source_pdf: Path) -> bool:
+    parts = [str(part).lower() for part in source_pdf.parts]
+    return "РЅР°С‡РµСЂС‚" in parts and "4 РІР°СЂРёРЅС‚" in parts
+
+
 def _render_pdf_page_gray(pdf_path: Path, page_index: int = 0, dpi: int = 140) -> np.ndarray:
     doc = fitz.open(pdf_path)
     page = doc[page_index]
@@ -274,6 +279,11 @@ def _render_pdf_page_gray(pdf_path: Path, page_index: int = 0, dpi: int = 140) -
     if pix.n == 4:
         return cv2.cvtColor(arr, cv2.COLOR_RGBA2GRAY)
     return cv2.cvtColor(arr, cv2.COLOR_RGB2GRAY)
+
+
+def _prefer_direct_fit_full_for_nachert_variant4_a4(source_pdf: Path) -> bool:
+    parts = [str(part).casefold() for part in source_pdf.parts]
+    return "начерт" in parts and "4 варинт" in parts
 
 
 def _crop_content(gray: np.ndarray) -> np.ndarray:
@@ -1576,9 +1586,28 @@ def _build_sheet_preview_from_gcode(
         width_mm = max(1e-9, float(src_x1 - src_x0))
         height_mm = max(1e-9, float(src_y1 - src_y0))
         ref_x0, ref_y0, _ref_x1, _ref_y1 = [float(v) for v in ref_bbox]
-        target_x0 = max(0.0, (float(page_w_mm) - float(width_mm)) * 0.5)
-        target_x0 = min(float(target_x0), max(0.0, float(page_w_mm) - float(width_mm)))
-        target_y0 = min(max(0.0, float(ref_y0)), max(0.0, float(page_h_mm) - float(height_mm)))
+        left_margin_mm = max(0.0, float(ref_x0))
+        right_margin_mm = max(0.0, float(page_w_mm) - float(_ref_x1))
+        top_margin_mm = max(0.0, float(ref_y0))
+        bottom_margin_mm = max(0.0, float(page_h_mm) - float(_ref_y1))
+        compact_reference_bbox = (
+            left_margin_mm <= 2.0
+            and right_margin_mm <= 2.0
+            and top_margin_mm <= 2.0
+            and bottom_margin_mm <= 2.0
+        )
+        if compact_reference_bbox:
+            target_x0 = max(0.0, (float(page_w_mm) - float(width_mm)) * 0.5)
+            target_x0 = min(float(target_x0), max(0.0, float(page_w_mm) - float(width_mm)))
+            target_y0 = max(0.0, (float(page_h_mm) - float(height_mm)) * 0.5)
+            target_y0 = min(float(target_y0), max(0.0, float(page_h_mm) - float(height_mm)))
+        elif left_margin_mm <= 2.0 and right_margin_mm <= 2.0:
+            target_x0 = min(max(0.0, float(ref_x0)), max(0.0, float(page_w_mm) - float(width_mm)))
+            target_y0 = min(max(0.0, float(ref_y0)), max(0.0, float(page_h_mm) - float(height_mm)))
+        else:
+            target_x0 = max(0.0, (float(page_w_mm) - float(width_mm)) * 0.5)
+            target_x0 = min(float(target_x0), max(0.0, float(page_w_mm) - float(width_mm)))
+            target_y0 = min(max(0.0, float(ref_y0)), max(0.0, float(page_h_mm) - float(height_mm)))
         offset_x = float(target_x0) - float(src_x0)
         offset_y = float(target_y0) - float(src_y0)
         shifted = [
@@ -1593,11 +1622,23 @@ def _build_sheet_preview_from_gcode(
             "reference_y0_mm": float(ref_y0),
             "reference_x1_mm": float(_ref_x1),
             "reference_y1_mm": float(_ref_y1),
+            "compact_reference_bbox": bool(compact_reference_bbox),
         }
-        logs.append(
-            "Sheet preview aligned to reference bbox Y and centered on page X: "
-            f"ref=({float(ref_x0):.3f},{float(ref_y0):.3f})..({float(_ref_x1):.3f},{float(_ref_y1):.3f}) mm"
-        )
+        if compact_reference_bbox:
+            logs.append(
+                "Sheet preview centered on compact source page bbox: "
+                f"ref=({float(ref_x0):.3f},{float(ref_y0):.3f})..({float(_ref_x1):.3f},{float(_ref_y1):.3f}) mm"
+            )
+        elif left_margin_mm <= 2.0 and right_margin_mm <= 2.0:
+            logs.append(
+                "Sheet preview aligned to reference bbox X/Y: "
+                f"ref=({float(ref_x0):.3f},{float(ref_y0):.3f})..({float(_ref_x1):.3f},{float(_ref_y1):.3f}) mm"
+            )
+        else:
+            logs.append(
+                "Sheet preview aligned to reference bbox Y and centered on page X: "
+                f"ref=({float(ref_x0):.3f},{float(ref_y0):.3f})..({float(_ref_x1):.3f},{float(_ref_y1):.3f}) mm"
+            )
     _write_svg_preview(shifted, out_svg, canvas_bounds_mm=(0.0, float(page_w_mm), 0.0, float(page_h_mm)))
     _render_polylines_pdf(polylines=shifted, out_pdf=out_pdf, canvas_bounds_mm=(0.0, float(page_w_mm), 0.0, float(page_h_mm)))
     logs.append(
@@ -2318,6 +2359,7 @@ def _extract_small_condition_image_polylines_from_pdf(
             "IMAGE_CONTOUR_MM_SIMPLIFY_EPS": float(getattr(backend, "IMAGE_CONTOUR_MM_SIMPLIFY_EPS", 0.12)),
             "IMAGE_CONTOUR_LINEART_SIMPLIFY_MM": float(getattr(backend, "IMAGE_CONTOUR_LINEART_SIMPLIFY_MM", 0.08)),
             "IMAGE_CONTOUR_SMALL_LINEART_SIMPLIFY_MM": float(getattr(backend, "IMAGE_CONTOUR_SMALL_LINEART_SIMPLIFY_MM", 0.035)),
+            "IMAGE_CONTOUR_SMALL_LINEART_CIRCLE_PARAM2": float(getattr(backend, "IMAGE_CONTOUR_SMALL_LINEART_CIRCLE_PARAM2", 10.0)),
         }
         try:
             setattr(backend, "HANDWRITING_TEXT_ENABLED", True)
@@ -2330,6 +2372,7 @@ def _extract_small_condition_image_polylines_from_pdf(
             setattr(backend, "IMAGE_CONTOUR_MM_SIMPLIFY_EPS", 0.02)
             setattr(backend, "IMAGE_CONTOUR_LINEART_SIMPLIFY_MM", 0.02)
             setattr(backend, "IMAGE_CONTOUR_SMALL_LINEART_SIMPLIFY_MM", 0.015)
+            setattr(backend, "IMAGE_CONTOUR_SMALL_LINEART_CIRCLE_PARAM2", 9999.0)
             with tempfile.TemporaryDirectory(prefix="plotter_condimg_") as td:
                 td_path = Path(td)
                 for img_idx, img in enumerate(page.get_images(full=True)):
@@ -4005,30 +4048,38 @@ def _prepare_drawing_candidate(
     exact_geometry_mode: bool,
     strict_one_to_one: bool,
     candidate_dir: Path,
+    image_contours_mode: str = "off",
+    disable_small_lineart_circle_recovery: bool = False,
 ) -> dict[str, Any]:
     with tempfile.TemporaryDirectory(prefix="plotter_ascii_drawing_") as td:
         td_path = Path(td)
         ascii_pdf = td_path / "input.pdf"
         shutil.copy2(source_pdf, ascii_pdf)
         ctx = _ctx(f"preview-{time.time_ns()}")
-        ok, msg, logs = _bridge_run_preview(
-            ctx=ctx,
-            input_path=ascii_pdf,
-            sheet=SheetConfig(sheet_format="a4", anchor="lower_left"),
-            tool_mode="pen",
-            render_mode="drawing",
-            quality_profile="high",
-            force_text_to_path=True,
-            handwriting_enabled=False,
-            handwriting_font="Marck Script",
-            handwriting_formula_font="Times New Roman",
-            image_contours_mode="off",
-            source_page_index=1,
-            source_all_pages=False,
-            exact_geometry_mode=exact_geometry_mode,
-            safe_travel_lift=True,
-            strict_one_to_one=strict_one_to_one,
-        )
+        prev_circle_param2 = float(getattr(backend, "IMAGE_CONTOUR_SMALL_LINEART_CIRCLE_PARAM2", 10.0))
+        try:
+            if disable_small_lineart_circle_recovery:
+                setattr(backend, "IMAGE_CONTOUR_SMALL_LINEART_CIRCLE_PARAM2", 9999.0)
+            ok, msg, logs = _bridge_run_preview(
+                ctx=ctx,
+                input_path=ascii_pdf,
+                sheet=SheetConfig(sheet_format="a4", anchor="lower_left"),
+                tool_mode="pen",
+                render_mode="drawing",
+                quality_profile="high",
+                force_text_to_path=True,
+                handwriting_enabled=False,
+                handwriting_font="Marck Script",
+                handwriting_formula_font="Times New Roman",
+                image_contours_mode=image_contours_mode,
+                source_page_index=1,
+                source_all_pages=False,
+                exact_geometry_mode=exact_geometry_mode,
+                safe_travel_lift=True,
+                strict_one_to_one=strict_one_to_one,
+            )
+        finally:
+            setattr(backend, "IMAGE_CONTOUR_SMALL_LINEART_CIRCLE_PARAM2", prev_circle_param2)
         if not ok:
             return {
                 "variant": variant_name,
@@ -4067,6 +4118,148 @@ def _prepare_drawing_candidate(
             "pdf": str(pdf_path),
             "nc": str(nc_path),
             "gcode": str(gcode_path),
+        }
+
+
+def _prepare_compact_source_overlay_candidate(
+    source_pdf: Path,
+    *,
+    variant_name: str,
+    candidate_dir: Path,
+) -> dict[str, Any]:
+    with tempfile.TemporaryDirectory(prefix="plotter_ascii_drawing_compact_") as td:
+        td_path = Path(td)
+        ascii_pdf = td_path / "input.pdf"
+        source_svg = td_path / "source.svg"
+        shutil.copy2(source_pdf, ascii_pdf)
+        logs: list[str] = []
+        try:
+            page_w_mm, page_h_mm = _export_pdf_page_to_mupdf_svg(
+                ascii_pdf,
+                0,
+                source_svg,
+                text_as_path=False,
+            )
+            header_lines = _extract_a4_header_text_lines_from_pdf(ascii_pdf, page_index=0)
+            if header_lines:
+                line_boxes = [
+                    tuple(line.get("bbox_mm", ()) or ())
+                    for line in header_lines
+                    if len(tuple(line.get("bbox_mm", ()) or ())) >= 4
+                ]
+                if line_boxes:
+                    region_mm = (
+                        min(float(b[0]) for b in line_boxes) - 1.0,
+                        min(float(b[1]) for b in line_boxes) - 1.0,
+                        max(float(b[2]) for b in line_boxes) + 1.0,
+                        max(float(b[3]) for b in line_boxes) + 1.0,
+                    )
+                    removed_nodes = _remove_svg_text_nodes_in_region(
+                        source_svg,
+                        region_mm=region_mm,
+                        page_w_mm=float(page_w_mm),
+                        page_h_mm=float(page_h_mm),
+                    )
+                    rerendered = _render_pdf_text_lines_polylines_in_place(
+                        header_lines,
+                        tight_layout=True,
+                        ttf_backend="skeleton",
+                        logger=logs.append,
+                    )
+                    appended_text = _append_overlay_polylines_to_existing_svg(
+                        source_svg,
+                        rerendered,
+                        page_w_mm=float(page_w_mm),
+                        page_h_mm=float(page_h_mm),
+                    )
+                    logs.append(
+                        "A4 compact header text reroute: "
+                        f"removed {int(removed_nodes)} SVG text node(s), appended {int(appended_text)} single-line path(s)."
+                    )
+            extra_polys, recovered = _extract_small_condition_image_polylines_from_pdf(
+                ascii_pdf,
+                page_index=0,
+                logger=logs.append,
+            )
+            appended = 0
+            if extra_polys:
+                appended = _append_overlay_polylines_to_existing_svg(
+                    source_svg,
+                    extra_polys,
+                    page_w_mm=float(page_w_mm),
+                    page_h_mm=float(page_h_mm),
+                )
+            logs.append(
+                "A4 compact source route: direct PDF vector SVG export with miniature recovery "
+                f"(images={len(recovered)}, paths={len(extra_polys)}, appended={int(appended)})."
+            )
+        except Exception as exc:
+            return {
+                "variant": variant_name,
+                "ok": False,
+                "message": str(exc),
+                "logs": [f"A4 compact source route failed: {exc}"],
+            }
+
+        ctx = _ctx(f"preview-{time.time_ns()}")
+        ok, msg, bridge_logs = _bridge_run_preview(
+            ctx=ctx,
+            input_path=source_svg,
+            sheet=SheetConfig(sheet_format="a4", anchor="lower_left"),
+            tool_mode="pen",
+            render_mode="drawing",
+            quality_profile="high",
+            force_text_to_path=True,
+            handwriting_enabled=False,
+            handwriting_font="Marck Script",
+            handwriting_formula_font="Times New Roman",
+            image_contours_mode="off",
+            source_page_index=1,
+            source_all_pages=False,
+            exact_geometry_mode=False,
+            safe_travel_lift=True,
+            strict_one_to_one=False,
+        )
+        logs.extend(bridge_logs)
+        if not ok:
+            return {
+                "variant": variant_name,
+                "ok": False,
+                "message": msg,
+                "logs": logs,
+            }
+        prefix = candidate_dir / variant_name
+        svg_path, pdf_path, nc_path, gcode_path = _copy_latest_preview_artifacts(prefix, op_id=ctx.op_id)
+        preview_ok, preview_err = _build_sheet_preview_from_gcode(
+            gcode_path=nc_path,
+            reference_pdf=source_pdf,
+            out_svg=svg_path,
+            out_pdf=pdf_path,
+            logs=logs,
+        )
+        if not preview_ok:
+            return {
+                "variant": variant_name,
+                "ok": False,
+                "message": preview_err,
+                "logs": logs,
+            }
+        metrics = _analyze_gcode(nc_path)
+        similarity = _layout_similarity_pdf(source_pdf, pdf_path, source_page_index=0)
+        return {
+            "variant": variant_name,
+            "ok": True,
+            "message": msg,
+            "logs": logs,
+            "fit_scale": _parse_fit_scale(logs),
+            "clipping_warning": _has_clipping_warning(logs),
+            "layout_similarity": similarity,
+            "metrics": metrics,
+            "svg": str(svg_path),
+            "pdf": str(pdf_path),
+            "nc": str(nc_path),
+            "gcode": str(gcode_path),
+            "notes": "source_cleanup=direct_pdf_svg; compact_miniature_overlay=True",
         }
 
 
@@ -4945,12 +5138,20 @@ def _prepare_drawing_package(source_pdf: Path, package_dir: Path) -> tuple[dict[
             ),
             (
                 "fit_full",
-                lambda: _prepare_drawing_candidate(
+                lambda: _prepare_compact_source_overlay_candidate(
+                    source_pdf,
+                    variant_name="fit_full",
+                    candidate_dir=candidate_root,
+                )
+                if _prefer_direct_fit_full_for_nachert_variant4_a4(source_pdf)
+                else _prepare_drawing_candidate(
                     source_pdf,
                     variant_name="fit_full",
                     exact_geometry_mode=False,
                     strict_one_to_one=False,
                     candidate_dir=candidate_root,
+                    image_contours_mode="off",
+                    disable_small_lineart_circle_recovery=False,
                 ),
             ),
             (
@@ -5033,8 +5234,12 @@ def _prepare_drawing_package(source_pdf: Path, package_dir: Path) -> tuple[dict[
             row.update(crop_metrics)
 
         best = max(successful, key=lambda row: float(row.get("layout_similarity", 0.0) or 0.0))
+        if _prefer_direct_fit_full_for_nachert_variant4_a4(source_pdf):
+            fit_full = next((row for row in successful if str(row.get("variant", "")) == "fit_full"), None)
+            if fit_full is not None:
+                best = fit_full
         hybrid = next((row for row in successful if str(row.get("variant", "")) == "a4_hybrid_frame"), None)
-        if hybrid is not None:
+        if hybrid is not None and not _prefer_direct_fit_full_for_nachert_variant4_a4(source_pdf):
             best_sim = float(best.get("layout_similarity", 0.0) or 0.0)
             hybrid_sim = float(hybrid.get("layout_similarity", 0.0) or 0.0)
             hybrid_notes = str(hybrid.get("notes", "") or "")

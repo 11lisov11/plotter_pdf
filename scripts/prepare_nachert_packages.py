@@ -15,9 +15,23 @@ import prepare_folder1_packages as prep
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_ROOT = PROJECT_ROOT / "\u041d\u0430\u0447\u0435\u0440\u0442"
-A3_TASK_NUMBERS = {3, 10}
 
 
+def _prune_package_outputs(package_dir: Path, *, is_a3: bool, source_pdf: Path) -> None:
+    keep_files = (
+        {"pass_01.pdf", "pass_01.gcode", "pass_02.pdf", "pass_02.gcode", "combined_preview.pdf", "source_kompas.pdf"}
+        if is_a3
+        else {"page_01.pdf", "page_01.gcode", "source_kompas.pdf"}
+    )
+    source_copy = package_dir / "source_kompas.pdf"
+    source_copy.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source_pdf, source_copy)
+    for child in list(package_dir.iterdir()):
+        if child.is_dir():
+            shutil.rmtree(child, ignore_errors=True)
+            continue
+        if child.name not in keep_files:
+            child.unlink(missing_ok=True)
 def _task_number_from_name(name: str) -> int | None:
     match = re.search(r"(\d+)", str(name or ""))
     if match is None:
@@ -107,7 +121,7 @@ def _prepare_frw_source_pdf(source_path: Path, generated_dir: Path) -> tuple[Pat
     doc.close()
 
     task_number = _task_number_from_name(source_path.stem)
-    if task_number in A3_TASK_NUMBERS and page_count == 2:
+    if page_count == 2:
         merged_pdf = _merge_split_a3_pdf(raw_pdf, generated_dir / f"{source_path.stem}.pdf")
         return merged_pdf, {
             "source_kind": "frw",
@@ -272,6 +286,7 @@ def _prepare_variant(variant_dir: Path, *, only_tasks: set[int] | None = None) -
         prep._write_json(package_dir / "report.json", report)
         if rows:
             prep._write_csv(package_dir / "summary.csv", rows)
+        _prune_package_outputs(package_dir, is_a3=bool(report.get("a3_two_pass", False)), source_pdf=source_pdf)
         all_rows.extend(rows)
         all_reports.append(report)
         source_index.append(

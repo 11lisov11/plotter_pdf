@@ -19,6 +19,15 @@ def _write_one_page_pdf(path: Path) -> None:
     doc.close()
 
 
+def _write_two_page_pdf(path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    doc = fitz.open()
+    doc.new_page(width=595, height=842)
+    doc.new_page(width=595, height=842)
+    doc.save(path)
+    doc.close()
+
+
 def test_iter_variant_sources_falls_back_to_generated_pdf(tmp_path: Path) -> None:
     variant_dir = tmp_path / "1 вариант"
     generated_dir = variant_dir / "_generated_pdf"
@@ -140,3 +149,44 @@ def test_prepare_variant_only_tasks_preserves_other_rows(tmp_path: Path, monkeyp
     rows = mod.prep._read_rows_from_csv(variant_dir / "_prepared_summary.csv")
     assert [Path(row.package_dir).name for row in rows] == ["Задача 1_pack", "Задача 2_pack"]
     assert [row.notes for row in rows] == ["old1", "new"]
+
+
+def test_prepare_frw_source_pdf_merges_two_page_export_for_nonlegacy_task(tmp_path: Path, monkeypatch) -> None:
+    variant_dir = tmp_path / "4 РІР°СЂРёРЅС‚"
+    generated_dir = variant_dir / "_generated_pdf"
+    generated_dir.mkdir(parents=True)
+    frw_path = variant_dir / "Р—Р°РґР°С‡Р° 7.frw"
+    frw_path.write_text("stub", encoding="utf-8")
+
+    def _fake_frw_to_pdf(_source: Path, target: Path, _logger) -> None:
+        _write_two_page_pdf(target)
+
+    monkeypatch.setattr(mod.prep.backend, "frw_to_pdf", _fake_frw_to_pdf)
+
+    merged_pdf, meta = mod._prepare_frw_source_pdf(frw_path, generated_dir)
+
+    assert merged_pdf.exists()
+    assert meta["task_number"] == 7
+    assert meta["page_count"] == 2
+    assert "merged_a3_pdf" in meta
+    doc = fitz.open(merged_pdf)
+    try:
+        assert doc.page_count == 1
+    finally:
+        doc.close()
+
+
+def test_prune_package_outputs_keeps_only_final_files_and_source_pdf(tmp_path: Path) -> None:
+    package = tmp_path / "task_pack"
+    package.mkdir(parents=True)
+    source_pdf = tmp_path / "source.pdf"
+    source_pdf.write_bytes(b"%PDF-1.4\n")
+    for name in ("page_01.pdf", "page_01.gcode", "page_01.nc", "page_01.svg", "report.json", "summary.csv"):
+        (package / name).write_text(name, encoding="utf-8")
+    (package / "logs").mkdir()
+    (package / "pages").mkdir()
+
+    mod._prune_package_outputs(package, is_a3=False, source_pdf=source_pdf)
+
+    names = {p.name for p in package.iterdir()}
+    assert names == {"page_01.pdf", "page_01.gcode", "source_kompas.pdf"}
