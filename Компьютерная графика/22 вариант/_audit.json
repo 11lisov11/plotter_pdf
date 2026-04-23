@@ -1,0 +1,161 @@
+{
+  "variant_dir": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант",
+  "items": [
+    {
+      "task": "КНГ.01.20.01 - Маховик_pack",
+      "package_dir": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\КНГ.01.20.01 - Маховик_pack",
+      "kind": "a4",
+      "layout_similarity": 0.979675,
+      "selected_variant": "a4_hybrid_frame",
+      "selection_reason": "hybrid_detail_preservation",
+      "source_fidelity_score": 0.647921,
+      "fragmentation_score": 0.964717,
+      "compare_png": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\КНГ.01.20.01 - Маховик_pack\\source_vs_gcode_compare.png",
+      "compare_pdf": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\КНГ.01.20.01 - Маховик_pack\\source_vs_gcode_compare.pdf"
+    },
+    {
+      "task": "МЧ00.60.00.00 Вентиль_pack",
+      "package_dir": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.00 Вентиль_pack",
+      "kind": "a4",
+      "layout_similarity": 0.968867,
+      "selected_variant": "a4_hybrid_frame",
+      "selection_reason": "hybrid_detail_preservation",
+      "source_fidelity_score": 0.645777,
+      "fragmentation_score": 0.973842,
+      "compare_png": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.00 Вентиль_pack\\source_vs_gcode_compare.png",
+      "compare_pdf": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.00 Вентиль_pack\\source_vs_gcode_compare.pdf"
+    },
+    {
+      "task": "МЧ00.60.00.00 СБ Вентиль_pack",
+      "package_dir": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.00 СБ Вентиль_pack",
+      "kind": "a3_two_pass",
+      "layout_similarity": 0.964782,
+      "selected_variant": "a3_two_pass_clean_source",
+      "selection_reason": "forced_a3_two_pass",
+      "source_fidelity_score": 0.964782,
+      "fragmentation_score": 0.760382,
+      "compare_png": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.00 СБ Вентиль_pack\\source_vs_gcode_compare.png",
+      "compare_pdf": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.00 СБ Вентиль_pack\\source_vs_gcode_compare.pdf"
+    },
+    {
+      "task": "МЧ00.60.00.01 Корпус_pack",
+      "package_dir": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.01 Корпус_pack",
+      "kind": "a3_two_pass",
+      "layout_similarity": 0.971351,
+      "selected_variant": "a3_two_pass_clean_source",
+      "selection_reason": "forced_a3_two_pass",
+      "source_fidelity_score": 0.971351,
+      "fragmentation_score": 0.713631,
+      "compare_png": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.01 Корпус_pack\\source_vs_gcode_compare.png",
+      "compare_pdf": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.01 Корпус_pack\\source_vs_gcode_compare.pdf"
+    },
+    {
+      "task": "МЧ00.60.00.02 Гайка_pack",
+      "package_dir": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.02 Гайка_pack",
+      "kind": "a4",
+      "layout_similarity": 0.979125,
+      "selected_variant": "a4_hybrid_frame",
+      "selection_reason": "hybrid_detail_preservation",
+      "source_fidelity_score": 0.648093,
+      "fragmentation_score": 0.97302,
+      "compare_png": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.02 Гайка_pack\\source_vs_gcode_compare.png",
+      "compare_pdf": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.02 Гайка_pack\\source_vs_gcode_compare.pdf"
+    },
+    {
+      "task": "МЧ00.60.00.03 Втулка_pack",
+      "package_dir": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.03 Втулка_pack",
+      "kind": "a4",
+      "layout_similarity": 0.986978,
+      "selected_variant": "a4_hybrid_frame",
+      "selection_reason": "hybrid_detail_preservation",
+      "source_fidelity_score": 0.653395,
+      "fragmentation_score": 0.983557,
+      "compare_png": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.03 Втулка_pack\\source_vs_gcode_compare.png",
+      "compare_pdf": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.03 Втулка_pack\\source_vs_gcode_compare.pdf"
+    },
+    {
+      "task": "МЧ00.60.00.04 Гайка_pack",
+      "package_dir": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.04 Гайка_pack",
+      "kind": "a3_two_pass",
+      "layout_similarity": 0.978971,
+      "selected_variant": "a3_two_pass_clean_source",
+      "selection_reason": "forced_a3_two_pass",
+      "source_fidelity_score": 0.978971,
+      "fragmentation_score": 0.723854,
+      "compare_png": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.04 Гайка_pack\\source_vs_gcode_compare.png",
+      "compare_pdf": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.04 Гайка_pack\\source_vs_gcode_compare.pdf"
+    },
+    {
+      "task": "МЧ00.60.00.05 Рукоятка_pack",
+      "package_dir": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.05 Рукоятка_pack",
+      "kind": "a4",
+      "layout_similarity": 0.983263,
+      "selected_variant": "a4_hybrid_frame",
+      "selection_reason": "hybrid_detail_preservation",
+      "source_fidelity_score": 0.650959,
+      "fragmentation_score": 0.972823,
+      "compare_png": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.05 Рукоятка_pack\\source_vs_gcode_compare.png",
+      "compare_pdf": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.05 Рукоятка_pack\\source_vs_gcode_compare.pdf"
+    },
+    {
+      "task": "МЧ00.60.00.06 Клапан_pack",
+      "package_dir": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.06 Клапан_pack",
+      "kind": "a4",
+      "layout_similarity": 0.980783,
+      "selected_variant": "a4_hybrid_frame",
+      "selection_reason": "hybrid_detail_preservation",
+      "source_fidelity_score": 0.649452,
+      "fragmentation_score": 0.968475,
+      "compare_png": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.06 Клапан_pack\\source_vs_gcode_compare.png",
+      "compare_pdf": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.06 Клапан_pack\\source_vs_gcode_compare.pdf"
+    },
+    {
+      "task": "МЧ00.60.00.07 Гайка клапана_pack",
+      "package_dir": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.07 Гайка клапана_pack",
+      "kind": "a4",
+      "layout_similarity": 0.977378,
+      "selected_variant": "a4_hybrid_frame",
+      "selection_reason": "hybrid_detail_preservation",
+      "source_fidelity_score": 0.649106,
+      "fragmentation_score": 0.967327,
+      "compare_png": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.07 Гайка клапана_pack\\source_vs_gcode_compare.png",
+      "compare_pdf": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.07 Гайка клапана_pack\\source_vs_gcode_compare.pdf"
+    },
+    {
+      "task": "МЧ00.60.00.08 Шайба_pack",
+      "package_dir": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.08 Шайба_pack",
+      "kind": "a4",
+      "layout_similarity": 0.993017,
+      "selected_variant": "a4_hybrid_frame",
+      "selection_reason": "hybrid_detail_preservation",
+      "source_fidelity_score": 0.658094,
+      "fragmentation_score": 0.988884,
+      "compare_png": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.08 Шайба_pack\\source_vs_gcode_compare.png",
+      "compare_pdf": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.08 Шайба_pack\\source_vs_gcode_compare.pdf"
+    },
+    {
+      "task": "МЧ00.60.00.09 Кольцо_pack",
+      "package_dir": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.09 Кольцо_pack",
+      "kind": "a4",
+      "layout_similarity": 0.991646,
+      "selected_variant": "a4_hybrid_frame",
+      "selection_reason": "hybrid_detail_preservation",
+      "source_fidelity_score": 0.657224,
+      "fragmentation_score": 0.986761,
+      "compare_png": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.09 Кольцо_pack\\source_vs_gcode_compare.png",
+      "compare_pdf": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.09 Кольцо_pack\\source_vs_gcode_compare.pdf"
+    },
+    {
+      "task": "МЧ00.60.00.10 Кольцо_pack",
+      "package_dir": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.10 Кольцо_pack",
+      "kind": "a4",
+      "layout_similarity": 0.990716,
+      "selected_variant": "a4_hybrid_frame",
+      "selection_reason": "hybrid_detail_preservation",
+      "source_fidelity_score": 0.656949,
+      "fragmentation_score": 0.981509,
+      "compare_png": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.10 Кольцо_pack\\source_vs_gcode_compare.png",
+      "compare_pdf": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.10 Кольцо_pack\\source_vs_gcode_compare.pdf"
+    }
+  ]
+}

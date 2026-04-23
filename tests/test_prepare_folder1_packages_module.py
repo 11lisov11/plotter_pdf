@@ -68,6 +68,44 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
         self.assertEqual(metrics["point_like_strokes"], 1)
         self.assertGreater(float(metrics["avg_stroke_length_mm"]), 0.0)
 
+    def test_candidate_source_fidelity_score_rewards_similarity_and_crop(self) -> None:
+        mod = _load_module()
+        low = mod._candidate_source_fidelity_score(
+            {
+                "layout_similarity": 0.94,
+                "source_crop_iou": 0.03,
+                "source_crop_corr": -0.10,
+            }
+        )
+        high = mod._candidate_source_fidelity_score(
+            {
+                "layout_similarity": 0.95,
+                "source_crop_iou": 0.12,
+                "source_crop_corr": 0.25,
+            }
+        )
+        self.assertGreater(high, low)
+
+    def test_candidate_fragmentation_score_penalizes_tiny_and_pointlike_strokes(self) -> None:
+        mod = _load_module()
+        good = mod._candidate_fragmentation_score(
+            {
+                "segments_total": 100,
+                "pen_down_strokes": 20,
+                "tiny_strokes_lt_08_mm": 2,
+                "point_like_strokes": 1,
+            }
+        )
+        bad = mod._candidate_fragmentation_score(
+            {
+                "segments_total": 100,
+                "pen_down_strokes": 1500,
+                "tiny_strokes_lt_08_mm": 60,
+                "point_like_strokes": 30,
+            }
+        )
+        self.assertGreater(good, bad)
+
     def test_build_sheet_preview_centers_compact_source_page(self) -> None:
         mod = _load_module()
         with tempfile.TemporaryDirectory() as td:
@@ -123,15 +161,20 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
         self.assertFalse(mod._is_small_condition_image_rect_mm(5.0, 5.0, 40.0, 80.0))
         self.assertFalse(mod._is_small_condition_image_rect_mm(5.0, 5.0, 10.0, 10.0))
 
-    def test_variant4_nachert_a4_prefers_compact_source_overlay_route(self) -> None:
+    def test_variant4_nachert_a4_preserves_source_header_route(self) -> None:
         mod = _load_module()
         self.assertTrue(
-            mod._prefer_direct_fit_full_for_nachert_variant4_a4(
+            mod._preserve_nachert_header_source_for_variant(
                 Path(r"C:\plotter_pdf\Начерт\4 варинт\_generated_pdf\Задача 4.pdf")
             )
         )
+        self.assertTrue(
+            mod._preserve_nachert_header_source_for_variant(
+                Path(r"C:\plotter_pdf\Начерт\1 вариант\Задача 1_pack\source_kompas.pdf")
+            )
+        )
         self.assertFalse(
-            mod._prefer_direct_fit_full_for_nachert_variant4_a4(
+            mod._preserve_nachert_header_source_for_variant(
                 Path(r"C:\plotter_pdf\Начерт\24 варинт\Задача 4.pdf")
             )
         )
@@ -1012,11 +1055,13 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
 
             with (
                 mock.patch.object(mod, "_prepare_a4_hybrid_drawing_candidate", return_value=_mk_candidate("a4_hybrid_frame", 0.91)),
+                mock.patch.object(mod, "_prepare_mupdf_svg_paths_candidate", return_value=_mk_candidate("mupdf_svg_paths", 0.90)),
                 mock.patch.object(
                     mod,
                     "_prepare_drawing_candidate",
                     side_effect=[_mk_candidate("fit_full", 0.96), _mk_candidate("strict_1to1_clip", 0.89)],
                 ),
+                mock.patch.object(mod, "_rewrite_preview_on_work_area_canvas_from_gcode", return_value=(True, "")),
                 mock.patch.object(
                     mod,
                     "_source_crop_alignment_metrics",
@@ -1082,11 +1127,13 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
                     "_prepare_a4_hybrid_drawing_candidate",
                     return_value=_mk_candidate("a4_hybrid_frame", 0.9596, notes="detail_scale=1.0"),
                 ),
+                mock.patch.object(mod, "_prepare_mupdf_svg_paths_candidate", return_value=_mk_candidate("mupdf_svg_paths", 0.90)),
                 mock.patch.object(
                     mod,
                     "_prepare_drawing_candidate",
                     side_effect=[_mk_candidate("fit_full", 0.9635), _mk_candidate("strict_1to1_clip", 0.9409)],
                 ),
+                mock.patch.object(mod, "_rewrite_preview_on_work_area_canvas_from_gcode", return_value=(True, "")),
                 mock.patch.object(
                     mod,
                     "_source_crop_alignment_metrics",
@@ -1102,6 +1149,263 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
         self.assertEqual(report["selected_variant"], "a4_hybrid_frame")
         self.assertEqual(len(rows), 1)
         self.assertIn("variant=a4_hybrid_frame", rows[0].notes)
+
+    def test_prepare_drawing_package_prefers_source_faithful_direct_candidate_for_variant20_22_a4(self) -> None:
+        mod = _load_module()
+        with tempfile.TemporaryDirectory(prefix="cg20_source_faithful_a4_") as td:
+            root = Path(td)
+            source_dir = root / "Компьютерная графика" / "20 вариант"
+            source_dir.mkdir(parents=True, exist_ok=True)
+            source_pdf = source_dir / "МЧ00.52.00.00 Клапан.pdf"
+            doc = mod.fitz.open()
+            doc.new_page(width=595, height=842)
+            doc.save(source_pdf)
+            doc.close()
+
+            def _mk_candidate(
+                name: str,
+                sim: float,
+                notes: str = "",
+                metrics: dict[str, object] | None = None,
+            ) -> dict[str, object]:
+                prefix = root / name
+                files = {
+                    "svg": prefix.with_suffix(".svg"),
+                    "pdf": prefix.with_suffix(".pdf"),
+                    "nc": prefix.with_suffix(".nc"),
+                    "gcode": prefix.with_suffix(".gcode"),
+                    "ref_pdf": prefix.with_name(prefix.name + "__ref.pdf"),
+                    "ref_svg": prefix.with_name(prefix.name + "__ref.svg"),
+                }
+                files["svg"].write_text("<svg />", encoding="utf-8")
+                files["pdf"].write_bytes(b"%PDF-1.4\n")
+                files["nc"].write_text("G0 X0 Y0\n", encoding="utf-8")
+                files["gcode"].write_text("G0 X0 Y0\n", encoding="utf-8")
+                files["ref_pdf"].write_bytes(b"%PDF-1.4\n")
+                files["ref_svg"].write_text("<svg />", encoding="utf-8")
+                return {
+                    "variant": name,
+                    "ok": True,
+                    "layout_similarity": sim,
+                    "svg": str(files["svg"]),
+                    "pdf": str(files["pdf"]),
+                    "nc": str(files["nc"]),
+                    "gcode": str(files["gcode"]),
+                    "reference_source": str(files["ref_pdf"]),
+                    "reference_source_svg": str(files["ref_svg"]),
+                    "metrics": metrics or {"segments_total": 1, "draw_length_mm": 10.0, "point_like_strokes": 0, "tiny_strokes_lt_08_mm": 0},
+                    "logs": [name],
+                    "fit_scale": 1.0,
+                    "clipping_warning": False,
+                    "notes": notes,
+                }
+
+            with (
+                mock.patch.object(
+                    mod,
+                    "_prepare_a4_hybrid_drawing_candidate",
+                    return_value=_mk_candidate(
+                        "a4_hybrid_frame",
+                        0.966317,
+                        notes="detail_scale=1.0",
+                        metrics={
+                            "segments_total": 1,
+                            "draw_length_mm": 10.0,
+                            "point_like_strokes": 500,
+                            "tiny_strokes_lt_08_mm": 1200,
+                        },
+                    ),
+                ),
+                mock.patch.object(
+                    mod,
+                    "_prepare_mupdf_svg_paths_candidate",
+                    return_value=_mk_candidate(
+                        "mupdf_svg_paths",
+                        0.937358,
+                        notes="source_cleanup=direct_pdf_svg; mupdf_svg_paths=True",
+                        metrics={
+                            "segments_total": 1,
+                            "draw_length_mm": 10.0,
+                            "point_like_strokes": 210,
+                            "tiny_strokes_lt_08_mm": 400,
+                        },
+                    ),
+                ),
+                mock.patch.object(
+                    mod,
+                    "_prepare_forced_a4_candidate",
+                    return_value=_mk_candidate(
+                        "a4_direct_titleblock",
+                        0.938900,
+                        notes="forced_a4_single_page=True",
+                        metrics={
+                            "segments_total": 1,
+                            "draw_length_mm": 10.0,
+                            "point_like_strokes": 20,
+                            "tiny_strokes_lt_08_mm": 40,
+                        },
+                    ),
+                ),
+                mock.patch.object(
+                    mod,
+                    "_prepare_drawing_candidate",
+                    side_effect=[
+                        _mk_candidate(
+                            "fit_full",
+                            0.937412,
+                            metrics={
+                                "segments_total": 1,
+                                "draw_length_mm": 10.0,
+                                "point_like_strokes": 250,
+                                "tiny_strokes_lt_08_mm": 450,
+                            },
+                        ),
+                        _mk_candidate(
+                            "strict_1to1_clip",
+                            0.910741,
+                            metrics={
+                                "segments_total": 1,
+                                "draw_length_mm": 10.0,
+                                "point_like_strokes": 300,
+                                "tiny_strokes_lt_08_mm": 600,
+                            },
+                        ),
+                    ],
+                ),
+                mock.patch.object(mod, "_rewrite_preview_on_work_area_canvas_from_gcode", return_value=(True, "")),
+                mock.patch.object(
+                    mod,
+                    "_source_crop_alignment_metrics",
+                    side_effect=[
+                        {"source_crop_iou": 0.049273, "source_crop_corr": -0.016284, "source_crop_x_px": 0.0, "source_crop_y_px": 0.0},
+                        {"source_crop_iou": 0.066035, "source_crop_corr": 0.020819, "source_crop_x_px": 0.0, "source_crop_y_px": 0.0},
+                        {"source_crop_iou": 0.065734, "source_crop_corr": 0.021417, "source_crop_x_px": 0.0, "source_crop_y_px": 0.0},
+                        {"source_crop_iou": 0.068200, "source_crop_corr": 0.024000, "source_crop_x_px": 0.0, "source_crop_y_px": 0.0},
+                        {"source_crop_iou": 0.189745, "source_crop_corr": 0.214753, "source_crop_x_px": 0.0, "source_crop_y_px": 0.0},
+                    ],
+                ),
+            ):
+                report, rows = mod._prepare_drawing_package(source_pdf, root / "pkg")
+
+        self.assertEqual(report["selected_variant"], "a4_direct_titleblock")
+        self.assertEqual(len(rows), 1)
+        self.assertIn("source_faithful_override=variant20_22_a4_direct", rows[0].notes)
+
+    def test_prepare_drawing_package_keeps_hybrid_for_variant20_22_when_hybrid_is_more_faithful(self) -> None:
+        mod = _load_module()
+        with tempfile.TemporaryDirectory(prefix="cg20_keeps_hybrid_a4_") as td:
+            root = Path(td)
+            source_dir = root / "Компьютерная графика" / "20 вариант"
+            source_dir.mkdir(parents=True, exist_ok=True)
+            source_pdf = source_dir / "МЧ00.52.00.02 Крышка.pdf"
+            doc = mod.fitz.open()
+            doc.new_page(width=595, height=842)
+            doc.save(source_pdf)
+            doc.close()
+
+            def _mk_candidate(name: str, sim: float, notes: str = "") -> dict[str, object]:
+                prefix = root / name
+                files = {
+                    "svg": prefix.with_suffix(".svg"),
+                    "pdf": prefix.with_suffix(".pdf"),
+                    "nc": prefix.with_suffix(".nc"),
+                    "gcode": prefix.with_suffix(".gcode"),
+                    "ref_pdf": prefix.with_name(prefix.name + "__ref.pdf"),
+                    "ref_svg": prefix.with_name(prefix.name + "__ref.svg"),
+                }
+                files["svg"].write_text("<svg />", encoding="utf-8")
+                files["pdf"].write_bytes(b"%PDF-1.4\n")
+                files["nc"].write_text("G0 X0 Y0\n", encoding="utf-8")
+                files["gcode"].write_text("G0 X0 Y0\n", encoding="utf-8")
+                files["ref_pdf"].write_bytes(b"%PDF-1.4\n")
+                files["ref_svg"].write_text("<svg />", encoding="utf-8")
+                return {
+                    "variant": name,
+                    "ok": True,
+                    "layout_similarity": sim,
+                    "svg": str(files["svg"]),
+                    "pdf": str(files["pdf"]),
+                    "nc": str(files["nc"]),
+                    "gcode": str(files["gcode"]),
+                    "reference_source": str(files["ref_pdf"]),
+                    "reference_source_svg": str(files["ref_svg"]),
+                    "metrics": {"segments_total": 1, "draw_length_mm": 10.0},
+                    "logs": [name],
+                    "fit_scale": 1.0,
+                    "clipping_warning": False,
+                    "notes": notes,
+                }
+
+            with (
+                mock.patch.object(
+                    mod,
+                    "_prepare_a4_hybrid_drawing_candidate",
+                    return_value=_mk_candidate("a4_hybrid_frame", 0.971873, notes="detail_scale=1.0"),
+                ),
+                mock.patch.object(
+                    mod,
+                    "_prepare_mupdf_svg_paths_candidate",
+                    return_value=_mk_candidate("mupdf_svg_paths", 0.952148, notes="source_cleanup=direct_pdf_svg; mupdf_svg_paths=True"),
+                ),
+                mock.patch.object(
+                    mod,
+                    "_prepare_drawing_candidate",
+                    side_effect=[_mk_candidate("fit_full", 0.952129), _mk_candidate("strict_1to1_clip", 0.932073)],
+                ),
+                mock.patch.object(mod, "_rewrite_preview_on_work_area_canvas_from_gcode", return_value=(True, "")),
+                mock.patch.object(
+                    mod,
+                    "_source_crop_alignment_metrics",
+                    side_effect=[
+                        {"source_crop_iou": 0.083561, "source_crop_corr": 0.068873, "source_crop_x_px": 0.0, "source_crop_y_px": 0.0},
+                        {"source_crop_iou": 0.045554, "source_crop_corr": 0.005242, "source_crop_x_px": 0.0, "source_crop_y_px": 0.0},
+                        {"source_crop_iou": 0.045326, "source_crop_corr": 0.004765, "source_crop_x_px": 0.0, "source_crop_y_px": 0.0},
+                        {"source_crop_iou": 0.106126, "source_crop_corr": 0.144077, "source_crop_x_px": 0.0, "source_crop_y_px": 0.0},
+                    ],
+                ),
+            ):
+                report, rows = mod._prepare_drawing_package(source_pdf, root / "pkg")
+
+        self.assertEqual(report["selected_variant"], "a4_hybrid_frame")
+        self.assertEqual(len(rows), 1)
+        self.assertNotIn("source_faithful_override=variant20_22_a4_direct", rows[0].notes)
+
+    def test_select_best_a4_drawing_candidate_does_not_auto_choose_strict(self) -> None:
+        mod = _load_module()
+        with tempfile.TemporaryDirectory(prefix="a4_selector_no_strict_") as td:
+            root = Path(td)
+            source_pdf = root / "sheet.pdf"
+            doc = mod.fitz.open()
+            doc.new_page(width=595, height=842)
+            doc.save(source_pdf)
+            doc.close()
+
+            def _mk_candidate(name: str, sim: float) -> dict[str, object]:
+                return {
+                    "variant": name,
+                    "ok": True,
+                    "layout_similarity": sim,
+                    "metrics": {
+                        "segments_total": 100,
+                        "pen_down_strokes": 20,
+                        "tiny_strokes_lt_08_mm": 2,
+                        "point_like_strokes": 1,
+                    },
+                    "source_crop_iou": 0.05,
+                    "source_crop_corr": 0.05,
+                    "notes": "",
+                }
+
+            best, decision = mod._select_best_a4_drawing_candidate(
+                source_pdf,
+                [
+                    _mk_candidate("fit_full", 0.95),
+                    _mk_candidate("strict_1to1_clip", 0.99),
+                ],
+            )
+
+        self.assertEqual(best["variant"], "fit_full")
+        self.assertNotEqual(decision["selection_reason"], "strict_1to1_clip_last_resort")
 
     def test_prepare_drawing_package_prefers_clean_source_direct_for_specification(self) -> None:
         mod = _load_module()
@@ -1152,6 +1456,7 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
                     "_prepare_a4_hybrid_drawing_candidate",
                     return_value=_mk_candidate("a4_hybrid_frame", 0.9723, notes="detail_scale=1.0"),
                 ),
+                mock.patch.object(mod, "_prepare_mupdf_svg_paths_candidate", return_value=_mk_candidate("mupdf_svg_paths", 0.90)),
                 mock.patch.object(
                     mod,
                     "_prepare_drawing_candidate",
@@ -1162,6 +1467,7 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
                     "_prepare_reference_pdf_candidate",
                     return_value=_mk_candidate("clean_source_direct", 0.9940),
                 ),
+                mock.patch.object(mod, "_rewrite_preview_on_work_area_canvas_from_gcode", return_value=(True, "")),
                 mock.patch.object(
                     mod,
                     "_source_crop_alignment_metrics",
@@ -1178,6 +1484,93 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
         self.assertEqual(report["selected_variant"], "clean_source_direct")
         self.assertEqual(len(rows), 1)
         self.assertIn("variant=clean_source_direct", rows[0].notes)
+
+    def test_main_generates_compare_and_root_audit_for_drawing_variant(self) -> None:
+        mod = _load_module()
+        with tempfile.TemporaryDirectory(prefix="drawing_main_compare_") as td:
+            root = Path(td)
+            variant_dir = root / "20 вариант"
+            variant_dir.mkdir(parents=True, exist_ok=True)
+            source_pdf = variant_dir / "Sheet.pdf"
+            source_doc = mod.fitz.open()
+            source_page = source_doc.new_page(width=595, height=842)
+            source_page.draw_rect(mod.fitz.Rect(50, 50, 545, 792))
+            source_doc.save(source_pdf)
+            source_doc.close()
+
+            def _mock_prepare(pdf_path, package_dir):
+                package_dir.mkdir(parents=True, exist_ok=True)
+                pages_dir = package_dir / "pages"
+                pages_dir.mkdir(parents=True, exist_ok=True)
+                preview_pdf = pages_dir / "page_01.pdf"
+                preview_doc = mod.fitz.open()
+                preview_page = preview_doc.new_page(width=595, height=842)
+                preview_page.draw_rect(mod.fitz.Rect(55, 55, 540, 787))
+                preview_doc.save(preview_pdf)
+                preview_doc.close()
+                (pages_dir / "page_01.svg").write_text("<svg />", encoding="utf-8")
+                (pages_dir / "page_01.nc").write_text("G0 X0 Y0\n", encoding="utf-8")
+                (pages_dir / "page_01.gcode").write_text("G0 X0 Y0\n", encoding="utf-8")
+                clean_pdf = package_dir / "a4_clean_source.pdf"
+                clean_doc = mod.fitz.open()
+                clean_page = clean_doc.new_page(width=595, height=842)
+                clean_page.draw_rect(mod.fitz.Rect(50, 50, 545, 792))
+                clean_doc.save(clean_pdf)
+                clean_doc.close()
+                report = {
+                    "source_pdf": str(pdf_path),
+                    "kind": "drawing",
+                    "selected_variant": "fit_full",
+                    "selected_layout_similarity": 0.97,
+                    "selection_reason": "highest_layout_similarity",
+                    "source_fidelity_score": 0.96,
+                    "fragmentation_score": 0.99,
+                    "title_block_strategy": "source_vector_as_path",
+                    "route_class": "A4 drawing with title block",
+                    "a4_clean_source": {"pdf": str(clean_pdf), "svg": ""},
+                    "items": [],
+                }
+                rows = [
+                    mod.ArtifactRow(
+                        source_pdf=str(pdf_path),
+                        package_dir=str(package_dir),
+                        kind="drawing",
+                        item="page_01",
+                        ok=True,
+                        layout_similarity=0.97,
+                        selected_variant="fit_full",
+                        source_fidelity_score=0.96,
+                        fragmentation_score=0.99,
+                        draw_length_m=0.123,
+                        segments_total=10,
+                        pen_down_strokes=5,
+                        tiny_strokes_lt_08_mm=0,
+                        point_like_strokes=0,
+                        bounds="0..1 x, 0..1 y",
+                        nc=str(pages_dir / "page_01.nc"),
+                        gcode=str(pages_dir / "page_01.gcode"),
+                        preview_pdf=str(preview_pdf),
+                        preview_svg=str(pages_dir / "page_01.svg"),
+                        notes="variant=fit_full",
+                    )
+                ]
+                return report, rows
+
+            with mock.patch.object(mod, "_prepare_drawing_package", side_effect=_mock_prepare), \
+                mock.patch.object(sys, "argv", ["prepare_folder1_packages.py", "--folder", str(variant_dir)]):
+                rc = mod.main()
+
+            self.assertEqual(rc, 0)
+            package_dir = variant_dir / "Sheet_pack"
+            self.assertTrue((package_dir / "source_vs_gcode_compare.pdf").exists())
+            self.assertTrue((package_dir / "source_vs_gcode_compare.png").exists())
+            report = mod.json.loads((package_dir / "report.json").read_text(encoding="utf-8"))
+            self.assertTrue(report["compare_generated"])
+            self.assertTrue((variant_dir / "_audit.txt").exists())
+            self.assertTrue((variant_dir / "_audit.json").exists())
+            summary_text = (package_dir / "summary.csv").read_text(encoding="utf-8")
+            self.assertIn("selected_variant", summary_text)
+            self.assertIn("source_fidelity_score", summary_text)
 
     def test_prepare_drawing_package_survives_failed_a4_candidate(self) -> None:
         mod = _load_module()
@@ -1224,11 +1617,13 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
 
             with (
                 mock.patch.object(mod, "_prepare_a4_hybrid_drawing_candidate", side_effect=RuntimeError("boom")),
+                mock.patch.object(mod, "_prepare_mupdf_svg_paths_candidate", return_value=_mk_candidate("mupdf_svg_paths", 0.90)),
                 mock.patch.object(
                     mod,
                     "_prepare_drawing_candidate",
                     side_effect=[_mk_candidate("fit_full", 0.96), _mk_candidate("strict_1to1_clip", 0.89)],
                 ),
+                mock.patch.object(mod, "_rewrite_preview_on_work_area_canvas_from_gcode", return_value=(True, "")),
                 mock.patch.object(
                     mod,
                     "_source_crop_alignment_metrics",
@@ -1241,11 +1636,42 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
                 report, rows = mod._prepare_drawing_package(source_pdf, root / "pkg")
 
         self.assertEqual(report["selected_variant"], "fit_full")
-        self.assertEqual(len(report["items"]), 3)
+        self.assertEqual(len(report["items"]), 4)
         failed = next(item for item in report["items"] if item.get("variant") == "a4_hybrid_frame")
         self.assertFalse(failed["ok"])
         self.assertIn("boom", failed["message"])
         self.assertEqual(len(rows), 1)
+
+    def test_force_variant_a3_two_pass_for_large_sheet_matches_variants_20_22_only(self) -> None:
+        mod = _load_module()
+        self.assertTrue(
+            mod._force_variant_a3_two_pass_for_large_sheet(
+                Path(r"C:\plotter_pdf\Компьютерная графика\20 вариант\МЧ00.52.00.00 СБ Клапан.pdf"),
+                420.0,
+                297.0,
+            )
+        )
+        self.assertTrue(
+            mod._force_variant_a3_two_pass_for_large_sheet(
+                Path(r"C:\plotter_pdf\Компьютерная графика\22 вариант\МЧ00.60.00.00 СБ Вентиль.pdf"),
+                594.0,
+                420.0,
+            )
+        )
+        self.assertFalse(
+            mod._force_variant_a3_two_pass_for_large_sheet(
+                Path(r"C:\plotter_pdf\Компьютерная графика\8 вариант\Втулка.pdf"),
+                420.0,
+                297.0,
+            )
+        )
+        self.assertFalse(
+            mod._force_variant_a3_two_pass_for_large_sheet(
+                Path(r"C:\plotter_pdf\Начерт\1 вариант\Задача 3.pdf"),
+                420.0,
+                297.0,
+            )
+        )
 
     def test_prepare_drawing_package_uses_custom_tiled_route_for_large_sheet(self) -> None:
         mod = _load_module()
