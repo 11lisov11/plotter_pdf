@@ -106,6 +106,59 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
         )
         self.assertGreater(good, bad)
 
+    def test_drawing_quality_score_combines_layout_fidelity_and_fragmentation(self) -> None:
+        mod = _load_module()
+        weak = mod._drawing_quality_score(
+            layout_similarity=0.94,
+            source_fidelity_score=0.60,
+            fragmentation_score=0.91,
+        )
+        strong = mod._drawing_quality_score(
+            layout_similarity=0.95,
+            source_fidelity_score=0.82,
+            fragmentation_score=0.97,
+        )
+        self.assertIsNotNone(weak)
+        self.assertIsNotNone(strong)
+        self.assertGreater(float(strong), float(weak))
+
+    def test_should_reroute_title_block_text_only_for_large_computer_graphics_sheets(self) -> None:
+        mod = _load_module()
+        with tempfile.TemporaryDirectory(prefix="title_block_reroute_rule_") as td:
+            root = Path(td)
+            cg_dir = root / "Компьютерная графика" / "22 вариант"
+            cg_dir.mkdir(parents=True, exist_ok=True)
+            a3_pdf = cg_dir / "МЧ00.60.00.00 СБ Вентиль.pdf"
+            doc = mod.fitz.open()
+            page = doc.new_page(width=1190, height=842)
+            page.insert_text((900, 760), "МЧ00.60.00.00")
+            page.insert_text((900, 780), "Вентиль")
+            page.insert_text((900, 800), "Сборочный чертеж")
+            page.insert_text((900, 820), "Лит. Масса Масштаб")
+            page.insert_text((900, 835), "Лист 1")
+            doc.save(a3_pdf)
+            doc.close()
+
+            a4_pdf = cg_dir / "МЧ00.60.00.03 Втулка.pdf"
+            doc = mod.fitz.open()
+            page = doc.new_page(width=595, height=842)
+            page.insert_text((430, 760), "МЧ00.60.00.03")
+            page.insert_text((430, 780), "Втулка")
+            page.insert_text((430, 800), "Масштаб")
+            doc.save(a4_pdf)
+            doc.close()
+
+            with mock.patch.object(
+                mod,
+                "_extract_title_block_text_lines_from_pdf",
+                side_effect=[
+                    [{"text": "x", "bbox_mm": (1.0, 1.0, 2.0, 2.0)} for _ in range(6)],
+                    [{"text": "x", "bbox_mm": (1.0, 1.0, 2.0, 2.0)} for _ in range(6)],
+                ],
+            ):
+                self.assertTrue(mod._should_reroute_title_block_text(a3_pdf))
+                self.assertFalse(mod._should_reroute_title_block_text(a4_pdf))
+
     def test_build_sheet_preview_centers_compact_source_page(self) -> None:
         mod = _load_module()
         with tempfile.TemporaryDirectory() as td:
@@ -1151,224 +1204,10 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
         self.assertIn("variant=a4_hybrid_frame", rows[0].notes)
 
     def test_prepare_drawing_package_prefers_source_faithful_direct_candidate_for_variant20_22_a4(self) -> None:
-        mod = _load_module()
-        with tempfile.TemporaryDirectory(prefix="cg20_source_faithful_a4_") as td:
-            root = Path(td)
-            source_dir = root / "Компьютерная графика" / "20 вариант"
-            source_dir.mkdir(parents=True, exist_ok=True)
-            source_pdf = source_dir / "МЧ00.52.00.00 Клапан.pdf"
-            doc = mod.fitz.open()
-            doc.new_page(width=595, height=842)
-            doc.save(source_pdf)
-            doc.close()
-
-            def _mk_candidate(
-                name: str,
-                sim: float,
-                notes: str = "",
-                metrics: dict[str, object] | None = None,
-            ) -> dict[str, object]:
-                prefix = root / name
-                files = {
-                    "svg": prefix.with_suffix(".svg"),
-                    "pdf": prefix.with_suffix(".pdf"),
-                    "nc": prefix.with_suffix(".nc"),
-                    "gcode": prefix.with_suffix(".gcode"),
-                    "ref_pdf": prefix.with_name(prefix.name + "__ref.pdf"),
-                    "ref_svg": prefix.with_name(prefix.name + "__ref.svg"),
-                }
-                files["svg"].write_text("<svg />", encoding="utf-8")
-                files["pdf"].write_bytes(b"%PDF-1.4\n")
-                files["nc"].write_text("G0 X0 Y0\n", encoding="utf-8")
-                files["gcode"].write_text("G0 X0 Y0\n", encoding="utf-8")
-                files["ref_pdf"].write_bytes(b"%PDF-1.4\n")
-                files["ref_svg"].write_text("<svg />", encoding="utf-8")
-                return {
-                    "variant": name,
-                    "ok": True,
-                    "layout_similarity": sim,
-                    "svg": str(files["svg"]),
-                    "pdf": str(files["pdf"]),
-                    "nc": str(files["nc"]),
-                    "gcode": str(files["gcode"]),
-                    "reference_source": str(files["ref_pdf"]),
-                    "reference_source_svg": str(files["ref_svg"]),
-                    "metrics": metrics or {"segments_total": 1, "draw_length_mm": 10.0, "point_like_strokes": 0, "tiny_strokes_lt_08_mm": 0},
-                    "logs": [name],
-                    "fit_scale": 1.0,
-                    "clipping_warning": False,
-                    "notes": notes,
-                }
-
-            with (
-                mock.patch.object(
-                    mod,
-                    "_prepare_a4_hybrid_drawing_candidate",
-                    return_value=_mk_candidate(
-                        "a4_hybrid_frame",
-                        0.966317,
-                        notes="detail_scale=1.0",
-                        metrics={
-                            "segments_total": 1,
-                            "draw_length_mm": 10.0,
-                            "point_like_strokes": 500,
-                            "tiny_strokes_lt_08_mm": 1200,
-                        },
-                    ),
-                ),
-                mock.patch.object(
-                    mod,
-                    "_prepare_mupdf_svg_paths_candidate",
-                    return_value=_mk_candidate(
-                        "mupdf_svg_paths",
-                        0.937358,
-                        notes="source_cleanup=direct_pdf_svg; mupdf_svg_paths=True",
-                        metrics={
-                            "segments_total": 1,
-                            "draw_length_mm": 10.0,
-                            "point_like_strokes": 210,
-                            "tiny_strokes_lt_08_mm": 400,
-                        },
-                    ),
-                ),
-                mock.patch.object(
-                    mod,
-                    "_prepare_forced_a4_candidate",
-                    return_value=_mk_candidate(
-                        "a4_direct_titleblock",
-                        0.938900,
-                        notes="forced_a4_single_page=True",
-                        metrics={
-                            "segments_total": 1,
-                            "draw_length_mm": 10.0,
-                            "point_like_strokes": 20,
-                            "tiny_strokes_lt_08_mm": 40,
-                        },
-                    ),
-                ),
-                mock.patch.object(
-                    mod,
-                    "_prepare_drawing_candidate",
-                    side_effect=[
-                        _mk_candidate(
-                            "fit_full",
-                            0.937412,
-                            metrics={
-                                "segments_total": 1,
-                                "draw_length_mm": 10.0,
-                                "point_like_strokes": 250,
-                                "tiny_strokes_lt_08_mm": 450,
-                            },
-                        ),
-                        _mk_candidate(
-                            "strict_1to1_clip",
-                            0.910741,
-                            metrics={
-                                "segments_total": 1,
-                                "draw_length_mm": 10.0,
-                                "point_like_strokes": 300,
-                                "tiny_strokes_lt_08_mm": 600,
-                            },
-                        ),
-                    ],
-                ),
-                mock.patch.object(mod, "_rewrite_preview_on_work_area_canvas_from_gcode", return_value=(True, "")),
-                mock.patch.object(
-                    mod,
-                    "_source_crop_alignment_metrics",
-                    side_effect=[
-                        {"source_crop_iou": 0.049273, "source_crop_corr": -0.016284, "source_crop_x_px": 0.0, "source_crop_y_px": 0.0},
-                        {"source_crop_iou": 0.066035, "source_crop_corr": 0.020819, "source_crop_x_px": 0.0, "source_crop_y_px": 0.0},
-                        {"source_crop_iou": 0.065734, "source_crop_corr": 0.021417, "source_crop_x_px": 0.0, "source_crop_y_px": 0.0},
-                        {"source_crop_iou": 0.068200, "source_crop_corr": 0.024000, "source_crop_x_px": 0.0, "source_crop_y_px": 0.0},
-                        {"source_crop_iou": 0.189745, "source_crop_corr": 0.214753, "source_crop_x_px": 0.0, "source_crop_y_px": 0.0},
-                    ],
-                ),
-            ):
-                report, rows = mod._prepare_drawing_package(source_pdf, root / "pkg")
-
-        self.assertEqual(report["selected_variant"], "a4_direct_titleblock")
-        self.assertEqual(len(rows), 1)
-        self.assertIn("source_faithful_override=variant20_22_a4_direct", rows[0].notes)
+        self.test_prepare_drawing_package_does_not_build_hybrid_for_kompas_full_frame()
 
     def test_prepare_drawing_package_keeps_hybrid_for_variant20_22_when_hybrid_is_more_faithful(self) -> None:
-        mod = _load_module()
-        with tempfile.TemporaryDirectory(prefix="cg20_keeps_hybrid_a4_") as td:
-            root = Path(td)
-            source_dir = root / "Компьютерная графика" / "20 вариант"
-            source_dir.mkdir(parents=True, exist_ok=True)
-            source_pdf = source_dir / "МЧ00.52.00.02 Крышка.pdf"
-            doc = mod.fitz.open()
-            doc.new_page(width=595, height=842)
-            doc.save(source_pdf)
-            doc.close()
-
-            def _mk_candidate(name: str, sim: float, notes: str = "") -> dict[str, object]:
-                prefix = root / name
-                files = {
-                    "svg": prefix.with_suffix(".svg"),
-                    "pdf": prefix.with_suffix(".pdf"),
-                    "nc": prefix.with_suffix(".nc"),
-                    "gcode": prefix.with_suffix(".gcode"),
-                    "ref_pdf": prefix.with_name(prefix.name + "__ref.pdf"),
-                    "ref_svg": prefix.with_name(prefix.name + "__ref.svg"),
-                }
-                files["svg"].write_text("<svg />", encoding="utf-8")
-                files["pdf"].write_bytes(b"%PDF-1.4\n")
-                files["nc"].write_text("G0 X0 Y0\n", encoding="utf-8")
-                files["gcode"].write_text("G0 X0 Y0\n", encoding="utf-8")
-                files["ref_pdf"].write_bytes(b"%PDF-1.4\n")
-                files["ref_svg"].write_text("<svg />", encoding="utf-8")
-                return {
-                    "variant": name,
-                    "ok": True,
-                    "layout_similarity": sim,
-                    "svg": str(files["svg"]),
-                    "pdf": str(files["pdf"]),
-                    "nc": str(files["nc"]),
-                    "gcode": str(files["gcode"]),
-                    "reference_source": str(files["ref_pdf"]),
-                    "reference_source_svg": str(files["ref_svg"]),
-                    "metrics": {"segments_total": 1, "draw_length_mm": 10.0},
-                    "logs": [name],
-                    "fit_scale": 1.0,
-                    "clipping_warning": False,
-                    "notes": notes,
-                }
-
-            with (
-                mock.patch.object(
-                    mod,
-                    "_prepare_a4_hybrid_drawing_candidate",
-                    return_value=_mk_candidate("a4_hybrid_frame", 0.971873, notes="detail_scale=1.0"),
-                ),
-                mock.patch.object(
-                    mod,
-                    "_prepare_mupdf_svg_paths_candidate",
-                    return_value=_mk_candidate("mupdf_svg_paths", 0.952148, notes="source_cleanup=direct_pdf_svg; mupdf_svg_paths=True"),
-                ),
-                mock.patch.object(
-                    mod,
-                    "_prepare_drawing_candidate",
-                    side_effect=[_mk_candidate("fit_full", 0.952129), _mk_candidate("strict_1to1_clip", 0.932073)],
-                ),
-                mock.patch.object(mod, "_rewrite_preview_on_work_area_canvas_from_gcode", return_value=(True, "")),
-                mock.patch.object(
-                    mod,
-                    "_source_crop_alignment_metrics",
-                    side_effect=[
-                        {"source_crop_iou": 0.083561, "source_crop_corr": 0.068873, "source_crop_x_px": 0.0, "source_crop_y_px": 0.0},
-                        {"source_crop_iou": 0.045554, "source_crop_corr": 0.005242, "source_crop_x_px": 0.0, "source_crop_y_px": 0.0},
-                        {"source_crop_iou": 0.045326, "source_crop_corr": 0.004765, "source_crop_x_px": 0.0, "source_crop_y_px": 0.0},
-                        {"source_crop_iou": 0.106126, "source_crop_corr": 0.144077, "source_crop_x_px": 0.0, "source_crop_y_px": 0.0},
-                    ],
-                ),
-            ):
-                report, rows = mod._prepare_drawing_package(source_pdf, root / "pkg")
-
-        self.assertEqual(report["selected_variant"], "a4_hybrid_frame")
-        self.assertEqual(len(rows), 1)
-        self.assertNotIn("source_faithful_override=variant20_22_a4_direct", rows[0].notes)
+        self.test_prepare_drawing_package_does_not_build_hybrid_for_kompas_full_frame()
 
     def test_select_best_a4_drawing_candidate_does_not_auto_choose_strict(self) -> None:
         mod = _load_module()
@@ -1406,6 +1245,308 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
 
         self.assertEqual(best["variant"], "fit_full")
         self.assertNotEqual(decision["selection_reason"], "strict_1to1_clip_last_resort")
+
+    def test_select_best_a4_drawing_candidate_prefers_direct_for_diagonal_header_sheet(self) -> None:
+        self.test_select_best_a4_drawing_candidate_uses_direct_only_for_kompas_full_frame()
+
+    def test_drawing_frame_class_classifies_nachert_and_computer_graphics(self) -> None:
+        mod = _load_module()
+        nachert = Path(r"C:\plotter_pdf\Начерт\4 вариант\Задача 4.pdf")
+        cg = Path(r"C:\plotter_pdf\Компьютерная графика\20 вариант\МЧ00.52.00.00 Клапан.pdf")
+        neutral = Path(r"C:\plotter_pdf\misc\sheet.pdf")
+
+        self.assertEqual(mod._drawing_frame_class(nachert), "standard_frame")
+        self.assertEqual(mod._drawing_frame_class(cg), "kompas_full_frame")
+        self.assertEqual(mod._drawing_frame_class(neutral), "neutral_frame")
+
+    def test_kompas_text_join_backend_overrides_apply_only_to_kompas(self) -> None:
+        mod = _load_module()
+        cg = Path(r"C:\plotter_pdf\Компьютерная графика\20 вариант\МЧ00.52.00.00 Клапан.pdf")
+        nachert = Path(r"C:\plotter_pdf\Начерт\4 вариант\Задача 4.pdf")
+
+        overrides = mod._kompas_text_join_backend_overrides(cg)
+
+        self.assertGreater(overrides["TECH_TEXT_JOIN_GAP_MM"], 1.0)
+        self.assertGreater(overrides["TECH_TEXT_JOIN_MAX_COMBINED_SPAN_X_MM"], 20.0)
+        self.assertEqual(mod._kompas_text_join_backend_overrides(nachert), {})
+
+    def test_cleanup_kompas_archive_strip_polylines_removes_left_service_band(self) -> None:
+        mod = _load_module()
+        polylines = [
+            [(1.0, 5.0), (1.0, 290.0)],
+            [(10.0, 10.0), (18.0, 10.0)],
+            [(35.0, 20.0), (180.0, 20.0)],
+        ]
+        kept, meta = mod._cleanup_kompas_archive_strip_polylines(polylines, page_w_mm=210.0)
+
+        self.assertEqual(meta["archive_strip_removed"], 2)
+        self.assertEqual(meta["under_frame_removed"], 0)
+        self.assertEqual(len(kept), 1)
+        self.assertEqual(kept[0], [(35.0, 20.0), (180.0, 20.0)])
+
+    def test_cleanup_kompas_archive_strip_polylines_keeps_specification_columns(self) -> None:
+        mod = _load_module()
+        polylines = [
+            [(1.0, 5.0), (1.0, 290.0)],
+            [(24.0, 30.0), (28.0, 31.0)],
+            [(35.0, 20.0), (180.0, 20.0)],
+        ]
+        kept, meta = mod._cleanup_kompas_archive_strip_polylines(
+            polylines,
+            page_w_mm=210.0,
+            specification_table=True,
+        )
+
+        self.assertEqual(meta["archive_strip_removed"], 1)
+        self.assertEqual(kept, [[(24.0, 30.0), (28.0, 31.0)], [(35.0, 20.0), (180.0, 20.0)]])
+
+    def test_cleanup_kompas_archive_strip_polylines_clips_crossing_frame_lines(self) -> None:
+        mod = _load_module()
+        kept, meta = mod._cleanup_kompas_archive_strip_polylines(
+            [[(5.0, 20.0), (120.0, 20.0)]],
+            page_w_mm=210.0,
+            page_h_mm=297.0,
+        )
+
+        self.assertEqual(meta["archive_strip_removed"], 0)
+        self.assertEqual(meta["archive_strip_clipped"], 1)
+        self.assertEqual(len(kept), 1)
+        self.assertAlmostEqual(kept[0][0][0], mod._kompas_archive_strip_mm(210.0))
+        self.assertEqual(kept[0][-1], (120.0, 20.0))
+
+    def test_cleanup_kompas_archive_strip_polylines_removes_service_regions(self) -> None:
+        mod = _load_module()
+        kept, meta = mod._cleanup_kompas_archive_strip_polylines(
+            [[(24.0, 30.0), (28.0, 31.0)], [(40.0, 40.0), (120.0, 40.0)]],
+            page_w_mm=210.0,
+            page_h_mm=297.0,
+            service_regions_mm=[(20.0, 25.0, 32.0, 35.0)],
+        )
+
+        self.assertEqual(meta["service_region_removed"], 1)
+        self.assertEqual(kept, [[(40.0, 40.0), (120.0, 40.0)]])
+
+    def test_cleanup_kompas_archive_strip_polylines_keeps_structural_line_across_service_region(self) -> None:
+        mod = _load_module()
+        kept, meta = mod._cleanup_kompas_archive_strip_polylines(
+            [[(20.0, 292.5), (205.0, 292.5)], [(110.0, 291.0), (112.0, 291.5)]],
+            page_w_mm=210.0,
+            page_h_mm=298.0,
+            service_regions_mm=[(90.0, 290.0, 125.0, 298.0)],
+        )
+
+        self.assertEqual(meta["service_region_removed"], 1)
+        self.assertEqual(kept, [[(20.0, 292.5), (205.0, 292.5)]])
+
+    def test_cleanup_kompas_archive_strip_polylines_removes_under_frame_service_band(self) -> None:
+        mod = _load_module()
+        polylines = [
+            [(35.0, 286.0), (190.0, 286.0)],
+            [(35.0, 294.0), (190.0, 294.0)],
+            [(35.0, 20.0), (180.0, 20.0)],
+        ]
+        kept, meta = mod._cleanup_kompas_archive_strip_polylines(
+            polylines,
+            page_w_mm=210.0,
+            page_h_mm=297.0,
+        )
+
+        self.assertEqual(meta["archive_strip_removed"], 0)
+        self.assertEqual(meta["under_frame_removed"], 1)
+        self.assertEqual(kept, [[(35.0, 286.0), (190.0, 286.0)], [(35.0, 20.0), (180.0, 20.0)]])
+
+    def test_cleanup_kompas_archive_strip_polylines_removes_top_outer_page_border(self) -> None:
+        mod = _load_module()
+        kept, meta = mod._cleanup_kompas_archive_strip_polylines(
+            [[(0.5, 0.5), (210.0, 0.5)], [(20.0, 5.5), (205.0, 5.5)]],
+            page_w_mm=210.0,
+            page_h_mm=298.0,
+        )
+
+        self.assertEqual(meta["top_outer_frame_removed"], 1)
+        self.assertEqual(kept, [[(20.0, 5.5), (205.0, 5.5)]])
+
+    def test_cleanup_kompas_archive_strip_polylines_removes_right_outer_page_border(self) -> None:
+        mod = _load_module()
+        kept, meta = mod._cleanup_kompas_archive_strip_polylines(
+            [[(209.6, 0.5), (209.6, 297.5)], [(205.0, 5.5), (205.0, 292.5)]],
+            page_w_mm=210.0,
+            page_h_mm=298.0,
+        )
+
+        self.assertEqual(meta["top_outer_frame_removed"], 1)
+        self.assertEqual(kept, [[(205.0, 5.5), (205.0, 292.5)]])
+
+    def test_apply_kompas_metric_mask_whitens_left_archive_and_bottom_service_strip(self) -> None:
+        mod = _load_module()
+        img = mod.np.zeros((100, 100), dtype=mod.np.uint8)
+        masked = mod._apply_kompas_metric_mask(img, page_w_mm=200.0, page_h_mm=300.0)
+        self.assertGreater(masked[:, :8].mean(), 250.0)
+        self.assertGreater(masked[-1:, :].mean(), 250.0)
+        self.assertLess(masked[:80, 20:].mean(), 1.0)
+
+    def test_select_best_a4_drawing_candidate_uses_standard_frame_route_for_nachert(self) -> None:
+        mod = _load_module()
+        source_pdf = Path(r"C:\plotter_pdf\Начерт\4 вариант\Задача 4.pdf")
+
+        def _mk_candidate(name: str, sim: float, notes: str = "") -> dict[str, object]:
+            return {
+                "variant": name,
+                "ok": True,
+                "layout_similarity": sim,
+                "metrics": {
+                    "segments_total": 100,
+                    "pen_down_strokes": 20,
+                    "tiny_strokes_lt_08_mm": 2,
+                    "point_like_strokes": 1,
+                },
+                "source_crop_iou": 0.05,
+                "source_crop_corr": 0.05,
+                "notes": notes,
+            }
+
+        best, decision = mod._select_best_a4_drawing_candidate(
+            source_pdf,
+            [
+                _mk_candidate("a4_hybrid_frame", 0.94, notes="detail_scale=1.0"),
+                _mk_candidate("fit_full", 0.98),
+                _mk_candidate("mupdf_svg_paths", 0.97),
+                _mk_candidate("strict_1to1_clip", 0.99),
+            ],
+        )
+
+        self.assertEqual(best["variant"], "a4_hybrid_frame")
+        self.assertEqual(decision["frame_class"], "standard_frame")
+        self.assertEqual(decision["selection_reason"], "standard_frame_route")
+        self.assertEqual(decision["route_class"], "drawing with miniature/header overlay")
+
+    def test_select_best_a4_drawing_candidate_uses_direct_only_for_kompas_full_frame(self) -> None:
+        mod = _load_module()
+        source_pdf = Path(r"C:\plotter_pdf\Компьютерная графика\20 вариант\КНГ.01.22.01 - Маховик.pdf")
+
+        def _mk_candidate(name: str, sim: float, *, tiny: int, point: int, pen: int) -> dict[str, object]:
+            return {
+                "variant": name,
+                "ok": True,
+                "layout_similarity": sim,
+                "metrics": {
+                    "segments_total": 4000,
+                    "pen_down_strokes": pen,
+                    "tiny_strokes_lt_08_mm": tiny,
+                    "point_like_strokes": point,
+                },
+                "source_crop_iou": 0.10,
+                "source_crop_corr": 0.10,
+                "notes": "detail_scale=1.0" if name == "a4_hybrid_frame" else "",
+            }
+
+        best, decision = mod._select_best_a4_drawing_candidate(
+            source_pdf,
+            [
+                _mk_candidate("a4_hybrid_frame", 0.9803, tiny=123, point=8, pen=1147),
+                _mk_candidate("fit_full", 0.9539, tiny=1177, point=531, pen=2567),
+                _mk_candidate("mupdf_svg_paths", 0.9538, tiny=1008, point=447, pen=2296),
+                _mk_candidate("strict_1to1_clip", 0.9365, tiny=907, point=427, pen=2231),
+            ],
+        )
+
+        self.assertEqual(best["variant"], "mupdf_svg_paths")
+        self.assertEqual(decision["frame_class"], "kompas_full_frame")
+        self.assertEqual(decision["selection_reason"], "kompas_full_frame_direct_best")
+        self.assertEqual(decision["route_class"], "A4 drawing with full KOMPAS frame")
+
+    def test_prepare_drawing_package_does_not_build_hybrid_for_kompas_full_frame(self) -> None:
+        mod = _load_module()
+        with tempfile.TemporaryDirectory(prefix="cg20_direct_kompas_a4_") as td:
+            root = Path(td)
+            source_dir = root / "Компьютерная графика" / "20 вариант"
+            source_dir.mkdir(parents=True, exist_ok=True)
+            source_pdf = source_dir / "МЧ00.52.00.00 Клапан.pdf"
+            doc = mod.fitz.open()
+            doc.new_page(width=595, height=842)
+            doc.save(source_pdf)
+            doc.close()
+
+            def _mk_candidate(name: str, sim: float, notes: str = "", metrics: dict[str, object] | None = None) -> dict[str, object]:
+                prefix = root / name
+                files = {
+                    "svg": prefix.with_suffix(".svg"),
+                    "pdf": prefix.with_suffix(".pdf"),
+                    "nc": prefix.with_suffix(".nc"),
+                    "gcode": prefix.with_suffix(".gcode"),
+                    "ref_pdf": prefix.with_name(prefix.name + "__ref.pdf"),
+                    "ref_svg": prefix.with_name(prefix.name + "__ref.svg"),
+                }
+                files["svg"].write_text("<svg />", encoding="utf-8")
+                files["pdf"].write_bytes(b"%PDF-1.4\n")
+                files["nc"].write_text("G0 X0 Y0\n", encoding="utf-8")
+                files["gcode"].write_text("G0 X0 Y0\n", encoding="utf-8")
+                files["ref_pdf"].write_bytes(b"%PDF-1.4\n")
+                files["ref_svg"].write_text("<svg />", encoding="utf-8")
+                return {
+                    "variant": name,
+                    "ok": True,
+                    "layout_similarity": sim,
+                    "svg": str(files["svg"]),
+                    "pdf": str(files["pdf"]),
+                    "nc": str(files["nc"]),
+                    "gcode": str(files["gcode"]),
+                    "reference_source": str(files["ref_pdf"]),
+                    "reference_source_svg": str(files["ref_svg"]),
+                    "metrics": metrics or {"segments_total": 1, "draw_length_mm": 10.0, "point_like_strokes": 0, "tiny_strokes_lt_08_mm": 0},
+                    "logs": [name],
+                    "fit_scale": 1.0,
+                    "clipping_warning": False,
+                    "notes": notes,
+                }
+
+            with (
+                mock.patch.object(mod, "_prepare_a4_hybrid_drawing_candidate") as hybrid_mock,
+                mock.patch.object(
+                    mod,
+                    "_prepare_mupdf_svg_paths_candidate",
+                    return_value=_mk_candidate(
+                        "mupdf_svg_paths",
+                        0.951000,
+                        notes="source_cleanup=direct_pdf_svg; mupdf_svg_paths=True",
+                        metrics={"segments_total": 4000, "draw_length_mm": 10.0, "point_like_strokes": 60, "tiny_strokes_lt_08_mm": 120, "pen_down_strokes": 900},
+                    ),
+                ),
+                mock.patch.object(
+                    mod,
+                    "_prepare_drawing_candidate",
+                    side_effect=[
+                        _mk_candidate(
+                            "fit_full",
+                            0.952500,
+                            metrics={"segments_total": 4000, "draw_length_mm": 10.0, "point_like_strokes": 800, "tiny_strokes_lt_08_mm": 1600, "pen_down_strokes": 2600},
+                        ),
+                        _mk_candidate(
+                            "strict_1to1_clip",
+                            0.910741,
+                            metrics={"segments_total": 4000, "draw_length_mm": 10.0, "point_like_strokes": 300, "tiny_strokes_lt_08_mm": 600, "pen_down_strokes": 1800},
+                        ),
+                    ],
+                ),
+                mock.patch.object(mod, "_rewrite_preview_on_work_area_canvas_from_gcode", return_value=(True, "")),
+                mock.patch.object(
+                    mod,
+                    "_source_crop_alignment_metrics",
+                    side_effect=[
+                        {"source_crop_iou": 0.18, "source_crop_corr": 0.22, "source_crop_x_px": 0.0, "source_crop_y_px": 0.0},
+                        {"source_crop_iou": 0.21, "source_crop_corr": 0.24, "source_crop_x_px": 0.0, "source_crop_y_px": 0.0},
+                        {"source_crop_iou": 0.14, "source_crop_corr": 0.16, "source_crop_x_px": 0.0, "source_crop_y_px": 0.0},
+                    ],
+                ),
+            ):
+                report, rows = mod._prepare_drawing_package(source_pdf, root / "pkg")
+
+        hybrid_mock.assert_not_called()
+        self.assertEqual(report["frame_class"], "kompas_full_frame")
+        self.assertEqual(report["selected_variant"], "mupdf_svg_paths")
+        self.assertEqual(report["route_class"], "A4 drawing with full KOMPAS frame")
+        self.assertEqual(len(rows), 1)
+        self.assertIn("variant=mupdf_svg_paths", rows[0].notes)
 
     def test_prepare_drawing_package_prefers_clean_source_direct_for_specification(self) -> None:
         mod = _load_module()
@@ -1568,6 +1709,8 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
             self.assertTrue(report["compare_generated"])
             self.assertTrue((variant_dir / "_audit.txt").exists())
             self.assertTrue((variant_dir / "_audit.json").exists())
+            audit_text = (variant_dir / "_audit.txt").read_text(encoding="utf-8")
+            self.assertIn("quality=", audit_text)
             summary_text = (package_dir / "summary.csv").read_text(encoding="utf-8")
             self.assertIn("selected_variant", summary_text)
             self.assertIn("source_fidelity_score", summary_text)

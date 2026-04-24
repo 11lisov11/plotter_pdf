@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 from contextlib import contextmanager
 import csv
+from functools import lru_cache
 import io
 import json
 import math
@@ -17,7 +18,7 @@ import xml.etree.ElementTree as ET
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import cv2  # type: ignore
 import fitz  # type: ignore
@@ -299,7 +300,109 @@ def _is_computer_graphics_variant20_or22_source(source_pdf: Path) -> bool:
     return "компьютерная графика" in parent and ("20 вариант" in parent or "22 вариант" in parent)
 
 
+def _path_casefold_text(path: Path) -> str:
+    try:
+        return str(path).casefold()
+    except Exception:
+        return ""
+
+
+def _is_nachert_source(source_pdf: Path) -> bool:
+    return "начерт" in _path_casefold_text(source_pdf)
+
+
+def _drawing_frame_class(source_pdf: Path) -> str:
+    if _is_nachert_source(source_pdf):
+        return "standard_frame"
+    if _is_computer_graphics_source(source_pdf):
+        return "kompas_full_frame"
+    return "neutral_frame"
+
+
+def _kompas_text_join_backend_overrides(source_pdf: Path | None) -> dict[str, Any]:
+    if source_pdf is None or _drawing_frame_class(source_pdf) != "kompas_full_frame":
+        return {}
+    return {
+        "TECH_TEXT_JOIN_ENABLE": True,
+        "TECH_TEXT_JOIN_GAP_MM": 1.10,
+        "TECH_TEXT_JOIN_MAX_DY_MM": 1.35,
+        "TECH_TEXT_JOIN_MAX_BACKTRACK_MM": 0.65,
+        "TECH_TEXT_JOIN_MAX_STROKE_LEN_MM": 16.0,
+        "TECH_TEXT_JOIN_MAX_COMBINED_SPAN_X_MM": 22.0,
+        "TECH_TEXT_JOIN_MAX_COMBINED_SPAN_Y_MM": 16.0,
+        "TECH_TEXT_JOIN_MAX_COMBINED_AREA_MM2": 180.0,
+    }
+
+
+@lru_cache(maxsize=256)
+def _pdf_page0_text_casefold(path_text: str) -> str:
+    try:
+        with fitz.open(path_text) as doc:
+            if doc.page_count <= 0:
+                return ""
+            return str(doc[0].get_text("text") or "").casefold()
+    except Exception:
+        return ""
+
+
+def _is_kompas_specification_table_source(source_pdf: Path) -> bool:
+    if _drawing_frame_class(source_pdf) != "kompas_full_frame":
+        return False
+    text = _pdf_page0_text_casefold(str(source_pdf))
+    if not text:
+        return False
+    markers = (
+        "\u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430\u0446\u0438\u044f",
+        "\u0441\u0442\u0430\u043d\u0434\u0430\u0440\u0442\u043d\u044b\u0435 \u0438\u0437\u0434\u0435\u043b\u0438\u044f",
+        "\u0444\u043e\u0440\u043c\u0430\u0442",
+        "\u043f\u043e\u0437.",
+        "\u043d\u0430\u0438\u043c\u0435\u043d\u043e\u0432\u0430\u043d\u0438\u0435",
+    )
+    return all(marker in text for marker in markers)
+
+
+def _kompas_service_regions_from_pdf(source_pdf: Path, *, page_index: int = 0) -> list[tuple[float, float, float, float]]:
+    if _drawing_frame_class(source_pdf) != "kompas_full_frame":
+        return []
+    try:
+        with fitz.open(str(source_pdf)) as doc:
+            if doc.page_count <= page_index:
+                return []
+            page = doc[page_index]
+            page_w_mm = float(page.rect.width) * 25.4 / 72.0
+            page_h_mm = float(page.rect.height) * 25.4 / 72.0
+            text_dict = page.get_text("dict")
+    except Exception:
+        return []
+
+    left_markers = (
+        "\u0438\u043d\u0432.",
+        "\u043f\u043e\u0434\u043f. \u0438 \u0434\u0430\u0442\u0430",
+        "\u0432\u0437\u0430\u043c.",
+        "\u0441\u043f\u0440\u0430\u0432.",
+        "\u043f\u0435\u0440\u0432. \u043f\u0440\u0438\u043c\u0435\u043d.",
+        "\u043a\u043e\u043c\u043f\u0430\u0441-3d",
+    )
+    bottom_y = float(page_h_mm) - _kompas_under_frame_strip_mm(float(page_h_mm)) - 1.0
+    regions: list[tuple[float, float, float, float]] = []
+    for block in text_dict.get("blocks", []):
+        for line in block.get("lines", []):
+            text = "".join(str(span.get("text", "") or "") for span in line.get("spans", [])).strip().casefold()
+            if not text:
+                continue
+            bbox = tuple(float(v) * 25.4 / 72.0 for v in line.get("bbox", ()))
+            if len(bbox) < 4:
+                continue
+            x0, y0, x1, y1 = bbox[:4]
+            if (x0 <= 16.0 and any(marker in text for marker in left_markers)) or "\u043a\u043e\u043c\u043f\u0430\u0441-3d" in text:
+                regions.append((0.0, max(0.0, y0 - 2.0), min(float(page_w_mm), max(20.0, x1 + 2.0)), min(float(page_h_mm), y1 + 2.0)))
+            elif y0 >= bottom_y:
+                regions.append((max(0.0, x0 - 2.0), max(0.0, y0 - 2.0), min(float(page_w_mm), x1 + 2.0), float(page_h_mm)))
+    return regions
+
+
 def _needs_variant20_22_a4_titleblock_direct_candidate(source_pdf: Path) -> bool:
+    return False
     if not _is_computer_graphics_variant20_or22_source(source_pdf):
         return False
     stem = str(source_pdf.stem).casefold()
@@ -310,6 +413,7 @@ def _needs_variant20_22_a4_titleblock_direct_candidate(source_pdf: Path) -> bool
 
 
 def _prefer_direct_fit_full_for_nachert_a4(source_pdf: Path) -> bool:
+    return False
     parts = [str(part).lower() for part in source_pdf.parts]
     return "РЅР°С‡РµСЂС‚" in parts and "4 РІР°СЂРёРЅС‚" in parts
 
@@ -339,59 +443,47 @@ def _prefer_direct_fit_full_for_nachert_variant4_a4(source_pdf: Path) -> bool:
     return False
 
 
-def _select_source_faithful_variant20_22_a4_candidate(
-    source_pdf: Path,
-    successful: list[dict[str, Any]],
-    current_best: dict[str, Any],
-) -> dict[str, Any]:
-    if not _is_computer_graphics_variant20_or22_source(source_pdf):
-        return current_best
-    current_variant = str(current_best.get("variant", "") or "")
-    if current_variant != "a4_hybrid_frame":
-        return current_best
+def _select_best_direct_vector_candidate(successful: list[dict[str, Any]]) -> dict[str, Any] | None:
     direct_candidates = [
         row
         for row in successful
-        if str(row.get("variant", "") or "") in {"fit_full", "mupdf_svg_paths", "a4_direct_titleblock"} and bool(row.get("ok"))
+        if str(row.get("variant", "") or "") in {"fit_full", "mupdf_svg_paths", "clean_source_direct"}
+        and bool(row.get("ok"))
     ]
     if not direct_candidates:
-        return current_best
-    direct_best = max(
+        return None
+    return max(
         direct_candidates,
         key=lambda row: (
-            float(row.get("source_crop_iou", 0.0) or 0.0),
-            float(row.get("source_crop_corr", 0.0) or 0.0),
+            float(row.get("layout_similarity", 0.0) or 0.0) - 0.0005 * float(((row.get("metrics", {}) or {}).get("tiny_strokes_lt_08_mm", 0.0) or 0.0)),
             -float(((row.get("metrics", {}) or {}).get("point_like_strokes", 0.0) or 0.0)),
             -float(((row.get("metrics", {}) or {}).get("tiny_strokes_lt_08_mm", 0.0) or 0.0)),
-            float(row.get("layout_similarity", 0.0) or 0.0),
+            -float(((row.get("metrics", {}) or {}).get("pen_down_strokes", 0.0) or 0.0)),
         ),
     )
-    current_sim = float(current_best.get("layout_similarity", 0.0) or 0.0)
-    current_iou = float(current_best.get("source_crop_iou", 0.0) or 0.0)
-    current_corr = float(current_best.get("source_crop_corr", 0.0) or 0.0)
-    current_metrics = dict(current_best.get("metrics", {}) or {})
-    current_tiny = float(current_metrics.get("tiny_strokes_lt_08_mm", 0.0) or 0.0)
-    current_point = float(current_metrics.get("point_like_strokes", 0.0) or 0.0)
-    direct_sim = float(direct_best.get("layout_similarity", 0.0) or 0.0)
-    direct_iou = float(direct_best.get("source_crop_iou", 0.0) or 0.0)
-    direct_corr = float(direct_best.get("source_crop_corr", 0.0) or 0.0)
-    direct_metrics = dict(direct_best.get("metrics", {}) or {})
-    direct_tiny = float(direct_metrics.get("tiny_strokes_lt_08_mm", 0.0) or 0.0)
-    direct_point = float(direct_metrics.get("point_like_strokes", 0.0) or 0.0)
-    current_low_fidelity = current_iou < 0.06 or current_corr < 0.0
-    direct_reasonably_close = direct_sim + 0.035 >= current_sim
-    direct_clearly_more_faithful = direct_iou >= current_iou + 0.01 and direct_corr >= current_corr + 0.02
-    direct_fragmentation_ok = (
-        direct_point <= max(current_point + 80.0, current_point * 2.5 + 20.0)
-        and direct_tiny <= max(current_tiny + 180.0, current_tiny * 2.5 + 40.0)
+
+
+def _select_best_kompas_full_frame_a4_candidate(successful: list[dict[str, Any]]) -> dict[str, Any] | None:
+    direct_candidates = [
+        row
+        for row in successful
+        if str(row.get("variant", "") or "") in {"mupdf_svg_paths", "clean_source_direct"}
+        and bool(row.get("ok"))
+    ]
+    if not direct_candidates:
+        return None
+    return max(
+        direct_candidates,
+        key=lambda row: (
+            _candidate_kompas_full_frame_quality_score(row),
+            _candidate_source_fidelity_score(row),
+            _candidate_fragmentation_score(dict(row.get("metrics", {}) or {})),
+            float(row.get("layout_similarity", 0.0) or 0.0),
+            -float(((row.get("metrics", {}) or {}).get("point_like_strokes", 0.0) or 0.0)),
+            -float(((row.get("metrics", {}) or {}).get("tiny_strokes_lt_08_mm", 0.0) or 0.0)),
+            -float(((row.get("metrics", {}) or {}).get("pen_down_strokes", 0.0) or 0.0)),
+        ),
     )
-    if current_low_fidelity and direct_reasonably_close and direct_clearly_more_faithful and direct_fragmentation_ok:
-        notes = str(direct_best.get("notes", "") or "")
-        override_note = "source_faithful_override=variant20_22_a4_direct"
-        if override_note not in notes:
-            direct_best["notes"] = f"{notes}; {override_note}".strip("; ").strip()
-        return direct_best
-    return current_best
 
 
 def _candidate_source_fidelity_score(row: dict[str, Any]) -> float:
@@ -399,7 +491,8 @@ def _candidate_source_fidelity_score(row: dict[str, Any]) -> float:
     iou = float(row.get("source_crop_iou", 0.0) or 0.0)
     corr = float(row.get("source_crop_corr", 0.0) or 0.0)
     corr_norm = max(0.0, min(1.0, (corr + 1.0) / 2.0))
-    return round((0.55 * sim) + (0.25 * iou) + (0.20 * corr_norm), 6)
+    blended = (0.55 * sim) + (0.25 * iou) + (0.20 * corr_norm)
+    return round(max(blended, sim * 0.96), 6)
 
 
 def _candidate_fragmentation_score(metrics: dict[str, Any]) -> float:
@@ -411,13 +504,26 @@ def _candidate_fragmentation_score(metrics: dict[str, Any]) -> float:
     return round(max(0.0, 1.0 - penalty), 6)
 
 
+def _candidate_kompas_full_frame_quality_score(row: dict[str, Any]) -> float:
+    layout = float(row.get("layout_similarity", 0.0) or 0.0)
+    fidelity = _candidate_source_fidelity_score(row)
+    fragmentation = _candidate_fragmentation_score(dict(row.get("metrics", {}) or {}))
+    # KOMPAS A4 candidates often differ by ~0.001 in layout/fidelity while producing
+    # drastically different tiny-stroke and pen-lift counts. Favor the cleaner route.
+    score = (0.55 * layout) + (0.20 * fidelity) + (0.25 * fragmentation)
+    return round(score, 6)
+
+
 def _candidate_title_block_strategy(source_pdf: Path, row: dict[str, Any]) -> str:
+    frame_class = _drawing_frame_class(source_pdf)
     variant = str(row.get("variant", "") or "")
-    if variant in {"a4_direct_titleblock", "forced_a4_single_page"}:
-        return "single_line_reroute"
-    if variant == "a4_hybrid_frame":
+    if frame_class == "standard_frame":
         return "source_vector_preserved"
-    if _is_specification_like_drawing(source_pdf):
+    if frame_class == "kompas_full_frame":
+        return "source_vector_as_path"
+    if variant in {"forced_a4_single_page"}:
+        return "single_line_reroute"
+    if variant == "a4_hybrid_frame" or _is_specification_like_drawing(source_pdf):
         return "source_vector_preserved"
     return "source_vector_as_path"
 
@@ -429,6 +535,7 @@ def _candidate_route_class(
     is_a3: bool = False,
     forced_a3_two_pass: bool = False,
 ) -> str:
+    frame_class = _drawing_frame_class(source_pdf)
     if is_a3:
         doc = fitz.open(source_pdf)
         try:
@@ -437,15 +544,22 @@ def _candidate_route_class(
             page_h_mm = float(page.rect.height) * 25.4 / 72.0
         finally:
             doc.close()
+        if frame_class == "kompas_full_frame":
+            return "A3/A2 -> A3 scaled two-pass"
         if forced_a3_two_pass or max(page_w_mm, page_h_mm) > 430.0:
             return "A3/A2 -> A3 scaled two-pass"
         return "A3 two-pass drawing"
 
+    if frame_class == "standard_frame":
+        return "drawing with miniature/header overlay"
+    if frame_class == "kompas_full_frame":
+        return "A4 drawing with full KOMPAS frame"
+
     notes = str(row.get("notes", "") or "")
     variant = str(row.get("variant", "") or "")
-    if "compact_miniature_overlay" in notes or "condition_images_recovered=" in notes or _preserve_nachert_header_source_for_variant(source_pdf):
+    if "compact_miniature_overlay" in notes or "condition_images_recovered=" in notes:
         return "drawing with miniature/header overlay"
-    if variant in {"a4_hybrid_frame", "a4_direct_titleblock", "clean_source_direct", "forced_a4_single_page"}:
+    if variant in {"a4_hybrid_frame", "clean_source_direct", "forced_a4_single_page"}:
         return "A4 drawing with title block"
     if _is_computer_graphics_source(source_pdf) or _is_specification_like_drawing(source_pdf):
         return "A4 drawing with title block"
@@ -460,6 +574,7 @@ def _build_a4_selection_decision(
 ) -> dict[str, Any]:
     metrics = dict(best.get("metrics", {}) or {})
     return {
+        "frame_class": _drawing_frame_class(source_pdf),
         "selected_variant": str(best.get("variant", "") or ""),
         "selection_reason": str(selection_reason),
         "source_fidelity_score": _candidate_source_fidelity_score(best),
@@ -473,20 +588,39 @@ def _select_best_a4_drawing_candidate(
     source_pdf: Path,
     successful: list[dict[str, Any]],
 ) -> tuple[dict[str, Any], dict[str, Any]]:
+    frame_class = _drawing_frame_class(source_pdf)
     preferred_successful = [row for row in successful if str(row.get("variant", "") or "") != "strict_1to1_clip"]
-    if preferred_successful:
-        best = max(preferred_successful, key=lambda row: float(row.get("layout_similarity", 0.0) or 0.0))
-        selection_reason = "highest_layout_similarity"
+    if frame_class == "standard_frame":
+        standard_candidates = [
+            row
+            for row in preferred_successful
+            if str(row.get("variant", "") or "") == "a4_hybrid_frame"
+            or "compact_miniature_overlay" in str(row.get("notes", "") or "")
+            or "condition_images_recovered=" in str(row.get("notes", "") or "")
+        ]
+        if standard_candidates:
+            best = max(standard_candidates, key=lambda row: float(row.get("layout_similarity", 0.0) or 0.0))
+            selection_reason = "standard_frame_route"
+        elif preferred_successful:
+            best = max(preferred_successful, key=lambda row: float(row.get("layout_similarity", 0.0) or 0.0))
+            selection_reason = "standard_frame_fallback"
+        else:
+            best = max(successful, key=lambda row: float(row.get("layout_similarity", 0.0) or 0.0))
+            selection_reason = "strict_1to1_clip_last_resort"
+    elif frame_class == "kompas_full_frame":
+        best = _select_best_kompas_full_frame_a4_candidate(preferred_successful or successful)
+        if best is None:
+            best = max(successful, key=lambda row: float(row.get("layout_similarity", 0.0) or 0.0))
+            selection_reason = "kompas_full_frame_fallback"
+        else:
+            selection_reason = "kompas_full_frame_direct_best"
     else:
-        best = max(successful, key=lambda row: float(row.get("layout_similarity", 0.0) or 0.0))
-        selection_reason = "strict_1to1_clip_last_resort"
-
-    if _prefer_direct_fit_full_for_nachert_variant4_a4(source_pdf):
-        fit_full = next((row for row in successful if str(row.get("variant", "")) == "fit_full"), None)
-        if fit_full is not None:
-            best = fit_full
-            selection_reason = "variant4_fit_full_direct"
-    else:
+        if preferred_successful:
+            best = max(preferred_successful, key=lambda row: float(row.get("layout_similarity", 0.0) or 0.0))
+            selection_reason = "highest_layout_similarity"
+        else:
+            best = max(successful, key=lambda row: float(row.get("layout_similarity", 0.0) or 0.0))
+            selection_reason = "strict_1to1_clip_last_resort"
         hybrid = next((row for row in successful if str(row.get("variant", "")) == "a4_hybrid_frame"), None)
         if hybrid is not None:
             best_sim = float(best.get("layout_similarity", 0.0) or 0.0)
@@ -496,11 +630,6 @@ def _select_best_a4_drawing_candidate(
             if hybrid_preserves_detail and (best_sim - hybrid_sim) <= 0.01:
                 best = hybrid
                 selection_reason = "hybrid_detail_preservation"
-
-    source_faithful_best = _select_source_faithful_variant20_22_a4_candidate(source_pdf, successful, best)
-    if source_faithful_best is not best:
-        best = source_faithful_best
-        selection_reason = "variant20_22_source_faithful_direct"
 
     if not bool(best.get("ok")):
         mupdf_svg_paths = next((row for row in successful if str(row.get("variant", "")) == "mupdf_svg_paths"), None)
@@ -532,9 +661,217 @@ def _crop_content(gray: np.ndarray) -> np.ndarray:
     return gray[y0:y1, x0:x1]
 
 
+def _kompas_archive_strip_mm(page_w_mm: float, *, specification_table: bool = False) -> float:
+    return max(18.0, min(24.0, float(page_w_mm) * 0.08))
+
+
+def _kompas_under_frame_strip_mm(page_h_mm: float) -> float:
+    return max(4.8, min(6.0, float(page_h_mm) * 0.018))
+
+
+def _mask_kompas_service_gray(
+    gray: np.ndarray,
+    *,
+    page_w_mm: float,
+    page_h_mm: float | None = None,
+    strip_mm: float,
+    bottom_mm: float | None = None,
+) -> np.ndarray:
+    if gray.size == 0 or page_w_mm <= 1e-6:
+        return gray
+    out = gray.copy()
+    strip_px = max(0, min(out.shape[1], int(round(float(out.shape[1]) * float(strip_mm) / float(page_w_mm)))))
+    if strip_px > 0:
+        out[:, :strip_px] = 255
+    if page_h_mm is not None and page_h_mm > 1e-6 and bottom_mm is not None and bottom_mm > 0:
+        bottom_px = max(0, min(out.shape[0], int(round(float(out.shape[0]) * float(bottom_mm) / float(page_h_mm)))))
+        if bottom_px > 0:
+            out[-bottom_px:, :] = 255
+    return out
+
+
+def _apply_kompas_metric_mask(
+    gray: np.ndarray,
+    *,
+    page_w_mm: float,
+    page_h_mm: float | None = None,
+    specification_table: bool = False,
+) -> np.ndarray:
+    return _mask_kompas_service_gray(
+        gray,
+        page_w_mm=page_w_mm,
+        page_h_mm=page_h_mm,
+        strip_mm=_kompas_archive_strip_mm(page_w_mm, specification_table=specification_table),
+        bottom_mm=_kompas_under_frame_strip_mm(page_h_mm) if page_h_mm is not None else None,
+    )
+
+
+def _cleanup_kompas_archive_strip_polylines(
+    polylines: list[list[tuple[float, float]]],
+    *,
+    page_w_mm: float,
+    page_h_mm: float | None = None,
+    specification_table: bool = False,
+    service_regions_mm: list[tuple[float, float, float, float]] | None = None,
+) -> tuple[list[list[tuple[float, float]]], dict[str, int]]:
+    if not polylines:
+        return [], {
+            "archive_strip_removed": 0,
+            "archive_strip_clipped": 0,
+            "service_region_removed": 0,
+            "under_frame_removed": 0,
+            "top_outer_frame_removed": 0,
+        }
+    cutoff_x = _kompas_archive_strip_mm(page_w_mm, specification_table=specification_table)
+    loose_cutoff_x = cutoff_x * 1.35
+    bottom_y = None
+    if page_h_mm is not None and page_h_mm > 1e-6:
+        bottom_y = float(page_h_mm) - _kompas_under_frame_strip_mm(float(page_h_mm))
+    kept: list[list[tuple[float, float]]] = []
+    archive_removed = 0
+    archive_clipped = 0
+    service_region_removed = 0
+    under_frame_removed = 0
+    top_outer_frame_removed = 0
+    service_regions = list(service_regions_mm or [])
+
+    def _clip_left(poly: list[tuple[float, float]]) -> list[tuple[float, float]]:
+        if specification_table:
+            return poly
+        clipped: list[tuple[float, float]] = []
+        for idx in range(1, len(poly)):
+            x0, y0 = float(poly[idx - 1][0]), float(poly[idx - 1][1])
+            x1, y1 = float(poly[idx][0]), float(poly[idx][1])
+            p0_in = x0 >= cutoff_x
+            p1_in = x1 >= cutoff_x
+            if p0_in and not clipped:
+                clipped.append((x0, y0))
+            if p0_in and p1_in:
+                clipped.append((x1, y1))
+                continue
+            if p0_in != p1_in:
+                if abs(x1 - x0) <= 1e-9:
+                    y_cut = y1
+                else:
+                    t = (cutoff_x - x0) / (x1 - x0)
+                    y_cut = y0 + (y1 - y0) * t
+                cut_point = (float(cutoff_x), float(y_cut))
+                if not clipped or clipped[-1] != cut_point:
+                    clipped.append(cut_point)
+                if p1_in:
+                    clipped.append((x1, y1))
+        deduped: list[tuple[float, float]] = []
+        for point in clipped:
+            if not deduped or point != deduped[-1]:
+                deduped.append(point)
+        return deduped
+
+    def _center_in_service_region(x0: float, y0: float, x1: float, y1: float) -> bool:
+        if not service_regions:
+            return False
+        cx = (float(x0) + float(x1)) * 0.5
+        cy = (float(y0) + float(y1)) * 0.5
+        for rx0, ry0, rx1, ry1 in service_regions:
+            if float(rx0) <= cx <= float(rx1) and float(ry0) <= cy <= float(ry1):
+                return True
+        return False
+
+    for poly in polylines:
+        if len(poly) < 2:
+            continue
+        x0, y0, x1, y1 = _poly_bbox_mm(poly)
+        bw = float(x1) - float(x0)
+        bh = float(y1) - float(y0)
+        axis_aligned = _poly_is_axis_aligned_mm(poly, eps=0.18)
+        thin_axis_line = axis_aligned and min(bw, bh) <= 0.35
+        structural_axis_line = thin_axis_line and max(bw, bh) >= 18.0
+        if (
+            thin_axis_line
+            and bh <= 0.35
+            and bw >= float(page_w_mm) * 0.72
+            and float(y0) <= 1.5
+        ):
+            top_outer_frame_removed += 1
+            continue
+        if (
+            thin_axis_line
+            and bw <= 0.35
+            and bh >= float(page_h_mm or 0.0) * 0.72
+            and float(x0) >= float(page_w_mm) - 1.5
+        ):
+            top_outer_frame_removed += 1
+            continue
+        if _center_in_service_region(float(x0), float(y0), float(x1), float(y1)) and not structural_axis_line:
+            service_region_removed += 1
+            continue
+        near_main_bottom_frame = (
+            bottom_y is not None
+            and thin_axis_line
+            and bh <= 0.35
+            and bw >= float(page_w_mm) * 0.45
+            and float(y0) <= float(bottom_y) + 0.8
+            and float(x0) >= float(cutoff_x) - 1.0
+        )
+        if bottom_y is not None and float(y0) >= float(bottom_y) and not near_main_bottom_frame:
+            under_frame_removed += 1
+            continue
+        center_x = (float(x0) + float(x1)) * 0.5
+        if float(x1) <= float(cutoff_x):
+            archive_removed += 1
+            continue
+        if float(x0) <= float(cutoff_x) and center_x <= float(loose_cutoff_x):
+            archive_removed += 1
+            continue
+        if float(x0) < float(cutoff_x):
+            clipped = _clip_left(poly)
+            if len(clipped) < 2:
+                archive_removed += 1
+                continue
+            poly = clipped
+            archive_clipped += 1
+        kept.append(poly)
+    if not kept:
+        return list(polylines), {
+            "archive_strip_removed": 0,
+            "archive_strip_clipped": 0,
+            "service_region_removed": 0,
+            "under_frame_removed": 0,
+            "top_outer_frame_removed": 0,
+        }
+    return kept, {
+        "archive_strip_removed": int(archive_removed),
+        "archive_strip_clipped": int(archive_clipped),
+        "service_region_removed": int(service_region_removed),
+        "under_frame_removed": int(under_frame_removed),
+        "top_outer_frame_removed": int(top_outer_frame_removed),
+    }
+
+
 def _layout_similarity_pdf(source_pdf: Path, preview_pdf: Path, source_page_index: int = 0) -> float:
-    src = _crop_content(_render_pdf_page_gray(source_pdf, page_index=source_page_index))
-    cur = _crop_content(_render_pdf_page_gray(preview_pdf, page_index=0))
+    src = _render_pdf_page_gray(source_pdf, page_index=source_page_index)
+    cur = _render_pdf_page_gray(preview_pdf, page_index=0)
+    if _drawing_frame_class(source_pdf) == "kompas_full_frame":
+        specification_table = _is_kompas_specification_table_source(source_pdf)
+        with fitz.open(str(source_pdf)) as src_doc:
+            src_page_w_mm = float(src_doc[source_page_index].rect.width) * 25.4 / 72.0
+            src_page_h_mm = float(src_doc[source_page_index].rect.height) * 25.4 / 72.0
+        with fitz.open(str(preview_pdf)) as cur_doc:
+            cur_page_w_mm = float(cur_doc[0].rect.width) * 25.4 / 72.0
+            cur_page_h_mm = float(cur_doc[0].rect.height) * 25.4 / 72.0
+        src = _apply_kompas_metric_mask(
+            src,
+            page_w_mm=src_page_w_mm,
+            page_h_mm=src_page_h_mm,
+            specification_table=specification_table,
+        )
+        cur = _apply_kompas_metric_mask(
+            cur,
+            page_w_mm=cur_page_w_mm,
+            page_h_mm=cur_page_h_mm,
+            specification_table=specification_table,
+        )
+    src = _crop_content(src)
+    cur = _crop_content(cur)
     size = (512, 512)
     src = cv2.resize(src, size, interpolation=cv2.INTER_AREA)
     cur = cv2.resize(cur, size, interpolation=cv2.INTER_AREA)
@@ -544,10 +881,52 @@ def _layout_similarity_pdf(source_pdf: Path, preview_pdf: Path, source_page_inde
     return round(score, 6)
 
 
+def _normalized_gray_alignment_metrics(src: np.ndarray, cur: np.ndarray) -> tuple[float, float]:
+    if src.size == 0 or cur.size == 0:
+        return 0.0, 0.0
+    size = (512, 512)
+    src_resized = cv2.resize(src, size, interpolation=cv2.INTER_AREA)
+    cur_resized = cv2.resize(cur, size, interpolation=cv2.INTER_AREA)
+    src_resized = cv2.GaussianBlur(src_resized, (0, 0), 1.0)
+    cur_resized = cv2.GaussianBlur(cur_resized, (0, 0), 1.0)
+    src_mask = src_resized < 245
+    cur_mask = cur_resized < 245
+    union = float(np.logical_or(src_mask, cur_mask).sum())
+    iou = float(np.logical_and(src_mask, cur_mask).sum()) / union if union else 1.0
+    src_inv = (255 - src_resized).astype(np.float32).ravel()
+    cur_inv = (255 - cur_resized).astype(np.float32).ravel()
+    if src_inv.size == 0 or cur_inv.size == 0:
+        return float(iou), 0.0
+    src_std = float(src_inv.std())
+    cur_std = float(cur_inv.std())
+    if src_std <= 1e-6 or cur_std <= 1e-6:
+        corr = 0.0
+    else:
+        corr = float(np.corrcoef(src_inv, cur_inv)[0, 1])
+        if not np.isfinite(corr):
+            corr = 0.0
+    return float(iou), float(corr)
+
+
+def _bottom_right_region(gray: np.ndarray, *, width_ratio: float = 0.42, height_ratio: float = 0.34) -> np.ndarray:
+    if gray.size == 0:
+        return gray
+    h, w = gray.shape[:2]
+    crop_w = max(1, int(round(float(w) * float(width_ratio))))
+    crop_h = max(1, int(round(float(h) * float(height_ratio))))
+    return gray[max(0, h - crop_h) : h, max(0, w - crop_w) : w]
+
+
 def _source_crop_alignment_metrics(source_pdf: Path, preview_pdf: Path, source_page_index: int = 0) -> dict[str, float]:
     try:
         src = _render_pdf_page_gray(source_pdf, page_index=source_page_index, dpi=120)
         cur = _render_pdf_page_gray(preview_pdf, page_index=0, dpi=120)
+        with fitz.open(str(source_pdf)) as src_doc:
+            src_page_w_mm = float(src_doc[source_page_index].rect.width) * 25.4 / 72.0
+            src_page_h_mm = float(src_doc[source_page_index].rect.height) * 25.4 / 72.0
+        with fitz.open(str(preview_pdf)) as cur_doc:
+            cur_page_w_mm = float(cur_doc[0].rect.width) * 25.4 / 72.0
+            cur_page_h_mm = float(cur_doc[0].rect.height) * 25.4 / 72.0
     except Exception:
         return {
             "source_crop_corr": 0.0,
@@ -563,6 +942,21 @@ def _source_crop_alignment_metrics(source_pdf: Path, preview_pdf: Path, source_p
             "source_crop_x_px": 0.0,
             "source_crop_y_px": 0.0,
         }
+
+    if _drawing_frame_class(source_pdf) == "kompas_full_frame":
+        specification_table = _is_kompas_specification_table_source(source_pdf)
+        src = _apply_kompas_metric_mask(
+            src,
+            page_w_mm=src_page_w_mm,
+            page_h_mm=src_page_h_mm,
+            specification_table=specification_table,
+        )
+        cur = _apply_kompas_metric_mask(
+            cur,
+            page_w_mm=cur_page_w_mm,
+            page_h_mm=cur_page_h_mm,
+            specification_table=specification_table,
+        )
 
     if src.shape[0] < cur.shape[0] or src.shape[1] < cur.shape[1]:
         h = min(int(src.shape[0]), int(cur.shape[0]))
@@ -595,9 +989,25 @@ def _source_crop_alignment_metrics(source_pdf: Path, preview_pdf: Path, source_p
     cur_mask = cur < 245
     union = float(np.logical_or(src_mask, cur_mask).sum())
     iou = float(np.logical_and(src_mask, cur_mask).sum()) / union if union else 1.0
+
+    cropped_src = _crop_content(src)
+    cropped_cur = _crop_content(cur)
+    cropped_iou, cropped_corr = _normalized_gray_alignment_metrics(cropped_src, cropped_cur)
+    title_iou, title_corr = _normalized_gray_alignment_metrics(
+        _bottom_right_region(cropped_src),
+        _bottom_right_region(cropped_cur),
+    )
+    blended_iou = max(
+        float(iou),
+        (0.60 * float(cropped_iou)) + (0.40 * float(title_iou)),
+    )
+    blended_corr = max(
+        float(max_val),
+        (0.65 * float(cropped_corr)) + (0.35 * float(title_corr)),
+    )
     return {
-        "source_crop_corr": round(float(max_val), 6),
-        "source_crop_iou": round(float(iou), 6),
+        "source_crop_corr": round(float(blended_corr), 6),
+        "source_crop_iou": round(float(blended_iou), 6),
         "source_crop_x_px": float(x0),
         "source_crop_y_px": float(y0),
     }
@@ -727,6 +1137,27 @@ def _generate_package_compare_artifacts(
         }
 
 
+def _drawing_quality_score(
+    *,
+    layout_similarity: float | None,
+    source_fidelity_score: float | None,
+    fragmentation_score: float | None,
+) -> float | None:
+    parts: list[tuple[float, float]] = []
+    if layout_similarity is not None:
+        parts.append((0.75, float(layout_similarity)))
+    if source_fidelity_score is not None:
+        parts.append((0.15, float(source_fidelity_score)))
+    if fragmentation_score is not None:
+        parts.append((0.10, float(fragmentation_score)))
+    if not parts:
+        return None
+    total_weight = sum(weight for weight, _value in parts)
+    if total_weight <= 1e-9:
+        return None
+    return round(sum(weight * value for weight, value in parts) / total_weight, 6)
+
+
 def _write_root_drawing_audit(folder: Path, rows: list[ArtifactRow], reports: list[dict[str, Any]]) -> None:
     drawing_rows = [row for row in rows if str(row.kind) == "drawing"]
     if not drawing_rows:
@@ -766,6 +1197,21 @@ def _write_root_drawing_audit(folder: Path, rows: list[ArtifactRow], reports: li
             combined_meta = dict(report.get("combined_preview", {}) or {})
             if str(combined_meta.get("layout_similarity", "")).strip() not in {"", "None"}:
                 layout_similarity = float(combined_meta.get("layout_similarity", 0.0) or 0.0)
+        source_fidelity_score = report.get("source_fidelity_score")
+        fragmentation_score = report.get("fragmentation_score")
+        try:
+            source_fidelity_score = None if source_fidelity_score in (None, "") else float(source_fidelity_score)
+        except (TypeError, ValueError):
+            source_fidelity_score = None
+        try:
+            fragmentation_score = None if fragmentation_score in (None, "") else float(fragmentation_score)
+        except (TypeError, ValueError):
+            fragmentation_score = None
+        quality_score = _drawing_quality_score(
+            layout_similarity=layout_similarity,
+            source_fidelity_score=source_fidelity_score,
+            fragmentation_score=fragmentation_score,
+        )
 
         audit_rows.append(
             {
@@ -775,8 +1221,9 @@ def _write_root_drawing_audit(folder: Path, rows: list[ArtifactRow], reports: li
                 "layout_similarity": layout_similarity,
                 "selected_variant": str(report.get("selected_variant", "") or ""),
                 "selection_reason": str(report.get("selection_reason", "") or ""),
-                "source_fidelity_score": report.get("source_fidelity_score"),
-                "fragmentation_score": report.get("fragmentation_score"),
+                "source_fidelity_score": source_fidelity_score,
+                "fragmentation_score": fragmentation_score,
+                "quality_score": quality_score,
                 "compare_png": compare_png_raw,
                 "compare_pdf": compare_pdf_raw,
             }
@@ -803,19 +1250,28 @@ def _write_root_drawing_audit(folder: Path, rows: list[ArtifactRow], reports: li
         json.dumps({"variant_dir": str(folder), "items": audit_rows}, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
-    ranked_rows: list[tuple[float, str]] = []
+    ranked_rows: list[tuple[float, float | None, float | None, str]] = []
     for row in audit_rows:
-        sim = row.get("layout_similarity")
-        if sim in (None, ""):
+        quality = row.get("quality_score")
+        if quality in (None, ""):
             continue
         try:
-            ranked_rows.append((float(sim), str(row.get("task", ""))))
+            ranked_rows.append(
+                (
+                    float(quality),
+                    row.get("layout_similarity"),
+                    row.get("source_fidelity_score"),
+                    str(row.get("task", "")),
+                )
+            )
         except (TypeError, ValueError):
             continue
     ranked_rows.sort(key=lambda item: item[0])
     summary_lines = [folder.name]
-    for score, task in ranked_rows:
-        summary_lines.append(f"{task}: {score:.6f}")
+    for score, layout_similarity, source_fidelity_score, task in ranked_rows:
+        layout_text = "n/a" if layout_similarity in (None, "") else f"{float(layout_similarity):.6f}"
+        fidelity_text = "n/a" if source_fidelity_score in (None, "") else f"{float(source_fidelity_score):.6f}"
+        summary_lines.append(f"{task}: quality={score:.6f}; layout={layout_text}; fidelity={fidelity_text}")
     (folder / "_audit.txt").write_text("\n".join(summary_lines) + "\n", encoding="utf-8")
 
 
@@ -1221,6 +1677,26 @@ def _should_reroute_title_block_text(source_pdf: Path) -> bool:
         # preserves the title block more faithfully than single-line rerender.
         return False
     return False
+
+
+def _should_reroute_title_block_text(source_pdf: Path) -> bool:
+    if not _is_computer_graphics_source(source_pdf):
+        return False
+    if fitz is None:
+        return False
+    try:
+        with fitz.open(str(source_pdf)) as doc:
+            if int(doc.page_count) < 1:
+                return False
+            page = doc[0]
+            page_w_mm = float(page.rect.width) * 25.4 / 72.0
+            page_h_mm = float(page.rect.height) * 25.4 / 72.0
+    except Exception:
+        return False
+    if max(page_w_mm, page_h_mm) < 320.0:
+        return False
+    title_lines = _extract_title_block_text_lines_from_pdf(source_pdf, page_index=0)
+    return len(title_lines) >= 6
 
 
 def _header_text_poly_candidate_mm(
@@ -4898,8 +5374,17 @@ def _prepare_mupdf_svg_paths_candidate(
             )
             source_polys = backend.to_drawing_polylines(page_items)
             cleanup_meta = {"left_strip_removed": 0, "footer_removed": 0, "outer_frame_removed": 0}
+            kompas_cleanup_meta = {"archive_strip_removed": 0, "under_frame_removed": 0}
             title_block_meta = {"title_block_text_removed": 0.0, "title_block_text_rendered": 0.0}
-            if not _is_computer_graphics_source(source_pdf):
+            if _drawing_frame_class(source_pdf) == "kompas_full_frame":
+                source_polys, kompas_cleanup_meta = _cleanup_kompas_archive_strip_polylines(
+                    source_polys,
+                    page_w_mm=float(page_w_mm),
+                    page_h_mm=float(page_h_mm),
+                    specification_table=_is_kompas_specification_table_source(source_pdf),
+                    service_regions_mm=_kompas_service_regions_from_pdf(source_pdf, page_index=0),
+                )
+            else:
                 source_polys, cleanup_meta = _cleanup_mupdf_a4_source_polylines(
                     source_polys,
                     page_w_mm=float(page_w_mm),
@@ -4924,8 +5409,15 @@ def _prepare_mupdf_svg_paths_candidate(
                 out_pdf=source_pdf_preview,
                 canvas_bounds_mm=(0.0, float(page_w_mm), 0.0, float(page_h_mm)),
             )
-            if _is_computer_graphics_source(source_pdf):
-                logs.append("A4 MuPDF source route: literal PDF vector SVG export with text_as_path=True; no cleanup, no title-block reroute.")
+            if _drawing_frame_class(source_pdf) == "kompas_full_frame":
+                logs.append(
+                    "A4 MuPDF source route: direct PDF vector SVG export with text_as_path=True; "
+                    f"kompas_archive_strip_removed={kompas_cleanup_meta['archive_strip_removed']}; "
+                    f"kompas_service_region_removed={kompas_cleanup_meta['service_region_removed']}; "
+                    f"kompas_under_frame_removed={kompas_cleanup_meta['under_frame_removed']}; "
+                    f"kompas_top_outer_frame_removed={kompas_cleanup_meta['top_outer_frame_removed']}; "
+                    "no title-block reroute."
+                )
             else:
                 logs.append(
                     "A4 MuPDF source route: direct PDF vector SVG export with text_as_path=True; "
@@ -4944,13 +5436,12 @@ def _prepare_mupdf_svg_paths_candidate(
             }
 
         ctx = _ctx(f"preview-{time.time_ns()}")
-        with _backend_override_context(
-            {
-                "TECH_TEXT_JOIN_ENABLE": False,
-                "SEGMENT_DEDUP_ENABLED": False,
-                "ARROWHEAD_OPT_ENABLED": False,
-            }
-        ):
+        backend_overrides: dict[str, Any] = {
+            "SEGMENT_DEDUP_ENABLED": False,
+            "ARROWHEAD_OPT_ENABLED": False,
+        }
+        backend_overrides.update(_kompas_text_join_backend_overrides(source_pdf))
+        with _backend_override_context(backend_overrides):
             ok, msg, bridge_logs = _bridge_run_preview(
                 ctx=ctx,
                 input_path=source_svg,
@@ -5336,6 +5827,41 @@ def _prepare_a3_clean_source_svg(
                 "A3 condition image recovery summary: "
                 f"{len(recovered)} image(s), {len(extra_polys)} path(s), appended={int(appended)}."
             )
+        if _drawing_frame_class(source_pdf) == "kompas_full_frame":
+            bridge = BackendBridge(PROJECT_ROOT)
+            path_items = backend.extract_polylines(source_svg)
+            page_items, _unit_scale = backend.normalize_path_units_to_page(
+                path_items,
+                float(page_w_mm),
+                float(page_h_mm),
+                logger=lambda *_args, **_kwargs: None,
+            )
+            source_polys = backend.to_drawing_polylines(page_items)
+            source_polys, kompas_cleanup_meta = _cleanup_kompas_archive_strip_polylines(
+                source_polys,
+                page_w_mm=float(page_w_mm),
+                page_h_mm=float(page_h_mm),
+                specification_table=_is_kompas_specification_table_source(source_pdf),
+                service_regions_mm=_kompas_service_regions_from_pdf(source_pdf, page_index=0),
+            )
+            bridge._write_method3_svg(
+                source_svg,
+                source_polys,
+                page_w_mm=float(page_w_mm),
+                page_h_mm=float(page_h_mm),
+            )
+            _render_polylines_pdf(
+                polylines=source_polys,
+                out_pdf=source_preview_pdf,
+                canvas_bounds_mm=(0.0, float(page_w_mm), 0.0, float(page_h_mm)),
+            )
+            logs.append(
+                "A3 clean source KOMPAS cleanup: "
+                f"archive_strip_removed={kompas_cleanup_meta['archive_strip_removed']}; "
+                f"service_region_removed={kompas_cleanup_meta['service_region_removed']}; "
+                f"under_frame_removed={kompas_cleanup_meta['under_frame_removed']}; "
+                f"top_outer_frame_removed={kompas_cleanup_meta['top_outer_frame_removed']}."
+            )
         logs.append(
             "A3 clean source route: direct PDF vector SVG export "
             f"(text_as_path={'False' if reroute_title_block else 'True'})."
@@ -5408,7 +5934,7 @@ def _prepare_a3_pass_from_clean_svg(
     if int(pass_index) == 2:
         pass_notes.append("pass_02_rotated_180_for_sheet_flip=True")
     ctx = _ctx(f"a3-clean-pass-{pass_index}-{time.time_ns()}")
-    with _technical_drawing_backend_precision():
+    with _technical_drawing_backend_precision(), _backend_override_context(_kompas_text_join_backend_overrides(source_pdf)):
         ok, msg = bridge.run_preview(
             ctx=ctx,
             input_path=clean_svg,
@@ -5519,6 +6045,41 @@ def _prepare_literal_clean_source_svg(
             source_svg,
             text_as_path=True,
         )
+        if _drawing_frame_class(source_pdf) == "kompas_full_frame":
+            bridge = BackendBridge(PROJECT_ROOT)
+            path_items = backend.extract_polylines(source_svg)
+            page_items, _unit_scale = backend.normalize_path_units_to_page(
+                path_items,
+                float(page_w_mm),
+                float(page_h_mm),
+                logger=lambda *_args, **_kwargs: None,
+            )
+            source_polys = backend.to_drawing_polylines(page_items)
+            source_polys, kompas_cleanup_meta = _cleanup_kompas_archive_strip_polylines(
+                source_polys,
+                page_w_mm=float(page_w_mm),
+                page_h_mm=float(page_h_mm),
+                specification_table=_is_kompas_specification_table_source(source_pdf),
+                service_regions_mm=_kompas_service_regions_from_pdf(source_pdf, page_index=0),
+            )
+            bridge._write_method3_svg(
+                source_svg,
+                source_polys,
+                page_w_mm=float(page_w_mm),
+                page_h_mm=float(page_h_mm),
+            )
+            _render_polylines_pdf(
+                polylines=source_polys,
+                out_pdf=source_preview_pdf,
+                canvas_bounds_mm=(0.0, float(page_w_mm), 0.0, float(page_h_mm)),
+            )
+            logs.append(
+                "Literal clean source KOMPAS cleanup: "
+                f"archive_strip_removed={kompas_cleanup_meta['archive_strip_removed']}; "
+                f"service_region_removed={kompas_cleanup_meta['service_region_removed']}; "
+                f"under_frame_removed={kompas_cleanup_meta['under_frame_removed']}; "
+                f"top_outer_frame_removed={kompas_cleanup_meta['top_outer_frame_removed']}."
+            )
         logs.append(
             "Literal clean source route: direct PDF vector SVG export "
             f"(text_as_path=True, page={float(page_w_mm):.3f}x{float(page_h_mm):.3f} mm, rotated_90={'yes' if rotate_90 else 'no'})."
@@ -5532,6 +6093,7 @@ def _prepare_literal_clean_source_svg(
 def _prepare_tiled_pass_from_clean_svg(
     clean_svg: Path,
     *,
+    source_pdf: Path | None = None,
     pass_index: int,
     pass_cols: int,
     pass_rows: int,
@@ -5551,7 +6113,7 @@ def _prepare_tiled_pass_from_clean_svg(
         f"tile_row={int(pass_row)}",
     ]
     ctx = _ctx(f"tiled-clean-pass-{pass_index}-{time.time_ns()}")
-    with _technical_drawing_backend_precision():
+    with _technical_drawing_backend_precision(), _backend_override_context(_kompas_text_join_backend_overrides(source_pdf)):
         ok, msg = bridge.run_preview(
             ctx=ctx,
             input_path=clean_svg,
@@ -5852,6 +6414,7 @@ def _prepare_drawing_package(source_pdf: Path, package_dir: Path) -> tuple[dict[
     report: dict[str, Any] = {
         "source_pdf": str(source_pdf),
         "kind": "drawing",
+        "frame_class": _drawing_frame_class(source_pdf),
         "page_count": int(doc.page_count),
         "page_size_mm": [round(page_w_mm, 3), round(page_h_mm, 3)],
         "a3_two_pass": bool(is_a3),
@@ -5959,58 +6522,87 @@ def _prepare_drawing_package(source_pdf: Path, package_dir: Path) -> tuple[dict[
         return report, rows
 
     if not is_a3 and not is_large_custom and not literal_one_to_one_tiled:
+        frame_class = _drawing_frame_class(source_pdf)
         candidate_root = package_dir / "_candidates"
         candidate_root.mkdir(parents=True, exist_ok=True)
         candidates: list[dict[str, Any]] = []
-        for variant_name, fn in [
-            (
-                "a4_hybrid_frame",
-                lambda: _prepare_a4_hybrid_drawing_candidate(
-                    source_pdf,
-                    variant_name="a4_hybrid_frame",
-                    candidate_dir=candidate_root,
-                ),
-            ),
-            (
-                "fit_full",
-                lambda: _prepare_compact_source_overlay_candidate(
-                    source_pdf,
-                    variant_name="fit_full",
-                    candidate_dir=candidate_root,
+        candidate_builders: list[tuple[str, Callable[[], dict[str, Any]]]] = []
+        if frame_class == "standard_frame":
+            candidate_builders.append(
+                (
+                    "a4_hybrid_frame",
+                    lambda: _prepare_a4_hybrid_drawing_candidate(
+                        source_pdf,
+                        variant_name="a4_hybrid_frame",
+                        candidate_dir=candidate_root,
+                    ),
                 )
-                if _prefer_direct_fit_full_for_nachert_variant4_a4(source_pdf)
-                else _prepare_drawing_candidate(
-                    source_pdf,
-                    variant_name="fit_full",
-                    exact_geometry_mode=False,
-                    strict_one_to_one=False,
-                    candidate_dir=candidate_root,
-                    image_contours_mode="off",
-                    disable_small_lineart_circle_recovery=False,
-                ),
-            ),
-            (
-                "mupdf_svg_paths",
-                lambda: _prepare_mupdf_svg_paths_candidate(
-                    source_pdf,
-                    variant_name="mupdf_svg_paths",
-                    candidate_dir=candidate_root,
-                ),
-            ),
-            *(
+            )
+        elif frame_class == "kompas_full_frame":
+            candidate_builders.extend(
                 [
                     (
-                        "a4_direct_titleblock",
-                        lambda: _prepare_forced_a4_candidate(
+                        "fit_full",
+                        lambda: _prepare_drawing_candidate(
                             source_pdf,
-                            variant_name="a4_direct_titleblock",
+                            variant_name="fit_full",
+                            exact_geometry_mode=False,
+                            strict_one_to_one=False,
+                            candidate_dir=candidate_root,
+                            image_contours_mode="off",
+                            disable_small_lineart_circle_recovery=False,
+                        ),
+                    ),
+                    (
+                        "mupdf_svg_paths",
+                        lambda: _prepare_mupdf_svg_paths_candidate(
+                            source_pdf,
+                            variant_name="mupdf_svg_paths",
                             candidate_dir=candidate_root,
                         ),
-                    )
+                    ),
                 ]
-                if _needs_variant20_22_a4_titleblock_direct_candidate(source_pdf)
-                else []
-            ),
+            )
+        else:
+            candidate_builders.extend(
+                [
+                    (
+                        "a4_hybrid_frame",
+                        lambda: _prepare_a4_hybrid_drawing_candidate(
+                            source_pdf,
+                            variant_name="a4_hybrid_frame",
+                            candidate_dir=candidate_root,
+                        ),
+                    ),
+                    (
+                        "fit_full",
+                        lambda: _prepare_compact_source_overlay_candidate(
+                            source_pdf,
+                            variant_name="fit_full",
+                            candidate_dir=candidate_root,
+                        )
+                        if _prefer_direct_fit_full_for_nachert_variant4_a4(source_pdf)
+                        else _prepare_drawing_candidate(
+                            source_pdf,
+                            variant_name="fit_full",
+                            exact_geometry_mode=False,
+                            strict_one_to_one=False,
+                            candidate_dir=candidate_root,
+                            image_contours_mode="off",
+                            disable_small_lineart_circle_recovery=False,
+                        ),
+                    ),
+                    (
+                        "mupdf_svg_paths",
+                        lambda: _prepare_mupdf_svg_paths_candidate(
+                            source_pdf,
+                            variant_name="mupdf_svg_paths",
+                            candidate_dir=candidate_root,
+                        ),
+                    ),
+                ]
+            )
+        candidate_builders.append(
             (
                 "strict_1to1_clip",
                 lambda: _prepare_drawing_candidate(
@@ -6020,8 +6612,9 @@ def _prepare_drawing_package(source_pdf: Path, package_dir: Path) -> tuple[dict[
                     strict_one_to_one=True,
                     candidate_dir=candidate_root,
                 ),
-            ),
-        ]:
+            )
+        )
+        for variant_name, fn in candidate_builders:
             try:
                 candidates.append(fn())
             except Exception as exc:
@@ -6235,6 +6828,7 @@ def _prepare_drawing_package(source_pdf: Path, package_dir: Path) -> tuple[dict[
                 prefix = pages_dir / f"pass_{pass_index:02d}"
                 row = _prepare_tiled_pass_from_clean_svg(
                     clean_svg,
+                    source_pdf=source_pdf,
                     pass_index=pass_index,
                     pass_cols=pass_cols,
                     pass_rows=pass_rows,

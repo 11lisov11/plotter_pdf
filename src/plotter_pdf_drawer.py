@@ -7741,13 +7741,119 @@ def _is_technical_join_candidate(poly: List[Tuple[float, float]]) -> bool:
     return True
 
 
+def _technical_join_combined_bbox_ok(
+    first: List[Tuple[float, float]],
+    second: List[Tuple[float, float]],
+) -> bool:
+    first_box = _technical_stroke_bbox(first)
+    second_box = _technical_stroke_bbox(second)
+    if first_box is None or second_box is None:
+        return False
+    comb_x0 = min(first_box[0], second_box[0])
+    comb_x1 = max(first_box[1], second_box[1])
+    comb_y0 = min(first_box[2], second_box[2])
+    comb_y1 = max(first_box[3], second_box[3])
+    comb_w = comb_x1 - comb_x0
+    comb_h = comb_y1 - comb_y0
+    comb_area = comb_w * comb_h
+    return not (
+        comb_w > float(TECH_TEXT_JOIN_MAX_COMBINED_SPAN_X_MM)
+        or comb_h > float(TECH_TEXT_JOIN_MAX_COMBINED_SPAN_Y_MM)
+        or comb_area > float(TECH_TEXT_JOIN_MAX_COMBINED_AREA_MM2)
+    )
+
+
+def _technical_join_step_allowed(
+    current: List[Tuple[float, float]],
+    nxt: List[Tuple[float, float]],
+    *,
+    gap_max: float,
+    dy_max: float,
+    backtrack_max: float,
+) -> tuple[bool, float]:
+    if not _is_technical_join_candidate(current) or not _is_technical_join_candidate(nxt):
+        return False, 0.0
+    gap = points_distance(current[-1], nxt[0])
+    dy = abs(float(nxt[0][1]) - float(current[-1][1]))
+    dx = float(nxt[0][0]) - float(current[-1][0])
+    if gap > float(gap_max) or dy > float(dy_max) or dx < (-float(backtrack_max)):
+        return False, gap
+    if not _technical_join_combined_bbox_ok(current, nxt):
+        return False, gap
+    return True, gap
+
+
+def _merge_technical_text_strokes_by_nearest_endpoint(
+    polylines: List[List[Tuple[float, float]]],
+    *,
+    gap_max: float,
+    dy_max: float,
+    backtrack_max: float,
+    simplify_collinear_eps: Optional[float],
+) -> Tuple[List[List[Tuple[float, float]]], int]:
+    # MuPDF/KOMPAS can emit one glyph as many tiny paths not adjacent in source
+    # order. A conservative nearest-endpoint pass reconnects only tiny technical
+    # strokes whose combined bbox still looks like one glyph/symbol fragment.
+    src = [p for p in polylines if len(p) >= 2]
+    if len(src) < 2:
+        return src, 0
+    candidate = [_is_technical_join_candidate(p) for p in src]
+    unused = set(range(len(src)))
+    out: List[List[Tuple[float, float]]] = []
+    merged_count = 0
+
+    for idx, poly in enumerate(src):
+        if idx not in unused:
+            continue
+        unused.remove(idx)
+        if not candidate[idx]:
+            out.append(poly)
+            continue
+
+        current = list(poly)
+        while _is_technical_join_candidate(current):
+            best_idx: Optional[int] = None
+            best_poly: Optional[List[Tuple[float, float]]] = None
+            best_gap = float("inf")
+            for other_idx in tuple(unused):
+                if not candidate[other_idx]:
+                    continue
+                raw_next = src[other_idx]
+                for nxt in (raw_next, list(reversed(raw_next))):
+                    allowed, gap = _technical_join_step_allowed(
+                        current,
+                        nxt,
+                        gap_max=gap_max,
+                        dy_max=dy_max,
+                        backtrack_max=backtrack_max,
+                    )
+                    if allowed and gap < best_gap:
+                        best_idx = other_idx
+                        best_poly = nxt
+                        best_gap = gap
+            if best_idx is None or best_poly is None:
+                break
+            if best_gap > 1e-9:
+                current.append(best_poly[0])
+            current.extend(best_poly[1:])
+            current = simplify_polyline(current, collinear_eps=simplify_collinear_eps)
+            unused.remove(best_idx)
+            merged_count += 1
+
+        current = simplify_polyline(current, collinear_eps=simplify_collinear_eps)
+        if len(current) >= 2:
+            out.append(current)
+
+    return out, merged_count
+
+
 def merge_technical_text_strokes(
     polylines: List[List[Tuple[float, float]]],
     logger=print,
     *,
-    join_gap_mm: float = TECH_TEXT_JOIN_GAP_MM,
-    join_max_dy_mm: float = TECH_TEXT_JOIN_MAX_DY_MM,
-    join_max_backtrack_mm: float = TECH_TEXT_JOIN_MAX_BACKTRACK_MM,
+    join_gap_mm: Optional[float] = None,
+    join_max_dy_mm: Optional[float] = None,
+    join_max_backtrack_mm: Optional[float] = None,
     simplify_collinear_eps: Optional[float] = None,
 ) -> List[List[Tuple[float, float]]]:
     # Conservative continuity join for short technical glyph/symbol strokes.
@@ -7757,9 +7863,12 @@ def merge_technical_text_strokes(
     if not polylines:
         return polylines
 
-    gap_max = max(0.0, float(join_gap_mm))
-    dy_max = max(0.0, float(join_max_dy_mm))
-    backtrack_max = max(0.0, float(join_max_backtrack_mm))
+    gap_max = max(0.0, float(TECH_TEXT_JOIN_GAP_MM if join_gap_mm is None else join_gap_mm))
+    dy_max = max(0.0, float(TECH_TEXT_JOIN_MAX_DY_MM if join_max_dy_mm is None else join_max_dy_mm))
+    backtrack_max = max(
+        0.0,
+        float(TECH_TEXT_JOIN_MAX_BACKTRACK_MM if join_max_backtrack_mm is None else join_max_backtrack_mm),
+    )
     if gap_max <= 1e-9:
         return polylines
 
@@ -7768,6 +7877,7 @@ def merge_technical_text_strokes(
         return []
 
     merged_count = 0
+    ordered_merged_count = 0
     out: List[List[Tuple[float, float]]] = []
     current = list(src[0])
 
@@ -7783,33 +7893,21 @@ def merge_technical_text_strokes(
         dy = abs(nxt[0][1] - cur_end[1])
         dx = nxt[0][0] - cur_end[0]
 
-        can_merge = _is_technical_join_candidate(current) and _is_technical_join_candidate(nxt)
-        if can_merge:
-            cur_box = _technical_stroke_bbox(current)
-            nxt_box = _technical_stroke_bbox(nxt)
-            if cur_box is None or nxt_box is None:
-                can_merge = False
-            else:
-                comb_x0 = min(cur_box[0], nxt_box[0])
-                comb_x1 = max(cur_box[1], nxt_box[1])
-                comb_y0 = min(cur_box[2], nxt_box[2])
-                comb_y1 = max(cur_box[3], nxt_box[3])
-                comb_w = comb_x1 - comb_x0
-                comb_h = comb_y1 - comb_y0
-                comb_area = comb_w * comb_h
-                if (
-                    comb_w > float(TECH_TEXT_JOIN_MAX_COMBINED_SPAN_X_MM)
-                    or comb_h > float(TECH_TEXT_JOIN_MAX_COMBINED_SPAN_Y_MM)
-                    or comb_area > float(TECH_TEXT_JOIN_MAX_COMBINED_AREA_MM2)
-                ):
-                    can_merge = False
+        can_merge, _step_gap = _technical_join_step_allowed(
+            current,
+            nxt,
+            gap_max=gap_max,
+            dy_max=dy_max,
+            backtrack_max=backtrack_max,
+        )
 
-        if can_merge and gap <= gap_max and dy <= dy_max and dx >= (-backtrack_max):
+        if can_merge:
             if gap > 1e-9:
                 current.append(nxt[0])
             current.extend(nxt[1:])
             current = simplify_polyline(current, collinear_eps=simplify_collinear_eps)
             merged_count += 1
+            ordered_merged_count += 1
             continue
 
         current = simplify_polyline(current, collinear_eps=simplify_collinear_eps)
@@ -7821,10 +7919,20 @@ def merge_technical_text_strokes(
     if len(current) >= 2:
         out.append(current)
 
+    out, nearest_merged_count = _merge_technical_text_strokes_by_nearest_endpoint(
+        out,
+        gap_max=gap_max,
+        dy_max=dy_max,
+        backtrack_max=backtrack_max,
+        simplify_collinear_eps=simplify_collinear_eps,
+    )
+    merged_count += nearest_merged_count
+
     if logger and merged_count > 0:
         logger(
             f"Technical text join: merged {merged_count} short gaps "
-            f"(gap<={gap_max:.2f} mm, dy<={dy_max:.2f} mm), polylines {len(src)} -> {len(out)}"
+            f"(ordered={ordered_merged_count}, nearest={nearest_merged_count}, "
+            f"gap<={gap_max:.2f} mm, dy<={dy_max:.2f} mm), polylines {len(src)} -> {len(out)}"
         )
     return out
 

@@ -1136,6 +1136,24 @@ class BackendGeometryTests(unittest.TestCase):
         self.assertEqual(out[0][-1], polys[1][-1])
         self.assertEqual(out[1], polys[2])
 
+    def test_merge_technical_text_strokes_merges_close_tiny_strokes_out_of_order(self) -> None:
+        polys = [
+            [(0.0, 0.0), (0.7, 0.0)],
+            [(4.0, 0.0), (4.8, 0.0)],
+            [(1.0, 0.1), (1.6, 0.1)],
+        ]
+        out = backend.merge_technical_text_strokes(
+            polys,
+            logger=lambda *_: None,
+            join_gap_mm=0.45,
+            join_max_dy_mm=0.25,
+            join_max_backtrack_mm=0.10,
+        )
+        self.assertEqual(len(out), 2)
+        self.assertEqual(out[0][0], polys[0][0])
+        self.assertEqual(out[0][-1], polys[2][-1])
+        self.assertEqual(out[1], polys[1])
+
     def test_merge_technical_text_strokes_does_not_merge_large_geometry(self) -> None:
         polys = [
             [(0.0, 0.0), (15.0, 0.0)],
