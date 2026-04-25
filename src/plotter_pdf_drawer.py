@@ -214,6 +214,10 @@ STITCH_GAP_MAX_ANGLE_DEG = 20.0
 REORDER_ENABLED = True
 DRAW_ORDER_MODE = "auto"  # auto | nearest | source | line_lr
 DRAW_ORDER_LINE_TOL_MM = 3.0
+DRAW_ORDER_TWO_OPT_ENABLED = True
+DRAW_ORDER_TWO_OPT_MAX_POLYLINES = 800
+DRAW_ORDER_TWO_OPT_PASSES = 2
+DRAW_ORDER_TWO_OPT_MIN_GAIN_MM = 0.05
 CONTINUOUS_JOIN_EPS = 0.08
 # Handwriting mode needs softer continuity constraints to avoid excessive pen lifts
 # inside words built from fragmented vector contours.
@@ -256,6 +260,13 @@ CLIP_CONTINUITY_EPS_MM = 0.02
 RDP_SIMPLIFY_EPS_MM = 0.0  # 0 disables. Applied only to non-line/non-arc polylines before emitting G1 segments.
 SEGMENT_DEDUP_ENABLED = True
 SEGMENT_DEDUP_EPS_MM = 0.01
+# Remove retraced/overlapping vector strokes that make technical lines look bold.
+# This is deliberately conservative: close parallel frame/table lines must survive.
+COLLINEAR_OVERLAP_DEDUP_ENABLED = True
+COLLINEAR_OVERLAP_DEDUP_DIST_MM = 0.08
+COLLINEAR_OVERLAP_DEDUP_ANGLE_DEG = 1.0
+COLLINEAR_OVERLAP_DEDUP_MIN_LEN_MM = 0.60
+COLLINEAR_OVERLAP_DEDUP_MIN_RATIO = 0.90
 BACKTRACK_SPIKE_MAX_MM = 0.30
 FILL_HATCH_ENABLED = False
 FILL_HATCH_SPACING_MM = 2.0
@@ -7533,6 +7544,163 @@ def deduplicate_segments(
     return out if out else polylines
 
 
+def _canonical_segment_axis(
+    a: Tuple[float, float],
+    b: Tuple[float, float],
+) -> Optional[Tuple[float, float, float, float, float, float, float, float, float]]:
+    dx = float(b[0]) - float(a[0])
+    dy = float(b[1]) - float(a[1])
+    length = math.hypot(dx, dy)
+    if length <= 1e-9:
+        return None
+    ux = dx / length
+    uy = dy / length
+    # Directionless canonical axis: A->B and B->A must land in the same bucket.
+    if ux < -1e-12 or (abs(ux) <= 1e-12 and uy < 0.0):
+        ux = -ux
+        uy = -uy
+    nx = -uy
+    ny = ux
+    offset = float(a[0]) * nx + float(a[1]) * ny
+    t0 = float(a[0]) * ux + float(a[1]) * uy
+    t1 = float(b[0]) * ux + float(b[1]) * uy
+    if t1 < t0:
+        t0, t1 = t1, t0
+    angle = math.atan2(uy, ux)
+    if angle < 0.0:
+        angle += math.pi
+    return ux, uy, nx, ny, offset, t0, t1, length, angle
+
+
+def _collinear_overlap_ratio(a0: float, a1: float, b0: float, b1: float) -> Tuple[float, float]:
+    overlap = min(float(a1), float(b1)) - max(float(a0), float(b0))
+    if overlap <= 0.0:
+        return 0.0, 0.0
+    shorter = max(1e-9, min(abs(float(a1) - float(a0)), abs(float(b1) - float(b0))))
+    return overlap / shorter, overlap
+
+
+def deduplicate_collinear_overlaps(
+    polylines: List[List[Tuple[float, float]]],
+    *,
+    dist_mm: float = COLLINEAR_OVERLAP_DEDUP_DIST_MM,
+    angle_deg: float = COLLINEAR_OVERLAP_DEDUP_ANGLE_DEG,
+    min_len_mm: float = COLLINEAR_OVERLAP_DEDUP_MIN_LEN_MM,
+    min_overlap_ratio: float = COLLINEAR_OVERLAP_DEDUP_MIN_RATIO,
+    logger=print,
+) -> List[List[Tuple[float, float]]]:
+    # Remove same-line overlapping strokes even when the source split one line into
+    # different-length fragments. This targets PDF/SVG "bold line" artifacts without
+    # deleting real parallel frame/table lines separated by more than dist_mm.
+    if not polylines or not COLLINEAR_OVERLAP_DEDUP_ENABLED:
+        return polylines
+
+    dist_tol = max(0.0, float(dist_mm))
+    angle_tol = math.radians(max(0.01, float(angle_deg)))
+    min_len = max(0.0, float(min_len_mm))
+    min_ratio = max(0.0, min(1.0, float(min_overlap_ratio)))
+    if dist_tol <= 0.0 or min_ratio <= 0.0:
+        return polylines
+
+    segments: List[
+        Tuple[
+            float,
+            int,
+            int,
+            Tuple[float, float],
+            Tuple[float, float],
+            Tuple[float, float, float, float, float, float, float, float, float],
+        ]
+    ] = []
+    for poly_idx, poly in enumerate(polylines):
+        if len(poly) < 2:
+            continue
+        prev = poly[0]
+        for seg_idx, pt in enumerate(poly[1:]):
+            axis = _canonical_segment_axis(prev, pt)
+            if axis is not None and axis[7] >= min_len:
+                segments.append((axis[7], poly_idx, seg_idx, prev, pt, axis))
+            prev = pt
+
+    if not segments:
+        return polylines
+
+    angle_cell = max(angle_tol, 1e-6)
+    offset_cell = max(dist_tol, 1e-6)
+    accepted: dict[Tuple[int, int], List[Tuple[float, float, float, float, float, float, float, float, float]]] = {}
+    dropped: set[Tuple[int, int]] = set()
+    cos_tol = math.cos(angle_tol)
+
+    def _bucket(axis: Tuple[float, float, float, float, float, float, float, float, float]) -> Tuple[int, int]:
+        return (int(round(axis[8] / angle_cell)), int(round(axis[4] / offset_cell)))
+
+    for _length, poly_idx, seg_idx, _a, _b, axis in sorted(segments, key=lambda row: row[0], reverse=True):
+        angle_key, offset_key = _bucket(axis)
+        duplicate = False
+        for da in (-1, 0, 1):
+            for doff in (-1, 0, 1):
+                for other in accepted.get((angle_key + da, offset_key + doff), []):
+                    dot = abs(axis[0] * other[0] + axis[1] * other[1])
+                    if dot < cos_tol:
+                        continue
+                    if abs(axis[4] - other[4]) > dist_tol:
+                        continue
+                    ratio, overlap_len = _collinear_overlap_ratio(axis[5], axis[6], other[5], other[6])
+                    if ratio >= min_ratio and overlap_len >= min_len:
+                        duplicate = True
+                        break
+                if duplicate:
+                    break
+            if duplicate:
+                break
+        if duplicate:
+            dropped.add((poly_idx, seg_idx))
+            continue
+        accepted.setdefault((angle_key, offset_key), []).append(axis)
+
+    if not dropped:
+        return polylines
+
+    out: List[List[Tuple[float, float]]] = []
+    src_segments = 0
+    for poly_idx, poly in enumerate(polylines):
+        if len(poly) < 2:
+            continue
+        current: List[Tuple[float, float]] = []
+        prev = poly[0]
+        for seg_idx, pt in enumerate(poly[1:]):
+            src_segments += 1
+            if (poly_idx, seg_idx) in dropped:
+                if current:
+                    simplified = simplify_polyline(current)
+                    if len(simplified) >= 2:
+                        out.append(simplified)
+                    current = []
+                prev = pt
+                continue
+            if not current:
+                current = [prev, pt]
+            elif points_distance(current[-1], prev) <= 1e-9:
+                current.append(pt)
+            else:
+                simplified = simplify_polyline(current)
+                if len(simplified) >= 2:
+                    out.append(simplified)
+                current = [prev, pt]
+            prev = pt
+        if current:
+            simplified = simplify_polyline(current)
+            if len(simplified) >= 2:
+                out.append(simplified)
+
+    if logger:
+        logger(
+            f"Collinear overlap dedup: dropped {len(dropped)}/{src_segments} overlapping segments "
+            f"(dist<={dist_tol:.3f} mm, angle<={math.degrees(angle_tol):.2f} deg, overlap>={min_ratio:.2f})"
+        )
+    return out if out else polylines
+
+
 def _effective_draw_order_mode() -> str:
     mode = str(DRAW_ORDER_MODE or "nearest").strip().lower()
     if mode == "auto":
@@ -7544,6 +7712,62 @@ def _effective_draw_order_mode() -> str:
     if mode in {"nearest", "source", "line_lr", "line"}:
         return mode
     return "nearest"
+
+
+def _travel_between(a: List[Tuple[float, float]], b: List[Tuple[float, float]]) -> float:
+    if not a or not b:
+        return 0.0
+    return points_distance(a[-1], b[0])
+
+
+def _two_opt_ordered_polylines(
+    ordered: List[List[Tuple[float, float]]],
+    *,
+    max_polylines: int = DRAW_ORDER_TWO_OPT_MAX_POLYLINES,
+    passes: int = DRAW_ORDER_TWO_OPT_PASSES,
+    min_gain_mm: float = DRAW_ORDER_TWO_OPT_MIN_GAIN_MM,
+    logger=print,
+) -> List[List[Tuple[float, float]]]:
+    # A bounded 2-opt pass after nearest-neighbor ordering. Reversing the
+    # selected slice and each stroke keeps continuous connections valid.
+    if not DRAW_ORDER_TWO_OPT_ENABLED:
+        return ordered
+    n = len(ordered)
+    if n < 4 or n > int(max_polylines):
+        return ordered
+
+    min_gain = max(0.0, float(min_gain_mm))
+    max_passes = max(0, int(passes))
+    swaps = 0
+
+    for _pass in range(max_passes):
+        changed = False
+        for i in range(0, n - 2):
+            a = ordered[i]
+            b = ordered[i + 1]
+            if len(a) < 2 or len(b) < 2:
+                continue
+            for j in range(i + 1, n - 1):
+                c = ordered[j]
+                d = ordered[j + 1]
+                if len(c) < 2 or len(d) < 2:
+                    continue
+                before = _travel_between(a, b) + _travel_between(c, d)
+                after = points_distance(a[-1], c[-1]) + points_distance(b[0], d[0])
+                if (before - after) <= min_gain:
+                    continue
+                ordered[i + 1 : j + 1] = [list(reversed(p)) for p in reversed(ordered[i + 1 : j + 1])]
+                swaps += 1
+                changed = True
+                break
+            if changed:
+                break
+        if not changed:
+            break
+
+    if logger and swaps:
+        logger(f"Reorder: 2-opt improved travel order ({swaps} swaps, n={n}).")
+    return ordered
 
 
 def reorder_polylines(polylines: List[List[Tuple[float, float]]], logger=print) -> List[List[Tuple[float, float]]]:
@@ -7637,6 +7861,7 @@ def reorder_polylines(polylines: List[List[Tuple[float, float]]], logger=print) 
         ordered.append(chosen)
         cur_x, cur_y = chosen[-1]
 
+    ordered = _two_opt_ordered_polylines(ordered, logger=logger)
     if logger and len(ordered) >= 2:
         logger(f"Reorder: {len(polylines)} polylines ordered (nearest-end).")
     return ordered
@@ -9162,6 +9387,7 @@ def run_pipeline(
                 return False, "No drawable geometry remains after clipping to work area."
             clipped_segments = sum(max(0, len(p) - 1) for p in polylines)
             polylines = deduplicate_segments(polylines, eps=SEGMENT_DEDUP_EPS_MM, logger=log)
+            polylines = deduplicate_collinear_overlaps(polylines, logger=log)
             before_poly_count = len(polylines)
             if HANDWRITING_TEXT_ENABLED and not HANDWRITING_STROKE_ACTIVE:
                 stitch_eps = HANDWRITING_STITCH_EPS_MM

@@ -1,11 +1,11 @@
 1 вариант
-Задача 1_pack: 0.978010
-Задача 5_pack: 0.978265
-Задача 4_pack: 0.978948
-Задача 3_pack: 0.980379
-Задача 10_pack: 0.981055
-Задача 8_pack: 0.981167
-Задача 9_pack: 0.982045
-Задача 7_pack: 0.982583
-Задача 6_pack: 0.983934
-Задача 2_pack: 0.985492
+Задача 1_pack: quality=0.970416; layout=0.976312; fidelity=0.937260
+Задача 5_pack: quality=0.971201; layout=0.976439; fidelity=0.937381
+Задача 4_pack: quality=0.971545; layout=0.977250; fidelity=0.938160
+Задача 8_pack: quality=0.973442; layout=0.979031; fidelity=0.939870
+Задача 9_pack: quality=0.974795; layout=0.980324; fidelity=0.941111
+Задача 3_pack: quality=0.976439; layout=0.979184; fidelity=0.979184
+Задача 7_pack: quality=0.976744; layout=0.982642; fidelity=0.943336
+Задача 6_pack: quality=0.977513; layout=0.983479; fidelity=0.944140
+Задача 10_pack: quality=0.978405; layout=0.980506; fidelity=0.980506
+Задача 2_pack: quality=0.979756; layout=0.985811; fidelity=0.946379

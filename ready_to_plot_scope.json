@@ -1,0 +1,91 @@
+{
+  "scope_version": 1,
+  "updated": "2026-04-25",
+  "definition": "Digital ready-to-plot scope. This manifest defines which generated drawing packages are production artifacts for plotting and which PDFs are reference-only inputs.",
+  "production_roots": [
+    {
+      "path": "Компьютерная графика/8 вариант",
+      "expected_packages": 17,
+      "class": "kompas_full_frame"
+    },
+    {
+      "path": "Компьютерная графика/20 вариант",
+      "expected_packages": 13,
+      "class": "kompas_full_frame"
+    },
+    {
+      "path": "Компьютерная графика/22 вариант",
+      "expected_packages": 13,
+      "class": "kompas_full_frame"
+    },
+    {
+      "path": "Начерт/1 вариант",
+      "expected_packages": 10,
+      "class": "standard_frame"
+    },
+    {
+      "path": "Начерт/4 варинт",
+      "expected_packages": 5,
+      "class": "standard_frame"
+    },
+    {
+      "path": "Начерт/24 варинт",
+      "expected_packages": 10,
+      "class": "standard_frame"
+    }
+  ],
+  "reference_only": [
+    {
+      "path": "Компьютерная графика/Задание",
+      "reason": "Source/reference PDFs for assignments. They are not plotter production packages."
+    },
+    {
+      "path": "Начерт/*/_generated_pdf",
+      "reason": "Intermediate source PDFs used by the preparation scripts. Production output is the sibling *_pack directory."
+    },
+    {
+      "path": "_tmp",
+      "reason": "Temporary diagnostics and previews. Do not include in the release artifact set."
+    }
+  ],
+  "artifact_contract": {
+    "a4": [
+      "a4_clean_source.pdf",
+      "page_01.pdf",
+      "page_01.gcode",
+      "report.json",
+      "summary.csv",
+      "logs",
+      "pages",
+      "source_vs_gcode_compare.pdf",
+      "source_vs_gcode_compare.png"
+    ],
+    "a3_two_pass": [
+      "pass_01.pdf",
+      "pass_01.gcode",
+      "pass_02.pdf",
+      "pass_02.gcode",
+      "combined_preview.pdf",
+      "report.json",
+      "summary.csv",
+      "logs",
+      "pages",
+      "source_vs_gcode_compare.pdf",
+      "source_vs_gcode_compare.png"
+    ]
+  },
+  "acceptance": {
+    "expected_package_count": 68,
+    "validator_roots": [
+      "Компьютерная графика",
+      "Начерт"
+    ],
+    "required_validator_result": {
+      "ok": true,
+      "failed_count": 0,
+      "warning_count": 0
+    },
+    "pytest_command": "python -m pytest -q",
+    "plotter_hardware": "Not included in this digital release gate. COM/GRBL sending and physical calibration are separate acceptance steps."
+  }
+}

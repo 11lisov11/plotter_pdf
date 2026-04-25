@@ -194,7 +194,7 @@ def test_prepare_frw_source_pdf_merges_two_page_export_for_nonlegacy_task(tmp_pa
         doc.close()
 
 
-def test_prune_package_outputs_keeps_only_final_files_and_source_pdf(tmp_path: Path) -> None:
+def test_prune_package_outputs_preserves_audit_files_and_source_pdf(tmp_path: Path) -> None:
     package = tmp_path / "task_pack"
     package.mkdir(parents=True)
     source_pdf = tmp_path / "source.pdf"
@@ -207,4 +207,4 @@ def test_prune_package_outputs_keeps_only_final_files_and_source_pdf(tmp_path: P
     mod._prune_package_outputs(package, is_a3=False, source_pdf=source_pdf)
 
     names = {p.name for p in package.iterdir()}
-    assert names == {"page_01.pdf", "page_01.gcode", "source_kompas.pdf"}
+    assert {"page_01.pdf", "page_01.gcode", "report.json", "summary.csv", "logs", "pages", "source_kompas.pdf"} <= names

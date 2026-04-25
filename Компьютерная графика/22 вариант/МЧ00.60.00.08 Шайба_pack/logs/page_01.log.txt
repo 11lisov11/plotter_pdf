@@ -10,20 +10,21 @@ Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-
 SVG geometry: paths=789, segments=1429.
 Source bounds: x(20.489, 205.486) y(5.503, 292.523)
 Fit to work area: scale=0.9730, translate=(-19.936,-299.989), from (20.489, 5.503)-(205.486, 292.523)
-Reorder: source order preserved (789 polylines).
-Technical text join: merged 473 short gaps (ordered=328, nearest=145, gap<=1.10 mm, dy<=1.35 mm), polylines 789 -> 316
-Polyline optimization: 789 -> 316
+Collinear overlap dedup: dropped 91/1429 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
+Reorder: source order preserved (784 polylines).
+Technical text join: merged 478 short gaps (ordered=329, nearest=149, gap<=1.10 mm, dy<=1.35 mm), polylines 784 -> 306
+Polyline optimization: 784 -> 306
 Segment counts: source=1429, fitted=1429, clipped=1429
 Drawable segments after clip: 1429 (100.0% of source)
 Prepared bounds: x(0.000, 180.000) y(-294.634, -15.366)
-Estimated draw length: 7.76 m
+Estimated draw length: 4.49 m
 Applying pen-up / pen-down ...
-G-code stats: lines=2453, draw=2048, travel=391, bounds=0.000..180.000 x, -294.634..0.000 y
-Preflight: ok: lines=2453, draw=2048, travel=391, ratio=0.19
-Saved file stats: lines=2453, draw=2048, travel=391, bounds=0.000..180.000 x, -294.634..0.000 y
-Saved: C:\plotter_pdf\_tmp\latest_preview_preview-1777017533407860000.nc
-Preview SVG: C:\plotter_pdf\_tmp\latest_preview_preview-1777017533407860000_vector.svg
-Preview PDF: C:\plotter_pdf\_tmp\latest_preview_preview-1777017533407860000_vector.pdf
+G-code stats: lines=2306, draw=1986, travel=306, bounds=0.000..180.000 x, -294.634..0.000 y
+Preflight: ok: lines=2306, draw=1986, travel=306, ratio=0.15
+Saved file stats: lines=2306, draw=1986, travel=306, bounds=0.000..180.000 x, -294.634..0.000 y
+Saved: C:\plotter_pdf\_tmp\latest_preview_preview-1777067588443735000.nc
+Preview SVG: C:\plotter_pdf\_tmp\latest_preview_preview-1777067588443735000_vector.svg
+Preview PDF: C:\plotter_pdf\_tmp\latest_preview_preview-1777067588443735000_vector.pdf
 Sheet preview centered on compact source page bbox: ref=(0.353,0.353)..(210.457,297.670) mm
 Sheet preview placed on source page: offset=(15.537,304.056) mm
 Fixed-canvas preview centered on page: page=180.000x280.000 mm, offset=(0.000,295.000) mm

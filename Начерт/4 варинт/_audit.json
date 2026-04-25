@@ -1,0 +1,70 @@
+{
+  "variant_dir": "C:\\plotter_pdf\\Начерт\\4 варинт",
+  "items": [
+    {
+      "task": "Задача 4_pack",
+      "package_dir": "C:\\plotter_pdf\\Начерт\\4 варинт\\Задача 4_pack",
+      "kind": "a4",
+      "layout_similarity": 0.97386,
+      "selected_variant": "a4_hybrid_frame",
+      "selection_reason": "standard_frame_route",
+      "source_fidelity_score": 0.934906,
+      "fragmentation_score": 0.98023,
+      "quality_score": 0.968654,
+      "compare_png": "C:\\plotter_pdf\\Начерт\\4 варинт\\Задача 4_pack\\source_vs_gcode_compare.png",
+      "compare_pdf": "C:\\plotter_pdf\\Начерт\\4 варинт\\Задача 4_pack\\source_vs_gcode_compare.pdf"
+    },
+    {
+      "task": "Задача 5_pack",
+      "package_dir": "C:\\plotter_pdf\\Начерт\\4 варинт\\Задача 5_pack",
+      "kind": "a4",
+      "layout_similarity": 0.980493,
+      "selected_variant": "a4_hybrid_frame",
+      "selection_reason": "standard_frame_route",
+      "source_fidelity_score": 0.941273,
+      "fragmentation_score": 0.986374,
+      "quality_score": 0.975198,
+      "compare_png": "C:\\plotter_pdf\\Начерт\\4 варинт\\Задача 5_pack\\source_vs_gcode_compare.png",
+      "compare_pdf": "C:\\plotter_pdf\\Начерт\\4 варинт\\Задача 5_pack\\source_vs_gcode_compare.pdf"
+    },
+    {
+      "task": "Задача 6_pack",
+      "package_dir": "C:\\plotter_pdf\\Начерт\\4 варинт\\Задача 6_pack",
+      "kind": "a4",
+      "layout_similarity": 0.975825,
+      "selected_variant": "a4_hybrid_frame",
+      "selection_reason": "standard_frame_route",
+      "source_fidelity_score": 0.936792,
+      "fragmentation_score": 0.985866,
+      "quality_score": 0.970974,
+      "compare_png": "C:\\plotter_pdf\\Начерт\\4 варинт\\Задача 6_pack\\source_vs_gcode_compare.png",
+      "compare_pdf": "C:\\plotter_pdf\\Начерт\\4 варинт\\Задача 6_pack\\source_vs_gcode_compare.pdf"
+    },
+    {
+      "task": "Задача 7_pack",
+      "package_dir": "C:\\plotter_pdf\\Начерт\\4 варинт\\Задача 7_pack",
+      "kind": "a3_two_pass",
+      "layout_similarity": 0.984307,
+      "selected_variant": "a3_two_pass_clean_source",
+      "selection_reason": "a3_two_pass_clean_source",
+      "source_fidelity_score": 0.984307,
+      "fragmentation_score": 0.928803,
+      "quality_score": 0.978757,
+      "compare_png": "C:\\plotter_pdf\\Начерт\\4 варинт\\Задача 7_pack\\source_vs_gcode_compare.png",
+      "compare_pdf": "C:\\plotter_pdf\\Начерт\\4 варинт\\Задача 7_pack\\source_vs_gcode_compare.pdf"
+    },
+    {
+      "task": "Задача 8_pack",
+      "package_dir": "C:\\plotter_pdf\\Начерт\\4 варинт\\Задача 8_pack",
+      "kind": "a4",
+      "layout_similarity": 0.967634,
+      "selected_variant": "a4_hybrid_frame",
+      "selection_reason": "standard_frame_route",
+      "source_fidelity_score": 0.928929,
+      "fragmentation_score": 0.975331,
+      "quality_score": 0.962598,
+      "compare_png": "C:\\plotter_pdf\\Начерт\\4 варинт\\Задача 8_pack\\source_vs_gcode_compare.png",
+      "compare_pdf": "C:\\plotter_pdf\\Начерт\\4 варинт\\Задача 8_pack\\source_vs_gcode_compare.pdf"
+    }
+  ]
+}
