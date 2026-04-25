@@ -48,6 +48,31 @@ pip install -r requirements.txt
 python main.py --help
 ```
 
+## Photo to plotter
+
+Standalone photo pipeline prepares a normal `jpg/png/webp` image as a plotter package without touching
+PDF drawing packages. It generates `photo_plot.gcode`, `photo_plot.nc`, `photo_preview.svg`,
+`photo_preview.pdf`, `report.json`, and `summary.csv`.
+
+```powershell
+python scripts\prepare_photo_plot_package.py path\to\photo.jpg --out-dir _plotter_jobs\photo_pack --mode hatch
+```
+
+Modes:
+
+- `hatch`: tonal cross-hatching with multiple darkness levels and optional edge detail.
+- `scribble`: continuous wavy scanlines with fewer pen lifts, useful for portraits and fast tests.
+
+Useful tuning examples:
+
+```powershell
+python scripts\prepare_photo_plot_package.py photo.jpg --mode hatch --hatch-spacing-mm 1.0 --max-side-px 900
+python scripts\prepare_photo_plot_package.py photo.jpg --mode scribble --scribble-line-spacing-mm 1.2 --scribble-amplitude-mm 1.8
+```
+
+The script only creates digital artifacts. It does not send anything to COM/GRBL; use the existing sender
+with the generated `photo_plot.gcode` or `photo_plot.nc` when the machine is ready.
+
 Нарисовать 4 угловые метки калибровки:
 
 ```powershell
