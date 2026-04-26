@@ -133,6 +133,14 @@ def first_xy_pen_down_issue(path: Path) -> dict[str, Any] | None:
     return None
 
 
+def motor_release_issue(path: Path) -> dict[str, Any] | None:
+    for line_no, raw in enumerate(path.read_text(encoding="utf-8", errors="ignore").splitlines(), start=1):
+        line = _strip_comments(raw).strip().upper()
+        if line in {"$1=0", "$SLP"}:
+            return {"line": line_no, "text": raw.strip()}
+    return None
+
+
 def _canonical_segment_key(a: tuple[float, float], b: tuple[float, float], ndigits: int = 3) -> tuple[tuple[float, float], tuple[float, float]]:
     p0 = (round(float(a[0]), ndigits), round(float(a[1]), ndigits))
     p1 = (round(float(b[0]), ndigits), round(float(b[1]), ndigits))
@@ -289,6 +297,15 @@ def validate_package(package_dir: Path) -> dict[str, Any]:
                 f"First XY move happens with pen down at line {start_issue['line']}: {start_issue['text']}",
                 gcode_path,
             )
+        release_issue = motor_release_issue(gcode_path)
+        if release_issue:
+            _add_issue(
+                issues,
+                "fail",
+                "motor_release_forbidden",
+                f"Production G-code releases steppers at line {release_issue['line']}: {release_issue['text']}",
+                gcode_path,
+            )
 
     production_paths = _production_gcode_paths(package_dir, is_a3)
     duplicate_metrics = duplicate_segment_metrics(production_paths)
@@ -327,6 +344,7 @@ def validate_package(package_dir: Path) -> dict[str, Any]:
         },
         "preflight": {"checked_files": len(gcode_paths), "failed": len([i for i in failed if i.code == "gcode_preflight_failed"])},
         "pen_start": {"failed": len([i for i in failed if i.code == "first_xy_with_pen_down"])},
+        "motor_release": {"failed": len([i for i in failed if i.code == "motor_release_forbidden"])},
         "bounds": {"checked_by_preflight": True},
         "fragmentation": frag,
         "duplicates": duplicate_metrics,

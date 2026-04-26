@@ -15,6 +15,7 @@ def make_final_with_preamble(
     feed_travel: float,
     go_home_before_draw: bool,
     go_home_after_draw: bool,
+    release_steppers_after_draw: bool = False,
 ) -> None:
     lines = [
         "$X",
@@ -45,7 +46,8 @@ def make_final_with_preamble(
         ),
         "M5",
         "G4 P0.10",
-        "$1=0",
     ]
+    if bool(release_steppers_after_draw):
+        trailer.append("$1=0")
     final_gcode.write_text("\n".join(lines) + g + "\n".join(trailer) + "\n", encoding="utf-8")
 

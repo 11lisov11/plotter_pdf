@@ -50,7 +50,7 @@ def _safe_print(*args, **kwargs) -> None:
 
 
 def usage():
-    _safe_print('Usage: python send_grbl_file.py COMx 115200 path\\to\\file.nc [--sleep]')
+    _safe_print('Usage: python send_grbl_file.py COMx 115200 path\\to\\file.nc [--release] [--sleep]')
 
 
 def _format_duration_hms(seconds: float) -> str:
@@ -133,7 +133,7 @@ def open_grbl(port: str, baud: int):
     return ser
 
 
-def _clean_gcode_lines(text: str) -> list[str]:
+def _clean_gcode_lines(text: str, *, allow_motor_release: bool = False) -> list[str]:
     out: list[str] = []
     for raw_line in text.splitlines():
         line = raw_line.lstrip("\ufeff").strip()
@@ -141,11 +141,13 @@ def _clean_gcode_lines(text: str) -> list[str]:
             continue
         if line.startswith(";") or line.startswith("("):
             continue
+        if not allow_motor_release and line.upper() in {"$1=0", "$SLP"}:
+            continue
         out.append(line)
     return out
 
 
-def release_axes(ser, *, sleep: bool = False, wait: bool = True):
+def release_axes(ser, *, sleep: bool = False, release: bool = False, wait: bool = True):
     def _send_no_throw(cmd: str):
         try:
             ser.write((cmd + '\n').encode('ascii'))
@@ -178,8 +180,12 @@ def release_axes(ser, *, sleep: bool = False, wait: bool = True):
     _send_no_throw("G1 Z0 F800")
     _send_no_throw("G4 P0.05")
     _send_no_throw("M5")
-    # GRBL-friendly motor release.
-    _send_no_throw("$1=0")
+    if release or sleep:
+        # GRBL-friendly motor release. Use only when explicitly requested: releasing
+        # Z lets the pen back-drive down, so the next job can drag to its first point.
+        _send_no_throw("$1=0")
+    else:
+        _send_no_throw("$1=255")
     if sleep:
         _send_no_throw("$SLP")
 
@@ -188,8 +194,10 @@ def release_axes(ser, *, sleep: bool = False, wait: bool = True):
         time.sleep(0.1)
     if sleep:
         _safe_print("Motors released ($1=0, $SLP).")
-    else:
+    elif release:
         _safe_print("Motors released ($1=0).")
+    else:
+        _safe_print("Motors held ($1=255); pen lifted.")
 
 
 def _parse_status_state(line: str) -> str:
@@ -342,6 +350,7 @@ def main(argv):
     parser.add_argument("port", nargs="?")
     parser.add_argument("baud", nargs="?")
     parser.add_argument("file", nargs="?")
+    parser.add_argument("--release", action="store_true", help="Release steppers at end. Not recommended before another plot.")
     parser.add_argument("--sleep", action="store_true", help="Send $SLP at end (fully disable steppers; requires reset to wake).")
     parser.add_argument("--rx-buffer", type=int, default=128, help="GRBL RX buffer size in bytes (default 128)")
     parser.add_argument("--verbose", action="store_true", help="Print non-ok chatter (status, banners) while streaming")
@@ -350,6 +359,7 @@ def main(argv):
 
     if ns.help or not ns.port or not ns.baud or not ns.file:
         usage()
+        _safe_print("  --release Optional: release steppers after lifting pen. Can let Z drop before next job.")
         _safe_print("  --sleep   Optional: put GRBL into Sleep at end to guarantee motors are off/cool.")
         return 2
 
@@ -371,7 +381,10 @@ def main(argv):
     return_code = 0
     try:
         # Stream the file fast enough to keep GRBL's planner full (reduces stutter on dense curves).
-        lines = _clean_gcode_lines(file_path.read_text(encoding="utf-8", errors="ignore"))
+        lines = _clean_gcode_lines(
+            file_path.read_text(encoding="utf-8", errors="ignore"),
+            allow_motor_release=bool(ns.release or ns.sleep),
+        )
         if not lines:
             raise RuntimeError("No G-code lines found in file.")
         _safe_print(f"Streaming {len(lines)} lines ...")
@@ -400,9 +413,10 @@ def main(argv):
         _safe_print('Execution interrupted by user.')
         return_code = 1
     finally:
-        # Ensure motors are not held when job ends or fails.
+        # Always lift/stop safely. Keep steppers energized by default so Z cannot
+        # back-drive down before the next job starts.
         if ser is not None:
-            release_axes(ser, sleep=bool(ns.sleep))
+            release_axes(ser, sleep=bool(ns.sleep), release=bool(ns.release or ns.sleep))
             ser.close()
     return return_code
 

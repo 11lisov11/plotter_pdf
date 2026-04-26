@@ -64,6 +64,7 @@ def test_validate_ready_a4_kompas_package(tmp_path: Path, monkeypatch) -> None:
     assert result["ok"] is True
     assert result["preflight"]["checked_files"] == 3
     assert result["pen_start"]["failed"] == 0
+    assert result["motor_release"]["failed"] == 0
     assert result["duplicates"]["duplicate_segments"] == 0
 
 
@@ -96,6 +97,21 @@ def test_first_xy_pen_down_issue_detects_bad_start(tmp_path: Path) -> None:
 
     assert issue is not None
     assert issue["line"] == 4
+
+
+def test_validate_rejects_production_motor_release(tmp_path: Path, monkeypatch) -> None:
+    package = tmp_path / "РљРѕРјРїСЊСЋС‚РµСЂРЅР°СЏ РіСЂР°С„РёРєР°" / "20 РІР°СЂРёР°РЅС‚" / "Sheet_pack"
+    _write_ready_a4_package(package)
+    for gcode in [package / "page_01.gcode", package / "page_01.nc", package / "pages" / "page_01.gcode"]:
+        gcode.write_text(gcode.read_text(encoding="utf-8") + "\n$1=0\n", encoding="utf-8")
+        assert mod.motor_release_issue(gcode) is not None
+    monkeypatch.setattr(mod.backend, "preflight_check_gcode", lambda *_args, **_kwargs: (True, "ok"))
+
+    result = mod.validate_package(package)
+
+    assert result["ok"] is False
+    assert result["motor_release"]["failed"] == 3
+    assert any(issue["code"] == "motor_release_forbidden" for issue in result["issues"])
 
 
 def test_ready_to_plot_scope_manifest_defines_release_contract() -> None:
