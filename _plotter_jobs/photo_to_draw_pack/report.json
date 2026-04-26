@@ -1,7 +1,7 @@
 {
   "kind": "photo_plot",
   "source_image": "C:\\plotter_pdf\\_plotter_jobs\\photo_to_draw_pack\\source_image.jpg",
-  "mode": "portrait",
+  "mode": "sketch",
   "source_size_px": [
     736,
     981
@@ -22,68 +22,77 @@
   ],
   "route_bounds": [
     5.0,
-    174.945,
-    -253.287,
+    174.961,
+    -252.794,
     -26.667
   ],
   "stats": {
-    "polyline_count": 981,
-    "point_count": 14168,
-    "draw_length_mm": 15546.825,
+    "polyline_count": 1072,
+    "point_count": 78125,
+    "draw_length_mm": 51445.872,
     "bounds": [
       5.0,
-      174.945,
-      -253.287,
+      174.961,
+      -252.794,
       -26.667
     ],
     "config": {
-      "mode": "portrait",
+      "mode": "sketch",
       "margin_mm": 5.0,
       "target_width_mm": null,
       "target_height_mm": null,
       "max_side_px": 420,
-      "contrast": 1.12,
-      "gamma": 1.05,
+      "contrast": 1.0,
+      "gamma": 0.9,
       "blur_px": 5,
-      "hatch_spacing_mm": 1.2,
+      "hatch_spacing_mm": 2.2,
       "hatch_levels": [
-        0.18,
         0.34,
-        0.5,
-        0.66
+        0.58,
+        0.78
       ],
       "hatch_angles_deg": [
         0.0,
-        45.0,
-        -45.0,
-        90.0
+        -30.0,
+        30.0
       ],
+      "sketch_stroke_spacing_mm": 2.8,
+      "sketch_stroke_length_mm": 8.5,
+      "sketch_threshold": 0.2,
+      "sketch_density": 0.22,
+      "sketch_min_center_distance_mm": 2.2,
+      "sketch_tone_line_spacing_mm": 1.0,
+      "sketch_tone_step_mm": 0.5,
+      "sketch_tone_amplitude_mm": 1.25,
+      "sketch_pencil_edges": false,
+      "sketch_pencil_sigma_s": 60,
+      "sketch_pencil_sigma_r": 0.07,
+      "sketch_pencil_shade_factor": 0.045,
       "min_segment_mm": 0.8,
       "merge_gap_mm": 0.55,
       "edge_enabled": true,
       "edge_low_threshold": 70,
       "edge_high_threshold": 170,
-      "edge_min_length_mm": 18.0,
+      "edge_min_length_mm": 22.0,
       "scribble_line_spacing_mm": 1.25,
       "scribble_step_mm": 0.75,
       "scribble_amplitude_mm": 1.6,
       "scribble_threshold": 0.16,
-      "portrait_stroke_spacing_mm": 2.6,
-      "portrait_stroke_length_mm": 10.0,
-      "portrait_threshold": 0.28,
+      "portrait_stroke_spacing_mm": 1.9,
+      "portrait_stroke_length_mm": 7.0,
+      "portrait_threshold": 0.24,
       "portrait_jitter_mm": 0.45,
       "portrait_seed": 12345,
       "portrait_cleanup_enabled": true,
-      "portrait_cleanup_threshold": 0.2,
-      "portrait_min_component_area_mm2": 220.0,
-      "portrait_mask_dilate_mm": 1.0,
+      "portrait_cleanup_threshold": 0.18,
+      "portrait_min_component_area_mm2": 130.0,
+      "portrait_mask_dilate_mm": 1.2,
       "portrait_sampling": "blue_noise",
-      "portrait_density": 0.45,
+      "portrait_density": 1.0,
       "portrait_min_center_distance_mm": 1.15,
       "route_optimize": true,
       "route_optimize_limit": 4500
-    },
-    "portrait_content_mask_px": 129662
+    }
   },
   "files": {
     "svg_preview": "C:\\plotter_pdf\\_plotter_jobs\\photo_to_draw_pack\\photo_preview.svg",
@@ -98,9 +107,11 @@
   },
   "preflight": {
     "ok": true,
-    "message": "ok: lines=6027, draw=5027, travel=986, ratio=0.20"
+    "message": "ok: lines=11363, draw=10278, travel=1071, ratio=0.10"
   },
   "references": [
+    "https://github.com/LingDong-/linedraw",
+    "https://jwalk.io/projects/PySquiggleDraw.html",
     "https://github.com/plottertools/hatched",
     "https://github.com/abey79/vpype",
     "https://wiki.evilmadscientist.com/StippleGen",

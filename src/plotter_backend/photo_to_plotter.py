@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 from typing import Any, Iterable, Literal, Sequence
 
@@ -12,7 +12,7 @@ from PIL import Image, ImageOps
 
 Point = tuple[float, float]
 Polyline = list[Point]
-PhotoMode = Literal["hatch", "scribble", "portrait"]
+PhotoMode = Literal["hatch", "scribble", "portrait", "sketch"]
 PortraitSampling = Literal["grid", "blue_noise"]
 
 
@@ -26,7 +26,7 @@ class WorkArea:
 
 @dataclass(frozen=True)
 class PhotoPlotConfig:
-    mode: PhotoMode = "portrait"
+    mode: PhotoMode = "sketch"
     margin_mm: float = 5.0
     target_width_mm: float | None = None
     target_height_mm: float | None = None
@@ -34,15 +34,27 @@ class PhotoPlotConfig:
     contrast: float = 1.12
     gamma: float = 1.05
     blur_px: int = 3
-    hatch_spacing_mm: float = 1.2
-    hatch_levels: tuple[float, ...] = (0.18, 0.34, 0.50, 0.66)
-    hatch_angles_deg: tuple[float, ...] = (0.0, 45.0, -45.0, 90.0)
+    hatch_spacing_mm: float = 2.2
+    hatch_levels: tuple[float, ...] = (0.34, 0.58, 0.78)
+    hatch_angles_deg: tuple[float, ...] = (0.0, -30.0, 30.0)
+    sketch_stroke_spacing_mm: float = 2.8
+    sketch_stroke_length_mm: float = 8.5
+    sketch_threshold: float = 0.20
+    sketch_density: float = 0.22
+    sketch_min_center_distance_mm: float = 2.2
+    sketch_tone_line_spacing_mm: float = 1.0
+    sketch_tone_step_mm: float = 0.5
+    sketch_tone_amplitude_mm: float = 1.25
+    sketch_pencil_edges: bool = False
+    sketch_pencil_sigma_s: int = 60
+    sketch_pencil_sigma_r: float = 0.07
+    sketch_pencil_shade_factor: float = 0.045
     min_segment_mm: float = 0.8
     merge_gap_mm: float = 0.55
     edge_enabled: bool = True
     edge_low_threshold: int = 70
     edge_high_threshold: int = 170
-    edge_min_length_mm: float = 12.0
+    edge_min_length_mm: float = 16.0
     scribble_line_spacing_mm: float = 1.25
     scribble_step_mm: float = 0.75
     scribble_amplitude_mm: float = 1.6
@@ -80,6 +92,21 @@ def _polyline_length(polyline: Sequence[Point]) -> float:
     return sum(math.hypot(b[0] - a[0], b[1] - a[1]) for a, b in zip(polyline, polyline[1:]))
 
 
+def _chaikin_smooth_open(polyline: Sequence[Point], *, iterations: int = 1) -> Polyline:
+    pts = [(float(x), float(y)) for x, y in polyline]
+    if len(pts) < 4:
+        return pts
+    for _ in range(max(0, int(iterations))):
+        smoothed: Polyline = [pts[0]]
+        for p0, p1 in zip(pts, pts[1:]):
+            q = (0.75 * p0[0] + 0.25 * p1[0], 0.75 * p0[1] + 0.25 * p1[1])
+            r = (0.25 * p0[0] + 0.75 * p1[0], 0.25 * p0[1] + 0.75 * p1[1])
+            smoothed.extend([q, r])
+        smoothed.append(pts[-1])
+        pts = smoothed
+    return pts
+
+
 def _all_points(polylines: Sequence[Sequence[Point]]) -> Iterable[Point]:
     for polyline in polylines:
         yield from polyline
@@ -98,15 +125,23 @@ def _load_darkness(image_path: Path, config: PhotoPlotConfig) -> tuple[np.ndarra
     img = Image.open(image_path)
     img = ImageOps.exif_transpose(img)
     source_size = img.size
-    img = img.convert("L")
+    img = img.convert("RGB")
     max_side = max(32, int(config.max_side_px))
     if max(img.size) > max_side:
         scale = max_side / float(max(img.size))
         new_size = (max(1, int(round(img.size[0] * scale))), max(1, int(round(img.size[1] * scale))))
         img = img.resize(new_size, Image.Resampling.LANCZOS)
-    img = ImageOps.autocontrast(img)
-    gray = np.asarray(img, dtype=np.float32) / 255.0
-    darkness = 1.0 - gray
+    rgb = np.asarray(img, dtype=np.float32) / 255.0
+    luma = (0.299 * rgb[:, :, 0]) + (0.587 * rgb[:, :, 1]) + (0.114 * rgb[:, :, 2])
+    value = np.max(rgb, axis=2)
+    # For plotter sketches, saturated blue/green areas should not become dark
+    # just because grayscale luma is low. Bias toward the brightest channel so
+    # skies stay open and dark clothes/trees still receive dense strokes.
+    tone = np.maximum(luma, value * 0.92)
+    p_low, p_high = np.percentile(tone, (1.0, 99.2))
+    if p_high > p_low:
+        tone = np.clip((tone - p_low) / (p_high - p_low), 0.0, 1.0)
+    darkness = 1.0 - tone
     if config.contrast > 0:
         darkness = np.clip((darkness - 0.5) * float(config.contrast) + 0.5, 0.0, 1.0)
     if config.gamma > 0:
@@ -117,6 +152,19 @@ def _load_darkness(image_path: Path, config: PhotoPlotConfig) -> tuple[np.ndarra
             blur += 1
         darkness = cv2.GaussianBlur(darkness, (blur, blur), 0)
     processed_gray = np.clip((1.0 - darkness) * 255.0, 0, 255).astype(np.uint8)
+    if config.mode == "sketch" and bool(config.sketch_pencil_edges) and hasattr(cv2, "pencilSketch"):
+        try:
+            rgb_u8 = np.asarray(img, dtype=np.uint8)
+            bgr_u8 = cv2.cvtColor(rgb_u8, cv2.COLOR_RGB2BGR)
+            pencil_gray, _color = cv2.pencilSketch(
+                bgr_u8,
+                sigma_s=max(1, int(config.sketch_pencil_sigma_s)),
+                sigma_r=max(0.01, float(config.sketch_pencil_sigma_r)),
+                shade_factor=max(0.01, float(config.sketch_pencil_shade_factor)),
+            )
+            processed_gray = pencil_gray.astype(np.uint8)
+        except cv2.error:
+            pass
     return darkness.astype(np.float32), source_size, img.size, processed_gray
 
 
@@ -263,6 +311,89 @@ def _generate_hatch_px(darkness: np.ndarray, config: PhotoPlotConfig, scale_mm_p
                 merge_gap_px=merge_gap_px,
             )
         )
+    return out
+
+
+def _clean_tonal_mask(mask: np.ndarray, scale_mm_per_px: float, *, level_index: int) -> np.ndarray:
+    raw = mask.astype(np.uint8)
+    if not np.any(raw):
+        return raw.astype(bool)
+
+    close_px = max(1, int(round((0.45 + 0.12 * level_index) / max(1e-9, scale_mm_per_px))))
+    close_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (close_px * 2 + 1, close_px * 2 + 1))
+    raw = cv2.morphologyEx(raw, cv2.MORPH_CLOSE, close_kernel)
+
+    open_px = max(1, int(round(0.18 / max(1e-9, scale_mm_per_px))))
+    if open_px > 1:
+        open_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (open_px * 2 + 1, open_px * 2 + 1))
+        raw = cv2.morphologyEx(raw, cv2.MORPH_OPEN, open_kernel)
+
+    labels_count, labels, stats, _centroids = cv2.connectedComponentsWithStats(raw, connectivity=8)
+    min_area_mm2 = 20.0 + 12.0 * float(level_index)
+    min_area_px = max(5, int(round(min_area_mm2 / max(1e-9, scale_mm_per_px * scale_mm_per_px))))
+    keep = np.zeros_like(raw)
+    for label in range(1, labels_count):
+        if int(stats[label, cv2.CC_STAT_AREA]) >= min_area_px:
+            keep[labels == label] = 1
+    if not np.any(keep):
+        keep = raw
+    return keep.astype(bool)
+
+
+def _generate_sketch_px(darkness: np.ndarray, config: PhotoPlotConfig, scale_mm_per_px: float) -> list[list[Point]]:
+    threshold = max(0.0, min(1.0, float(config.sketch_threshold)))
+    spacing_px = max(2.0, float(config.sketch_stroke_spacing_mm) / max(1e-9, scale_mm_per_px))
+    length_px = max(2.0, float(config.sketch_stroke_length_mm) / max(1e-9, scale_mm_per_px))
+    step_px = max(1.0, float(config.scribble_step_mm) / max(1e-9, scale_mm_per_px))
+    jitter_px = max(0.0, float(config.portrait_jitter_mm) / max(1e-9, scale_mm_per_px))
+    min_segment_px = max(1.0, float(config.min_segment_mm) / max(1e-9, scale_mm_per_px))
+    min_distance_px = max(0.5, float(config.sketch_min_center_distance_mm) / max(1e-9, scale_mm_per_px))
+    density_scale = max(0.05, float(config.sketch_density))
+
+    mask = _clean_tonal_mask(darkness >= threshold, scale_mm_per_px, level_index=1)
+    drawing_darkness = np.where(mask, darkness, 0.0).astype(np.float32)
+    tone_cfg = replace(
+        config,
+        scribble_line_spacing_mm=max(0.45, float(config.sketch_tone_line_spacing_mm)),
+        scribble_step_mm=max(0.25, float(config.sketch_tone_step_mm)),
+        scribble_amplitude_mm=max(0.1, float(config.sketch_tone_amplitude_mm)),
+        scribble_threshold=threshold,
+    )
+    out = _generate_scribble_px(drawing_darkness, tone_cfg, scale_mm_per_px)
+
+    smooth = cv2.GaussianBlur(drawing_darkness, (0, 0), sigmaX=1.2)
+    grad_x = cv2.Sobel(smooth, cv2.CV_32F, 1, 0, ksize=3)
+    grad_y = cv2.Sobel(smooth, cv2.CV_32F, 0, 1, ksize=3)
+    rng = np.random.default_rng(int(config.portrait_seed))
+
+    centers = _blue_noise_portrait_centers(
+        drawing_darkness,
+        spacing_px=spacing_px,
+        jitter_px=jitter_px,
+        threshold=threshold,
+        density_scale=density_scale,
+        min_distance_px=min_distance_px,
+        rng=rng,
+    )
+
+    for sx, sy, dark in centers:
+        local_length = length_px * (0.45 + 0.85 * min(1.0, float(dark)))
+        fallback_angle = (
+            math.sin((sx + float(config.portrait_seed) * 0.017) * 0.047)
+            + math.cos((sy - float(config.portrait_seed) * 0.011) * 0.039)
+        ) * 0.55
+        stroke = _trace_portrait_stroke(
+            drawing_darkness,
+            grad_x,
+            grad_y,
+            center=(sx, sy),
+            length_px=local_length,
+            step_px=step_px,
+            threshold=threshold,
+            fallback_angle=fallback_angle,
+        )
+        if len(stroke) >= 2 and _polyline_length(stroke) >= min_segment_px:
+            out.append(stroke)
     return out
 
 
@@ -636,14 +767,15 @@ def _generate_edge_px(
     low = max(0, min(255, int(config.edge_low_threshold)))
     high = max(low + 1, min(255, int(config.edge_high_threshold)))
     edges = cv2.Canny(processed_gray, low, high)
-    contours, _hier = cv2.findContours(edges, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+    contours, _hier = cv2.findContours(edges, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
     min_len_px = max(2.0, float(config.edge_min_length_mm) / max(1e-9, scale_mm_per_px))
     out: list[list[Point]] = []
     for contour in contours:
         if len(contour) < 3:
             continue
-        approx = cv2.approxPolyDP(contour, epsilon=1.1, closed=False)
+        approx = cv2.approxPolyDP(contour, epsilon=0.9, closed=False)
         pts = [(float(p[0][0]), float(p[0][1])) for p in approx]
+        pts = _chaikin_smooth_open(pts, iterations=1)
         if include_mask is not None and _polyline_mask_ratio(pts, include_mask) < 0.30:
             continue
         if len(pts) >= 2 and _polyline_length(pts) >= min_len_px:
@@ -688,7 +820,7 @@ def generate_photo_plot(
     work_area: WorkArea | None = None,
 ) -> PhotoPlotResult:
     cfg = config or PhotoPlotConfig()
-    if cfg.mode not in {"hatch", "scribble", "portrait"}:
+    if cfg.mode not in {"hatch", "scribble", "portrait", "sketch"}:
         raise ValueError(f"unsupported photo plot mode: {cfg.mode}")
     area = work_area or WorkArea()
     path = Path(image_path)
@@ -705,8 +837,10 @@ def generate_photo_plot(
         px_polylines = _generate_hatch_px(drawing_darkness, cfg, scale)
     elif cfg.mode == "scribble":
         px_polylines = _generate_scribble_px(drawing_darkness, cfg, scale)
-    else:
+    elif cfg.mode == "portrait":
         px_polylines = _generate_portrait_px(drawing_darkness, cfg, scale)
+    else:
+        px_polylines = _generate_sketch_px(drawing_darkness, cfg, scale)
     px_polylines.extend(_generate_edge_px(edge_gray, cfg, scale, include_mask=content_mask))
 
     machine_polylines = [

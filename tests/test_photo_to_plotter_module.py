@@ -31,7 +31,14 @@ def test_generate_hatch_photo_plot_stays_inside_work_area(tmp_path: Path) -> Non
     area = WorkArea(min_x=0.0, max_x=180.0, min_y=-280.0, max_y=0.0)
     result = generate_photo_plot(
         img,
-        PhotoPlotConfig(mode="hatch", max_side_px=96, edge_enabled=False, route_optimize=False),
+        PhotoPlotConfig(
+            mode="hatch",
+            hatch_spacing_mm=1.2,
+            hatch_levels=(0.18, 0.34, 0.50, 0.66),
+            max_side_px=96,
+            edge_enabled=False,
+            route_optimize=False,
+        ),
         area,
     )
 
@@ -136,6 +143,20 @@ def test_portrait_blue_noise_sampling_is_deterministic(tmp_path: Path) -> None:
 
     assert result_a.polylines == result_b.polylines
     assert result_a.stats["config"]["portrait_sampling"] == "blue_noise"
+
+
+def test_generate_sketch_photo_plot_preserves_readable_large_tonal_regions(tmp_path: Path) -> None:
+    img = tmp_path / "photo.png"
+    _write_gradient(img, size=(96, 72))
+    result = generate_photo_plot(
+        img,
+        PhotoPlotConfig(mode="sketch", max_side_px=96, edge_enabled=False, route_optimize=False),
+    )
+
+    assert result.mode == "sketch"
+    assert result.polylines
+    assert result.stats["polyline_count"] < 400
+    assert result.stats["draw_length_mm"] > 100.0
 
 
 def test_nearest_order_can_reverse_segment_to_reduce_travel() -> None:

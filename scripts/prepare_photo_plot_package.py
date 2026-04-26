@@ -362,6 +362,8 @@ def build_photo_plot_package(
         },
         "preflight": {"ok": preflight_ok, "message": preflight_msg},
         "references": [
+            "https://github.com/LingDong-/linedraw",
+            "https://jwalk.io/projects/PySquiggleDraw.html",
             "https://github.com/plottertools/hatched",
             "https://github.com/abey79/vpype",
             "https://wiki.evilmadscientist.com/StippleGen",
@@ -374,11 +376,11 @@ def build_photo_plot_package(
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Prepare a standalone photo-to-plotter package using hatch or continuous scribble rendering."
+        description="Prepare a standalone photo-to-plotter package using sketch, hatch, scribble, or portrait rendering."
     )
     parser.add_argument("image", type=Path, help="Input photo/image file.")
     parser.add_argument("--out-dir", type=Path, default=None, help="Output package directory.")
-    parser.add_argument("--mode", choices=["hatch", "scribble", "portrait"], default=PhotoPlotConfig().mode)
+    parser.add_argument("--mode", choices=["sketch", "hatch", "scribble", "portrait"], default=PhotoPlotConfig().mode)
     parser.add_argument("--margin-mm", type=float, default=5.0)
     parser.add_argument("--target-width-mm", type=float, default=None)
     parser.add_argument("--target-height-mm", type=float, default=None)
@@ -386,9 +388,18 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--contrast", type=float, default=1.12)
     parser.add_argument("--gamma", type=float, default=1.05)
     parser.add_argument("--blur-px", type=int, default=3)
-    parser.add_argument("--hatch-spacing-mm", type=float, default=1.2)
+    parser.add_argument("--hatch-spacing-mm", type=float, default=PhotoPlotConfig().hatch_spacing_mm)
     parser.add_argument("--hatch-levels", default=None, help="Comma-separated darkness thresholds, e.g. 0.18,0.34,0.50,0.66")
     parser.add_argument("--hatch-angles", default=None, help="Comma-separated hatch angles in degrees, e.g. 0,45,-45,90")
+    parser.add_argument("--sketch-stroke-spacing-mm", type=float, default=PhotoPlotConfig().sketch_stroke_spacing_mm)
+    parser.add_argument("--sketch-stroke-length-mm", type=float, default=PhotoPlotConfig().sketch_stroke_length_mm)
+    parser.add_argument("--sketch-threshold", type=float, default=PhotoPlotConfig().sketch_threshold)
+    parser.add_argument("--sketch-density", type=float, default=PhotoPlotConfig().sketch_density)
+    parser.add_argument("--sketch-min-center-distance-mm", type=float, default=PhotoPlotConfig().sketch_min_center_distance_mm)
+    parser.add_argument("--sketch-tone-line-spacing-mm", type=float, default=PhotoPlotConfig().sketch_tone_line_spacing_mm)
+    parser.add_argument("--sketch-tone-step-mm", type=float, default=PhotoPlotConfig().sketch_tone_step_mm)
+    parser.add_argument("--sketch-tone-amplitude-mm", type=float, default=PhotoPlotConfig().sketch_tone_amplitude_mm)
+    parser.add_argument("--sketch-pencil-edges", action="store_true", help="Use OpenCV pencilSketch as the edge-detail source.")
     parser.add_argument("--min-segment-mm", type=float, default=0.8)
     parser.add_argument("--merge-gap-mm", type=float, default=0.55)
     parser.add_argument("--no-edges", action="store_true", help="Disable Canny edge detail overlay.")
@@ -435,6 +446,15 @@ def main(argv: list[str] | None = None) -> int:
         hatch_spacing_mm=args.hatch_spacing_mm,
         hatch_levels=_parse_csv_floats(args.hatch_levels, PhotoPlotConfig().hatch_levels),
         hatch_angles_deg=_parse_csv_floats(args.hatch_angles, PhotoPlotConfig().hatch_angles_deg),
+        sketch_stroke_spacing_mm=args.sketch_stroke_spacing_mm,
+        sketch_stroke_length_mm=args.sketch_stroke_length_mm,
+        sketch_threshold=args.sketch_threshold,
+        sketch_density=args.sketch_density,
+        sketch_min_center_distance_mm=args.sketch_min_center_distance_mm,
+        sketch_tone_line_spacing_mm=args.sketch_tone_line_spacing_mm,
+        sketch_tone_step_mm=args.sketch_tone_step_mm,
+        sketch_tone_amplitude_mm=args.sketch_tone_amplitude_mm,
+        sketch_pencil_edges=bool(args.sketch_pencil_edges),
         min_segment_mm=args.min_segment_mm,
         merge_gap_mm=args.merge_gap_mm,
         edge_enabled=not bool(args.no_edges),
