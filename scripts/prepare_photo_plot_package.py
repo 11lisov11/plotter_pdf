@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import math
 import shutil
 import sys
 from pathlib import Path
@@ -24,6 +25,7 @@ from src.plotter_backend.photo_to_plotter import (  # noqa: E402
 
 
 MM_TO_PT = 72.0 / 25.4
+Polyline = list[tuple[float, float]]
 
 
 def _parse_csv_floats(value: str | None, default: tuple[float, ...]) -> tuple[float, ...]:
@@ -41,7 +43,154 @@ def _svg_point(x: float, y: float) -> str:
     return f"{float(x):.3f},{float(-y):.3f}"
 
 
-def write_svg_preview(path: Path, result: PhotoPlotResult, work_area: WorkArea) -> None:
+def _strip_gcode_comments(line: str) -> str:
+    if ";" in line:
+        line = line.split(";", 1)[0]
+    while "(" in line and ")" in line and line.index("(") < line.index(")"):
+        start = line.index("(")
+        end = line.index(")", start)
+        line = line[:start] + line[end + 1 :]
+    return line.strip()
+
+
+def _parse_gcode_words(line: str) -> dict[str, float | str]:
+    words: dict[str, float | str] = {}
+    for raw in line.replace("\t", " ").split():
+        if not raw:
+            continue
+        key = raw[0].upper()
+        value = raw[1:]
+        if key in {"G", "M"}:
+            words[key] = f"{key}{value}"
+            continue
+        try:
+            words[key] = float(value)
+        except ValueError:
+            continue
+    return words
+
+
+def _pen_is_down(z: float | None) -> bool:
+    if z is None:
+        return False
+    z_up = float(backend.Z_UP)
+    z_down = float(backend.Z_DOWN)
+    return abs(float(z) - z_down) <= abs(float(z) - z_up)
+
+
+def _arc_points(
+    start: tuple[float, float],
+    end: tuple[float, float],
+    center: tuple[float, float],
+    *,
+    clockwise: bool,
+    max_step_mm: float = 1.0,
+) -> list[tuple[float, float]]:
+    sx, sy = start
+    ex, ey = end
+    cx, cy = center
+    radius = math.hypot(sx - cx, sy - cy)
+    if radius <= 1e-9:
+        return [end]
+    a0 = math.atan2(sy - cy, sx - cx)
+    a1 = math.atan2(ey - cy, ex - cx)
+    if clockwise:
+        sweep = a1 - a0
+        while sweep >= -1e-9:
+            sweep -= 2.0 * math.pi
+    else:
+        sweep = a1 - a0
+        while sweep <= 1e-9:
+            sweep += 2.0 * math.pi
+    if math.hypot(ex - sx, ey - sy) <= 1e-6:
+        sweep = -2.0 * math.pi if clockwise else 2.0 * math.pi
+    steps = max(8, int(math.ceil(abs(sweep) * radius / max(0.2, float(max_step_mm)))))
+    points: list[tuple[float, float]] = []
+    for idx in range(1, steps + 1):
+        a = a0 + sweep * (idx / steps)
+        points.append((cx + math.cos(a) * radius, cy + math.sin(a) * radius))
+    return points
+
+
+def gcode_draw_polylines(gcode_path: Path) -> list[Polyline]:
+    """Reconstruct drawn XY strokes from final pen-lift G-code for exact preview."""
+    polylines: list[Polyline] = []
+    current: Polyline | None = None
+    x = y = z = None
+    motion = "G0"
+    absolute_xy = True
+    for raw in gcode_path.read_text(encoding="utf-8", errors="ignore").splitlines():
+        line = _strip_gcode_comments(raw)
+        if not line or line.startswith("$"):
+            continue
+        words = _parse_gcode_words(line)
+        g_word = words.get("G")
+        code = str(g_word).upper() if g_word is not None else None
+        if code in {"G90", "G91"}:
+            absolute_xy = code == "G90"
+            continue
+        if code in {"G0", "G00", "G1", "G01", "G2", "G02", "G3", "G03"}:
+            if code in {"G0", "G00"}:
+                motion = "G0"
+            elif code in {"G1", "G01"}:
+                motion = "G1"
+            elif code in {"G2", "G02"}:
+                motion = "G2"
+            elif code in {"G3", "G03"}:
+                motion = "G3"
+        elif code is not None or not any(axis in words for axis in ("X", "Y", "Z")):
+            continue
+
+        old_x, old_y, old_z = x, y, z
+        next_x = x
+        next_y = y
+        next_z = z
+        if "X" in words:
+            vx = float(words["X"])
+            next_x = vx if absolute_xy or x is None else x + vx
+        if "Y" in words:
+            vy = float(words["Y"])
+            next_y = vy if absolute_xy or y is None else y + vy
+        if "Z" in words:
+            vz = float(words["Z"])
+            next_z = vz if absolute_xy or z is None else z + vz
+
+        was_down = _pen_is_down(old_z)
+        xy_changed = old_x is not None and old_y is not None and next_x is not None and next_y is not None and (
+            abs(next_x - old_x) > 1e-9 or abs(next_y - old_y) > 1e-9
+        )
+        draw_motion = motion in {"G1", "G2", "G3"}
+        if was_down and xy_changed and draw_motion:
+            if current is None:
+                current = [(float(old_x), float(old_y))]
+            if motion in {"G2", "G3"} and "I" in words and "J" in words:
+                center = (float(old_x) + float(words["I"]), float(old_y) + float(words["J"]))
+                current.extend(
+                    _arc_points(
+                        (float(old_x), float(old_y)),
+                        (float(next_x), float(next_y)),
+                        center,
+                        clockwise=(motion == "G2"),
+                    )
+                )
+            else:
+                current.append((float(next_x), float(next_y)))
+
+        x, y, z = next_x, next_y, next_z
+        is_down = _pen_is_down(z)
+        if is_down and not was_down and x is not None and y is not None:
+            current = [(float(x), float(y))]
+        elif was_down and not is_down:
+            if current is not None and len(current) >= 2:
+                polylines.append(current)
+            current = None
+
+    if current is not None and len(current) >= 2:
+        polylines.append(current)
+    return polylines
+
+
+def write_svg_polylines(path: Path, polylines: list[Polyline], work_area: WorkArea) -> None:
     width = float(work_area.max_x) - float(work_area.min_x)
     height = float(work_area.max_y) - float(work_area.min_y)
     x_shift = -float(work_area.min_x)
@@ -55,7 +204,7 @@ def write_svg_preview(path: Path, result: PhotoPlotResult, work_area: WorkArea) 
         '<rect x="0" y="0" width="100%" height="100%" fill="white"/>',
         '<g fill="none" stroke="#111" stroke-width="0.22" stroke-linecap="round" stroke-linejoin="round">',
     ]
-    for poly in result.polylines:
+    for poly in polylines:
         if len(poly) < 2:
             continue
         pts = " ".join(_svg_point(x + x_shift, y + y_shift) for x, y in poly)
@@ -64,7 +213,11 @@ def write_svg_preview(path: Path, result: PhotoPlotResult, work_area: WorkArea) 
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-def write_pdf_preview(path: Path, result: PhotoPlotResult, work_area: WorkArea) -> None:
+def write_svg_preview(path: Path, result: PhotoPlotResult, work_area: WorkArea) -> None:
+    write_svg_polylines(path, result.polylines, work_area)
+
+
+def write_pdf_polylines(path: Path, polylines: list[Polyline], work_area: WorkArea) -> None:
     width_mm = float(work_area.max_x) - float(work_area.min_x)
     height_mm = float(work_area.max_y) - float(work_area.min_y)
     doc = fitz.open()
@@ -72,7 +225,7 @@ def write_pdf_preview(path: Path, result: PhotoPlotResult, work_area: WorkArea) 
     shape = page.new_shape()
     x_shift = -float(work_area.min_x)
     y_shift = -float(work_area.max_y)
-    for poly in result.polylines:
+    for poly in polylines:
         if len(poly) < 2:
             continue
         for (x0, y0), (x1, y1) in zip(poly, poly[1:]):
@@ -83,6 +236,10 @@ def write_pdf_preview(path: Path, result: PhotoPlotResult, work_area: WorkArea) 
     shape.commit()
     doc.save(path)
     doc.close()
+
+
+def write_pdf_preview(path: Path, result: PhotoPlotResult, work_area: WorkArea) -> None:
+    write_pdf_polylines(path, result.polylines, work_area)
 
 
 def _copy_source_image(image_path: Path, out_dir: Path) -> Path:
@@ -153,6 +310,8 @@ def build_photo_plot_package(
 
     svg_path = out_dir / "photo_preview.svg"
     pdf_path = out_dir / "photo_preview.pdf"
+    gcode_svg_path = out_dir / "photo_gcode_preview.svg"
+    gcode_pdf_path = out_dir / "photo_gcode_preview.pdf"
     xy_path = out_dir / "photo_plot.xy.gcode"
     pen_path = out_dir / "photo_plot.pen.gcode"
     gcode_path = out_dir / "photo_plot.gcode"
@@ -163,9 +322,15 @@ def build_photo_plot_package(
     write_svg_preview(svg_path, result, work_area)
     write_pdf_preview(pdf_path, result, work_area)
     backend.write_xy_gcode(xy_path, result.polylines, feed_travel, feed_draw)
-    backend.apply_penlift(xy_path, pen_path, handwriting_mode=(config.mode == "scribble"), force_full_lift=(config.mode == "hatch"))
+    # Photo routes are not handwriting: short-travel merge creates visible connector
+    # strokes across faces/backgrounds. Keep every inter-path travel as a true pen-up move.
+    backend.apply_penlift(xy_path, pen_path, handwriting_mode=False, force_full_lift=True)
     backend.make_final_with_preamble(pen_path, gcode_path)
     nc_path.write_text(gcode_path.read_text(encoding="utf-8", errors="ignore"), encoding="utf-8")
+
+    gcode_polylines = gcode_draw_polylines(gcode_path)
+    write_svg_polylines(gcode_svg_path, gcode_polylines, work_area)
+    write_pdf_polylines(gcode_pdf_path, gcode_polylines, work_area)
 
     preflight_ok, preflight_msg = backend.preflight_check_gcode(gcode_path, logger=lambda *_args: None)
     if not preflight_ok:
@@ -187,6 +352,8 @@ def build_photo_plot_package(
         "files": {
             "svg_preview": str(svg_path),
             "pdf_preview": str(pdf_path),
+            "gcode_svg_preview": str(gcode_svg_path),
+            "gcode_pdf_preview": str(gcode_pdf_path),
             "gcode": str(gcode_path),
             "nc": str(nc_path),
             "xy_gcode": str(xy_path),
@@ -211,7 +378,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("image", type=Path, help="Input photo/image file.")
     parser.add_argument("--out-dir", type=Path, default=None, help="Output package directory.")
-    parser.add_argument("--mode", choices=["hatch", "scribble"], default="hatch")
+    parser.add_argument("--mode", choices=["hatch", "scribble", "portrait"], default=PhotoPlotConfig().mode)
     parser.add_argument("--margin-mm", type=float, default=5.0)
     parser.add_argument("--target-width-mm", type=float, default=None)
     parser.add_argument("--target-height-mm", type=float, default=None)
@@ -225,9 +392,23 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--min-segment-mm", type=float, default=0.8)
     parser.add_argument("--merge-gap-mm", type=float, default=0.55)
     parser.add_argument("--no-edges", action="store_true", help="Disable Canny edge detail overlay.")
+    parser.add_argument("--edge-min-length-mm", type=float, default=PhotoPlotConfig().edge_min_length_mm)
     parser.add_argument("--scribble-line-spacing-mm", type=float, default=1.25)
     parser.add_argument("--scribble-step-mm", type=float, default=0.75)
     parser.add_argument("--scribble-amplitude-mm", type=float, default=1.6)
+    parser.add_argument("--scribble-threshold", type=float, default=PhotoPlotConfig().scribble_threshold)
+    parser.add_argument("--portrait-stroke-spacing-mm", type=float, default=PhotoPlotConfig().portrait_stroke_spacing_mm)
+    parser.add_argument("--portrait-stroke-length-mm", type=float, default=PhotoPlotConfig().portrait_stroke_length_mm)
+    parser.add_argument("--portrait-threshold", type=float, default=PhotoPlotConfig().portrait_threshold)
+    parser.add_argument("--portrait-jitter-mm", type=float, default=PhotoPlotConfig().portrait_jitter_mm)
+    parser.add_argument("--portrait-seed", type=int, default=PhotoPlotConfig().portrait_seed)
+    parser.add_argument("--no-portrait-cleanup", action="store_true", help="Disable portrait background/component cleanup.")
+    parser.add_argument("--portrait-cleanup-threshold", type=float, default=PhotoPlotConfig().portrait_cleanup_threshold)
+    parser.add_argument("--portrait-min-component-area-mm2", type=float, default=PhotoPlotConfig().portrait_min_component_area_mm2)
+    parser.add_argument("--portrait-mask-dilate-mm", type=float, default=PhotoPlotConfig().portrait_mask_dilate_mm)
+    parser.add_argument("--portrait-sampling", choices=["blue_noise", "grid"], default=PhotoPlotConfig().portrait_sampling)
+    parser.add_argument("--portrait-density", type=float, default=PhotoPlotConfig().portrait_density)
+    parser.add_argument("--portrait-min-center-distance-mm", type=float, default=PhotoPlotConfig().portrait_min_center_distance_mm)
     parser.add_argument("--feed-travel", type=float, default=float(backend.FEED_TRAVEL))
     parser.add_argument("--feed-draw", type=float, default=float(backend.FEED_DRAW))
     return parser
@@ -257,9 +438,23 @@ def main(argv: list[str] | None = None) -> int:
         min_segment_mm=args.min_segment_mm,
         merge_gap_mm=args.merge_gap_mm,
         edge_enabled=not bool(args.no_edges),
+        edge_min_length_mm=args.edge_min_length_mm,
         scribble_line_spacing_mm=args.scribble_line_spacing_mm,
         scribble_step_mm=args.scribble_step_mm,
         scribble_amplitude_mm=args.scribble_amplitude_mm,
+        scribble_threshold=args.scribble_threshold,
+        portrait_stroke_spacing_mm=args.portrait_stroke_spacing_mm,
+        portrait_stroke_length_mm=args.portrait_stroke_length_mm,
+        portrait_threshold=args.portrait_threshold,
+        portrait_jitter_mm=args.portrait_jitter_mm,
+        portrait_seed=args.portrait_seed,
+        portrait_cleanup_enabled=not bool(args.no_portrait_cleanup),
+        portrait_cleanup_threshold=args.portrait_cleanup_threshold,
+        portrait_min_component_area_mm2=args.portrait_min_component_area_mm2,
+        portrait_mask_dilate_mm=args.portrait_mask_dilate_mm,
+        portrait_sampling=args.portrait_sampling,
+        portrait_density=args.portrait_density,
+        portrait_min_center_distance_mm=args.portrait_min_center_distance_mm,
     )
     report = build_photo_plot_package(
         image,
@@ -274,4 +469,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

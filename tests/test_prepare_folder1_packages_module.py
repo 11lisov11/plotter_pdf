@@ -1266,8 +1266,7 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
 
         overrides = mod._kompas_text_join_backend_overrides(cg)
 
-        self.assertGreater(overrides["TECH_TEXT_JOIN_GAP_MM"], 1.0)
-        self.assertGreater(overrides["TECH_TEXT_JOIN_MAX_COMBINED_SPAN_X_MM"], 20.0)
+        self.assertEqual(overrides, {"TECH_TEXT_JOIN_ENABLE": False})
         self.assertEqual(mod._kompas_text_join_backend_overrides(nachert), {})
 
     def test_cleanup_kompas_archive_strip_polylines_removes_left_service_band(self) -> None:

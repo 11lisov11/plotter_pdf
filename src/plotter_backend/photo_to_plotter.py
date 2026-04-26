@@ -12,7 +12,8 @@ from PIL import Image, ImageOps
 
 Point = tuple[float, float]
 Polyline = list[Point]
-PhotoMode = Literal["hatch", "scribble"]
+PhotoMode = Literal["hatch", "scribble", "portrait"]
+PortraitSampling = Literal["grid", "blue_noise"]
 
 
 @dataclass(frozen=True)
@@ -25,7 +26,7 @@ class WorkArea:
 
 @dataclass(frozen=True)
 class PhotoPlotConfig:
-    mode: PhotoMode = "hatch"
+    mode: PhotoMode = "portrait"
     margin_mm: float = 5.0
     target_width_mm: float | None = None
     target_height_mm: float | None = None
@@ -41,11 +42,23 @@ class PhotoPlotConfig:
     edge_enabled: bool = True
     edge_low_threshold: int = 70
     edge_high_threshold: int = 170
-    edge_min_length_mm: float = 2.0
+    edge_min_length_mm: float = 12.0
     scribble_line_spacing_mm: float = 1.25
     scribble_step_mm: float = 0.75
     scribble_amplitude_mm: float = 1.6
-    scribble_threshold: float = 0.06
+    scribble_threshold: float = 0.16
+    portrait_stroke_spacing_mm: float = 1.9
+    portrait_stroke_length_mm: float = 7.0
+    portrait_threshold: float = 0.24
+    portrait_jitter_mm: float = 0.45
+    portrait_seed: int = 12345
+    portrait_cleanup_enabled: bool = True
+    portrait_cleanup_threshold: float = 0.18
+    portrait_min_component_area_mm2: float = 130.0
+    portrait_mask_dilate_mm: float = 1.2
+    portrait_sampling: PortraitSampling = "blue_noise"
+    portrait_density: float = 1.0
+    portrait_min_center_distance_mm: float = 1.15
     route_optimize: bool = True
     route_optimize_limit: int = 4500
 
@@ -259,6 +272,8 @@ def _generate_scribble_px(darkness: np.ndarray, config: PhotoPlotConfig, scale_m
     step = max(1.0, float(config.scribble_step_mm) / max(1e-9, scale_mm_per_px))
     amplitude = max(0.1, float(config.scribble_amplitude_mm) / max(1e-9, scale_mm_per_px))
     threshold = max(0.0, min(1.0, float(config.scribble_threshold)))
+    min_segment_px = max(1.0, float(config.min_segment_mm) / max(1e-9, scale_mm_per_px))
+    merge_gap_px = max(0.0, float(config.merge_gap_mm) / max(1e-9, scale_mm_per_px))
     out: list[list[Point]] = []
     y = spacing * 0.5
     row_index = 0
@@ -266,32 +281,356 @@ def _generate_scribble_px(darkness: np.ndarray, config: PhotoPlotConfig, scale_m
         y0 = max(0, int(round(y - spacing * 0.5)))
         y1 = min(h, int(round(y + spacing * 0.5)) + 1)
         band = darkness[y0:y1, :]
-        if band.size <= 0 or float(np.percentile(band, 85)) < threshold:
+        if band.size <= 0:
             y += spacing
             row_index += 1
             continue
-        xs = np.arange(0.0, float(w), step, dtype=np.float32)
+        profile = np.percentile(band, 85, axis=0)
+        active = profile >= threshold
+        intervals: list[tuple[float, float]] = []
+        start: int | None = None
+        for idx, is_active in enumerate(active):
+            if bool(is_active) and start is None:
+                start = idx
+            elif not bool(is_active) and start is not None:
+                intervals.append((float(start), float(idx - 1)))
+                start = None
+        if start is not None:
+            intervals.append((float(start), float(w - 1)))
+        intervals = [
+            (x0, x1)
+            for x0, x1 in _merge_intervals(intervals, merge_gap_px)
+            if (x1 - x0) >= min_segment_px
+        ]
         if row_index % 2 == 1:
-            xs = xs[::-1]
-        pts: list[Point] = []
+            intervals = list(reversed(intervals))
         phase_offset = row_index * math.pi * 0.37
         wave_period = max(3.0, 5.0 / max(1e-9, scale_mm_per_px))
-        for x in xs:
-            px = int(max(0, min(w - 1, round(float(x)))))
-            py = int(max(0, min(h - 1, round(float(y)))))
-            dark = float(darkness[py, px])
-            amp = amplitude * (dark ** 1.2)
-            yy = float(y) + math.sin((float(x) / wave_period) * (2.0 * math.pi) + phase_offset) * amp
-            yy = max(0.0, min(float(h - 1), yy))
-            pts.append((float(x), yy))
-        if len(pts) >= 2:
-            out.append(pts)
+        for x0, x1 in intervals:
+            xs = np.arange(x0, x1 + 0.5 * step, step, dtype=np.float32)
+            if len(xs) == 0 or float(xs[-1]) < x1:
+                xs = np.append(xs, np.float32(x1))
+            if row_index % 2 == 1:
+                xs = xs[::-1]
+            pts: list[Point] = []
+            for x in xs:
+                px = int(max(0, min(w - 1, round(float(x)))))
+                py = int(max(0, min(h - 1, round(float(y)))))
+                dark = float(darkness[py, px])
+                amp = amplitude * (dark ** 1.2)
+                yy = float(y) + math.sin((float(x) / wave_period) * (2.0 * math.pi) + phase_offset) * amp
+                yy = max(0.0, min(float(h - 1), yy))
+                pts.append((float(x), yy))
+            if len(pts) >= 2:
+                out.append(pts)
         y += spacing
         row_index += 1
     return out
 
 
-def _generate_edge_px(processed_gray: np.ndarray, config: PhotoPlotConfig, scale_mm_per_px: float) -> list[list[Point]]:
+def _sample_tangent(
+    grad_x: np.ndarray,
+    grad_y: np.ndarray,
+    x: float,
+    y: float,
+    fallback_angle: float,
+) -> Point:
+    h, w = grad_x.shape[:2]
+    px = int(max(0, min(w - 1, round(float(x)))))
+    py = int(max(0, min(h - 1, round(float(y)))))
+    gx = float(grad_x[py, px])
+    gy = float(grad_y[py, px])
+    mag = math.hypot(gx, gy)
+    if mag <= 1e-5:
+        return (math.cos(fallback_angle), math.sin(fallback_angle))
+    # Draw along local isophotes. This follows face/shape contours instead of a rigid grid.
+    return (-gy / mag, gx / mag)
+
+
+def _trace_portrait_stroke(
+    darkness: np.ndarray,
+    grad_x: np.ndarray,
+    grad_y: np.ndarray,
+    *,
+    center: Point,
+    length_px: float,
+    step_px: float,
+    threshold: float,
+    fallback_angle: float,
+) -> list[Point]:
+    h, w = darkness.shape[:2]
+    cx, cy = center
+    if not (0 <= cx < w and 0 <= cy < h):
+        return []
+    cpx = int(max(0, min(w - 1, round(cx))))
+    cpy = int(max(0, min(h - 1, round(cy))))
+    if float(darkness[cpy, cpx]) < threshold:
+        return []
+
+    def walk(sign: float) -> list[Point]:
+        pts: list[Point] = []
+        x, y = cx, cy
+        dx, dy = _sample_tangent(grad_x, grad_y, x, y, fallback_angle)
+        dx *= sign
+        dy *= sign
+        traveled = 0.0
+        while traveled < length_px * 0.5:
+            tx, ty = _sample_tangent(grad_x, grad_y, x, y, fallback_angle)
+            tx *= sign
+            ty *= sign
+            # Keep tangent orientation continuous; otherwise Sobel sign flips create zig-zag jumps.
+            if tx * dx + ty * dy < 0.0:
+                tx = -tx
+                ty = -ty
+            dx = dx * 0.72 + tx * 0.28
+            dy = dy * 0.72 + ty * 0.28
+            norm = max(1e-9, math.hypot(dx, dy))
+            dx /= norm
+            dy /= norm
+            nx = x + dx * step_px
+            ny = y + dy * step_px
+            if not (0 <= nx < w and 0 <= ny < h):
+                break
+            px = int(max(0, min(w - 1, round(nx))))
+            py = int(max(0, min(h - 1, round(ny))))
+            dark = float(darkness[py, px])
+            if dark < threshold * 0.65:
+                break
+            pts.append((nx, ny))
+            x, y = nx, ny
+            traveled += step_px
+        return pts
+
+    backward = list(reversed(walk(-1.0)))
+    forward = walk(1.0)
+    return backward + [(cx, cy)] + forward
+
+
+def _portrait_keep_probability(dark: float, threshold: float, density_scale: float) -> float:
+    density = min(1.0, max(0.0, (float(dark) - threshold) / max(1e-9, 1.0 - threshold)))
+    return min(1.0, max(0.0, float(density_scale)) * (0.12 + 0.88 * (density ** 0.70)))
+
+
+def _grid_portrait_centers(
+    darkness: np.ndarray,
+    *,
+    spacing_px: float,
+    jitter_px: float,
+    threshold: float,
+    density_scale: float,
+    rng: np.random.Generator,
+) -> list[tuple[float, float, float]]:
+    h, w = darkness.shape[:2]
+    centers: list[tuple[float, float, float]] = []
+    y = spacing_px * 0.5
+    row = 0
+    while y < h:
+        x_offset = (spacing_px * 0.5) if row % 2 else 0.0
+        x = spacing_px * 0.5 + x_offset
+        while x < w:
+            jx = float(rng.uniform(-jitter_px, jitter_px)) if jitter_px > 0 else 0.0
+            jy = float(rng.uniform(-jitter_px, jitter_px)) if jitter_px > 0 else 0.0
+            sx = max(0.0, min(float(w - 1), x + jx))
+            sy = max(0.0, min(float(h - 1), y + jy))
+            dark = float(darkness[int(round(sy)), int(round(sx))])
+            if dark >= threshold and rng.random() <= _portrait_keep_probability(dark, threshold, density_scale):
+                centers.append((sx, sy, dark))
+            x += spacing_px
+        y += spacing_px
+        row += 1
+    return centers
+
+
+def _blue_noise_portrait_centers(
+    darkness: np.ndarray,
+    *,
+    spacing_px: float,
+    jitter_px: float,
+    threshold: float,
+    density_scale: float,
+    min_distance_px: float,
+    rng: np.random.Generator,
+) -> list[tuple[float, float, float]]:
+    h, w = darkness.shape[:2]
+    candidate_step = max(1.0, spacing_px * 0.62)
+    candidates: list[tuple[float, float, float]] = []
+    y = candidate_step * 0.5
+    while y < h:
+        x = candidate_step * 0.5
+        while x < w:
+            jx = float(rng.uniform(-jitter_px, jitter_px)) if jitter_px > 0 else 0.0
+            jy = float(rng.uniform(-jitter_px, jitter_px)) if jitter_px > 0 else 0.0
+            sx = max(0.0, min(float(w - 1), x + jx))
+            sy = max(0.0, min(float(h - 1), y + jy))
+            dark = float(darkness[int(round(sy)), int(round(sx))])
+            if dark >= threshold and rng.random() <= _portrait_keep_probability(dark, threshold, density_scale):
+                candidates.append((sx, sy, dark))
+            x += candidate_step
+        y += candidate_step
+
+    rng.shuffle(candidates)
+    cell = max(1.0, float(min_distance_px))
+    occupied: dict[tuple[int, int], list[tuple[float, float, float]]] = {}
+    accepted: list[tuple[float, float, float]] = []
+    max_centers = max(1, int((float(w) * float(h) / max(1.0, spacing_px * spacing_px)) * 0.34 * max(0.25, density_scale)))
+
+    for sx, sy, dark in candidates:
+        local_min = max(0.5, float(min_distance_px) * (1.12 - 0.42 * min(1.0, dark)))
+        key = (int(math.floor(sx / cell)), int(math.floor(sy / cell)))
+        too_close = False
+        for gy in range(key[1] - 2, key[1] + 3):
+            for gx in range(key[0] - 2, key[0] + 3):
+                for ox, oy, odark in occupied.get((gx, gy), []):
+                    neighbor_min = max(0.5, float(min_distance_px) * (1.12 - 0.42 * min(1.0, odark)))
+                    min_allowed = min(local_min, neighbor_min)
+                    if math.hypot(sx - ox, sy - oy) < min_allowed:
+                        too_close = True
+                        break
+                if too_close:
+                    break
+            if too_close:
+                break
+        if too_close:
+            continue
+        accepted.append((sx, sy, dark))
+        occupied.setdefault(key, []).append((sx, sy, dark))
+        if len(accepted) >= max_centers:
+            break
+    return accepted
+
+
+def _portrait_centers(
+    darkness: np.ndarray,
+    config: PhotoPlotConfig,
+    *,
+    spacing_px: float,
+    jitter_px: float,
+    threshold: float,
+    scale_mm_per_px: float,
+    rng: np.random.Generator,
+) -> list[tuple[float, float, float]]:
+    sampling = str(config.portrait_sampling or "blue_noise").strip().lower()
+    density_scale = max(0.05, float(config.portrait_density))
+    if sampling == "grid":
+        return _grid_portrait_centers(
+            darkness,
+            spacing_px=spacing_px,
+            jitter_px=jitter_px,
+            threshold=threshold,
+            density_scale=density_scale,
+            rng=rng,
+        )
+    min_distance_px = max(0.5, float(config.portrait_min_center_distance_mm) / max(1e-9, scale_mm_per_px))
+    return _blue_noise_portrait_centers(
+        darkness,
+        spacing_px=spacing_px,
+        jitter_px=jitter_px,
+        threshold=threshold,
+        density_scale=density_scale,
+        min_distance_px=min_distance_px,
+        rng=rng,
+    )
+
+
+def _generate_portrait_px(darkness: np.ndarray, config: PhotoPlotConfig, scale_mm_per_px: float) -> list[list[Point]]:
+    spacing_px = max(2.0, float(config.portrait_stroke_spacing_mm) / max(1e-9, scale_mm_per_px))
+    length_px = max(2.0, float(config.portrait_stroke_length_mm) / max(1e-9, scale_mm_per_px))
+    step_px = max(1.0, float(config.scribble_step_mm) / max(1e-9, scale_mm_per_px))
+    threshold = max(0.0, min(1.0, float(config.portrait_threshold)))
+    jitter_px = max(0.0, float(config.portrait_jitter_mm) / max(1e-9, scale_mm_per_px))
+    min_segment_px = max(1.0, float(config.min_segment_mm) / max(1e-9, scale_mm_per_px))
+
+    smooth = cv2.GaussianBlur(darkness.astype(np.float32), (0, 0), sigmaX=1.2)
+    grad_x = cv2.Sobel(smooth, cv2.CV_32F, 1, 0, ksize=3)
+    grad_y = cv2.Sobel(smooth, cv2.CV_32F, 0, 1, ksize=3)
+    rng = np.random.default_rng(int(config.portrait_seed))
+
+    out: list[list[Point]] = []
+    for sx, sy, dark in _portrait_centers(
+        darkness,
+        config,
+        spacing_px=spacing_px,
+        jitter_px=jitter_px,
+        threshold=threshold,
+        scale_mm_per_px=scale_mm_per_px,
+        rng=rng,
+    ):
+        local_length = length_px * (0.35 + 0.9 * dark)
+        fallback_angle = (
+            math.sin((sx + float(config.portrait_seed) * 0.017) * 0.047)
+            + math.cos((sy - float(config.portrait_seed) * 0.011) * 0.039)
+        ) * 0.55
+        stroke = _trace_portrait_stroke(
+            darkness,
+            grad_x,
+            grad_y,
+            center=(sx, sy),
+            length_px=local_length,
+            step_px=step_px,
+            threshold=threshold,
+            fallback_angle=fallback_angle,
+        )
+        if len(stroke) >= 2 and _polyline_length(stroke) >= min_segment_px:
+            out.append(stroke)
+    return out
+
+
+def _portrait_content_mask(darkness: np.ndarray, config: PhotoPlotConfig, scale_mm_per_px: float) -> np.ndarray:
+    threshold = max(0.0, min(1.0, float(config.portrait_cleanup_threshold)))
+    raw = (darkness >= threshold).astype(np.uint8)
+    if not bool(config.portrait_cleanup_enabled):
+        return raw.astype(bool)
+    if not np.any(raw):
+        return raw.astype(bool)
+
+    kernel_px = max(1, int(round(1.2 / max(1e-9, scale_mm_per_px))))
+    if kernel_px > 1:
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_px * 2 + 1, kernel_px * 2 + 1))
+        raw = cv2.morphologyEx(raw, cv2.MORPH_CLOSE, kernel)
+
+    min_area_px = max(8, int(round(float(config.portrait_min_component_area_mm2) / max(1e-9, scale_mm_per_px * scale_mm_per_px))))
+    labels_count, labels, stats, _centroids = cv2.connectedComponentsWithStats(raw, connectivity=8)
+    keep = np.zeros_like(raw, dtype=np.uint8)
+    for label in range(1, labels_count):
+        if int(stats[label, cv2.CC_STAT_AREA]) >= min_area_px:
+            keep[labels == label] = 1
+
+    if not np.any(keep):
+        # If the image is extremely sparse, fall back to the raw mask instead of dropping everything.
+        keep = raw
+
+    dilate_px = max(0, int(round(float(config.portrait_mask_dilate_mm) / max(1e-9, scale_mm_per_px))))
+    if dilate_px > 0:
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (dilate_px * 2 + 1, dilate_px * 2 + 1))
+        keep = cv2.dilate(keep, kernel, iterations=1)
+    return keep.astype(bool)
+
+
+def _apply_mask_to_darkness(darkness: np.ndarray, mask: np.ndarray | None) -> np.ndarray:
+    if mask is None:
+        return darkness
+    return np.where(mask, darkness, 0.0).astype(np.float32)
+
+
+def _polyline_mask_ratio(polyline: Sequence[Point], mask: np.ndarray) -> float:
+    if not polyline:
+        return 0.0
+    h, w = mask.shape[:2]
+    inside = 0
+    for x, y in polyline:
+        px = int(max(0, min(w - 1, round(float(x)))))
+        py = int(max(0, min(h - 1, round(float(y)))))
+        if bool(mask[py, px]):
+            inside += 1
+    return inside / float(len(polyline))
+
+
+def _generate_edge_px(
+    processed_gray: np.ndarray,
+    config: PhotoPlotConfig,
+    scale_mm_per_px: float,
+    include_mask: np.ndarray | None = None,
+) -> list[list[Point]]:
     if not config.edge_enabled:
         return []
     low = max(0, min(255, int(config.edge_low_threshold)))
@@ -305,6 +644,8 @@ def _generate_edge_px(processed_gray: np.ndarray, config: PhotoPlotConfig, scale
             continue
         approx = cv2.approxPolyDP(contour, epsilon=1.1, closed=False)
         pts = [(float(p[0][0]), float(p[0][1])) for p in approx]
+        if include_mask is not None and _polyline_mask_ratio(pts, include_mask) < 0.30:
+            continue
         if len(pts) >= 2 and _polyline_length(pts) >= min_len_px:
             out.append(pts)
     return out
@@ -347,18 +688,26 @@ def generate_photo_plot(
     work_area: WorkArea | None = None,
 ) -> PhotoPlotResult:
     cfg = config or PhotoPlotConfig()
-    if cfg.mode not in {"hatch", "scribble"}:
+    if cfg.mode not in {"hatch", "scribble", "portrait"}:
         raise ValueError(f"unsupported photo plot mode: {cfg.mode}")
     area = work_area or WorkArea()
     path = Path(image_path)
     darkness, source_size, processed_size, processed_gray = _load_darkness(path, cfg)
     x_left, y_top, target_w, target_h, scale = _fit_image_to_work_area(processed_size, area, cfg)
+    content_mask: np.ndarray | None = None
+    drawing_darkness = darkness
+    edge_gray = processed_gray
+    if cfg.mode == "portrait":
+        content_mask = _portrait_content_mask(darkness, cfg, scale)
+        drawing_darkness = _apply_mask_to_darkness(darkness, content_mask)
 
     if cfg.mode == "hatch":
-        px_polylines = _generate_hatch_px(darkness, cfg, scale)
+        px_polylines = _generate_hatch_px(drawing_darkness, cfg, scale)
+    elif cfg.mode == "scribble":
+        px_polylines = _generate_scribble_px(drawing_darkness, cfg, scale)
     else:
-        px_polylines = _generate_scribble_px(darkness, cfg, scale)
-    px_polylines.extend(_generate_edge_px(processed_gray, cfg, scale))
+        px_polylines = _generate_portrait_px(drawing_darkness, cfg, scale)
+    px_polylines.extend(_generate_edge_px(edge_gray, cfg, scale, include_mask=content_mask))
 
     machine_polylines = [
         _image_to_machine(poly, x_left=x_left, y_top=y_top, scale_mm_per_px=scale)
@@ -378,6 +727,8 @@ def generate_photo_plot(
         "bounds": [round(v, 3) for v in bounds],
         "config": asdict(cfg),
     }
+    if content_mask is not None:
+        stats["portrait_content_mask_px"] = int(np.count_nonzero(content_mask))
     return PhotoPlotResult(
         mode=cfg.mode,
         source_size_px=(int(source_size[0]), int(source_size[1])),
@@ -387,4 +738,3 @@ def generate_photo_plot(
         polylines=machine_polylines,
         stats=stats,
     )
-

@@ -91,19 +91,17 @@ Work area clipping: kept 1496 visible segments, dropped 1700 out-of-area segment
 Segment dedup: dropped 216/1496 retraced segments (14.4%), kept=1280, eps=0.010 mm
 Collinear overlap dedup: dropped 5/1228 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
 Reorder: source order preserved (391 polylines).
-Technical text join: merged 139 short gaps (ordered=129, nearest=10, gap<=1.10 mm, dy<=1.35 mm), polylines 391 -> 252
-Polyline optimization: 391 -> 252
 Segment counts: source=3196, fitted=3196, clipped=1496
 Drawable segments after clip: 1496 (46.8% of source)
 Warning: significant clipping/transforming occurred. Check that page is inside target work area.
 Prepared bounds: x(0.000, 180.000) y(-283.977, -20.023)
-Estimated draw length: 3.97 m
+Estimated draw length: 3.94 m
 Applying pen-up / pen-down ...
-G-code stats: lines=1995, draw=1735, travel=246, bounds=0.000..180.000 x, -283.977..0.000 y
-Preflight: ok: lines=1995, draw=1735, travel=246, ratio=0.14
-Saved file stats: lines=1995, draw=1735, travel=246, bounds=0.000..180.000 x, -283.977..0.000 y
-Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1777066510340912500.nc
-Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1777066510340912500_vector.svg
-Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1777066510340912500_vector.pdf
+G-code stats: lines=2044, draw=1757, travel=273, bounds=0.000..180.000 x, -283.977..0.000 y
+Preflight: ok: lines=2044, draw=1757, travel=273, ratio=0.16
+Saved file stats: lines=2044, draw=1757, travel=273, bounds=0.000..180.000 x, -283.977..0.000 y
+Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1777140838696257600.nc
+Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1777140838696257600_vector.svg
+Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1777140838696257600_vector.pdf
 Sheet preview centered on compact source page bbox: ref=(0.353,0.353)..(420.518,297.670) mm
 Sheet preview placed on source page: offset=(120.524,301.056) mm

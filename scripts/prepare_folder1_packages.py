@@ -322,15 +322,11 @@ def _drawing_frame_class(source_pdf: Path) -> str:
 def _kompas_text_join_backend_overrides(source_pdf: Path | None) -> dict[str, Any]:
     if source_pdf is None or _drawing_frame_class(source_pdf) != "kompas_full_frame":
         return {}
+    # KOMPAS text is already exported as positioned vector fragments. Joining
+    # those fragments with the pen down creates visible connector strokes and
+    # makes letters look shifted away from their source-PDF positions.
     return {
-        "TECH_TEXT_JOIN_ENABLE": True,
-        "TECH_TEXT_JOIN_GAP_MM": 1.10,
-        "TECH_TEXT_JOIN_MAX_DY_MM": 1.35,
-        "TECH_TEXT_JOIN_MAX_BACKTRACK_MM": 0.65,
-        "TECH_TEXT_JOIN_MAX_STROKE_LEN_MM": 16.0,
-        "TECH_TEXT_JOIN_MAX_COMBINED_SPAN_X_MM": 22.0,
-        "TECH_TEXT_JOIN_MAX_COMBINED_SPAN_Y_MM": 16.0,
-        "TECH_TEXT_JOIN_MAX_COMBINED_AREA_MM2": 180.0,
+        "TECH_TEXT_JOIN_ENABLE": False,
     }
 
 
@@ -5084,24 +5080,25 @@ def _prepare_drawing_candidate(
         try:
             if disable_small_lineart_circle_recovery:
                 setattr(backend, "IMAGE_CONTOUR_SMALL_LINEART_CIRCLE_PARAM2", 9999.0)
-            ok, msg, logs = _bridge_run_preview(
-                ctx=ctx,
-                input_path=ascii_pdf,
-                sheet=SheetConfig(sheet_format="a4", anchor="lower_left"),
-                tool_mode="pen",
-                render_mode="drawing",
-                quality_profile="high",
-                force_text_to_path=True,
-                handwriting_enabled=False,
-                handwriting_font="Marck Script",
-                handwriting_formula_font="Times New Roman",
-                image_contours_mode=image_contours_mode,
-                source_page_index=1,
-                source_all_pages=False,
-                exact_geometry_mode=exact_geometry_mode,
-                safe_travel_lift=True,
-                strict_one_to_one=strict_one_to_one,
-            )
+            with _backend_override_context(_kompas_text_join_backend_overrides(source_pdf)):
+                ok, msg, logs = _bridge_run_preview(
+                    ctx=ctx,
+                    input_path=ascii_pdf,
+                    sheet=SheetConfig(sheet_format="a4", anchor="lower_left"),
+                    tool_mode="pen",
+                    render_mode="drawing",
+                    quality_profile="high",
+                    force_text_to_path=True,
+                    handwriting_enabled=False,
+                    handwriting_font="Marck Script",
+                    handwriting_formula_font="Times New Roman",
+                    image_contours_mode=image_contours_mode,
+                    source_page_index=1,
+                    source_all_pages=False,
+                    exact_geometry_mode=exact_geometry_mode,
+                    safe_travel_lift=True,
+                    strict_one_to_one=strict_one_to_one,
+                )
         finally:
             setattr(backend, "IMAGE_CONTOUR_SMALL_LINEART_CIRCLE_PARAM2", prev_circle_param2)
         if not ok:
@@ -5547,24 +5544,25 @@ def _prepare_forced_a4_candidate(
         except Exception:
             clean_svg = ascii_pdf
         ctx = _ctx(f"preview-{time.time_ns()}")
-        ok, msg, logs = _bridge_run_preview(
-            ctx=ctx,
-            input_path=clean_svg,
-            sheet=SheetConfig(sheet_format="a4", anchor="center"),
-            tool_mode="pen",
-            render_mode="drawing",
-            quality_profile="high",
-            force_text_to_path=True,
-            handwriting_enabled=False,
-            handwriting_font="Marck Script",
-            handwriting_formula_font="Times New Roman",
-            image_contours_mode="off",
-            source_page_index=1,
-            source_all_pages=False,
-            exact_geometry_mode=False,
-            safe_travel_lift=True,
-            strict_one_to_one=False,
-        )
+        with _backend_override_context(_kompas_text_join_backend_overrides(source_pdf)):
+            ok, msg, logs = _bridge_run_preview(
+                ctx=ctx,
+                input_path=clean_svg,
+                sheet=SheetConfig(sheet_format="a4", anchor="center"),
+                tool_mode="pen",
+                render_mode="drawing",
+                quality_profile="high",
+                force_text_to_path=True,
+                handwriting_enabled=False,
+                handwriting_font="Marck Script",
+                handwriting_formula_font="Times New Roman",
+                image_contours_mode="off",
+                source_page_index=1,
+                source_all_pages=False,
+                exact_geometry_mode=False,
+                safe_travel_lift=True,
+                strict_one_to_one=False,
+            )
         if clean_svg != ascii_pdf:
             logs.insert(0, "Forced A4 direct vector scale: source PDF exported to SVG for A4 fit.")
         if removed_nodes > 0 or appended > 0:
@@ -5640,24 +5638,25 @@ def _prepare_reference_pdf_candidate(
         ascii_pdf = td_path / "input.pdf"
         shutil.copy2(input_pdf, ascii_pdf)
         ctx = _ctx(f"preview-{time.time_ns()}")
-        ok, msg, logs = _bridge_run_preview(
-            ctx=ctx,
-            input_path=ascii_pdf,
-            sheet=SheetConfig(sheet_format="a4", anchor="center"),
-            tool_mode="pen",
-            render_mode="drawing",
-            quality_profile="high",
-            force_text_to_path=True,
-            handwriting_enabled=False,
-            handwriting_font="Marck Script",
-            handwriting_formula_font="Times New Roman",
-            image_contours_mode="off",
-            source_page_index=1,
-            source_all_pages=False,
-            exact_geometry_mode=False,
-            safe_travel_lift=True,
-            strict_one_to_one=False,
-        )
+        with _backend_override_context(_kompas_text_join_backend_overrides(reference_pdf)):
+            ok, msg, logs = _bridge_run_preview(
+                ctx=ctx,
+                input_path=ascii_pdf,
+                sheet=SheetConfig(sheet_format="a4", anchor="center"),
+                tool_mode="pen",
+                render_mode="drawing",
+                quality_profile="high",
+                force_text_to_path=True,
+                handwriting_enabled=False,
+                handwriting_font="Marck Script",
+                handwriting_formula_font="Times New Roman",
+                image_contours_mode="off",
+                source_page_index=1,
+                source_all_pages=False,
+                exact_geometry_mode=False,
+                safe_travel_lift=True,
+                strict_one_to_one=False,
+            )
         if not ok:
             return {
                 "variant": variant_name,
@@ -5717,24 +5716,25 @@ def _prepare_a3_pass(
         if int(pass_index) == 2:
             pass_notes.append("pass_02_rotated_180_for_sheet_flip=True")
         ctx = _ctx(f"preview-{time.time_ns()}")
-        ok, msg, logs = _bridge_run_preview(
-            ctx=ctx,
-            input_path=ascii_pdf,
-            sheet=SheetConfig(sheet_format="a3", anchor="lower_left", pass_cols=2, pass_rows=1, pass_col=pass_index, pass_row=1),
-            tool_mode="pen",
-            render_mode="drawing",
-            quality_profile="high",
-            force_text_to_path=True,
-            handwriting_enabled=False,
-            handwriting_font="Marck Script",
-            handwriting_formula_font="Times New Roman",
-            image_contours_mode="off",
-            source_page_index=1,
-            source_all_pages=False,
-            exact_geometry_mode=False,
-            safe_travel_lift=True,
-            strict_one_to_one=False,
-        )
+        with _backend_override_context(_kompas_text_join_backend_overrides(source_pdf)):
+            ok, msg, logs = _bridge_run_preview(
+                ctx=ctx,
+                input_path=ascii_pdf,
+                sheet=SheetConfig(sheet_format="a3", anchor="lower_left", pass_cols=2, pass_rows=1, pass_col=pass_index, pass_row=1),
+                tool_mode="pen",
+                render_mode="drawing",
+                quality_profile="high",
+                force_text_to_path=True,
+                handwriting_enabled=False,
+                handwriting_font="Marck Script",
+                handwriting_formula_font="Times New Roman",
+                image_contours_mode="off",
+                source_page_index=1,
+                source_all_pages=False,
+                exact_geometry_mode=False,
+                safe_travel_lift=True,
+                strict_one_to_one=False,
+            )
         if not ok:
             return {
                 "item": f"pass_{pass_index}",

@@ -12,19 +12,17 @@ Source bounds: x(20.489, 205.486) y(5.503, 292.523)
 Fit to work area: scale=0.9730, translate=(-19.936,-299.989), from (20.489, 5.503)-(205.486, 292.523)
 Collinear overlap dedup: dropped 102/1517 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
 Reorder: source order preserved (830 polylines).
-Technical text join: merged 506 short gaps (ordered=346, nearest=160, gap<=1.10 mm, dy<=1.35 mm), polylines 830 -> 324
-Polyline optimization: 830 -> 324
 Segment counts: source=1517, fitted=1517, clipped=1517
 Drawable segments after clip: 1517 (100.0% of source)
 Prepared bounds: x(0.000, 180.000) y(-294.634, -15.366)
-Estimated draw length: 4.68 m
+Estimated draw length: 4.43 m
 Applying pen-up / pen-down ...
-G-code stats: lines=2425, draw=2089, travel=322, bounds=0.000..180.000 x, -294.634..0.000 y
-Preflight: ok: lines=2425, draw=2089, travel=322, ratio=0.15
-Saved file stats: lines=2425, draw=2089, travel=322, bounds=0.000..180.000 x, -294.634..0.000 y
-Saved: C:\plotter_pdf\_tmp\latest_preview_preview-1777067632993116400.nc
-Preview SVG: C:\plotter_pdf\_tmp\latest_preview_preview-1777067632993116400_vector.svg
-Preview PDF: C:\plotter_pdf\_tmp\latest_preview_preview-1777067632993116400_vector.pdf
+G-code stats: lines=3834, draw=3014, travel=806, bounds=0.000..180.000 x, -294.634..0.000 y
+Preflight: ok: lines=3834, draw=3014, travel=806, ratio=0.27
+Saved file stats: lines=3834, draw=3014, travel=806, bounds=0.000..180.000 x, -294.634..0.000 y
+Saved: C:\plotter_pdf\_tmp\latest_preview_preview-1777141279786445500.nc
+Preview SVG: C:\plotter_pdf\_tmp\latest_preview_preview-1777141279786445500_vector.svg
+Preview PDF: C:\plotter_pdf\_tmp\latest_preview_preview-1777141279786445500_vector.pdf
 Sheet preview centered on compact source page bbox: ref=(0.353,0.353)..(210.457,297.670) mm
 Sheet preview placed on source page: offset=(15.537,304.056) mm
 Fixed-canvas preview centered on page: page=180.000x280.000 mm, offset=(0.000,295.000) mm

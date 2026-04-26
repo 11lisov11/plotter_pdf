@@ -51,23 +51,29 @@ python main.py --help
 ## Photo to plotter
 
 Standalone photo pipeline prepares a normal `jpg/png/webp` image as a plotter package without touching
-PDF drawing packages. It generates `photo_plot.gcode`, `photo_plot.nc`, `photo_preview.svg`,
-`photo_preview.pdf`, `report.json`, and `summary.csv`.
+PDF drawing packages. It generates `photo_plot.gcode`, `photo_plot.nc`, route previews
+`photo_preview.svg/pdf`, exact final G-code previews `photo_gcode_preview.svg/pdf`, `report.json`,
+and `summary.csv`.
 
 ```powershell
-python scripts\prepare_photo_plot_package.py path\to\photo.jpg --out-dir _plotter_jobs\photo_pack --mode hatch
+python scripts\prepare_photo_plot_package.py path\to\photo.jpg --out-dir _plotter_jobs\photo_pack --mode portrait
 ```
 
-Modes:
+Modes (`portrait` is the default):
 
 - `hatch`: tonal cross-hatching with multiple darkness levels and optional edge detail.
-- `scribble`: continuous wavy scanlines with fewer pen lifts, useful for portraits and fast tests.
+- `scribble`: masked wavy scanlines over dark photo regions, useful for portraits and fast tests.
+- `portrait`: artist-like short strokes following local photo contours, for less robotic portraits.
 
 Useful tuning examples:
 
 ```powershell
 python scripts\prepare_photo_plot_package.py photo.jpg --mode hatch --hatch-spacing-mm 1.0 --max-side-px 900
-python scripts\prepare_photo_plot_package.py photo.jpg --mode scribble --scribble-line-spacing-mm 1.2 --scribble-amplitude-mm 1.8
+python scripts\prepare_photo_plot_package.py photo.jpg --mode hatch --edge-min-length-mm 5.0
+python scripts\prepare_photo_plot_package.py photo.jpg --mode scribble --scribble-line-spacing-mm 1.2 --scribble-amplitude-mm 1.8 --scribble-threshold 0.18
+python scripts\prepare_photo_plot_package.py photo.jpg --mode portrait --portrait-density 1.15 --portrait-stroke-length-mm 8.0
+python scripts\prepare_photo_plot_package.py photo.jpg --mode portrait --portrait-sampling grid
+python scripts\prepare_photo_plot_package.py photo.jpg --mode portrait --no-portrait-cleanup
 ```
 
 The script only creates digital artifacts. It does not send anything to COM/GRBL; use the existing sender
