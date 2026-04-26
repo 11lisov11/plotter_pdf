@@ -170,6 +170,17 @@ PEN_FAST_Z_FEED_UP = 8000.0
 PEN_FAST_Z_FEED_UP_FINAL = 8000.0
 PEN_FAST_Z_SOFT_DOWN_MM = 0.0
 PEN_FAST_Z_SOFT_UP_MM = 0.0
+# Fast-but-bounded profile for technical pen drawings. This keeps the pen cycle
+# responsive without the F8000 Z spikes that caused unsafe starts/stops.
+TECHNICAL_PEN_Z_PROFILE_ENABLED = True
+TECHNICAL_PEN_Z_DELAY_DOWN = 0.02
+TECHNICAL_PEN_Z_DELAY_UP = 0.02
+TECHNICAL_PEN_Z_FEED_DOWN_APPROACH = 2500.0
+TECHNICAL_PEN_Z_FEED_DOWN_TOUCH = 1800.0
+TECHNICAL_PEN_Z_FEED_UP = 2500.0
+TECHNICAL_PEN_Z_FEED_UP_FINAL = 1800.0
+TECHNICAL_PEN_Z_SOFT_DOWN_MM = 0.0
+TECHNICAL_PEN_Z_SOFT_UP_MM = 0.0
 # Be explicit: if user passes Z params via CLI, do not force pen-fast profile.
 Z_PROFILE_CLI_OVERRIDE = False
 # Inter-path lift distance from Z-down towards Z-up.
@@ -8747,15 +8758,25 @@ def apply_penlift(
     z_soft_down_eff = float(Z_SOFT_DOWN_MM)
     z_soft_up_eff = float(Z_SOFT_UP_MM)
 
-    if TOOL_MODE == "pen" and PEN_FAST_Z_PROFILE_ENABLED and bool(handwriting_mode) and not Z_PROFILE_CLI_OVERRIDE:
-        z_delay_down_eff = float(PEN_FAST_Z_DELAY_DOWN)
-        z_delay_up_eff = float(PEN_FAST_Z_DELAY_UP)
-        z_feed_down_approach_eff = float(PEN_FAST_Z_FEED_DOWN_APPROACH)
-        z_feed_down_touch_eff = float(PEN_FAST_Z_FEED_DOWN_TOUCH)
-        z_feed_up_eff = float(PEN_FAST_Z_FEED_UP)
-        z_feed_up_final_eff = float(PEN_FAST_Z_FEED_UP_FINAL)
-        z_soft_down_eff = float(PEN_FAST_Z_SOFT_DOWN_MM)
-        z_soft_up_eff = float(PEN_FAST_Z_SOFT_UP_MM)
+    if TOOL_MODE == "pen" and not Z_PROFILE_CLI_OVERRIDE:
+        if PEN_FAST_Z_PROFILE_ENABLED and bool(handwriting_mode):
+            z_delay_down_eff = float(PEN_FAST_Z_DELAY_DOWN)
+            z_delay_up_eff = float(PEN_FAST_Z_DELAY_UP)
+            z_feed_down_approach_eff = float(PEN_FAST_Z_FEED_DOWN_APPROACH)
+            z_feed_down_touch_eff = float(PEN_FAST_Z_FEED_DOWN_TOUCH)
+            z_feed_up_eff = float(PEN_FAST_Z_FEED_UP)
+            z_feed_up_final_eff = float(PEN_FAST_Z_FEED_UP_FINAL)
+            z_soft_down_eff = float(PEN_FAST_Z_SOFT_DOWN_MM)
+            z_soft_up_eff = float(PEN_FAST_Z_SOFT_UP_MM)
+        elif TECHNICAL_PEN_Z_PROFILE_ENABLED:
+            z_delay_down_eff = float(TECHNICAL_PEN_Z_DELAY_DOWN)
+            z_delay_up_eff = float(TECHNICAL_PEN_Z_DELAY_UP)
+            z_feed_down_approach_eff = float(TECHNICAL_PEN_Z_FEED_DOWN_APPROACH)
+            z_feed_down_touch_eff = float(TECHNICAL_PEN_Z_FEED_DOWN_TOUCH)
+            z_feed_up_eff = float(TECHNICAL_PEN_Z_FEED_UP)
+            z_feed_up_final_eff = float(TECHNICAL_PEN_Z_FEED_UP_FINAL)
+            z_soft_down_eff = float(TECHNICAL_PEN_Z_SOFT_DOWN_MM)
+            z_soft_up_eff = float(TECHNICAL_PEN_Z_SOFT_UP_MM)
 
     travel_lift_mm = float(Z_TRAVEL_LIFT_MM)
     if force_full_lift or SAFE_PEN_TRAVEL_UP:

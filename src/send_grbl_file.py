@@ -50,7 +50,7 @@ def _safe_print(*args, **kwargs) -> None:
 
 
 def usage():
-    _safe_print('Usage: python send_grbl_file.py COMx 115200 path\\to\\file.nc [--release] [--sleep]')
+    _safe_print('Usage: python send_grbl_file.py COMx 115200 path\\to\\file.nc [--hold] [--sleep]')
 
 
 def _format_duration_hms(seconds: float) -> str:
@@ -147,7 +147,21 @@ def _clean_gcode_lines(text: str, *, allow_motor_release: bool = False) -> list[
     return out
 
 
-def release_axes(ser, *, sleep: bool = False, release: bool = False, wait: bool = True):
+def release_axes(
+    ser,
+    *,
+    sleep: bool = False,
+    release: bool = True,
+    hold: bool = False,
+    home: bool = True,
+    reset_queue: bool = False,
+    wait: bool = True,
+    home_x: float = 0.0,
+    home_y: float = 0.0,
+    z_up: float = 0.0,
+    z_feed: float = 2500.0,
+    travel_feed: float = 15000.0,
+):
     def _send_no_throw(cmd: str):
         try:
             ser.write((cmd + '\n').encode('ascii'))
@@ -175,14 +189,33 @@ def release_axes(ser, *, sleep: bool = False, release: bool = False, wait: bool 
         except Exception:
             pass
 
-    # Lift pen (best-effort), stop any spindle/servo.
+    if reset_queue:
+        try:
+            ser.write(b"\x18")  # Ctrl-X: stop motion and clear GRBL planner queue.
+            ser.flush()
+            time.sleep(0.8)
+            try:
+                ser.reset_input_buffer()
+                ser.reset_output_buffer()
+            except Exception:
+                pass
+        except Exception:
+            pass
+
+    # Re-enable motors before lifting/homing. Releasing happens only after the
+    # head is parked at home with the pen safely raised.
+    _send_no_throw("$X")
+    _send_no_throw("$1=255")
     _send_no_throw("G90")
-    _send_no_throw("G1 Z0 F800")
+    _send_no_throw(f"G1 Z{float(z_up):.4f} F{float(z_feed):.1f}")
     _send_no_throw("G4 P0.05")
     _send_no_throw("M5")
-    if release or sleep:
-        # GRBL-friendly motor release. Use only when explicitly requested: releasing
-        # Z lets the pen back-drive down, so the next job can drag to its first point.
+    if home:
+        _send_no_throw(f"G1 X{float(home_x):.4f} Y{float(home_y):.4f} F{float(travel_feed):.1f}")
+        _send_no_throw(f"G1 Z{float(z_up):.4f} F{float(z_feed):.1f}")
+        _send_no_throw("G4 P0.05")
+        _send_no_throw("M5")
+    if sleep or (release and not hold):
         _send_no_throw("$1=0")
     else:
         _send_no_throw("$1=255")
@@ -193,11 +226,11 @@ def release_axes(ser, *, sleep: bool = False, release: bool = False, wait: bool 
     if wait:
         time.sleep(0.1)
     if sleep:
-        _safe_print("Motors released ($1=0, $SLP).")
-    elif release:
-        _safe_print("Motors released ($1=0).")
+        _safe_print("Returned home; pen lifted; motors released ($1=0, $SLP).")
+    elif release and not hold:
+        _safe_print("Returned home; pen lifted; motors released ($1=0).")
     else:
-        _safe_print("Motors held ($1=255); pen lifted.")
+        _safe_print("Returned home; pen lifted; motors held ($1=255).")
 
 
 def _parse_status_state(line: str) -> str:
@@ -350,7 +383,8 @@ def main(argv):
     parser.add_argument("port", nargs="?")
     parser.add_argument("baud", nargs="?")
     parser.add_argument("file", nargs="?")
-    parser.add_argument("--release", action="store_true", help="Release steppers at end. Not recommended before another plot.")
+    parser.add_argument("--release", action="store_true", help="Deprecated: release is now the default after homing.")
+    parser.add_argument("--hold", action="store_true", help="Keep steppers energized after homing instead of releasing them.")
     parser.add_argument("--sleep", action="store_true", help="Send $SLP at end (fully disable steppers; requires reset to wake).")
     parser.add_argument("--rx-buffer", type=int, default=128, help="GRBL RX buffer size in bytes (default 128)")
     parser.add_argument("--verbose", action="store_true", help="Print non-ok chatter (status, banners) while streaming")
@@ -359,7 +393,8 @@ def main(argv):
 
     if ns.help or not ns.port or not ns.baud or not ns.file:
         usage()
-        _safe_print("  --release Optional: release steppers after lifting pen. Can let Z drop before next job.")
+        _safe_print("  --hold    Optional: keep steppers energized after homing.")
+        _safe_print("  --release Deprecated: release is now the default after homing.")
         _safe_print("  --sleep   Optional: put GRBL into Sleep at end to guarantee motors are off/cool.")
         return 2
 
@@ -413,10 +448,17 @@ def main(argv):
         _safe_print('Execution interrupted by user.')
         return_code = 1
     finally:
-        # Always lift/stop safely. Keep steppers energized by default so Z cannot
-        # back-drive down before the next job starts.
+        # Always clear/park safely. On interruption we soft-reset first so queued
+        # pen-down moves cannot continue, then lift, home, lift again, and only
+        # then release motors by default.
         if ser is not None:
-            release_axes(ser, sleep=bool(ns.sleep), release=bool(ns.release or ns.sleep))
+            release_axes(
+                ser,
+                sleep=bool(ns.sleep),
+                release=True,
+                hold=bool(ns.hold),
+                reset_queue=(return_code != 0),
+            )
             ser.close()
     return return_code
 

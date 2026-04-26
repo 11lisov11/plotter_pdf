@@ -141,7 +141,7 @@ def motor_release_issue(path: Path) -> dict[str, Any] | None:
     return None
 
 
-def unsafe_z_feed_issue(path: Path, *, max_feed: float = 2000.0) -> dict[str, Any] | None:
+def unsafe_z_feed_issue(path: Path, *, max_feed: float = 3500.0) -> dict[str, Any] | None:
     z_re = re.compile(r"\bZ(-?\d+(?:\.\d+)?)", re.IGNORECASE)
     f_re = re.compile(r"\bF(-?\d+(?:\.\d+)?)", re.IGNORECASE)
     xy_re = re.compile(r"\b[XY](-?\d+(?:\.\d+)?)", re.IGNORECASE)
