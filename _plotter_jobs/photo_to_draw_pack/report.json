@@ -22,18 +22,18 @@
   ],
   "route_bounds": [
     5.0,
-    174.961,
-    -252.794,
+    174.984,
+    -253.29,
     -26.667
   ],
   "stats": {
-    "polyline_count": 1072,
-    "point_count": 78125,
-    "draw_length_mm": 51445.872,
+    "polyline_count": 1501,
+    "point_count": 44333,
+    "draw_length_mm": 22405.742,
     "bounds": [
       5.0,
-      174.961,
-      -252.794,
+      174.984,
+      -253.29,
       -26.667
     ],
     "config": {
@@ -56,14 +56,21 @@
         -30.0,
         30.0
       ],
-      "sketch_stroke_spacing_mm": 2.8,
-      "sketch_stroke_length_mm": 8.5,
-      "sketch_threshold": 0.2,
-      "sketch_density": 0.22,
-      "sketch_min_center_distance_mm": 2.2,
-      "sketch_tone_line_spacing_mm": 1.0,
+      "sketch_stroke_spacing_mm": 2.55,
+      "sketch_stroke_length_mm": 9.5,
+      "sketch_threshold": 0.18,
+      "sketch_density": 0.24,
+      "sketch_min_center_distance_mm": 2.15,
+      "sketch_tone_line_spacing_mm": 0.0,
       "sketch_tone_step_mm": 0.5,
       "sketch_tone_amplitude_mm": 1.25,
+      "sketch_tonal_contours": true,
+      "sketch_contour_levels": [
+        0.24,
+        0.38,
+        0.54,
+        0.7
+      ],
       "sketch_pencil_edges": false,
       "sketch_pencil_sigma_s": 60,
       "sketch_pencil_sigma_r": 0.07,
@@ -73,7 +80,7 @@
       "edge_enabled": true,
       "edge_low_threshold": 70,
       "edge_high_threshold": 170,
-      "edge_min_length_mm": 22.0,
+      "edge_min_length_mm": 20.0,
       "scribble_line_spacing_mm": 1.25,
       "scribble_step_mm": 0.75,
       "scribble_amplitude_mm": 1.6,
@@ -107,7 +114,7 @@
   },
   "preflight": {
     "ok": true,
-    "message": "ok: lines=11363, draw=10278, travel=1071, ratio=0.10"
+    "message": "ok: lines=8380, draw=6864, travel=1502, ratio=0.22"
   },
   "references": [
     "https://github.com/LingDong-/linedraw",

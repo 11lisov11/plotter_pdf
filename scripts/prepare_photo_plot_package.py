@@ -399,6 +399,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--sketch-tone-line-spacing-mm", type=float, default=PhotoPlotConfig().sketch_tone_line_spacing_mm)
     parser.add_argument("--sketch-tone-step-mm", type=float, default=PhotoPlotConfig().sketch_tone_step_mm)
     parser.add_argument("--sketch-tone-amplitude-mm", type=float, default=PhotoPlotConfig().sketch_tone_amplitude_mm)
+    parser.add_argument("--no-sketch-tonal-contours", action="store_true", help="Disable soft tonal contour lines in sketch mode.")
+    parser.add_argument("--sketch-contour-levels", default=None, help="Comma-separated sketch contour thresholds, e.g. 0.16,0.28,0.42,0.58")
     parser.add_argument("--sketch-pencil-edges", action="store_true", help="Use OpenCV pencilSketch as the edge-detail source.")
     parser.add_argument("--min-segment-mm", type=float, default=0.8)
     parser.add_argument("--merge-gap-mm", type=float, default=0.55)
@@ -454,6 +456,8 @@ def main(argv: list[str] | None = None) -> int:
         sketch_tone_line_spacing_mm=args.sketch_tone_line_spacing_mm,
         sketch_tone_step_mm=args.sketch_tone_step_mm,
         sketch_tone_amplitude_mm=args.sketch_tone_amplitude_mm,
+        sketch_tonal_contours=not bool(args.no_sketch_tonal_contours),
+        sketch_contour_levels=_parse_csv_floats(args.sketch_contour_levels, PhotoPlotConfig().sketch_contour_levels),
         sketch_pencil_edges=bool(args.sketch_pencil_edges),
         min_segment_mm=args.min_segment_mm,
         merge_gap_mm=args.merge_gap_mm,

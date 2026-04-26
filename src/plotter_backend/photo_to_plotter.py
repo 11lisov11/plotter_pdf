@@ -37,14 +37,16 @@ class PhotoPlotConfig:
     hatch_spacing_mm: float = 2.2
     hatch_levels: tuple[float, ...] = (0.34, 0.58, 0.78)
     hatch_angles_deg: tuple[float, ...] = (0.0, -30.0, 30.0)
-    sketch_stroke_spacing_mm: float = 2.8
-    sketch_stroke_length_mm: float = 8.5
-    sketch_threshold: float = 0.20
-    sketch_density: float = 0.22
-    sketch_min_center_distance_mm: float = 2.2
-    sketch_tone_line_spacing_mm: float = 1.0
+    sketch_stroke_spacing_mm: float = 2.55
+    sketch_stroke_length_mm: float = 9.5
+    sketch_threshold: float = 0.18
+    sketch_density: float = 0.24
+    sketch_min_center_distance_mm: float = 2.15
+    sketch_tone_line_spacing_mm: float = 0.0
     sketch_tone_step_mm: float = 0.5
     sketch_tone_amplitude_mm: float = 1.25
+    sketch_tonal_contours: bool = True
+    sketch_contour_levels: tuple[float, ...] = (0.24, 0.38, 0.54, 0.70)
     sketch_pencil_edges: bool = False
     sketch_pencil_sigma_s: int = 60
     sketch_pencil_sigma_r: float = 0.07
@@ -54,7 +56,7 @@ class PhotoPlotConfig:
     edge_enabled: bool = True
     edge_low_threshold: int = 70
     edge_high_threshold: int = 170
-    edge_min_length_mm: float = 16.0
+    edge_min_length_mm: float = 20.0
     scribble_line_spacing_mm: float = 1.25
     scribble_step_mm: float = 0.75
     scribble_amplitude_mm: float = 1.6
@@ -340,60 +342,107 @@ def _clean_tonal_mask(mask: np.ndarray, scale_mm_per_px: float, *, level_index: 
     return keep.astype(bool)
 
 
+def _generate_tonal_contours_px(darkness: np.ndarray, config: PhotoPlotConfig, scale_mm_per_px: float) -> list[list[Point]]:
+    if not bool(config.sketch_tonal_contours):
+        return []
+    levels = tuple(float(v) for v in config.sketch_contour_levels if 0.0 < float(v) < 1.0)
+    if not levels:
+        return []
+    smooth = cv2.GaussianBlur(darkness.astype(np.float32), (0, 0), sigmaX=1.6)
+    min_len_base_px = max(4.0, float(config.edge_min_length_mm) * 0.65 / max(1e-9, scale_mm_per_px))
+    out: list[list[Point]] = []
+    for idx, level in enumerate(levels):
+        mask = _clean_tonal_mask(smooth >= level, scale_mm_per_px, level_index=idx)
+        raw = mask.astype(np.uint8) * 255
+        contours, _hier = cv2.findContours(raw, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
+        min_len_px = min_len_base_px * (1.0 + 0.10 * idx)
+        for contour in contours:
+            if len(contour) < 5:
+                continue
+            x, y, cw, ch = cv2.boundingRect(contour)
+            touches_border = x <= 1 or y <= 1 or (x + cw) >= raw.shape[1] - 1 or (y + ch) >= raw.shape[0] - 1
+            if touches_border and (cw >= raw.shape[1] * 0.70 or ch >= raw.shape[0] * 0.70):
+                continue
+            approx = cv2.approxPolyDP(contour, epsilon=0.75 + 0.10 * idx, closed=True)
+            pts = [(float(p[0][0]), float(p[0][1])) for p in approx]
+            if len(pts) >= 3:
+                first = pts[0]
+                last = pts[-1]
+                if math.hypot(first[0] - last[0], first[1] - last[1]) > 1.5:
+                    pts.append(first)
+            pts = _chaikin_smooth_open(pts, iterations=1)
+            if len(pts) >= 2 and _polyline_length(pts) >= min_len_px:
+                out.append(pts)
+    return out
+
+
 def _generate_sketch_px(darkness: np.ndarray, config: PhotoPlotConfig, scale_mm_per_px: float) -> list[list[Point]]:
     threshold = max(0.0, min(1.0, float(config.sketch_threshold)))
-    spacing_px = max(2.0, float(config.sketch_stroke_spacing_mm) / max(1e-9, scale_mm_per_px))
-    length_px = max(2.0, float(config.sketch_stroke_length_mm) / max(1e-9, scale_mm_per_px))
     step_px = max(1.0, float(config.scribble_step_mm) / max(1e-9, scale_mm_per_px))
     jitter_px = max(0.0, float(config.portrait_jitter_mm) / max(1e-9, scale_mm_per_px))
     min_segment_px = max(1.0, float(config.min_segment_mm) / max(1e-9, scale_mm_per_px))
-    min_distance_px = max(0.5, float(config.sketch_min_center_distance_mm) / max(1e-9, scale_mm_per_px))
-    density_scale = max(0.05, float(config.sketch_density))
-
     mask = _clean_tonal_mask(darkness >= threshold, scale_mm_per_px, level_index=1)
     drawing_darkness = np.where(mask, darkness, 0.0).astype(np.float32)
-    tone_cfg = replace(
-        config,
-        scribble_line_spacing_mm=max(0.45, float(config.sketch_tone_line_spacing_mm)),
-        scribble_step_mm=max(0.25, float(config.sketch_tone_step_mm)),
-        scribble_amplitude_mm=max(0.1, float(config.sketch_tone_amplitude_mm)),
-        scribble_threshold=threshold,
-    )
-    out = _generate_scribble_px(drawing_darkness, tone_cfg, scale_mm_per_px)
-
-    smooth = cv2.GaussianBlur(drawing_darkness, (0, 0), sigmaX=1.2)
-    grad_x = cv2.Sobel(smooth, cv2.CV_32F, 1, 0, ksize=3)
-    grad_y = cv2.Sobel(smooth, cv2.CV_32F, 0, 1, ksize=3)
-    rng = np.random.default_rng(int(config.portrait_seed))
-
-    centers = _blue_noise_portrait_centers(
-        drawing_darkness,
-        spacing_px=spacing_px,
-        jitter_px=jitter_px,
-        threshold=threshold,
-        density_scale=density_scale,
-        min_distance_px=min_distance_px,
-        rng=rng,
-    )
-
-    for sx, sy, dark in centers:
-        local_length = length_px * (0.45 + 0.85 * min(1.0, float(dark)))
-        fallback_angle = (
-            math.sin((sx + float(config.portrait_seed) * 0.017) * 0.047)
-            + math.cos((sy - float(config.portrait_seed) * 0.011) * 0.039)
-        ) * 0.55
-        stroke = _trace_portrait_stroke(
-            drawing_darkness,
-            grad_x,
-            grad_y,
-            center=(sx, sy),
-            length_px=local_length,
-            step_px=step_px,
-            threshold=threshold,
-            fallback_angle=fallback_angle,
+    out: list[list[Point]] = _generate_tonal_contours_px(drawing_darkness, config, scale_mm_per_px)
+    if float(config.sketch_tone_line_spacing_mm) > 0.0:
+        tone_cfg = replace(
+            config,
+            scribble_line_spacing_mm=max(0.45, float(config.sketch_tone_line_spacing_mm)),
+            scribble_step_mm=max(0.25, float(config.sketch_tone_step_mm)),
+            scribble_amplitude_mm=max(0.1, float(config.sketch_tone_amplitude_mm)),
+            scribble_threshold=threshold,
         )
-        if len(stroke) >= 2 and _polyline_length(stroke) >= min_segment_px:
-            out.append(stroke)
+        out.extend(_generate_scribble_px(drawing_darkness, tone_cfg, scale_mm_per_px))
+
+    base_spacing_mm = max(0.6, float(config.sketch_stroke_spacing_mm))
+    base_length_mm = max(1.0, float(config.sketch_stroke_length_mm))
+    base_density = max(0.05, float(config.sketch_density))
+    base_min_distance_mm = max(0.3, float(config.sketch_min_center_distance_mm))
+    layers = (
+        (threshold, base_spacing_mm, base_length_mm, base_density, base_min_distance_mm, 0.0, 0),
+        (max(0.30, threshold + 0.14), base_spacing_mm * 0.88, base_length_mm * 0.92, base_density * 0.42, base_min_distance_mm * 0.90, math.radians(34.0), 173),
+        (max(0.48, threshold + 0.30), base_spacing_mm * 0.78, base_length_mm * 0.82, base_density * 0.30, base_min_distance_mm * 0.82, math.radians(-40.0), 349),
+    )
+
+    for idx, (level, spacing_mm, length_mm, density, min_distance_mm, angle_bias, seed_offset) in enumerate(layers):
+        layer_mask = _clean_tonal_mask(drawing_darkness >= level, scale_mm_per_px, level_index=idx + 1)
+        layer_darkness = np.where(layer_mask, drawing_darkness, 0.0).astype(np.float32)
+        if not np.any(layer_darkness >= level):
+            continue
+        # Use a wider structure field for sketch mode. Fine grass/noise gradients
+        # make random-looking strokes; broad gradients produce hand-like shading.
+        smooth = cv2.GaussianBlur(layer_darkness, (0, 0), sigmaX=max(1.5, 3.2 - 0.55 * idx))
+        grad_x = cv2.Sobel(smooth, cv2.CV_32F, 1, 0, ksize=3)
+        grad_y = cv2.Sobel(smooth, cv2.CV_32F, 0, 1, ksize=3)
+        rng = np.random.default_rng(int(config.portrait_seed) + seed_offset)
+        centers = _grid_portrait_centers(
+            layer_darkness,
+            spacing_px=max(2.0, max(spacing_mm, min_distance_mm * 0.85) / max(1e-9, scale_mm_per_px)),
+            jitter_px=jitter_px * 0.45,
+            threshold=level,
+            density_scale=density,
+            rng=rng,
+        )
+        length_px = max(2.0, length_mm / max(1e-9, scale_mm_per_px))
+        for sx, sy, dark in centers:
+            local_length = length_px * (0.45 + 0.85 * min(1.0, float(dark)))
+            fallback_angle = (
+                math.sin((sx + float(config.portrait_seed + seed_offset) * 0.017) * 0.047)
+                + math.cos((sy - float(config.portrait_seed + seed_offset) * 0.011) * 0.039)
+            ) * 0.55
+            stroke = _trace_portrait_stroke(
+                layer_darkness,
+                grad_x,
+                grad_y,
+                center=(sx, sy),
+                length_px=local_length,
+                step_px=step_px,
+                threshold=level,
+                fallback_angle=fallback_angle,
+                angle_bias_rad=angle_bias,
+            )
+            if len(stroke) >= 2 and _polyline_length(stroke) >= min_segment_px:
+                out.append(_chaikin_smooth_open(stroke, iterations=1))
     return out
 
 
@@ -478,6 +527,14 @@ def _sample_tangent(
     return (-gy / mag, gx / mag)
 
 
+def _rotate_vector(dx: float, dy: float, angle_rad: float) -> Point:
+    if abs(angle_rad) <= 1e-9:
+        return (dx, dy)
+    ca = math.cos(angle_rad)
+    sa = math.sin(angle_rad)
+    return (dx * ca - dy * sa, dx * sa + dy * ca)
+
+
 def _trace_portrait_stroke(
     darkness: np.ndarray,
     grad_x: np.ndarray,
@@ -488,6 +545,7 @@ def _trace_portrait_stroke(
     step_px: float,
     threshold: float,
     fallback_angle: float,
+    angle_bias_rad: float = 0.0,
 ) -> list[Point]:
     h, w = darkness.shape[:2]
     cx, cy = center
@@ -502,11 +560,13 @@ def _trace_portrait_stroke(
         pts: list[Point] = []
         x, y = cx, cy
         dx, dy = _sample_tangent(grad_x, grad_y, x, y, fallback_angle)
+        dx, dy = _rotate_vector(dx, dy, angle_bias_rad)
         dx *= sign
         dy *= sign
         traveled = 0.0
         while traveled < length_px * 0.5:
             tx, ty = _sample_tangent(grad_x, grad_y, x, y, fallback_angle)
+            tx, ty = _rotate_vector(tx, ty, angle_bias_rad)
             tx *= sign
             ty *= sign
             # Keep tangent orientation continuous; otherwise Sobel sign flips create zig-zag jumps.
