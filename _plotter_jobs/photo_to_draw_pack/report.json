@@ -22,18 +22,18 @@
   ],
   "route_bounds": [
     5.0,
-    174.984,
-    -253.29,
+    174.989,
+    -253.307,
     -26.667
   ],
   "stats": {
-    "polyline_count": 1501,
-    "point_count": 44333,
-    "draw_length_mm": 22405.742,
+    "polyline_count": 1679,
+    "point_count": 51340,
+    "draw_length_mm": 24895.306,
     "bounds": [
       5.0,
-      174.984,
-      -253.29,
+      174.989,
+      -253.307,
       -26.667
     ],
     "config": {
@@ -59,7 +59,8 @@
       "sketch_stroke_spacing_mm": 2.55,
       "sketch_stroke_length_mm": 9.5,
       "sketch_threshold": 0.18,
-      "sketch_density": 0.24,
+      "sketch_density": 0.42,
+      "sketch_density_gamma": 1.35,
       "sketch_min_center_distance_mm": 2.15,
       "sketch_tone_line_spacing_mm": 0.0,
       "sketch_tone_step_mm": 0.5,
@@ -114,7 +115,7 @@
   },
   "preflight": {
     "ok": true,
-    "message": "ok: lines=8380, draw=6864, travel=1502, ratio=0.22"
+    "message": "ok: lines=9094, draw=7401, travel=1679, ratio=0.23"
   },
   "references": [
     "https://github.com/LingDong-/linedraw",

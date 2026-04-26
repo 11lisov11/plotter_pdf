@@ -155,7 +155,7 @@ def test_generate_sketch_photo_plot_preserves_readable_large_tonal_regions(tmp_p
 
     assert result.mode == "sketch"
     assert result.polylines
-    assert result.stats["polyline_count"] < 400
+    assert result.stats["polyline_count"] < 800
     assert result.stats["draw_length_mm"] > 100.0
 
 

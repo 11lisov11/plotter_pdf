@@ -40,7 +40,8 @@ class PhotoPlotConfig:
     sketch_stroke_spacing_mm: float = 2.55
     sketch_stroke_length_mm: float = 9.5
     sketch_threshold: float = 0.18
-    sketch_density: float = 0.24
+    sketch_density: float = 0.42
+    sketch_density_gamma: float = 1.35
     sketch_min_center_distance_mm: float = 2.15
     sketch_tone_line_spacing_mm: float = 0.0
     sketch_tone_step_mm: float = 0.5
@@ -397,11 +398,13 @@ def _generate_sketch_px(darkness: np.ndarray, config: PhotoPlotConfig, scale_mm_
     base_spacing_mm = max(0.6, float(config.sketch_stroke_spacing_mm))
     base_length_mm = max(1.0, float(config.sketch_stroke_length_mm))
     base_density = max(0.05, float(config.sketch_density))
+    density_gamma = max(0.25, float(config.sketch_density_gamma))
     base_min_distance_mm = max(0.3, float(config.sketch_min_center_distance_mm))
     layers = (
         (threshold, base_spacing_mm, base_length_mm, base_density, base_min_distance_mm, 0.0, 0),
         (max(0.30, threshold + 0.14), base_spacing_mm * 0.88, base_length_mm * 0.92, base_density * 0.42, base_min_distance_mm * 0.90, math.radians(34.0), 173),
         (max(0.48, threshold + 0.30), base_spacing_mm * 0.78, base_length_mm * 0.82, base_density * 0.30, base_min_distance_mm * 0.82, math.radians(-40.0), 349),
+        (max(0.66, threshold + 0.46), base_spacing_mm * 0.68, base_length_mm * 0.68, base_density * 0.22, base_min_distance_mm * 0.72, math.radians(70.0), 521),
     )
 
     for idx, (level, spacing_mm, length_mm, density, min_distance_mm, angle_bias, seed_offset) in enumerate(layers):
@@ -415,12 +418,13 @@ def _generate_sketch_px(darkness: np.ndarray, config: PhotoPlotConfig, scale_mm_
         grad_x = cv2.Sobel(smooth, cv2.CV_32F, 1, 0, ksize=3)
         grad_y = cv2.Sobel(smooth, cv2.CV_32F, 0, 1, ksize=3)
         rng = np.random.default_rng(int(config.portrait_seed) + seed_offset)
-        centers = _grid_portrait_centers(
+        centers = _grid_sketch_centers(
             layer_darkness,
             spacing_px=max(2.0, max(spacing_mm, min_distance_mm * 0.85) / max(1e-9, scale_mm_per_px)),
             jitter_px=jitter_px * 0.45,
             threshold=level,
             density_scale=density,
+            density_gamma=density_gamma,
             rng=rng,
         )
         length_px = max(2.0, length_mm / max(1e-9, scale_mm_per_px))
@@ -625,6 +629,44 @@ def _grid_portrait_centers(
             sy = max(0.0, min(float(h - 1), y + jy))
             dark = float(darkness[int(round(sy)), int(round(sx))])
             if dark >= threshold and rng.random() <= _portrait_keep_probability(dark, threshold, density_scale):
+                centers.append((sx, sy, dark))
+            x += spacing_px
+        y += spacing_px
+        row += 1
+    return centers
+
+
+def _sketch_keep_probability(dark: float, threshold: float, density_scale: float, gamma: float) -> float:
+    density = min(1.0, max(0.0, (float(dark) - threshold) / max(1e-9, 1.0 - threshold)))
+    # Sketch mode should behave like pen-plotter stippling/hatching: light
+    # areas stay mostly open, while shadows accumulate substantially more ink.
+    return min(1.0, max(0.0, float(density_scale)) * (density ** max(0.25, float(gamma))))
+
+
+def _grid_sketch_centers(
+    darkness: np.ndarray,
+    *,
+    spacing_px: float,
+    jitter_px: float,
+    threshold: float,
+    density_scale: float,
+    density_gamma: float,
+    rng: np.random.Generator,
+) -> list[tuple[float, float, float]]:
+    h, w = darkness.shape[:2]
+    centers: list[tuple[float, float, float]] = []
+    y = spacing_px * 0.5
+    row = 0
+    while y < h:
+        x_offset = (spacing_px * 0.5) if row % 2 else 0.0
+        x = spacing_px * 0.5 + x_offset
+        while x < w:
+            jx = float(rng.uniform(-jitter_px, jitter_px)) if jitter_px > 0 else 0.0
+            jy = float(rng.uniform(-jitter_px, jitter_px)) if jitter_px > 0 else 0.0
+            sx = max(0.0, min(float(w - 1), x + jx))
+            sy = max(0.0, min(float(h - 1), y + jy))
+            dark = float(darkness[int(round(sy)), int(round(sx))])
+            if dark >= threshold and rng.random() <= _sketch_keep_probability(dark, threshold, density_scale, density_gamma):
                 centers.append((sx, sy, dark))
             x += spacing_px
         y += spacing_px

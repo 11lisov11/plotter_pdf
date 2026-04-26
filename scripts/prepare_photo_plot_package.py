@@ -395,6 +395,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--sketch-stroke-length-mm", type=float, default=PhotoPlotConfig().sketch_stroke_length_mm)
     parser.add_argument("--sketch-threshold", type=float, default=PhotoPlotConfig().sketch_threshold)
     parser.add_argument("--sketch-density", type=float, default=PhotoPlotConfig().sketch_density)
+    parser.add_argument("--sketch-density-gamma", type=float, default=PhotoPlotConfig().sketch_density_gamma)
     parser.add_argument("--sketch-min-center-distance-mm", type=float, default=PhotoPlotConfig().sketch_min_center_distance_mm)
     parser.add_argument("--sketch-tone-line-spacing-mm", type=float, default=PhotoPlotConfig().sketch_tone_line_spacing_mm)
     parser.add_argument("--sketch-tone-step-mm", type=float, default=PhotoPlotConfig().sketch_tone_step_mm)
@@ -452,6 +453,7 @@ def main(argv: list[str] | None = None) -> int:
         sketch_stroke_length_mm=args.sketch_stroke_length_mm,
         sketch_threshold=args.sketch_threshold,
         sketch_density=args.sketch_density,
+        sketch_density_gamma=args.sketch_density_gamma,
         sketch_min_center_distance_mm=args.sketch_min_center_distance_mm,
         sketch_tone_line_spacing_mm=args.sketch_tone_line_spacing_mm,
         sketch_tone_step_mm=args.sketch_tone_step_mm,
