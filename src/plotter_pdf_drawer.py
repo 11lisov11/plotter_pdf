@@ -176,9 +176,9 @@ TECHNICAL_PEN_Z_PROFILE_ENABLED = True
 TECHNICAL_PEN_Z_DELAY_DOWN = 0.02
 TECHNICAL_PEN_Z_DELAY_UP = 0.02
 TECHNICAL_PEN_Z_FEED_DOWN_APPROACH = 2500.0
-TECHNICAL_PEN_Z_FEED_DOWN_TOUCH = 1800.0
+TECHNICAL_PEN_Z_FEED_DOWN_TOUCH = 2500.0
 TECHNICAL_PEN_Z_FEED_UP = 2500.0
-TECHNICAL_PEN_Z_FEED_UP_FINAL = 1800.0
+TECHNICAL_PEN_Z_FEED_UP_FINAL = 2500.0
 TECHNICAL_PEN_Z_SOFT_DOWN_MM = 0.0
 TECHNICAL_PEN_Z_SOFT_UP_MM = 0.0
 # Be explicit: if user passes Z params via CLI, do not force pen-fast profile.
@@ -206,11 +206,13 @@ HOME_Y = 0.0
 # NOTE: GRBL will still respect its $110/$111 max rate caps.
 FEED_TRAVEL = 15000.0
 FEED_DRAW = 12000.0
-# Physical plotter safeguard: tiny KOMPAS/technical-text fragments are too short
-# for the mechanics to mark reliably at the normal long-line drawing feed.
-TECH_TEXT_MICRO_STROKE_FEED_ENABLED = True
-TECH_TEXT_MICRO_STROKE_FEED_DRAW = 1800.0
-TECH_TEXT_MICRO_STROKE_FEED_TRAVEL = 3500.0
+# Physical plotter safeguard: tiny KOMPAS/technical-text fragments can be too
+# short for reliable marking at the normal long-line drawing feed. Only draw
+# feed is limited by default; travel must stay fast to avoid very slow title
+# blocks made from thousands of short strokes.
+TECH_TEXT_MICRO_STROKE_FEED_ENABLED = False
+TECH_TEXT_MICRO_STROKE_FEED_DRAW = 3500.0
+TECH_TEXT_MICRO_STROKE_FEED_TRAVEL = 0.0
 TECH_TEXT_MICRO_STROKE_MAX_LENGTH_MM = 16.0
 TECH_TEXT_MICRO_STROKE_MAX_SPAN_MM = 8.5
 SEGMENT_TOLERANCE_MM = 8.0
@@ -10114,6 +10116,56 @@ def grbl_send_manual_commands(
         default_baud=DEFAULT_BAUD,
         soft_reset_first=soft_reset_first,
         read_tail=read_tail,
+        serial_timeout_s=serial_timeout_s,
+        wake_delay_s=wake_delay_s,
+        reset_delay_s=reset_delay_s,
+        command_delay_s=command_delay_s,
+        tail_delay_s=tail_delay_s,
+        wake_read_bytes=wake_read_bytes,
+        tail_read_bytes=tail_read_bytes,
+    )
+
+
+def grbl_safe_park_release(
+    com: str,
+    baud: str,
+    *,
+    soft_reset_first: bool = True,
+    read_tail: bool = True,
+    sleep: bool = False,
+    release: bool = True,
+    hold: bool = False,
+    home: bool = True,
+    home_x: float = 0.0,
+    home_y: float = 0.0,
+    z_up: float = 0.0,
+    z_feed: float = 2500.0,
+    travel_feed: float = 15000.0,
+    append_status_query: bool = True,
+    serial_timeout_s: float = 1.0,
+    wake_delay_s: float = 0.20,
+    reset_delay_s: float = 1.0,
+    command_delay_s: float = 0.16,
+    tail_delay_s: float = 0.35,
+    wake_read_bytes: int = 4096,
+    tail_read_bytes: int = 8192,
+) -> Tuple[bool, str]:
+    return manual_commands_mod.grbl_safe_park_release(
+        com,
+        baud,
+        default_baud=DEFAULT_BAUD,
+        soft_reset_first=soft_reset_first,
+        read_tail=read_tail,
+        sleep=sleep,
+        release=release,
+        hold=hold,
+        home=home,
+        home_x=home_x,
+        home_y=home_y,
+        z_up=z_up,
+        z_feed=z_feed,
+        travel_feed=travel_feed,
+        append_status_query=append_status_query,
         serial_timeout_s=serial_timeout_s,
         wake_delay_s=wake_delay_s,
         reset_delay_s=reset_delay_s,

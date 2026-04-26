@@ -13,6 +13,57 @@ except Exception:
         def build_serial_open_hint(_port: str, diagnostics=None) -> str:
             return ""
 
+try:
+    from src.plotter_backend.machine.safe_shutdown import (
+        build_safe_park_release_commands,
+        safe_park_release_message,
+    )
+except Exception:
+    try:
+        from plotter_backend.machine.safe_shutdown import (  # type: ignore
+            build_safe_park_release_commands,
+            safe_park_release_message,
+        )
+    except Exception:
+        def build_safe_park_release_commands(**kwargs) -> list[str]:
+            sleep = bool(kwargs.get("sleep", False))
+            release = bool(kwargs.get("release", True))
+            hold = bool(kwargs.get("hold", False))
+            home = bool(kwargs.get("home", True))
+            home_x = float(kwargs.get("home_x", 0.0))
+            home_y = float(kwargs.get("home_y", 0.0))
+            z_up = float(kwargs.get("z_up", 0.0))
+            z_feed = float(kwargs.get("z_feed", 2500.0))
+            travel_feed = float(kwargs.get("travel_feed", 15000.0))
+            out = [
+                "$X",
+                "$1=255",
+                "G90",
+                f"G1 Z{z_up:.4f} F{z_feed:.1f}",
+                "G4 P0.05",
+                "M5",
+            ]
+            if home:
+                out.extend(
+                    [
+                        f"G1 X{home_x:.4f} Y{home_y:.4f} F{travel_feed:.1f}",
+                        f"G1 Z{z_up:.4f} F{z_feed:.1f}",
+                        "G4 P0.05",
+                        "M5",
+                    ]
+                )
+            out.append("$1=0" if sleep or (release and not hold) else "$1=255")
+            if sleep:
+                out.append("$SLP")
+            return out
+
+        def safe_park_release_message(*, sleep: bool = False, release: bool = True, hold: bool = False) -> str:
+            if sleep:
+                return "Returned home; pen lifted; motors released ($1=0, $SLP)."
+            if release and not hold:
+                return "Returned home; pen lifted; motors released ($1=0)."
+            return "Returned home; pen lifted; motors held ($1=255)."
+
 
 def _force_utf8_stdio() -> None:
     try:
@@ -204,33 +255,23 @@ def release_axes(
 
     # Re-enable motors before lifting/homing. Releasing happens only after the
     # head is parked at home with the pen safely raised.
-    _send_no_throw("$X")
-    _send_no_throw("$1=255")
-    _send_no_throw("G90")
-    _send_no_throw(f"G1 Z{float(z_up):.4f} F{float(z_feed):.1f}")
-    _send_no_throw("G4 P0.05")
-    _send_no_throw("M5")
-    if home:
-        _send_no_throw(f"G1 X{float(home_x):.4f} Y{float(home_y):.4f} F{float(travel_feed):.1f}")
-        _send_no_throw(f"G1 Z{float(z_up):.4f} F{float(z_feed):.1f}")
-        _send_no_throw("G4 P0.05")
-        _send_no_throw("M5")
-    if sleep or (release and not hold):
-        _send_no_throw("$1=0")
-    else:
-        _send_no_throw("$1=255")
-    if sleep:
-        _send_no_throw("$SLP")
+    for cmd in build_safe_park_release_commands(
+        sleep=sleep,
+        release=release,
+        hold=hold,
+        home=home,
+        home_x=home_x,
+        home_y=home_y,
+        z_up=z_up,
+        z_feed=z_feed,
+        travel_feed=travel_feed,
+    ):
+        _send_no_throw(cmd)
 
     # Give controller one small cycle to apply settings.
     if wait:
         time.sleep(0.1)
-    if sleep:
-        _safe_print("Returned home; pen lifted; motors released ($1=0, $SLP).")
-    elif release and not hold:
-        _safe_print("Returned home; pen lifted; motors released ($1=0).")
-    else:
-        _safe_print("Returned home; pen lifted; motors held ($1=255).")
+    _safe_print(safe_park_release_message(sleep=sleep, release=release, hold=hold))
 
 
 def _parse_status_state(line: str) -> str:
@@ -289,6 +330,7 @@ def stream_lines_to_grbl(
     *,
     rx_buffer_size: int = 128,
     verbose: bool = False,
+    ack_stall_timeout_s: float = 45.0,
 ) -> None:
     # Classic GRBL character-count streaming.
     # NOTE: GRBL replies "ok" when a line is parsed and queued, not when executed.
@@ -307,6 +349,7 @@ def stream_lines_to_grbl(
     n = len(lines)
     last_progress = 0.0
     progress_interval_s = 5.0
+    last_controller_response = time.time()
 
     def _progress():
         nonlocal last_progress
@@ -351,11 +394,19 @@ def stream_lines_to_grbl(
             raw = b""
         if not raw:
             _progress()
+            if pending and (time.time() - last_controller_response) > max(2.0, float(ack_stall_timeout_s)):
+                _l, line_no, line_text = pending[0]
+                raise RuntimeError(
+                    "No GRBL response while streaming "
+                    f"for {float(ack_stall_timeout_s):.1f}s; "
+                    f"oldest pending line #{line_no}: {line_text}"
+                )
             continue
 
         resp = raw.decode("ascii", errors="replace").strip()
         if not resp:
             continue
+        last_controller_response = time.time()
         if resp == "ok" or resp.startswith("error:") or resp.startswith("ALARM:"):
             acked = pending.popleft() if pending else None
             if acked is not None:
@@ -387,6 +438,12 @@ def main(argv):
     parser.add_argument("--hold", action="store_true", help="Keep steppers energized after homing instead of releasing them.")
     parser.add_argument("--sleep", action="store_true", help="Send $SLP at end (fully disable steppers; requires reset to wake).")
     parser.add_argument("--rx-buffer", type=int, default=128, help="GRBL RX buffer size in bytes (default 128)")
+    parser.add_argument(
+        "--ack-stall-timeout",
+        type=float,
+        default=45.0,
+        help="Abort and safe-park if GRBL stops replying for this many seconds while streaming.",
+    )
     parser.add_argument("--verbose", action="store_true", help="Print non-ok chatter (status, banners) while streaming")
     parser.add_argument("-h", "--help", action="store_true")
     ns, _ = parser.parse_known_args(argv[1:])
@@ -429,6 +486,7 @@ def main(argv):
             lines,
             rx_buffer_size=int(ns.rx_buffer),
             verbose=bool(ns.verbose),
+            ack_stall_timeout_s=float(ns.ack_stall_timeout),
         )
         # Wait until the machine is actually done (GRBL 'ok' is only "accepted", not "executed").
         wait_for_idle(ser, timeout_s=6 * 60 * 60)

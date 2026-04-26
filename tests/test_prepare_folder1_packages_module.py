@@ -1376,6 +1376,63 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
         self.assertEqual(meta["top_outer_frame_removed"], 1)
         self.assertEqual(kept, [[(205.0, 5.5), (205.0, 292.5)]])
 
+    def test_kompas_text_poly_candidate_removes_only_small_text_fragments(self) -> None:
+        mod = _load_module()
+        regions = [(95.0, 95.0, 130.0, 112.0)]
+
+        self.assertTrue(
+            mod._kompas_text_poly_candidate_mm(
+                [(100.0, 101.0), (103.0, 104.0), (106.0, 100.5)],
+                text_regions=regions,
+            )
+        )
+        self.assertFalse(
+            mod._kompas_text_poly_candidate_mm(
+                [(90.0, 100.0), (150.0, 100.0)],
+                text_regions=regions,
+            )
+        )
+        self.assertFalse(
+            mod._kompas_text_poly_candidate_mm(
+                [(100.0, 120.0), (104.0, 124.0)],
+                text_regions=regions,
+            )
+        )
+
+    def test_reroute_kompas_text_polylines_aligns_existing_glyphs_without_removing_frame_lines(self) -> None:
+        mod = _load_module()
+        text_poly = [(101.0, 100.0), (104.0, 101.0), (106.0, 99.5)]
+        frame_line = [(90.0, 100.0), (150.0, 100.0)]
+        source_pdf = Path(r"C:\plotter_pdf\РљРѕРјРїСЊСЋС‚РµСЂРЅР°СЏ РіСЂР°С„РёРєР°\20 РІР°СЂРёР°РЅС‚\test.pdf")
+
+        with mock.patch.object(
+            mod,
+            "_extract_kompas_text_lines_from_pdf",
+            return_value=[
+                {
+                    "text": "A-A",
+                    "bbox_mm": (100.0, 100.0, 122.0, 112.0),
+                    "origin_mm": (101.0, 110.0),
+                    "dir": (1.0, 0.0),
+                    "font_size_mm": 10.0,
+                }
+            ],
+        ):
+            out, meta = mod._reroute_kompas_text_polylines(
+                [text_poly, frame_line],
+                source_pdf=source_pdf,
+                page_index=0,
+                page_w_mm=210.0,
+                page_h_mm=297.0,
+                logger=lambda _msg: None,
+            )
+
+        self.assertEqual(len(out), 2)
+        self.assertEqual(out[1], frame_line)
+        self.assertGreater(mod._poly_bbox_mm(out[0])[1], mod._poly_bbox_mm(text_poly)[1])
+        self.assertEqual(meta["kompas_text_rendered"], 0.0)
+        self.assertEqual(meta["kompas_text_aligned"], 1.0)
+
     def test_apply_kompas_metric_mask_whitens_left_archive_and_bottom_service_strip(self) -> None:
         mod = _load_module()
         img = mod.np.zeros((100, 100), dtype=mod.np.uint8)

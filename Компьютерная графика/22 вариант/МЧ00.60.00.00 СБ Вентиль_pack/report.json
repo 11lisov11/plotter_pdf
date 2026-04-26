@@ -12,9 +12,9 @@
   "forced_a3_two_pass": true,
   "forced_a4_single_page": false,
   "selected_variant": "a3_two_pass_clean_source",
-  "selected_layout_similarity": 0.95555,
+  "selected_layout_similarity": 0.955548,
   "selection_reason": "forced_a3_two_pass",
-  "source_fidelity_score": 0.95555,
+  "source_fidelity_score": 0.955548,
   "fragmentation_score": 0.947333,
   "title_block_strategy": "source_vector_as_path",
   "route_class": "A3/A2 -> A3 scaled two-pass",
@@ -23,7 +23,7 @@
     {
       "item": "pass_01",
       "ok": true,
-      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1777214801764217100_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1777214801764217100.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1777214801764217100_vector.pdf",
+      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1777219267323667300_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1777219267323667300.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1777219267323667300_vector.pdf",
       "logs": [
         "TTF centerline postprocess: 68 -> 6 stroke(s) (eps=0.15, gap=0.77, smooth_step=0.13, col=0.020)",
         "TTF centerline text: '372' -> 6 stroke(s), font=GOST_BU.ttf, size=7.02",
@@ -96,7 +96,8 @@
         "TTF centerline postprocess: 12 -> 3 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)",
         "TTF centerline text: 'A3' -> 3 stroke(s), font=GOST_BU.ttf, size=4.88",
         "A3 title block text reroute: removed 286 SVG text node(s), appended 216 single-line path(s).",
-        "A3 clean source KOMPAS cleanup: archive_strip_removed=9; service_region_removed=50; under_frame_removed=1; top_outer_frame_removed=2.",
+        "KOMPAS text bbox alignment: shifted 172 source text polyline(s) inside 41 PDF text line(s), avg_shift=1.611 mm.",
+        "A3 clean source KOMPAS cleanup: archive_strip_removed=9; service_region_removed=50; under_frame_removed=1; top_outer_frame_removed=2; kompas_text_lines=41; kompas_text_removed=0; kompas_text_rendered=0; kompas_text_aligned=172.",
         "A3 clean source route: direct PDF vector SVG export (text_as_path=False).",
         "--- a3 clean pass ---",
         "Render mode: drawing; ExactGeometry=on; Handwriting=off",
@@ -125,9 +126,9 @@
         "G-code stats: lines=4271, draw=2284, travel=661, bounds=0.000..180.000 x, -277.739..0.000 y",
         "Preflight: ok: lines=4271, draw=2284, travel=661, ratio=0.29",
         "Saved file stats: lines=4271, draw=2284, travel=661, bounds=0.000..180.000 x, -277.739..0.000 y",
-        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1777214801764217100.nc",
-        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1777214801764217100_vector.svg",
-        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1777214801764217100_vector.pdf",
+        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1777219267323667300.nc",
+        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1777219267323667300_vector.svg",
+        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1777219267323667300_vector.pdf",
         "Sheet preview centered on compact source page bbox: ref=(0.353,0.353)..(420.518,297.670) mm",
         "Sheet preview placed on source page: offset=(110.264,304.092) mm"
       ],
@@ -160,7 +161,7 @@
     {
       "item": "pass_02",
       "ok": true,
-      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1777214813325782500_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1777214813325782500.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1777214813325782500_vector.pdf",
+      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1777219275020668000_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1777219275020668000.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1777219275020668000_vector.pdf",
       "logs": [
         "TTF centerline postprocess: 68 -> 6 stroke(s) (eps=0.15, gap=0.77, smooth_step=0.13, col=0.020)",
         "TTF centerline text: '372' -> 6 stroke(s), font=GOST_BU.ttf, size=7.02",
@@ -233,7 +234,8 @@
         "TTF centerline postprocess: 12 -> 3 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)",
         "TTF centerline text: 'A3' -> 3 stroke(s), font=GOST_BU.ttf, size=4.88",
         "A3 title block text reroute: removed 286 SVG text node(s), appended 216 single-line path(s).",
-        "A3 clean source KOMPAS cleanup: archive_strip_removed=9; service_region_removed=50; under_frame_removed=1; top_outer_frame_removed=2.",
+        "KOMPAS text bbox alignment: shifted 172 source text polyline(s) inside 41 PDF text line(s), avg_shift=1.611 mm.",
+        "A3 clean source KOMPAS cleanup: archive_strip_removed=9; service_region_removed=50; under_frame_removed=1; top_outer_frame_removed=2; kompas_text_lines=41; kompas_text_removed=0; kompas_text_rendered=0; kompas_text_aligned=172.",
         "A3 clean source route: direct PDF vector SVG export (text_as_path=False).",
         "pass_02_rotated_180_for_sheet_flip=True",
         "--- a3 clean pass ---",
@@ -265,9 +267,9 @@
         "G-code stats: lines=4572, draw=2897, travel=557, bounds=0.000..180.000 x, -274.666..0.000 y",
         "Preflight: ok: lines=4572, draw=2897, travel=557, ratio=0.19",
         "Saved file stats: lines=4572, draw=2897, travel=557, bounds=0.000..180.000 x, -274.666..0.000 y",
-        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1777214813325782500.nc",
-        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1777214813325782500_vector.svg",
-        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1777214813325782500_vector.pdf",
+        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1777219275020668000.nc",
+        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1777219275020668000_vector.svg",
+        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1777219275020668000_vector.pdf",
         "Sheet preview centered on compact source page bbox: ref=(0.353,0.353)..(420.518,297.670) mm",
         "Sheet preview placed on source page: offset=(118.135,301.019) mm"
       ],
@@ -275,7 +277,7 @@
       "clipping_warning": true,
       "layout_similarity": null,
       "metrics": {
-        "draw_length_mm": 6930.516,
+        "draw_length_mm": 6930.509,
         "segments_total": 1795,
         "segments_duplicate": 0,
         "pen_down_strokes": 551,
@@ -307,7 +309,7 @@
     "reference_pdf": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.00 СБ Вентиль.pdf",
     "svg": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.00 СБ Вентиль_pack\\combined_preview.svg",
     "pdf": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.00 СБ Вентиль_pack\\combined_preview.pdf",
-    "layout_similarity": 0.95555
+    "layout_similarity": 0.955548
   },
   "package_dir": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.00 СБ Вентиль_pack",
   "compare": {

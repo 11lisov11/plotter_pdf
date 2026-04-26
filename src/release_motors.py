@@ -11,6 +11,17 @@ except Exception:
         def build_serial_open_hint(_port: str, diagnostics=None) -> str:
             return ""
 
+try:
+    from src.plotter_backend.machine.safe_shutdown import (
+        build_safe_park_release_commands,
+        safe_park_release_message,
+    )
+except Exception:
+    from plotter_backend.machine.safe_shutdown import (  # type: ignore
+        build_safe_park_release_commands,
+        safe_park_release_message,
+    )
+
 
 def _force_utf8_stdio() -> None:
     try:
@@ -87,8 +98,23 @@ def main(argv: list[str]) -> int:
         except Exception:
             pass
 
-        # Best-effort safe teardown: pen up, stop spindle/servo, release steppers.
-        for cmd in ("G90", "G1 Z0 F800", "G4 P0.05", "M5", "$1=0"):
+        # Always clear GRBL planner before manual release/park. This command is
+        # intentionally sent before motion, so stale pen-down queue cannot
+        # continue while we try to lift and return home.
+        try:
+            ser.write(b"\x18")
+            ser.flush()
+            time.sleep(0.8)
+            try:
+                ser.reset_input_buffer()
+                ser.reset_output_buffer()
+            except Exception:
+                pass
+        except Exception:
+            pass
+
+        # Best-effort safe teardown: lift, return home, lift again, then release steppers.
+        for cmd in build_safe_park_release_commands(sleep=bool(ns.sleep), release=True):
             try:
                 ser.write((cmd + "\n").encode("ascii"))
                 ser.flush()
@@ -96,18 +122,7 @@ def main(argv: list[str]) -> int:
             except Exception:
                 pass
 
-        if ns.sleep:
-            try:
-                ser.write(b"$SLP\n")
-                ser.flush()
-                time.sleep(0.12)
-            except Exception:
-                pass
-
-        if ns.sleep:
-            print("Motors released ($1=0, $SLP).")
-        else:
-            print("Motors released ($1=0).")
+        print(safe_park_release_message(sleep=bool(ns.sleep), release=True, hold=False))
         return 0
     finally:
         try:

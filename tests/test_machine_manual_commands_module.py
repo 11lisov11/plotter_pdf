@@ -126,6 +126,35 @@ class MachineManualCommandsModuleTests(unittest.TestCase):
         self.assertIn("ToolDependencyError", msg)
         self.assertIn("pyserial not available", msg)
 
+    def test_grbl_safe_park_release_returns_home_then_releases(self) -> None:
+        fake = _FakeSerial()
+        ok, msg = manual_commands.grbl_safe_park_release(
+            "COM6",
+            "115200",
+            default_baud="115200",
+            serial_factory=lambda: fake,
+            wake_delay_s=0.0,
+            reset_delay_s=0.0,
+            command_delay_s=0.0,
+            tail_delay_s=0.0,
+        )
+
+        writes = [item.decode("ascii").strip() for item in fake.writes]
+        lift_before_home = next(i for i, cmd in enumerate(writes) if cmd.startswith("G1 Z0.0000"))
+        home = writes.index("G1 X0.0000 Y0.0000 F15000.0")
+        lift_after_home = next(
+            i for i, cmd in enumerate(writes[home + 1 :], start=home + 1) if cmd.startswith("G1 Z0.0000")
+        )
+        release = writes.index("$1=0")
+
+        self.assertTrue(ok)
+        self.assertIn("motors released", msg)
+        self.assertIn(b"\x18", fake.writes)
+        self.assertLess(lift_before_home, home)
+        self.assertLess(home, lift_after_home)
+        self.assertLess(lift_after_home, release)
+        self.assertLess(release, writes.index("?"))
+
 
 if __name__ == "__main__":
     unittest.main()

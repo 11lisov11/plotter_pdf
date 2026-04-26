@@ -1,4 +1,5 @@
-A4 MuPDF source route: direct PDF vector SVG export with text_as_path=True; kompas_archive_strip_removed=8; kompas_service_region_removed=552; kompas_under_frame_removed=1; kompas_top_outer_frame_removed=2; no title-block reroute.
+KOMPAS text bbox alignment: shifted 540 source text polyline(s) inside 23 PDF text line(s), avg_shift=0.873 mm.
+A4 MuPDF source route: direct PDF vector SVG export with text_as_path=True; kompas_archive_strip_removed=8; kompas_service_region_removed=552; kompas_under_frame_removed=1; kompas_top_outer_frame_removed=2; kompas_text_lines=23; kompas_text_removed=0; kompas_text_rendered=0; kompas_text_aligned=540.
 Render mode: drawing; ExactGeometry=on; Handwriting=off
 Sheet 210.0x297.0 mm is larger than workspace 180.0x280.0 mm. Using the overlapped sheet/workspace window.
 Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-295.000,-15.000), sheet_bounds x(0.000,210.000) y(-295.000,2.000), sheet=a4, anchor=lower_left, offset=(0.00,0.00)
@@ -21,9 +22,9 @@ Applying pen-up / pen-down ...
 G-code stats: lines=5968, draw=3363, travel=885, bounds=0.000..175.234 x, -277.419..0.000 y
 Preflight: ok: lines=5968, draw=3363, travel=885, ratio=0.26
 Saved file stats: lines=5968, draw=3363, travel=885, bounds=0.000..175.234 x, -277.419..0.000 y
-Saved: C:\plotter_pdf\_tmp\latest_preview_preview-1777214505011218300.nc
-Preview SVG: C:\plotter_pdf\_tmp\latest_preview_preview-1777214505011218300_vector.svg
-Preview PDF: C:\plotter_pdf\_tmp\latest_preview_preview-1777214505011218300_vector.pdf
+Saved: C:\plotter_pdf\_tmp\latest_preview_preview-1777219012305106600.nc
+Preview SVG: C:\plotter_pdf\_tmp\latest_preview_preview-1777219012305106600_vector.svg
+Preview PDF: C:\plotter_pdf\_tmp\latest_preview_preview-1777219012305106600_vector.pdf
 Sheet preview centered on compact source page bbox: ref=(0.353,0.353)..(210.457,297.670) mm
 Sheet preview placed on source page: offset=(9.183,304.092) mm
 Fixed-canvas preview centered on page: page=180.000x280.000 mm, offset=(-6.354,295.036) mm

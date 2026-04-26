@@ -173,7 +173,14 @@ class GrblSenderModuleTests(unittest.TestCase):
             gcode = root / "source.nc"
             gcode.write_text("G21\nG90\n", encoding="utf-8")
             fake_proc = _FakeProc(["error: alarm\n"], rc=2)
-            with mock.patch("src.plotter_backend.machine.grbl_sender.subprocess.Popen", return_value=fake_proc):
+            release_calls: list[dict[str, object]] = []
+            with (
+                mock.patch("src.plotter_backend.machine.grbl_sender.subprocess.Popen", return_value=fake_proc),
+                mock.patch(
+                    "src.plotter_backend.machine.grbl_sender.manual_commands.grbl_safe_park_release",
+                    side_effect=lambda *_args, **kwargs: release_calls.append(dict(kwargs)) or (True, "parked"),
+                ),
+            ):
                 with self.assertRaises(SerialTransportError) as ctx:
                     grbl_sender.send_to_grbl(
                         gcode,
@@ -190,6 +197,11 @@ class GrblSenderModuleTests(unittest.TestCase):
                         auto_resume=False,
                     )
                 self.assertIn("Sender error code: 2", str(ctx.exception))
+            self.assertEqual(len(release_calls), 1)
+            self.assertTrue(release_calls[0]["soft_reset_first"])
+            self.assertTrue(release_calls[0]["home"])
+            self.assertTrue(release_calls[0]["release"])
+            self.assertFalse(release_calls[0]["hold"])
 
     def test_send_to_grbl_raises_serial_transport_error_when_stdout_missing(self) -> None:
         with tempfile.TemporaryDirectory(prefix="plotter_grbl_sender_stdout_") as td:

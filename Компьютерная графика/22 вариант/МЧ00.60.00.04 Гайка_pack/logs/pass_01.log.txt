@@ -71,7 +71,8 @@ TTF centerline text: 'Формат' -> 11 stroke(s), font=GOST_BU.ttf, size=4.35
 TTF centerline postprocess: 12 -> 3 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
 TTF centerline text: 'A3' -> 3 stroke(s), font=GOST_BU.ttf, size=4.88
 A3 title block text reroute: removed 267 SVG text node(s), appended 220 single-line path(s).
-A3 clean source KOMPAS cleanup: archive_strip_removed=9; service_region_removed=50; under_frame_removed=1; top_outer_frame_removed=2.
+KOMPAS text bbox alignment: shifted 201 source text polyline(s) inside 42 PDF text line(s), avg_shift=1.751 mm.
+A3 clean source KOMPAS cleanup: archive_strip_removed=9; service_region_removed=50; under_frame_removed=1; top_outer_frame_removed=2; kompas_text_lines=42; kompas_text_removed=0; kompas_text_rendered=0; kompas_text_aligned=201.
 A3 clean source route: direct PDF vector SVG export (text_as_path=False).
 --- a3 clean pass ---
 Render mode: drawing; ExactGeometry=on; Handwriting=off
@@ -97,11 +98,11 @@ Warning: significant clipping/transforming occurred. Check that page is inside t
 Prepared bounds: x(20.520, 180.000) y(-277.739, -32.334)
 Estimated draw length: 2.55 m
 Applying pen-up / pen-down ...
-G-code stats: lines=1062, draw=569, travel=163, bounds=0.000..180.000 x, -277.739..0.000 y
-Preflight: ok: lines=1062, draw=569, travel=163, ratio=0.29
-Saved file stats: lines=1062, draw=569, travel=163, bounds=0.000..180.000 x, -277.739..0.000 y
-Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1777214883207535000.nc
-Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1777214883207535000_vector.svg
-Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1777214883207535000_vector.pdf
+G-code stats: lines=1127, draw=595, travel=176, bounds=0.000..180.000 x, -277.739..0.000 y
+Preflight: ok: lines=1127, draw=595, travel=176, ratio=0.30
+Saved file stats: lines=1127, draw=595, travel=176, bounds=0.000..180.000 x, -277.739..0.000 y
+Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1777219336328603600.nc
+Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1777219336328603600_vector.svg
+Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1777219336328603600_vector.pdf
 Sheet preview centered on compact source page bbox: ref=(0.353,0.353)..(420.518,297.670) mm
 Sheet preview placed on source page: offset=(110.264,304.092) mm

@@ -713,7 +713,7 @@ class BackendGeometryTests(unittest.TestCase):
             backend.Z_UP = old_z_up
             backend.Z_DOWN = old_z_down
 
-    def test_write_xy_gcode_slows_micro_technical_strokes_only(self) -> None:
+    def test_write_xy_gcode_limits_micro_technical_draw_feed_without_slowing_travel_by_default(self) -> None:
         old_enabled = backend.TECH_TEXT_MICRO_STROKE_FEED_ENABLED
         old_micro_feed = backend.TECH_TEXT_MICRO_STROKE_FEED_DRAW
         old_micro_travel = backend.TECH_TEXT_MICRO_STROKE_FEED_TRAVEL
@@ -721,8 +721,8 @@ class BackendGeometryTests(unittest.TestCase):
         old_max_span = backend.TECH_TEXT_MICRO_STROKE_MAX_SPAN_MM
         try:
             backend.TECH_TEXT_MICRO_STROKE_FEED_ENABLED = True
-            backend.TECH_TEXT_MICRO_STROKE_FEED_DRAW = 1800.0
-            backend.TECH_TEXT_MICRO_STROKE_FEED_TRAVEL = 3500.0
+            backend.TECH_TEXT_MICRO_STROKE_FEED_DRAW = 3500.0
+            backend.TECH_TEXT_MICRO_STROKE_FEED_TRAVEL = 0.0
             backend.TECH_TEXT_MICRO_STROKE_MAX_LENGTH_MM = 16.0
             backend.TECH_TEXT_MICRO_STROKE_MAX_SPAN_MM = 8.5
             with tempfile.TemporaryDirectory() as td:
@@ -737,8 +737,8 @@ class BackendGeometryTests(unittest.TestCase):
                     feed_draw=12000.0,
                 )
                 text = path.read_text(encoding="utf-8")
-            self.assertIn("G0 X0.0000 Y0.0000 F3500.0", text)
-            self.assertIn("G1 X0.5000 Y-0.5000 F1800.0", text)
+            self.assertIn("G0 X0.0000 Y0.0000 F15000.0", text)
+            self.assertIn("G1 X0.5000 Y-0.5000 F3500.0", text)
             self.assertIn("G0 X0.0000 Y-20.0000 F15000.0", text)
             self.assertIn("G1 X60.0000 Y-20.0000 F12000.0", text)
         finally:
@@ -878,7 +878,7 @@ class BackendGeometryTests(unittest.TestCase):
 
                 self.assertAlmostEqual(float(captured["z_travel_lift_mm"]), 12.0, places=6)
                 self.assertAlmostEqual(float(captured["z_feed_up"]), 2500.0, places=6)
-                self.assertAlmostEqual(float(captured["z_feed_up_final"]), 1800.0, places=6)
+                self.assertAlmostEqual(float(captured["z_feed_up_final"]), 2500.0, places=6)
         finally:
             backend.TOOL_MODE = old_tool_mode
             backend.SAFE_PEN_TRAVEL_UP = old_safe

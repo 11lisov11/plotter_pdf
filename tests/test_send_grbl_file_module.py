@@ -6,6 +6,7 @@ from src import send_grbl_file
 class _FakeSerial:
     def __init__(self) -> None:
         self.commands: list[str] = []
+        self.timeout = 1.0
 
     def write(self, data: bytes) -> None:
         self.commands.append(data.decode("ascii").strip())
@@ -21,6 +22,11 @@ class _FakeSerial:
 
     def reset_output_buffer(self) -> None:
         return
+
+
+class _SilentSerial(_FakeSerial):
+    def readline(self) -> bytes:
+        return b""
 
 
 def test_clean_gcode_lines_filters_motor_release_by_default() -> None:
@@ -50,6 +56,7 @@ def test_release_axes_returns_home_lifted_then_releases_by_default() -> None:
     release = ser.commands.index("$1=0")
     assert "$1=255" in ser.commands[:lift_before_home]
     assert lift_before_home < home < lift_after_home < release
+    assert ser.commands[-1] == "$1=0"
 
 
 def test_release_axes_holds_motors_when_requested() -> None:
@@ -68,3 +75,19 @@ def test_release_axes_soft_resets_before_safe_motion_when_requested() -> None:
 
     assert ser.commands[0] == "\x18"
     assert "$X" in ser.commands[1:3]
+
+
+def test_stream_lines_aborts_when_grbl_stops_replying() -> None:
+    ser = _SilentSerial()
+
+    try:
+        send_grbl_file.stream_lines_to_grbl(
+            ser,
+            ["G21", "G90", "G0 X1 Y1"],
+            ack_stall_timeout_s=0.01,
+        )
+    except RuntimeError as exc:
+        assert "No GRBL response while streaming" in str(exc)
+        assert "oldest pending line #1" in str(exc)
+    else:
+        raise AssertionError("stream_lines_to_grbl should have aborted on missing GRBL replies")

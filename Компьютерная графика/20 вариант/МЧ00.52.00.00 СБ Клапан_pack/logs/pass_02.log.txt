@@ -83,7 +83,8 @@ TTF centerline text: 'A3' -> 3 stroke(s), font=GOST_BU.ttf, size=4.88
 TTF centerline postprocess: 11 -> 2 stroke(s) (eps=0.15, gap=0.74, smooth_step=0.12, col=0.019)
 TTF centerline text: '2' -> 2 stroke(s), font=GOST_BU.ttf, size=6.71
 A3 title block text reroute: removed 315 SVG text node(s), appended 240 single-line path(s).
-A3 clean source KOMPAS cleanup: archive_strip_removed=10; service_region_removed=52; under_frame_removed=1; top_outer_frame_removed=2.
+KOMPAS text bbox alignment: shifted 194 source text polyline(s) inside 47 PDF text line(s), avg_shift=1.692 mm.
+A3 clean source KOMPAS cleanup: archive_strip_removed=10; service_region_removed=52; under_frame_removed=1; top_outer_frame_removed=2; kompas_text_lines=47; kompas_text_removed=0; kompas_text_rendered=0; kompas_text_aligned=194.
 A3 clean source route: direct PDF vector SVG export (text_as_path=False).
 pass_02_rotated_180_for_sheet_flip=True
 --- a3 clean pass ---
@@ -115,8 +116,8 @@ Applying pen-up / pen-down ...
 G-code stats: lines=3295, draw=2286, travel=335, bounds=0.000..180.000 x, -274.666..0.000 y
 Preflight: ok: lines=3295, draw=2286, travel=335, ratio=0.15
 Saved file stats: lines=3295, draw=2286, travel=335, bounds=0.000..180.000 x, -274.666..0.000 y
-Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1777214551514746000.nc
-Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1777214551514746000_vector.svg
-Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1777214551514746000_vector.pdf
+Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1777219049048266600.nc
+Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1777219049048266600_vector.svg
+Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1777219049048266600_vector.pdf
 Sheet preview centered on compact source page bbox: ref=(0.353,0.441)..(420.518,297.840) mm
 Sheet preview placed on source page: offset=(118.135,301.104) mm

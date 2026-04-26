@@ -36,6 +36,44 @@ except Exception:  # pragma: no cover - fallback for non-package layouts
             return ""
 
 try:
+    from src.plotter_backend.machine.safe_shutdown import build_safe_park_release_commands
+except Exception:  # pragma: no cover - fallback for non-package layouts
+    try:
+        from plotter_backend.machine.safe_shutdown import build_safe_park_release_commands  # type: ignore
+    except Exception:  # pragma: no cover - defensive fallback
+        def build_safe_park_release_commands(**kwargs) -> list[str]:
+            sleep = bool(kwargs.get("sleep", False))
+            release = bool(kwargs.get("release", True))
+            hold = bool(kwargs.get("hold", False))
+            home = bool(kwargs.get("home", True))
+            home_x = float(kwargs.get("home_x", 0.0))
+            home_y = float(kwargs.get("home_y", 0.0))
+            z_up = float(kwargs.get("z_up", 0.0))
+            z_feed = float(kwargs.get("z_feed", 2500.0))
+            travel_feed = float(kwargs.get("travel_feed", 15000.0))
+            commands = [
+                "$X",
+                "$1=255",
+                "G90",
+                f"G1 Z{z_up:.4f} F{z_feed:.1f}",
+                "G4 P0.05",
+                "M5",
+            ]
+            if home:
+                commands.extend(
+                    [
+                        f"G1 X{home_x:.4f} Y{home_y:.4f} F{travel_feed:.1f}",
+                        f"G1 Z{z_up:.4f} F{z_feed:.1f}",
+                        "G4 P0.05",
+                        "M5",
+                    ]
+                )
+            commands.append("$1=0" if sleep or (release and not hold) else "$1=255")
+            if sleep:
+                commands.append("$SLP")
+            return commands
+
+try:
     import fitz  # type: ignore
 except Exception:
     fitz = None
@@ -3565,13 +3603,34 @@ class BackendBridge:
     def emergency_stop(self, com_port: str, baud: str, log: LogFn) -> tuple[bool, str]:
         backend = self._backend()
         try:
-            ok, text = backend.grbl_send_manual_commands(
-                com_port,
-                baud,
-                ["!", "M5", "$X", "$1=0", "?"],
-                soft_reset_first=True,
-                read_tail=True,
-            )
+            safe_release = getattr(backend, "grbl_safe_park_release", None)
+            if callable(safe_release):
+                ok, text = safe_release(
+                    com_port,
+                    baud,
+                    soft_reset_first=True,
+                    read_tail=True,
+                    sleep=False,
+                    release=True,
+                    hold=False,
+                    home=True,
+                    append_status_query=True,
+                )
+            else:
+                commands = build_safe_park_release_commands(
+                    sleep=False,
+                    release=True,
+                    hold=False,
+                    home=True,
+                )
+                commands.append("?")
+                ok, text = backend.grbl_send_manual_commands(
+                    com_port,
+                    baud,
+                    commands,
+                    soft_reset_first=True,
+                    read_tail=True,
+                )
         except Exception as exc:
             return False, _append_serial_open_hint(
                 _format_user_exception(exc, prefix="Emergency stop failed"),
