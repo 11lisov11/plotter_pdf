@@ -323,6 +323,7 @@ BACKGROUND_FILL_MIN_CHANNEL = 0.92
 BACKGROUND_FILL_MIN_OPACITY = 0.05
 FIT_TO_WORK_AREA = True
 ALLOW_UPSCALE_TO_WORK_AREA = True
+FIT_TO_SOURCE_PAGE_BOUNDS = False
 WORK_AREA_EPS = 1e-6
 # If fit-to-area would shrink geometry more than this threshold,
 # keep 1:1 mm scale and clip to work area instead of distorting dimensions.
@@ -6513,6 +6514,26 @@ def fit_polylines_to_area(
     )
 
 
+def select_fit_reference_bounds(
+    min_x: float,
+    max_x: float,
+    min_y: float,
+    max_y: float,
+    page_w: float,
+    page_h: float,
+    logger=print,
+) -> Tuple[float, float, float, float]:
+    if bool(FIT_TO_SOURCE_PAGE_BOUNDS) and page_w > 0.0 and page_h > 0.0:
+        if logger:
+            logger(
+                "Fit reference: source page bounds "
+                f"x({0.0:.3f}, {float(page_w):.3f}) y({0.0:.3f}, {float(page_h):.3f}); "
+                "preserving sheet-relative placement."
+            )
+        return 0.0, float(page_w), 0.0, float(page_h)
+    return min_x, max_x, min_y, max_y
+
+
 def get_path_polylines(
     element: ET.Element,
     matrix: Tuple[float, float, float, float, float, float],
@@ -9469,7 +9490,16 @@ def run_pipeline(
             log(f"SVG geometry: paths={len(polylines)}, segments={src_segments}.")
             min_x, max_x, min_y, max_y = bounds_polylines(polylines)
             log(f"Source bounds: x({min_x:.3f}, {max_x:.3f}) y({min_y:.3f}, {max_y:.3f})")
-            polylines = fit_polylines_to_area(polylines, min_x, max_x, min_y, max_y, logger=log)
+            fit_min_x, fit_max_x, fit_min_y, fit_max_y = select_fit_reference_bounds(
+                min_x,
+                max_x,
+                min_y,
+                max_y,
+                page_w,
+                page_h,
+                logger=log,
+            )
+            polylines = fit_polylines_to_area(polylines, fit_min_x, fit_max_x, fit_min_y, fit_max_y, logger=log)
             polylines = transform_polylines_for_active_sheet_pass(polylines, logger=log)
             fit_segments = sum(max(0, len(p) - 1) for p in polylines)
             polylines = clip_polylines_to_work_area(polylines, logger=log)

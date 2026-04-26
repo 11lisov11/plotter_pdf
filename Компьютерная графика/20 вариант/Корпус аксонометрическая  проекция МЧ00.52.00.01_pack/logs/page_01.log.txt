@@ -9,21 +9,22 @@ SVG page: 211.074 x 298.111 mm
 Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).
 SVG geometry: paths=1194, segments=2294.
 Source bounds: x(20.489, 205.486) y(5.503, 292.523)
-Fit to work area: scale=0.9730, translate=(-19.936,-299.989), from (20.489, 5.503)-(205.486, 292.523)
-Collinear overlap dedup: dropped 573/2294 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
-Reorder: source order preserved (1189 polylines).
+Fit reference: source page bounds x(0.000, 211.074) y(0.000, 298.111); preserving sheet-relative placement.
+Fit to work area: scale=0.8528, translate=(0.000,-282.112), from (0.000, 0.000)-(211.074, 298.111)
+Collinear overlap dedup: dropped 566/2294 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
+Reorder: source order preserved (1187 polylines).
 Segment counts: source=2294, fitted=2294, clipped=2294
 Drawable segments after clip: 2294 (100.0% of source)
-Prepared bounds: x(0.000, 180.000) y(-294.634, -15.366)
-Estimated draw length: 6.27 m
+Prepared bounds: x(17.473, 175.234) y(-277.419, -32.654)
+Estimated draw length: 5.50 m
 Applying pen-up / pen-down ...
-G-code stats: lines=4280, draw=3388, travel=878, bounds=0.000..180.000 x, -294.634..0.000 y
-Preflight: ok: lines=4280, draw=3388, travel=878, ratio=0.26
-Saved file stats: lines=4280, draw=3388, travel=878, bounds=0.000..180.000 x, -294.634..0.000 y
-Saved: C:\plotter_pdf\_tmp\latest_preview_preview-1777205598137840100.nc
-Preview SVG: C:\plotter_pdf\_tmp\latest_preview_preview-1777205598137840100_vector.svg
-Preview PDF: C:\plotter_pdf\_tmp\latest_preview_preview-1777205598137840100_vector.pdf
+G-code stats: lines=5968, draw=3363, travel=885, bounds=0.000..175.234 x, -277.419..0.000 y
+Preflight: ok: lines=5968, draw=3363, travel=885, ratio=0.26
+Saved file stats: lines=5968, draw=3363, travel=885, bounds=0.000..175.234 x, -277.419..0.000 y
+Saved: C:\plotter_pdf\_tmp\latest_preview_preview-1777214505011218300.nc
+Preview SVG: C:\plotter_pdf\_tmp\latest_preview_preview-1777214505011218300_vector.svg
+Preview PDF: C:\plotter_pdf\_tmp\latest_preview_preview-1777214505011218300_vector.pdf
 Sheet preview centered on compact source page bbox: ref=(0.353,0.353)..(210.457,297.670) mm
-Sheet preview placed on source page: offset=(15.537,304.056) mm
-Fixed-canvas preview centered on page: page=180.000x280.000 mm, offset=(0.000,295.000) mm
+Sheet preview placed on source page: offset=(9.183,304.092) mm
+Fixed-canvas preview centered on page: page=180.000x280.000 mm, offset=(-6.354,295.036) mm
 Preview canvas switched to machine work area: 180.000x280.000 mm.

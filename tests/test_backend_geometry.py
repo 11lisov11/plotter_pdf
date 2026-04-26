@@ -74,6 +74,26 @@ class BackendGeometryTests(unittest.TestCase):
             backend.ACTIVE_SHEET_CONFIG = old_cfg
             backend.PASS_COLS, backend.PASS_ROWS, backend.PASS_COL, backend.PASS_ROW = old_pass
 
+    def test_select_fit_reference_bounds_preserves_page_relative_kompas_layout(self) -> None:
+        old_flag = backend.FIT_TO_SOURCE_PAGE_BOUNDS
+        try:
+            backend.FIT_TO_SOURCE_PAGE_BOUNDS = True
+            logs: list[str] = []
+            bounds = backend.select_fit_reference_bounds(
+                20.0,
+                200.0,
+                5.0,
+                290.0,
+                page_w=210.0,
+                page_h=297.0,
+                logger=logs.append,
+            )
+
+            self.assertEqual(bounds, (0.0, 210.0, 0.0, 297.0))
+            self.assertTrue(any("source page bounds" in line for line in logs))
+        finally:
+            backend.FIT_TO_SOURCE_PAGE_BOUNDS = old_flag
+
     def test_plan_tiled_passes_reports_two_pass_scale(self) -> None:
         plan = backend.plan_tiled_passes_for_sheet(420.0, 297.0)
         self.assertIn("max_two_pass_scale", plan)

@@ -84,23 +84,24 @@ SVG page: 421.047 x 298.111 mm
 Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).
 SVG geometry: paths=714, segments=2165.
 Source bounds: x(24.000, 415.459) y(5.503, 292.523)
-Fit to work area: scale=0.9196, translate=(-112.071,-292.038), from (24.000, 5.503)-(415.459, 292.523)
-Pass window: col 1/2, row 1/1, source=360.000x263.954 mm, window=180.000x263.954 mm, offset=(0.000,0.000), shift=(90.000,0.000)
-Work area clipping: kept 576 visible segments, dropped 1589 out-of-area segments.
-Segment dedup: dropped 267/576 retraced segments (46.4%), kept=309, eps=0.010 mm
-Collinear overlap dedup: dropped 18/309 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
-Reorder: source order preserved (291 polylines).
-Segment counts: source=2165, fitted=2165, clipped=576
-Drawable segments after clip: 576 (26.6% of source)
+Fit reference: source page bounds x(0.000, 421.047) y(0.000, 298.111); preserving sheet-relative placement.
+Fit to work area: scale=0.8550, translate=(-90.000,-282.444), from (0.000, 0.000)-(421.047, 298.111)
+Pass window: col 1/2, row 1/1, source=360.000x254.888 mm, window=180.000x254.888 mm, offset=(0.000,0.000), shift=(90.000,0.000)
+Work area clipping: kept 502 visible segments, dropped 1663 out-of-area segments.
+Segment dedup: dropped 232/502 retraced segments (46.2%), kept=270, eps=0.010 mm
+Collinear overlap dedup: dropped 15/270 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
+Reorder: source order preserved (255 polylines).
+Segment counts: source=2165, fitted=2165, clipped=502
+Drawable segments after clip: 502 (23.2% of source)
 Warning: significant clipping/transforming occurred. Check that page is inside target work area.
-Prepared bounds: x(0.000, 180.000) y(-286.977, -23.023)
-Estimated draw length: 3.09 m
+Prepared bounds: x(20.520, 180.000) y(-277.739, -32.334)
+Estimated draw length: 2.55 m
 Applying pen-up / pen-down ...
-G-code stats: lines=863, draw=659, travel=190, bounds=0.000..180.000 x, -286.977..0.000 y
-Preflight: ok: lines=863, draw=659, travel=190, ratio=0.29
-Saved file stats: lines=863, draw=659, travel=190, bounds=0.000..180.000 x, -286.977..0.000 y
-Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1777205680512384600.nc
-Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1777205680512384600_vector.svg
-Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1777205680512384600_vector.pdf
+G-code stats: lines=1062, draw=569, travel=163, bounds=0.000..180.000 x, -277.739..0.000 y
+Preflight: ok: lines=1062, draw=569, travel=163, ratio=0.29
+Saved file stats: lines=1062, draw=569, travel=163, bounds=0.000..180.000 x, -277.739..0.000 y
+Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1777214883207535000.nc
+Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1777214883207535000_vector.svg
+Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1777214883207535000_vector.pdf
 Sheet preview centered on compact source page bbox: ref=(0.353,0.353)..(420.518,297.670) mm
-Sheet preview placed on source page: offset=(120.524,304.056) mm
+Sheet preview placed on source page: offset=(110.264,304.092) mm

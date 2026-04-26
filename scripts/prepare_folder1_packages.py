@@ -325,8 +325,12 @@ def _kompas_text_join_backend_overrides(source_pdf: Path | None) -> dict[str, An
     # KOMPAS text is already exported as positioned vector fragments. Joining
     # those fragments with the pen down creates visible connector strokes and
     # makes letters look shifted away from their source-PDF positions.
+    # KOMPAS sheets must also be fitted by the source page, not by the detected
+    # path bbox, otherwise cleaned service strips change the sheet-relative
+    # placement of dimensions/title-block text.
     return {
         "TECH_TEXT_JOIN_ENABLE": False,
+        "FIT_TO_SOURCE_PAGE_BOUNDS": True,
     }
 
 
