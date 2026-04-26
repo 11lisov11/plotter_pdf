@@ -23,15 +23,15 @@
     {
       "variant": "fit_full",
       "ok": true,
-      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_preview-1777141204827768600_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_preview-1777141204827768600.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_preview-1777141204827768600_vector.pdf",
+      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_preview-1777205713133088300_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_preview-1777205713133088300.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_preview-1777205713133088300_vector.pdf",
       "logs": [
         "Render mode: drawing; ExactGeometry=on; Handwriting=off",
         "Sheet 210.0x297.0 mm is larger than workspace 180.0x280.0 mm. Using the overlapped sheet/workspace window.",
         "Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-295.000,-15.000), sheet_bounds x(0.000,210.000) y(-295.000,2.000), sheet=a4, anchor=lower_left, offset=(0.00,0.00)",
         "Converting PDF -> SVG ...",
         "Inkscape PDF import disabled (USE_INKSCAPE_PDF_IMPORT=False and handwriting=off).",
-        "Trying pdftocairo: C:\\Users\\11lis\\AppData\\Local\\Microsoft\\WinGet\\Packages\\oschwartz10612.Poppler_Microsoft.Winget.Source_8wekyb3d8bbwe\\poppler-25.07.0\\Library\\bin\\pdftocairo.EXE -svg -f 1 -l 1 C:\\Users\\11lis\\AppData\\Local\\Temp\\plotter_ascii_drawing_24tmbxzk\\input.pdf C:\\plotter_pdf\\_tmp\\tmpv3ez22uu\\source_pdftocairo",
-        "Using generated SVG: C:\\plotter_pdf\\_tmp\\tmpv3ez22uu\\source_pdftocairo",
+        "Trying pdftocairo: C:\\Users\\11lis\\AppData\\Local\\Microsoft\\WinGet\\Packages\\oschwartz10612.Poppler_Microsoft.Winget.Source_8wekyb3d8bbwe\\poppler-25.07.0\\Library\\bin\\pdftocairo.EXE -svg -f 1 -l 1 C:\\Users\\11lis\\AppData\\Local\\Temp\\plotter_ascii_drawing_wx92e9g7\\input.pdf C:\\plotter_pdf\\_tmp\\tmp5v1n_hxl\\source_pdftocairo",
+        "Using generated SVG: C:\\plotter_pdf\\_tmp\\tmp5v1n_hxl\\source_pdftocairo",
         "Text nodes after conversion: 0",
         "Converter metrics [pdftocairo]: score=6419.6, paths=3853, seg=4550, med=0.5492, tiny<=0.2*med=76, short<=0.4*med=909, overflow_penalty=0.0, had_text=no, handwriting_nodes=0",
         "Selected PDF converter: pdftocairo (score=6419.6, paths=3853, seg=4550, med=0.5492, tiny<=0.2*med=76, short<=0.4*med=909, overflow_penalty=0.0)",
@@ -54,9 +54,9 @@
         "G-code stats: lines=14345, draw=10906, travel=3425, bounds=0.000..180.000 x, -282.307..0.000 y",
         "Preflight: ok: lines=14345, draw=10906, travel=3425, ratio=0.31",
         "Saved file stats: lines=14345, draw=10906, travel=3425, bounds=0.000..180.000 x, -282.307..0.000 y",
-        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_preview-1777141204827768600.nc",
-        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_preview-1777141204827768600_vector.svg",
-        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_preview-1777141204827768600_vector.pdf",
+        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_preview-1777205713133088300.nc",
+        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_preview-1777205713133088300_vector.svg",
+        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_preview-1777205713133088300_vector.pdf",
         "Sheet preview centered on compact source page bbox: ref=(0.353,0.353)..(210.457,297.670) mm",
         "Sheet preview placed on source page: offset=(15.537,304.056) mm"
       ],
@@ -92,7 +92,7 @@
     {
       "variant": "mupdf_svg_paths",
       "ok": true,
-      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_preview-1777141219774244600_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_preview-1777141219774244600.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_preview-1777141219774244600_vector.pdf",
+      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_preview-1777205725270477200_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_preview-1777205725270477200.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_preview-1777205725270477200_vector.pdf",
       "logs": [
         "A4 MuPDF source route: direct PDF vector SVG export with text_as_path=True; kompas_archive_strip_removed=8; kompas_service_region_removed=552; kompas_under_frame_removed=1; kompas_top_outer_frame_removed=2; no title-block reroute.",
         "Render mode: drawing; ExactGeometry=on; Handwriting=off",
@@ -116,9 +116,9 @@
         "G-code stats: lines=5150, draw=4069, travel=1067, bounds=0.000..180.000 x, -294.634..0.000 y",
         "Preflight: ok: lines=5150, draw=4069, travel=1067, ratio=0.26",
         "Saved file stats: lines=5150, draw=4069, travel=1067, bounds=0.000..180.000 x, -294.634..0.000 y",
-        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_preview-1777141219774244600.nc",
-        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_preview-1777141219774244600_vector.svg",
-        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_preview-1777141219774244600_vector.pdf",
+        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_preview-1777205725270477200.nc",
+        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_preview-1777205725270477200_vector.svg",
+        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_preview-1777205725270477200_vector.pdf",
         "Sheet preview centered on compact source page bbox: ref=(0.353,0.353)..(210.457,297.670) mm",
         "Sheet preview placed on source page: offset=(15.537,304.056) mm"
       ],

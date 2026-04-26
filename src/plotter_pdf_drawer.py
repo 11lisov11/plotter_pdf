@@ -192,6 +192,12 @@ HOME_Y = 0.0
 # NOTE: GRBL will still respect its $110/$111 max rate caps.
 FEED_TRAVEL = 15000.0
 FEED_DRAW = 12000.0
+# Physical plotter safeguard: tiny KOMPAS/technical-text fragments are too short
+# for the mechanics to mark reliably at the normal long-line drawing feed.
+TECH_TEXT_MICRO_STROKE_FEED_ENABLED = True
+TECH_TEXT_MICRO_STROKE_FEED_DRAW = 3500.0
+TECH_TEXT_MICRO_STROKE_MAX_LENGTH_MM = 16.0
+TECH_TEXT_MICRO_STROKE_MAX_SPAN_MM = 8.5
 SEGMENT_TOLERANCE_MM = 8.0
 MAX_ARC_SEGMENT_MM = 14.0
 CURVE_SEGMENT_MM = 4.0
@@ -7146,6 +7152,40 @@ def _arc_is_grbl_safe(from_pt: Tuple[float, float], to_pt: Tuple[float, float], 
     return abs(r0 - r1) <= GRBL_ARC_RADIUS_MATCH_TOL_MM
 
 
+def _polyline_bbox_size(poly: List[Tuple[float, float]]) -> Tuple[float, float]:
+    if not poly:
+        return 0.0, 0.0
+    xs = [float(pt[0]) for pt in poly]
+    ys = [float(pt[1]) for pt in poly]
+    return max(xs) - min(xs), max(ys) - min(ys)
+
+
+def _is_micro_technical_stroke(poly: List[Tuple[float, float]]) -> bool:
+    if len(poly) < 2:
+        return False
+    length = polyline_length(poly)
+    if length <= 1e-9 or length > float(TECH_TEXT_MICRO_STROKE_MAX_LENGTH_MM):
+        return False
+    w, h = _polyline_bbox_size(poly)
+    return max(w, h) <= float(TECH_TEXT_MICRO_STROKE_MAX_SPAN_MM)
+
+
+def _feed_draw_for_polyline(
+    poly: List[Tuple[float, float]],
+    feed_draw: float,
+    *,
+    micro_stroke_feed: bool,
+) -> float:
+    if not micro_stroke_feed or not TECH_TEXT_MICRO_STROKE_FEED_ENABLED:
+        return float(feed_draw)
+    micro_feed = float(TECH_TEXT_MICRO_STROKE_FEED_DRAW)
+    if micro_feed <= 0.0 or float(feed_draw) <= micro_feed:
+        return float(feed_draw)
+    if _is_micro_technical_stroke(poly):
+        return micro_feed
+    return float(feed_draw)
+
+
 def write_xy_gcode(
     output: Path,
     polylines: List[List[Tuple[float, float]]],
@@ -7153,6 +7193,7 @@ def write_xy_gcode(
     feed_draw: float,
     *,
     join_eps: Optional[float] = None,
+    micro_stroke_feed: bool = True,
 ) -> None:
     lines = [
         "G21",
@@ -7185,6 +7226,7 @@ def write_xy_gcode(
                 # Snap the start point to the current position so G2/G3 I/J offsets are valid.
                 # Without this, tiny numeric gaps can produce invalid arcs or huge "circle" bulges.
                 poly = [pos] + list(poly[1:])
+        poly_feed_draw = _feed_draw_for_polyline(poly, feed_draw, micro_stroke_feed=micro_stroke_feed)
 
         # Common PDF/SVG artifact: a single line is represented as A->B->A in one path.
         # Drawing the return stroke makes lines look doubled and wastes time. Convert it to:
@@ -7193,7 +7235,7 @@ def write_xy_gcode(
             mid = poly[1]
             start = poly[0]
             if pos is None or points_distance(mid, pos) > 1e-9:
-                lines.append(f"G1 X{mid[0]:.4f} Y{mid[1]:.4f} F{feed_draw:.1f}")
+                lines.append(f"G1 X{mid[0]:.4f} Y{mid[1]:.4f} F{poly_feed_draw:.1f}")
             # Rapid back to start without drawing (penlift postprocess will raise pen before this G0).
             lines.append(f"G0 X{start[0]:.4f} Y{start[1]:.4f} F{feed_travel:.1f}")
             pos = start
@@ -7203,7 +7245,7 @@ def write_xy_gcode(
         if line_fit_tol > 0.0 and polyline_is_near_line(poly, line_fit_tol):
             end = poly[-1]
             if pos is None or points_distance(end, pos) > 1e-9:
-                lines.append(f"G1 X{end[0]:.4f} Y{end[1]:.4f} F{feed_draw:.1f}")
+                lines.append(f"G1 X{end[0]:.4f} Y{end[1]:.4f} F{poly_feed_draw:.1f}")
                 pos = end
             continue
 
@@ -7258,7 +7300,7 @@ def write_xy_gcode(
                 i = center[0] - from_pt[0]
                 j = center[1] - from_pt[1]
                 if with_f:
-                    lines.append(f"{code} X{to_pt[0]:.4f} Y{to_pt[1]:.4f} I{i:.4f} J{j:.4f} F{feed_draw:.1f}")
+                    lines.append(f"{code} X{to_pt[0]:.4f} Y{to_pt[1]:.4f} I{i:.4f} J{j:.4f} F{poly_feed_draw:.1f}")
                 else:
                     lines.append(f"{code} X{to_pt[0]:.4f} Y{to_pt[1]:.4f} I{i:.4f} J{j:.4f}")
 
@@ -7299,7 +7341,7 @@ def write_xy_gcode(
             if pos is not None and points_distance(pt, pos) <= 1e-9:
                 continue
             if not drew:
-                lines.append(f"G1 X{pt[0]:.4f} Y{pt[1]:.4f} F{feed_draw:.1f}")
+                lines.append(f"G1 X{pt[0]:.4f} Y{pt[1]:.4f} F{poly_feed_draw:.1f}")
                 drew = True
             else:
                 lines.append(f"G1 X{pt[0]:.4f} Y{pt[1]:.4f}")

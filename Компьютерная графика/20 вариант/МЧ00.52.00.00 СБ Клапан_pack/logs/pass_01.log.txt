@@ -111,8 +111,8 @@ Applying pen-up / pen-down ...
 G-code stats: lines=5054, draw=3938, travel=1102, bounds=0.000..180.000 x, -291.571..0.000 y
 Preflight: ok: lines=5054, draw=3938, travel=1102, ratio=0.28
 Saved file stats: lines=5054, draw=3938, travel=1102, bounds=0.000..180.000 x, -291.571..0.000 y
-Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1777140807074914400.nc
-Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1777140807074914400_vector.svg
-Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1777140807074914400_vector.pdf
+Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1777205626055746300.nc
+Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1777205626055746300_vector.svg
+Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1777205626055746300_vector.pdf
 Sheet preview centered on compact source page bbox: ref=(0.353,0.441)..(420.518,297.840) mm
 Sheet preview placed on source page: offset=(120.524,304.140) mm

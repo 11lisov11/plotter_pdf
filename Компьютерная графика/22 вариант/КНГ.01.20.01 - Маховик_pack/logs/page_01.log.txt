@@ -20,9 +20,9 @@ Applying pen-up / pen-down ...
 G-code stats: lines=6661, draw=5195, travel=1452, bounds=0.000..180.000 x, -294.634..0.000 y
 Preflight: ok: lines=6661, draw=5195, travel=1452, ratio=0.28
 Saved file stats: lines=6661, draw=5195, travel=1452, bounds=0.000..180.000 x, -294.634..0.000 y
-Saved: C:\plotter_pdf\_tmp\latest_preview_preview-1777141041583817400.nc
-Preview SVG: C:\plotter_pdf\_tmp\latest_preview_preview-1777141041583817400_vector.svg
-Preview PDF: C:\plotter_pdf\_tmp\latest_preview_preview-1777141041583817400_vector.pdf
+Saved: C:\plotter_pdf\_tmp\latest_preview_preview-1777205583332138400.nc
+Preview SVG: C:\plotter_pdf\_tmp\latest_preview_preview-1777205583332138400_vector.svg
+Preview PDF: C:\plotter_pdf\_tmp\latest_preview_preview-1777205583332138400_vector.pdf
 Sheet preview centered on compact source page bbox: ref=(0.353,0.353)..(210.457,297.759) mm
 Sheet preview placed on source page: offset=(15.537,304.056) mm
 Fixed-canvas preview centered on page: page=180.000x280.000 mm, offset=(0.000,295.000) mm

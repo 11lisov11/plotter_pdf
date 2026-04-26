@@ -321,7 +321,7 @@ def build_photo_plot_package(
 
     write_svg_preview(svg_path, result, work_area)
     write_pdf_preview(pdf_path, result, work_area)
-    backend.write_xy_gcode(xy_path, result.polylines, feed_travel, feed_draw)
+    backend.write_xy_gcode(xy_path, result.polylines, feed_travel, feed_draw, micro_stroke_feed=False)
     # Photo routes are not handwriting: short-travel merge creates visible connector
     # strokes across faces/backgrounds. Keep every inter-path travel as a true pen-up move.
     backend.apply_penlift(xy_path, pen_path, handwriting_mode=False, force_full_lift=True)

@@ -693,6 +693,58 @@ class BackendGeometryTests(unittest.TestCase):
             backend.Z_UP = old_z_up
             backend.Z_DOWN = old_z_down
 
+    def test_write_xy_gcode_slows_micro_technical_strokes_only(self) -> None:
+        old_enabled = backend.TECH_TEXT_MICRO_STROKE_FEED_ENABLED
+        old_micro_feed = backend.TECH_TEXT_MICRO_STROKE_FEED_DRAW
+        old_max_len = backend.TECH_TEXT_MICRO_STROKE_MAX_LENGTH_MM
+        old_max_span = backend.TECH_TEXT_MICRO_STROKE_MAX_SPAN_MM
+        try:
+            backend.TECH_TEXT_MICRO_STROKE_FEED_ENABLED = True
+            backend.TECH_TEXT_MICRO_STROKE_FEED_DRAW = 3500.0
+            backend.TECH_TEXT_MICRO_STROKE_MAX_LENGTH_MM = 16.0
+            backend.TECH_TEXT_MICRO_STROKE_MAX_SPAN_MM = 8.5
+            with tempfile.TemporaryDirectory() as td:
+                path = Path(td) / "micro_feed.gcode"
+                backend.write_xy_gcode(
+                    path,
+                    [
+                        [(0.0, 0.0), (0.5, -0.5), (1.0, 0.0)],
+                        [(0.0, -20.0), (60.0, -20.0)],
+                    ],
+                    feed_travel=15000.0,
+                    feed_draw=12000.0,
+                )
+                text = path.read_text(encoding="utf-8")
+            self.assertIn("G1 X0.5000 Y-0.5000 F3500.0", text)
+            self.assertIn("G1 X60.0000 Y-20.0000 F12000.0", text)
+        finally:
+            backend.TECH_TEXT_MICRO_STROKE_FEED_ENABLED = old_enabled
+            backend.TECH_TEXT_MICRO_STROKE_FEED_DRAW = old_micro_feed
+            backend.TECH_TEXT_MICRO_STROKE_MAX_LENGTH_MM = old_max_len
+            backend.TECH_TEXT_MICRO_STROKE_MAX_SPAN_MM = old_max_span
+
+    def test_write_xy_gcode_can_disable_micro_stroke_feed(self) -> None:
+        old_enabled = backend.TECH_TEXT_MICRO_STROKE_FEED_ENABLED
+        old_micro_feed = backend.TECH_TEXT_MICRO_STROKE_FEED_DRAW
+        try:
+            backend.TECH_TEXT_MICRO_STROKE_FEED_ENABLED = True
+            backend.TECH_TEXT_MICRO_STROKE_FEED_DRAW = 3500.0
+            with tempfile.TemporaryDirectory() as td:
+                path = Path(td) / "no_micro_feed.gcode"
+                backend.write_xy_gcode(
+                    path,
+                    [[(0.0, 0.0), (0.5, -0.5), (1.0, 0.0)]],
+                    feed_travel=15000.0,
+                    feed_draw=12000.0,
+                    micro_stroke_feed=False,
+                )
+                text = path.read_text(encoding="utf-8")
+            self.assertIn("G1 X0.5000 Y-0.5000 F12000.0", text)
+            self.assertNotIn("F3500.0", text)
+        finally:
+            backend.TECH_TEXT_MICRO_STROKE_FEED_ENABLED = old_enabled
+            backend.TECH_TEXT_MICRO_STROKE_FEED_DRAW = old_micro_feed
+
     def test_extract_image_tone_hatch_segments_px_simple(self) -> None:
         if backend.cv2 is None or backend.np is None:
             self.skipTest("opencv/numpy unavailable")
