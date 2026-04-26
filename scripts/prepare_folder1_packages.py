@@ -2459,6 +2459,197 @@ def _analyze_gcode(nc_path: Path) -> dict[str, Any]:
     }
 
 
+def _machine_work_area_bounds_mm() -> tuple[float, float, float, float]:
+    area_min_x, area_max_x, area_min_y, area_max_y = backend.base_work_area_bounds()
+    return (
+        float(min(area_min_x, area_max_x)),
+        float(max(area_min_x, area_max_x)),
+        float(min(area_min_y, area_max_y)),
+        float(max(area_min_y, area_max_y)),
+    )
+
+
+def _work_area_frame_polyline(bounds_mm: tuple[float, float, float, float] | None = None) -> list[tuple[float, float]]:
+    min_x, max_x, min_y, max_y = bounds_mm if bounds_mm is not None else _machine_work_area_bounds_mm()
+    return [
+        (float(min_x), float(max_y)),
+        (float(max_x), float(max_y)),
+        (float(max_x), float(min_y)),
+        (float(min_x), float(min_y)),
+        (float(min_x), float(max_y)),
+    ]
+
+
+def _is_outer_bbox_frame_segment(
+    a: tuple[float, float],
+    b: tuple[float, float],
+    *,
+    bbox_mm: tuple[float, float, float, float],
+    edge_eps_mm: float = 0.80,
+) -> bool:
+    src_x0, src_y0, src_x1, src_y1 = [float(v) for v in bbox_mm]
+    width = max(1e-9, src_x1 - src_x0)
+    height = max(1e-9, src_y1 - src_y0)
+    ax, ay = float(a[0]), float(a[1])
+    bx, by = float(b[0]), float(b[1])
+    dx = abs(bx - ax)
+    dy = abs(by - ay)
+    horizontal = dy <= float(edge_eps_mm)
+    vertical = dx <= float(edge_eps_mm)
+    if horizontal:
+        y = (ay + by) * 0.5
+        if (abs(y - src_y0) <= float(edge_eps_mm) or abs(y - src_y1) <= float(edge_eps_mm)) and dx >= max(
+            20.0,
+            width * 0.35,
+        ):
+            return True
+    if vertical:
+        x = (ax + bx) * 0.5
+        if (abs(x - src_x0) <= float(edge_eps_mm) or abs(x - src_x1) <= float(edge_eps_mm)) and dy >= max(
+            20.0,
+            height * 0.35,
+        ):
+            return True
+    return False
+
+
+def _replace_outer_bbox_frame_with_work_area_frame(
+    polylines: list[list[tuple[float, float]]],
+    *,
+    work_area_bounds_mm: tuple[float, float, float, float] | None = None,
+) -> tuple[list[list[tuple[float, float]]], dict[str, Any]]:
+    clean_polys = [list(poly) for poly in polylines if len(poly) >= 2]
+    if not clean_polys:
+        return [], {"applied": False, "removed_segments": 0}
+    bbox = _polys_bbox_mm(clean_polys)
+    kept: list[list[tuple[float, float]]] = []
+    removed_segments = 0
+    for poly in clean_polys:
+        current: list[tuple[float, float]] = []
+        for idx in range(1, len(poly)):
+            a = (float(poly[idx - 1][0]), float(poly[idx - 1][1]))
+            b = (float(poly[idx][0]), float(poly[idx][1]))
+            if _is_outer_bbox_frame_segment(a, b, bbox_mm=bbox):
+                if len(current) >= 2:
+                    kept.append(current)
+                current = []
+                removed_segments += 1
+                continue
+            if not current:
+                current = [a]
+            current.append(b)
+        if len(current) >= 2:
+            kept.append(current)
+
+    if removed_segments < 2:
+        return clean_polys, {
+            "applied": False,
+            "removed_segments": int(removed_segments),
+            "source_bbox": [round(float(v), 4) for v in bbox],
+        }
+
+    frame = _work_area_frame_polyline(work_area_bounds_mm)
+    out = [frame, *kept]
+    return out, {
+        "applied": True,
+        "removed_segments": int(removed_segments),
+        "source_bbox": [round(float(v), 4) for v in bbox],
+        "work_area_bounds": [round(float(v), 4) for v in (work_area_bounds_mm or _machine_work_area_bounds_mm())],
+    }
+
+
+@contextmanager
+def _literal_gcode_rewrite_context() -> Any:
+    prev = {
+        "SIMPLIFY_ENABLED": bool(getattr(backend, "SIMPLIFY_ENABLED", True)),
+        "EMIT_ARCS": bool(getattr(backend, "EMIT_ARCS", True)),
+        "LINE_FIT_TOL_MM": float(getattr(backend, "LINE_FIT_TOL_MM", 0.0)),
+        "RDP_SIMPLIFY_EPS_MM": float(getattr(backend, "RDP_SIMPLIFY_EPS_MM", 0.0)),
+    }
+    try:
+        setattr(backend, "SIMPLIFY_ENABLED", False)
+        setattr(backend, "EMIT_ARCS", False)
+        setattr(backend, "LINE_FIT_TOL_MM", 0.0)
+        setattr(backend, "RDP_SIMPLIFY_EPS_MM", 0.0)
+        yield
+    finally:
+        for key, value in prev.items():
+            setattr(backend, key, value)
+
+
+def _rewrite_final_gcode_from_polylines(
+    polylines: list[list[tuple[float, float]]],
+    *,
+    dst_nc: Path,
+    dst_gcode: Path,
+) -> None:
+    dst_nc.parent.mkdir(parents=True, exist_ok=True)
+    (PROJECT_ROOT / "_tmp").mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=str(PROJECT_ROOT / "_tmp"), ignore_cleanup_errors=True) as td:
+        work = Path(td)
+        xy_path = work / "frame_rewrite_xy.gcode"
+        pen_path = work / "frame_rewrite_pen.gcode"
+        final_path = work / "frame_rewrite_final.gcode"
+        with _literal_gcode_rewrite_context():
+            backend.write_xy_gcode(
+                xy_path,
+                polylines,
+                float(backend.FEED_TRAVEL),
+                float(backend.FEED_DRAW),
+                join_eps=0.0,
+            )
+            backend.apply_penlift(
+                xy_path,
+                pen_path,
+                z_down=float(backend.Z_DOWN),
+                handwriting_mode=False,
+                force_full_lift=True,
+            )
+            backend.make_final_with_preamble(pen_path, final_path)
+        _copy_nc_and_gcode(final_path, dst_nc, dst_gcode)
+
+
+def _normalize_kompas_work_area_frame_gcode(
+    *,
+    source_pdf: Path,
+    nc_path: Path,
+    gcode_path: Path,
+    logs: list[str],
+) -> dict[str, Any]:
+    if _drawing_frame_class(source_pdf) != "kompas_full_frame":
+        return {"applied": False, "reason": "not_kompas_full_frame"}
+    try:
+        lines = nc_path.read_text(encoding="utf-8", errors="ignore").splitlines()
+        polylines = _gcode_to_polylines(lines, z_up=float(backend.Z_UP), z_down=float(backend.Z_DOWN))
+    except Exception as exc:
+        meta = {"applied": False, "reason": f"parse_failed:{type(exc).__name__}"}
+        logs.append(f"KOMPAS work-area frame normalization skipped: {meta['reason']}.")
+        return meta
+    rewritten, meta = _replace_outer_bbox_frame_with_work_area_frame(
+        polylines,
+        work_area_bounds_mm=_machine_work_area_bounds_mm(),
+    )
+    if not bool(meta.get("applied")):
+        logs.append(
+            "KOMPAS work-area frame normalization skipped: "
+            f"removed_segments={int(meta.get('removed_segments', 0))}."
+        )
+        return meta
+    _rewrite_final_gcode_from_polylines(
+        rewritten,
+        dst_nc=nc_path,
+        dst_gcode=gcode_path,
+    )
+    logs.append(
+        "KOMPAS work-area frame normalized: "
+        f"source_bbox={meta.get('source_bbox')}, "
+        f"work_area={meta.get('work_area_bounds')}, "
+        f"removed_outer_segments={int(meta.get('removed_segments', 0))}; "
+        "inner geometry kept in machine coordinates."
+    )
+    return meta
+
+
 def _bounds_text(metrics: dict[str, Any]) -> str:
     b = dict(metrics.get("bounds", {}))
     return (
@@ -6770,6 +6961,14 @@ def _prepare_drawing_package(source_pdf: Path, package_dir: Path) -> tuple[dict[
         ):
             _copy_file(Path(str(best[src_key])), dst_path)
         chosen_logs = list(best.get("logs", []))
+        frame_meta = _normalize_kompas_work_area_frame_gcode(
+            source_pdf=source_pdf,
+            nc_path=best_prefix.with_suffix(".nc"),
+            gcode_path=best_prefix.with_suffix(".gcode"),
+            logs=chosen_logs,
+        )
+        if bool(frame_meta.get("applied")):
+            report["work_area_frame"] = frame_meta
         preview_ok, preview_err = _rewrite_preview_on_work_area_canvas_from_gcode(
             gcode_path=best_prefix.with_suffix(".nc"),
             out_svg=best_prefix.with_suffix(".svg"),
@@ -6798,7 +6997,7 @@ def _prepare_drawing_package(source_pdf: Path, package_dir: Path) -> tuple[dict[
                 "pdf": str(ref_pdf_dst),
                 "svg": str(ref_svg_dst),
             }
-        metrics = dict(best.get("metrics", {}))
+        metrics = _analyze_gcode(best_prefix.with_suffix(".nc"))
         rows.append(
             ArtifactRow(
                 source_pdf=str(source_pdf),
@@ -6826,6 +7025,7 @@ def _prepare_drawing_package(source_pdf: Path, package_dir: Path) -> tuple[dict[
                         f"variant={best.get('variant')}",
                         f"scale={best.get('fit_scale')}",
                         f"clipping={bool(best.get('clipping_warning'))}",
+                        "work_area_frame=normalized" if bool(frame_meta.get("applied")) else "",
                         str(best.get("notes", "")),
                     ]
                     if part
@@ -7008,6 +7208,14 @@ def _prepare_drawing_package(source_pdf: Path, package_dir: Path) -> tuple[dict[
         ):
             _copy_file(Path(str(best[src_key])), dst_path)
         chosen_logs = list(best.get("logs", []))
+        frame_meta = _normalize_kompas_work_area_frame_gcode(
+            source_pdf=source_pdf,
+            nc_path=best_prefix.with_suffix(".nc"),
+            gcode_path=best_prefix.with_suffix(".gcode"),
+            logs=chosen_logs,
+        )
+        if bool(frame_meta.get("applied")):
+            report["work_area_frame"] = frame_meta
         preview_ok, preview_err = _rewrite_preview_on_work_area_canvas_from_gcode(
             gcode_path=best_prefix.with_suffix(".nc"),
             out_svg=best_prefix.with_suffix(".svg"),
@@ -7036,7 +7244,7 @@ def _prepare_drawing_package(source_pdf: Path, package_dir: Path) -> tuple[dict[
                 "pdf": str(ref_pdf_dst),
                 "svg": str(ref_svg_dst),
             }
-        metrics = dict(best.get("metrics", {}))
+        metrics = _analyze_gcode(best_prefix.with_suffix(".nc"))
         rows.append(
             ArtifactRow(
                 source_pdf=str(source_pdf),
@@ -7066,6 +7274,7 @@ def _prepare_drawing_package(source_pdf: Path, package_dir: Path) -> tuple[dict[
                         f"clipping={bool(best.get('clipping_warning'))}",
                         f"source_crop_iou={float(best.get('source_crop_iou', 0.0) or 0.0):.6f}",
                         f"source_crop_corr={float(best.get('source_crop_corr', 0.0) or 0.0):.6f}",
+                        "work_area_frame=normalized" if bool(frame_meta.get("applied")) else "",
                         str(best.get("notes", "")),
                     ]
                     if part

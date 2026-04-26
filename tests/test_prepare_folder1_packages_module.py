@@ -68,6 +68,42 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
         self.assertEqual(metrics["point_like_strokes"], 1)
         self.assertGreater(float(metrics["avg_stroke_length_mm"]), 0.0)
 
+    def test_replace_outer_bbox_frame_with_work_area_frame_keeps_inner_geometry(self) -> None:
+        mod = _load_module()
+        old_frame = [
+            (17.4729, -32.6535),
+            (17.4729, -277.4187),
+            (175.2345, -277.4187),
+            (175.2345, -32.6535),
+            (17.4729, -32.6535),
+        ]
+        inner_line = [(55.0, -110.0), (75.0, -110.0)]
+
+        rewritten, meta = mod._replace_outer_bbox_frame_with_work_area_frame(
+            [old_frame, inner_line],
+            work_area_bounds_mm=(0.0, 180.0, -295.0, -15.0),
+        )
+
+        self.assertTrue(meta["applied"])
+        self.assertEqual(meta["removed_segments"], 4)
+        self.assertEqual(
+            rewritten[0],
+            [(0.0, -15.0), (180.0, -15.0), (180.0, -295.0), (0.0, -295.0), (0.0, -15.0)],
+        )
+        self.assertIn(inner_line, rewritten)
+
+    def test_replace_outer_bbox_frame_with_work_area_frame_noops_without_frame(self) -> None:
+        mod = _load_module()
+        inner = [[(20.0, -40.0), (40.0, -60.0)], [(60.0, -70.0), (80.0, -90.0)]]
+
+        rewritten, meta = mod._replace_outer_bbox_frame_with_work_area_frame(
+            inner,
+            work_area_bounds_mm=(0.0, 180.0, -295.0, -15.0),
+        )
+
+        self.assertFalse(meta["applied"])
+        self.assertEqual(rewritten, inner)
+
     def test_candidate_source_fidelity_score_rewards_similarity_and_crop(self) -> None:
         mod = _load_module()
         low = mod._candidate_source_fidelity_score(

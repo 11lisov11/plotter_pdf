@@ -22,10 +22,11 @@ Applying pen-up / pen-down ...
 G-code stats: lines=14332, draw=8031, travel=2099, bounds=0.000..175.234 x, -277.491..0.000 y
 Preflight: ok: lines=14332, draw=8031, travel=2099, ratio=0.26
 Saved file stats: lines=14332, draw=8031, travel=2099, bounds=0.000..175.234 x, -277.491..0.000 y
-Saved: C:\plotter_pdf\_tmp\latest_preview_preview-1777219259295025200.nc
-Preview SVG: C:\plotter_pdf\_tmp\latest_preview_preview-1777219259295025200_vector.svg
-Preview PDF: C:\plotter_pdf\_tmp\latest_preview_preview-1777219259295025200_vector.pdf
+Saved: C:\plotter_pdf\_tmp\latest_preview_preview-1777225051057085200.nc
+Preview SVG: C:\plotter_pdf\_tmp\latest_preview_preview-1777225051057085200_vector.svg
+Preview PDF: C:\plotter_pdf\_tmp\latest_preview_preview-1777225051057085200_vector.pdf
 Sheet preview centered on compact source page bbox: ref=(0.265,0.265)..(210.457,297.582) mm
 Sheet preview placed on source page: offset=(9.183,304.164) mm
-Fixed-canvas preview centered on page: page=180.000x280.000 mm, offset=(-6.354,295.108) mm
+KOMPAS work-area frame normalized: source_bbox=[17.4729, -277.4908, 175.2345, -32.7258], work_area=[0.0, 180.0, -295.0, -15.0], removed_outer_segments=4; inner geometry kept in machine coordinates.
+Fixed-canvas preview centered on page: page=180.000x280.000 mm, offset=(0.000,295.000) mm
 Preview canvas switched to machine work area: 180.000x280.000 mm.
