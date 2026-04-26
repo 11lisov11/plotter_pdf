@@ -696,11 +696,13 @@ class BackendGeometryTests(unittest.TestCase):
     def test_write_xy_gcode_slows_micro_technical_strokes_only(self) -> None:
         old_enabled = backend.TECH_TEXT_MICRO_STROKE_FEED_ENABLED
         old_micro_feed = backend.TECH_TEXT_MICRO_STROKE_FEED_DRAW
+        old_micro_travel = backend.TECH_TEXT_MICRO_STROKE_FEED_TRAVEL
         old_max_len = backend.TECH_TEXT_MICRO_STROKE_MAX_LENGTH_MM
         old_max_span = backend.TECH_TEXT_MICRO_STROKE_MAX_SPAN_MM
         try:
             backend.TECH_TEXT_MICRO_STROKE_FEED_ENABLED = True
-            backend.TECH_TEXT_MICRO_STROKE_FEED_DRAW = 3500.0
+            backend.TECH_TEXT_MICRO_STROKE_FEED_DRAW = 1800.0
+            backend.TECH_TEXT_MICRO_STROKE_FEED_TRAVEL = 3500.0
             backend.TECH_TEXT_MICRO_STROKE_MAX_LENGTH_MM = 16.0
             backend.TECH_TEXT_MICRO_STROKE_MAX_SPAN_MM = 8.5
             with tempfile.TemporaryDirectory() as td:
@@ -715,11 +717,14 @@ class BackendGeometryTests(unittest.TestCase):
                     feed_draw=12000.0,
                 )
                 text = path.read_text(encoding="utf-8")
-            self.assertIn("G1 X0.5000 Y-0.5000 F3500.0", text)
+            self.assertIn("G0 X0.0000 Y0.0000 F3500.0", text)
+            self.assertIn("G1 X0.5000 Y-0.5000 F1800.0", text)
+            self.assertIn("G0 X0.0000 Y-20.0000 F15000.0", text)
             self.assertIn("G1 X60.0000 Y-20.0000 F12000.0", text)
         finally:
             backend.TECH_TEXT_MICRO_STROKE_FEED_ENABLED = old_enabled
             backend.TECH_TEXT_MICRO_STROKE_FEED_DRAW = old_micro_feed
+            backend.TECH_TEXT_MICRO_STROKE_FEED_TRAVEL = old_micro_travel
             backend.TECH_TEXT_MICRO_STROKE_MAX_LENGTH_MM = old_max_len
             backend.TECH_TEXT_MICRO_STROKE_MAX_SPAN_MM = old_max_span
 

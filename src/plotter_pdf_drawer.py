@@ -209,7 +209,8 @@ FEED_DRAW = 12000.0
 # Physical plotter safeguard: tiny KOMPAS/technical-text fragments are too short
 # for the mechanics to mark reliably at the normal long-line drawing feed.
 TECH_TEXT_MICRO_STROKE_FEED_ENABLED = True
-TECH_TEXT_MICRO_STROKE_FEED_DRAW = 3500.0
+TECH_TEXT_MICRO_STROKE_FEED_DRAW = 1800.0
+TECH_TEXT_MICRO_STROKE_FEED_TRAVEL = 3500.0
 TECH_TEXT_MICRO_STROKE_MAX_LENGTH_MM = 16.0
 TECH_TEXT_MICRO_STROKE_MAX_SPAN_MM = 8.5
 SEGMENT_TOLERANCE_MM = 8.0
@@ -7200,6 +7201,22 @@ def _feed_draw_for_polyline(
     return float(feed_draw)
 
 
+def _feed_profile_for_polyline(
+    poly: List[Tuple[float, float]],
+    feed_travel: float,
+    feed_draw: float,
+    *,
+    micro_stroke_feed: bool,
+) -> Tuple[float, float]:
+    draw_feed = _feed_draw_for_polyline(poly, feed_draw, micro_stroke_feed=micro_stroke_feed)
+    travel_feed = float(feed_travel)
+    if draw_feed != float(feed_draw) and micro_stroke_feed and TECH_TEXT_MICRO_STROKE_FEED_ENABLED:
+        micro_travel = float(TECH_TEXT_MICRO_STROKE_FEED_TRAVEL)
+        if micro_travel > 0.0 and float(feed_travel) > micro_travel:
+            travel_feed = micro_travel
+    return travel_feed, draw_feed
+
+
 def write_xy_gcode(
     output: Path,
     polylines: List[List[Tuple[float, float]]],
@@ -7226,21 +7243,27 @@ def write_xy_gcode(
         poly = simplify_polyline(poly)
         if len(poly) < 2:
             continue
+        poly_feed_travel, poly_feed_draw = _feed_profile_for_polyline(
+            poly,
+            feed_travel,
+            feed_draw,
+            micro_stroke_feed=micro_stroke_feed,
+        )
+
         # If the next polyline starts exactly where we ended (within tolerance),
         # do not force a pen-up travel move. This avoids unnecessary pen lifts.
         if pos is None:
-            lines.append(f"G0 X{poly[0][0]:.4f} Y{poly[0][1]:.4f} F{feed_travel:.1f}")
+            lines.append(f"G0 X{poly[0][0]:.4f} Y{poly[0][1]:.4f} F{poly_feed_travel:.1f}")
             pos = poly[0]
         else:
             d0 = points_distance(poly[0], pos)
             if d0 > join_eps_v:
-                lines.append(f"G0 X{poly[0][0]:.4f} Y{poly[0][1]:.4f} F{feed_travel:.1f}")
+                lines.append(f"G0 X{poly[0][0]:.4f} Y{poly[0][1]:.4f} F{poly_feed_travel:.1f}")
                 pos = poly[0]
             elif d0 > 1e-9:
                 # Snap the start point to the current position so G2/G3 I/J offsets are valid.
                 # Without this, tiny numeric gaps can produce invalid arcs or huge "circle" bulges.
                 poly = [pos] + list(poly[1:])
-        poly_feed_draw = _feed_draw_for_polyline(poly, feed_draw, micro_stroke_feed=micro_stroke_feed)
 
         # Common PDF/SVG artifact: a single line is represented as A->B->A in one path.
         # Drawing the return stroke makes lines look doubled and wastes time. Convert it to:
@@ -7251,7 +7274,7 @@ def write_xy_gcode(
             if pos is None or points_distance(mid, pos) > 1e-9:
                 lines.append(f"G1 X{mid[0]:.4f} Y{mid[1]:.4f} F{poly_feed_draw:.1f}")
             # Rapid back to start without drawing (penlift postprocess will raise pen before this G0).
-            lines.append(f"G0 X{start[0]:.4f} Y{start[1]:.4f} F{feed_travel:.1f}")
+            lines.append(f"G0 X{start[0]:.4f} Y{start[1]:.4f} F{poly_feed_travel:.1f}")
             pos = start
             continue
 
