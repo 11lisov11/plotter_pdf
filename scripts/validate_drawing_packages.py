@@ -141,6 +141,99 @@ def motor_release_issue(path: Path) -> dict[str, Any] | None:
     return None
 
 
+def unsafe_z_feed_issue(path: Path, *, max_feed: float = 2000.0) -> dict[str, Any] | None:
+    z_re = re.compile(r"\bZ(-?\d+(?:\.\d+)?)", re.IGNORECASE)
+    f_re = re.compile(r"\bF(-?\d+(?:\.\d+)?)", re.IGNORECASE)
+    xy_re = re.compile(r"\b[XY](-?\d+(?:\.\d+)?)", re.IGNORECASE)
+    g_re = re.compile(r"\bG([01](?:\.0+)?)\b", re.IGNORECASE)
+    for line_no, raw in enumerate(path.read_text(encoding="utf-8", errors="ignore").splitlines(), start=1):
+        line = _strip_comments(raw).strip()
+        if not line or not g_re.search(line) or not z_re.search(line) or xy_re.search(line):
+            continue
+        f_match = f_re.search(line)
+        if f_match and float(f_match.group(1)) > float(max_feed):
+            return {"line": line_no, "text": raw.strip(), "feed": float(f_match.group(1))}
+    return None
+
+
+def xy_rapid_with_pen_down_issue(path: Path) -> dict[str, Any] | None:
+    x_re = re.compile(r"\bX(-?\d+(?:\.\d+)?)", re.IGNORECASE)
+    y_re = re.compile(r"\bY(-?\d+(?:\.\d+)?)", re.IGNORECASE)
+    z_re = re.compile(r"\bZ(-?\d+(?:\.\d+)?)", re.IGNORECASE)
+    g_re = re.compile(r"\bG(\d+(?:\.\d+)?)", re.IGNORECASE)
+    m_re = re.compile(r"\bM(\d+(?:\.\d+)?)", re.IGNORECASE)
+    z_up = float(backend.Z_UP)
+    z_down = float(backend.Z_DOWN)
+    cur_z = z_up
+    pen_down = backend._pen_down_from_z_level(cur_z, z_up, z_down)
+    last_motion: int | None = None
+    for line_no, raw in enumerate(path.read_text(encoding="utf-8", errors="ignore").splitlines(), start=1):
+        line = _strip_comments(raw)
+        if not line:
+            continue
+        motion = None
+        for gm in g_re.findall(line):
+            try:
+                val = int(float(gm))
+            except Exception:
+                continue
+            if val in {0, 1, 2, 3}:
+                motion = val
+        if motion is None:
+            motion = last_motion
+        elif motion in {0, 1, 2, 3}:
+            last_motion = motion
+        for mm in m_re.findall(line):
+            try:
+                m_val = int(float(mm))
+            except Exception:
+                continue
+            if m_val == 3:
+                pen_down = True
+            elif m_val == 5:
+                pen_down = False
+        z_match = z_re.search(line)
+        if z_match:
+            cur_z = float(z_match.group(1))
+            pen_down = backend._pen_down_from_z_level(cur_z, z_up, z_down)
+        if motion == 0 and pen_down and (x_re.search(line) or y_re.search(line)):
+            return {"line": line_no, "text": raw.strip()}
+    return None
+
+
+def z_settle_issue(path: Path) -> dict[str, Any] | None:
+    z_re = re.compile(r"\bZ(-?\d+(?:\.\d+)?)", re.IGNORECASE)
+    xy_re = re.compile(r"\b[XY](-?\d+(?:\.\d+)?)", re.IGNORECASE)
+    g_re = re.compile(r"\bG(\d+(?:\.\d+)?)", re.IGNORECASE)
+    z_up = float(backend.Z_UP)
+    z_down = float(backend.Z_DOWN)
+    cur_z = z_up
+    pen_down = backend._pen_down_from_z_level(cur_z, z_up, z_down)
+    lines = path.read_text(encoding="utf-8", errors="ignore").splitlines()
+    for idx, raw in enumerate(lines):
+        line = _strip_comments(raw)
+        if not line or xy_re.search(line) or not g_re.search(line):
+            continue
+        z_match = z_re.search(line)
+        if not z_match:
+            continue
+        prev_down = pen_down
+        cur_z = float(z_match.group(1))
+        pen_down = backend._pen_down_from_z_level(cur_z, z_up, z_down)
+        if prev_down == pen_down:
+            continue
+        next_action = None
+        for nxt in lines[idx + 1 :]:
+            next_line = _strip_comments(nxt).strip()
+            if next_line:
+                next_action = next_line
+                break
+        if next_action is None or re.search(r"\bG4\b", next_action, re.IGNORECASE):
+            continue
+        return {"line": idx + 1, "text": raw.strip(), "next": next_action}
+    return None
+
+
 def _canonical_segment_key(a: tuple[float, float], b: tuple[float, float], ndigits: int = 3) -> tuple[tuple[float, float], tuple[float, float]]:
     p0 = (round(float(a[0]), ndigits), round(float(a[1]), ndigits))
     p1 = (round(float(b[0]), ndigits), round(float(b[1]), ndigits))
@@ -306,6 +399,36 @@ def validate_package(package_dir: Path) -> dict[str, Any]:
                 f"Production G-code releases steppers at line {release_issue['line']}: {release_issue['text']}",
                 gcode_path,
             )
+        z_feed_issue = unsafe_z_feed_issue(gcode_path)
+        if z_feed_issue:
+            _add_issue(
+                issues,
+                "fail",
+                "unsafe_z_feed",
+                f"Z move feed is too high at line {z_feed_issue['line']}: {z_feed_issue['text']}",
+                gcode_path,
+            )
+        rapid_issue = xy_rapid_with_pen_down_issue(gcode_path)
+        if rapid_issue:
+            _add_issue(
+                issues,
+                "fail",
+                "xy_rapid_with_pen_down",
+                f"G0 XY travel happens with pen down at line {rapid_issue['line']}: {rapid_issue['text']}",
+                gcode_path,
+            )
+        settle_issue = z_settle_issue(gcode_path)
+        if settle_issue:
+            _add_issue(
+                issues,
+                "fail",
+                "z_switch_without_settle",
+                (
+                    f"Z pen switch at line {settle_issue['line']} is not followed by dwell: "
+                    f"{settle_issue['text']} -> {settle_issue['next']}"
+                ),
+                gcode_path,
+            )
 
     production_paths = _production_gcode_paths(package_dir, is_a3)
     duplicate_metrics = duplicate_segment_metrics(production_paths)
@@ -345,6 +468,16 @@ def validate_package(package_dir: Path) -> dict[str, Any]:
         "preflight": {"checked_files": len(gcode_paths), "failed": len([i for i in failed if i.code == "gcode_preflight_failed"])},
         "pen_start": {"failed": len([i for i in failed if i.code == "first_xy_with_pen_down"])},
         "motor_release": {"failed": len([i for i in failed if i.code == "motor_release_forbidden"])},
+        "z_feed": {"failed": len([i for i in failed if i.code == "unsafe_z_feed"])},
+        "z_cycle": {
+            "failed": len(
+                [
+                    i
+                    for i in failed
+                    if i.code in {"xy_rapid_with_pen_down", "z_switch_without_settle"}
+                ]
+            )
+        },
         "bounds": {"checked_by_preflight": True},
         "fragmentation": frag,
         "duplicates": duplicate_metrics,

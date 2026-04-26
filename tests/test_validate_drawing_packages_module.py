@@ -23,8 +23,10 @@ def _write_ready_a4_package(package: Path, *, selected_variant: str = "fit_full"
             "G0 Z0.0000",
             "G0 X0.0000 Y0.0000",
             "G1 Z11.9000 F1000.0",
+            "G4 P0.06",
             "G1 X10.0000 Y-10.0000 F1000.0",
             "G0 Z0.0000",
+            "G4 P0.06",
             "M2",
         ]
     )
@@ -65,6 +67,8 @@ def test_validate_ready_a4_kompas_package(tmp_path: Path, monkeypatch) -> None:
     assert result["preflight"]["checked_files"] == 3
     assert result["pen_start"]["failed"] == 0
     assert result["motor_release"]["failed"] == 0
+    assert result["z_feed"]["failed"] == 0
+    assert result["z_cycle"]["failed"] == 0
     assert result["duplicates"]["duplicate_segments"] == 0
 
 
@@ -112,6 +116,79 @@ def test_validate_rejects_production_motor_release(tmp_path: Path, monkeypatch) 
     assert result["ok"] is False
     assert result["motor_release"]["failed"] == 3
     assert any(issue["code"] == "motor_release_forbidden" for issue in result["issues"])
+
+
+def test_validate_rejects_unsafe_z_feed(tmp_path: Path, monkeypatch) -> None:
+    package = tmp_path / "РљРѕРјРїСЊСЋС‚РµСЂРЅР°СЏ РіСЂР°С„РёРєР°" / "20 РІР°СЂРёР°РЅС‚" / "Sheet_pack"
+    _write_ready_a4_package(package)
+    bad = "\n".join(
+        [
+            "G21",
+            "G90",
+            "G0 Z0.0000 F800.0",
+            "G1 Z11.9000 F8000.0",
+            "G1 X10.0000 Y-10.0000 F1000.0",
+            "G1 Z0.0000 F8000.0",
+        ]
+    )
+    for gcode in [package / "page_01.gcode", package / "page_01.nc", package / "pages" / "page_01.gcode"]:
+        gcode.write_text(bad, encoding="utf-8")
+    monkeypatch.setattr(mod.backend, "preflight_check_gcode", lambda *_args, **_kwargs: (True, "ok"))
+
+    result = mod.validate_package(package)
+
+    assert result["ok"] is False
+    assert result["z_feed"]["failed"] == 3
+    assert any(issue["code"] == "unsafe_z_feed" for issue in result["issues"])
+
+
+def test_validate_rejects_rapid_travel_with_pen_down(tmp_path: Path, monkeypatch) -> None:
+    package = tmp_path / "Р С™Р С•Р СР С—РЎРЉРЎР‹РЎвЂљР ВµРЎР‚Р Р…Р В°РЎРЏ Р С–РЎР‚Р В°РЎвЂћР С‘Р С”Р В°" / "20 Р Р†Р В°РЎР‚Р С‘Р В°Р Р…РЎвЂљ" / "Sheet_pack"
+    _write_ready_a4_package(package)
+    bad = "\n".join(
+        [
+            "G21",
+            "G90",
+            "G1 Z11.9000 F700.0",
+            "G4 P0.06",
+            "G0 X10.0000 Y-10.0000 F1000.0",
+        ]
+    )
+    for gcode in [package / "page_01.gcode", package / "page_01.nc", package / "pages" / "page_01.gcode"]:
+        gcode.write_text(bad, encoding="utf-8")
+    monkeypatch.setattr(mod.backend, "preflight_check_gcode", lambda *_args, **_kwargs: (True, "ok"))
+
+    result = mod.validate_package(package)
+
+    assert result["ok"] is False
+    assert result["z_cycle"]["failed"] == 3
+    assert any(issue["code"] == "xy_rapid_with_pen_down" for issue in result["issues"])
+
+
+def test_validate_rejects_z_switch_without_settle(tmp_path: Path, monkeypatch) -> None:
+    package = tmp_path / "Р С™Р С•Р СР С—РЎРЉРЎР‹РЎвЂљР ВµРЎР‚Р Р…Р В°РЎРЏ Р С–РЎР‚Р В°РЎвЂћР С‘Р С”Р В°" / "20 Р Р†Р В°РЎР‚Р С‘Р В°Р Р…РЎвЂљ" / "Sheet_pack"
+    _write_ready_a4_package(package)
+    bad = "\n".join(
+        [
+            "G21",
+            "G90",
+            "G0 Z0.0000 F800.0",
+            "G0 X0.0000 Y0.0000",
+            "G1 Z11.9000 F700.0",
+            "G1 X10.0000 Y-10.0000 F1000.0",
+            "G1 Z0.0000 F700.0",
+            "G0 X20.0000 Y-20.0000 F1000.0",
+        ]
+    )
+    for gcode in [package / "page_01.gcode", package / "page_01.nc", package / "pages" / "page_01.gcode"]:
+        gcode.write_text(bad, encoding="utf-8")
+    monkeypatch.setattr(mod.backend, "preflight_check_gcode", lambda *_args, **_kwargs: (True, "ok"))
+
+    result = mod.validate_package(package)
+
+    assert result["ok"] is False
+    assert result["z_cycle"]["failed"] == 3
+    assert any(issue["code"] == "z_switch_without_settle" for issue in result["issues"])
 
 
 def test_ready_to_plot_scope_manifest_defines_release_contract() -> None:

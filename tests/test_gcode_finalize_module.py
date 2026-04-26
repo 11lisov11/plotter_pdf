@@ -85,6 +85,31 @@ class GcodeFinalizeModuleTests(unittest.TestCase):
             lines = [line.strip() for line in final.read_text(encoding="utf-8").splitlines() if line.strip()]
             self.assertEqual(lines[-1], "$1=0")
 
+    def test_make_final_with_preamble_can_force_startup_z_lift(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="plotter_gcode_finalize_startup_lift_") as td:
+            root = Path(td)
+            prepared = root / "prepared.nc"
+            final = root / "final.nc"
+            prepared.write_text("G1 X2 Y3\n", encoding="utf-8")
+
+            gcode_finalize.make_final_with_preamble(
+                prepared,
+                final,
+                z_up=0.0,
+                safe_lift_feed=800.0,
+                z_delay_up=0.06,
+                home_x=0.0,
+                home_y=0.0,
+                feed_travel=3000.0,
+                go_home_before_draw=False,
+                go_home_after_draw=False,
+                startup_force_z_lift_mm=4.0,
+            )
+
+            lines = [line.strip() for line in final.read_text(encoding="utf-8").splitlines() if line.strip()]
+            self.assertLess(lines.index("G92 Z4.0000"), lines.index("G0 Z0.0000 F800.0"))
+            self.assertIn("G92 Z0.0000", lines)
+
 
 if __name__ == "__main__":
     unittest.main()

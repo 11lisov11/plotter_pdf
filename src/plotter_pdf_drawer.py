@@ -177,6 +177,9 @@ Z_PROFILE_CLI_OVERRIDE = False
 Z_TRAVEL_LIFT_MM = 3.5
 # Full Z_UP travel between contours (mainly useful for pen/marker mode on uneven media).
 SAFE_PEN_TRAVEL_UP = False
+# Force a small physical upward move at job start. This recovers from Z
+# back-drive/lost steps where the controller thinks it is already at Z_UP.
+STARTUP_FORCE_Z_LIFT_MM = 4.0
 
 # Pen lift mode for GRBL output: 'z' (G0 Z..), or 'spindle' (M3/M5) for pen servo/servo via spindle.
 PEN_LIFT_MODE = "z"
@@ -8744,7 +8747,7 @@ def apply_penlift(
     z_soft_down_eff = float(Z_SOFT_DOWN_MM)
     z_soft_up_eff = float(Z_SOFT_UP_MM)
 
-    if TOOL_MODE == "pen" and PEN_FAST_Z_PROFILE_ENABLED and not Z_PROFILE_CLI_OVERRIDE:
+    if TOOL_MODE == "pen" and PEN_FAST_Z_PROFILE_ENABLED and bool(handwriting_mode) and not Z_PROFILE_CLI_OVERRIDE:
         z_delay_down_eff = float(PEN_FAST_Z_DELAY_DOWN)
         z_delay_up_eff = float(PEN_FAST_Z_DELAY_UP)
         z_feed_down_approach_eff = float(PEN_FAST_Z_FEED_DOWN_APPROACH)
@@ -9149,6 +9152,7 @@ def make_final_with_preamble(prepared_gcode: Path, final_gcode: Path) -> None:
         feed_travel=float(FEED_TRAVEL),
         go_home_before_draw=bool(GO_HOME_BEFORE_DRAW),
         go_home_after_draw=bool(GO_HOME_AFTER_DRAW),
+        startup_force_z_lift_mm=float(STARTUP_FORCE_Z_LIFT_MM),
     )
 
 
