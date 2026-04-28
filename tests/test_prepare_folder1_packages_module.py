@@ -104,6 +104,31 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
         self.assertFalse(meta["applied"])
         self.assertEqual(rewritten, inner)
 
+    def test_prepare_kompas_a4_clean_bbox_fit_uses_clean_bbox_not_source_page(self) -> None:
+        mod = _load_module()
+        frame = [
+            (20.0, 5.0),
+            (205.0, 5.0),
+            (205.0, 292.0),
+            (20.0, 292.0),
+            (20.0, 5.0),
+        ]
+        inner = [(70.0, 90.0), (120.0, 90.0)]
+        logs: list[str] = []
+
+        prepared, meta = mod._prepare_kompas_a4_clean_bbox_fit_polylines([frame, inner], logs=logs)
+
+        self.assertTrue(meta["applied"])
+        self.assertEqual(meta["clipped_segments"], 0)
+        self.assertAlmostEqual(meta["content_scale"], 180.0 / 185.0, places=6)
+        self.assertEqual(
+            prepared[0],
+            [(0.0, -15.0), (180.0, -15.0), (180.0, -295.0), (0.0, -295.0), (0.0, -15.0)],
+        )
+        prepared_lengths = [round(mod._polyline_length(poly), 3) for poly in prepared[1:]]
+        self.assertIn(round(50.0 * (180.0 / 185.0), 3), prepared_lengths)
+        self.assertTrue(any("source-page fit disabled" in line for line in logs))
+
     def test_candidate_source_fidelity_score_rewards_similarity_and_crop(self) -> None:
         mod = _load_module()
         low = mod._candidate_source_fidelity_score(
@@ -1546,6 +1571,48 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
         self.assertEqual(decision["frame_class"], "kompas_full_frame")
         self.assertEqual(decision["selection_reason"], "kompas_full_frame_direct_best")
         self.assertEqual(decision["route_class"], "A4 drawing with full KOMPAS frame")
+
+    def test_select_best_a4_drawing_candidate_prefers_kompas_clean_bbox_fit(self) -> None:
+        mod = _load_module()
+        source_pdf = (
+            Path("C:\\plotter_pdf")
+            / "\u041a\u043e\u043c\u043f\u044c\u044e\u0442\u0435\u0440\u043d\u0430\u044f \u0433\u0440\u0430\u0444\u0438\u043a\u0430"
+            / "20 \u0432\u0430\u0440\u0438\u0430\u043d\u0442"
+            / "\u041a\u041d\u0413.01.22.01 - \u041c\u0430\u0445\u043e\u0432\u0438\u043a.pdf"
+        )
+
+        def _mk_candidate(name: str, sim: float, notes: str = "") -> dict[str, object]:
+            return {
+                "variant": name,
+                "ok": True,
+                "layout_similarity": sim,
+                "metrics": {
+                    "segments_total": 2000,
+                    "pen_down_strokes": 800,
+                    "tiny_strokes_lt_08_mm": 100,
+                    "point_like_strokes": 50,
+                },
+                "source_crop_iou": 0.10,
+                "source_crop_corr": 0.10,
+                "notes": notes,
+                "clean_bbox_fit_meta": {"content_scale": 0.972991, "clipped_segments": 0},
+                "clipping_warning": False,
+            }
+
+        best, decision = mod._select_best_a4_drawing_candidate(
+            source_pdf,
+            [
+                _mk_candidate("fit_full", 0.99),
+                _mk_candidate(
+                    "mupdf_svg_paths",
+                    0.948,
+                    "kompas_source_page_fit_disabled=True; kompas_clean_bbox_scale=0.972991",
+                ),
+            ],
+        )
+
+        self.assertEqual(best["variant"], "mupdf_svg_paths")
+        self.assertEqual(decision["selection_reason"], "kompas_full_frame_clean_bbox_fit")
 
     def test_prepare_drawing_package_does_not_build_hybrid_for_kompas_full_frame(self) -> None:
         mod = _load_module()

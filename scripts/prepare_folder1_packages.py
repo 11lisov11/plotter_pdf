@@ -472,6 +472,23 @@ def _select_best_kompas_full_frame_a4_candidate(successful: list[dict[str, Any]]
     ]
     if not direct_candidates:
         return None
+    clean_bbox_candidates = [
+        row
+        for row in direct_candidates
+        if "kompas_source_page_fit_disabled=True" in str(row.get("notes", "") or "")
+    ]
+    if clean_bbox_candidates:
+        return max(
+            clean_bbox_candidates,
+            key=lambda row: (
+                -int(((row.get("clean_bbox_fit_meta", {}) or {}).get("clipped_segments", 0) or 0)),
+                not bool(row.get("clipping_warning")),
+                float((row.get("clean_bbox_fit_meta", {}) or {}).get("content_scale", 0.0) or 0.0),
+                _candidate_kompas_full_frame_quality_score(row),
+                _candidate_source_fidelity_score(row),
+                _candidate_fragmentation_score(dict(row.get("metrics", {}) or {})),
+            ),
+        )
     return max(
         direct_candidates,
         key=lambda row: (
@@ -612,6 +629,8 @@ def _select_best_a4_drawing_candidate(
         if best is None:
             best = max(successful, key=lambda row: float(row.get("layout_similarity", 0.0) or 0.0))
             selection_reason = "kompas_full_frame_fallback"
+        elif "kompas_source_page_fit_disabled=True" in str(best.get("notes", "") or ""):
+            selection_reason = "kompas_full_frame_clean_bbox_fit"
         else:
             selection_reason = "kompas_full_frame_direct_best"
     else:
@@ -2513,10 +2532,8 @@ def _is_outer_bbox_frame_segment(
     return False
 
 
-def _replace_outer_bbox_frame_with_work_area_frame(
+def _strip_outer_bbox_frame_segments(
     polylines: list[list[tuple[float, float]]],
-    *,
-    work_area_bounds_mm: tuple[float, float, float, float] | None = None,
 ) -> tuple[list[list[tuple[float, float]]], dict[str, Any]]:
     clean_polys = [list(poly) for poly in polylines if len(poly) >= 2]
     if not clean_polys:
@@ -2548,12 +2565,94 @@ def _replace_outer_bbox_frame_with_work_area_frame(
             "source_bbox": [round(float(v), 4) for v in bbox],
         }
 
+    return kept, {
+        "applied": True,
+        "removed_segments": int(removed_segments),
+        "source_bbox": [round(float(v), 4) for v in bbox],
+    }
+
+
+def _polyline_segment_count(polylines: list[list[tuple[float, float]]]) -> int:
+    return sum(max(0, len(poly) - 1) for poly in polylines)
+
+
+def _prepare_kompas_a4_clean_bbox_fit_polylines(
+    source_polys: list[list[tuple[float, float]]],
+    *,
+    logs: list[str],
+) -> tuple[list[list[tuple[float, float]]], dict[str, Any]]:
+    stripped, frame_meta = _strip_outer_bbox_frame_segments(source_polys)
+    if not bool(frame_meta.get("applied")):
+        return [], {
+            "applied": False,
+            "reason": "source_outer_frame_not_found",
+            **frame_meta,
+        }
+
+    work_x0, work_x1, work_y0, work_y1 = _machine_work_area_bounds_mm()
+    src_x0, src_y0, src_x1, src_y1 = [float(v) for v in frame_meta["source_bbox"]]
+    source_w = max(1e-9, src_x1 - src_x0)
+    source_h = max(1e-9, src_y1 - src_y0)
+    work_w = max(1e-9, work_x1 - work_x0)
+    work_h = max(1e-9, work_y1 - work_y0)
+    content_scale = min(1.0, work_w / source_w, work_h / source_h)
+    dx = ((work_x0 + work_x1) * 0.5) - (((src_x0 + src_x1) * 0.5) * content_scale)
+    dy = ((work_y0 + work_y1) * 0.5) - (((src_y0 + src_y1) * 0.5) * content_scale)
+    mapped_inner = [
+        [(float(x) * content_scale + dx, float(y) * content_scale + dy) for x, y in poly]
+        for poly in stripped
+        if len(poly) >= 2
+    ]
+    pre_clip_segments = _polyline_segment_count(mapped_inner)
+    pre_clip_bbox = _polys_bbox_mm(mapped_inner) if mapped_inner else (0.0, 0.0, 0.0, 0.0)
+    clip_logs: list[str] = []
+    clipped_inner = backend.clip_polylines_to_work_area(mapped_inner, logger=clip_logs.append)
+    post_clip_segments = _polyline_segment_count(clipped_inner)
+    clipped_segments = max(0, int(pre_clip_segments) - int(post_clip_segments))
+    if clip_logs:
+        logs.extend(f"KOMPAS A4 1:1 clip: {line}" for line in clip_logs)
+
+    optimized_inner = backend.deduplicate_segments(clipped_inner, logger=logs.append)
+    optimized_inner = backend.deduplicate_collinear_overlaps(optimized_inner, logger=logs.append)
+    optimized_inner = backend.reorder_polylines(optimized_inner, logger=logs.append)
+    final_polys = [_work_area_frame_polyline((work_x0, work_x1, work_y0, work_y1)), *optimized_inner]
+    logs.append(
+        "KOMPAS A4 clean-bbox route: source-page fit disabled; "
+        f"source_frame_bbox={[round(float(v), 4) for v in frame_meta['source_bbox']]}; "
+        f"content_scale={content_scale:.6f}; "
+        f"translate=({dx:.4f},{dy:.4f}) mm; "
+        f"pre_clip_bbox={[round(float(v), 4) for v in pre_clip_bbox]}; "
+        f"clipped_segments={clipped_segments}; "
+        "work_area_frame=full."
+    )
+    return final_polys, {
+        "applied": True,
+        "source_bbox": frame_meta["source_bbox"],
+        "removed_segments": int(frame_meta.get("removed_segments", 0)),
+        "content_scale": round(float(content_scale), 6),
+        "translate_x_mm": round(float(dx), 6),
+        "translate_y_mm": round(float(dy), 6),
+        "pre_clip_bbox": [round(float(v), 4) for v in pre_clip_bbox],
+        "clipped_segments": int(clipped_segments),
+        "work_area_bounds": [round(float(v), 4) for v in (work_x0, work_x1, work_y0, work_y1)],
+    }
+
+
+def _replace_outer_bbox_frame_with_work_area_frame(
+    polylines: list[list[tuple[float, float]]],
+    *,
+    work_area_bounds_mm: tuple[float, float, float, float] | None = None,
+) -> tuple[list[list[tuple[float, float]]], dict[str, Any]]:
+    kept, meta = _strip_outer_bbox_frame_segments(polylines)
+    if not bool(meta.get("applied")):
+        return kept, meta
+
     frame = _work_area_frame_polyline(work_area_bounds_mm)
     out = [frame, *kept]
     return out, {
         "applied": True,
-        "removed_segments": int(removed_segments),
-        "source_bbox": [round(float(v), 4) for v in bbox],
+        "removed_segments": int(meta.get("removed_segments", 0)),
+        "source_bbox": meta.get("source_bbox"),
         "work_area_bounds": [round(float(v), 4) for v in (work_area_bounds_mm or _machine_work_area_bounds_mm())],
     }
 
@@ -5912,6 +6011,65 @@ def _prepare_mupdf_svg_paths_candidate(
                 "message": str(exc),
                 "logs": [f"A4 MuPDF source route failed: {exc}"],
             }
+
+        if _drawing_frame_class(source_pdf) == "kompas_full_frame":
+            prefix = candidate_dir / variant_name
+            svg_path, pdf_path, nc_path, gcode_path = _bridge_preview_copy_targets(prefix)
+            try:
+                clean_bbox_polys, clean_bbox_meta = _prepare_kompas_a4_clean_bbox_fit_polylines(
+                    source_polys,
+                    logs=logs,
+                )
+                if bool(clean_bbox_meta.get("applied")):
+                    _rewrite_final_gcode_from_polylines(
+                        clean_bbox_polys,
+                        dst_nc=nc_path,
+                        dst_gcode=gcode_path,
+                    )
+                    preview_ok, preview_err = _rewrite_preview_on_work_area_canvas_from_gcode(
+                        gcode_path=nc_path,
+                        out_svg=svg_path,
+                        out_pdf=pdf_path,
+                        logs=logs,
+                    )
+                    if not preview_ok:
+                        raise RuntimeError(preview_err)
+                    ref_prefix = candidate_dir / f"{variant_name}__clean_source"
+                    ref_svg = ref_prefix.with_suffix(".svg")
+                    ref_pdf = ref_prefix.with_suffix(".pdf")
+                    _copy_file(source_svg, ref_svg)
+                    _copy_file(source_pdf_preview, ref_pdf)
+                    metrics = _analyze_gcode(nc_path)
+                    similarity = _layout_similarity_pdf(source_pdf, pdf_path, source_page_index=0)
+                    return {
+                        "variant": variant_name,
+                        "ok": True,
+                        "message": "kompas_a4_clean_bbox_fit",
+                        "logs": logs,
+                        "fit_scale": float(clean_bbox_meta.get("content_scale", 1.0) or 1.0),
+                        "clipping_warning": int(clean_bbox_meta.get("clipped_segments", 0) or 0) > 0,
+                        "layout_similarity": similarity,
+                        "metrics": metrics,
+                        "svg": str(svg_path),
+                        "pdf": str(pdf_path),
+                        "nc": str(nc_path),
+                        "gcode": str(gcode_path),
+                        "reference_source": str(ref_pdf),
+                        "reference_source_svg": str(ref_svg),
+                        "clean_bbox_fit_meta": clean_bbox_meta,
+                        "notes": (
+                            "source_cleanup=direct_pdf_svg; mupdf_svg_paths=True; "
+                            "kompas_source_page_fit_disabled=True; work_area_frame=full; "
+                            f"kompas_clean_bbox_scale={float(clean_bbox_meta.get('content_scale', 1.0) or 1.0):.6f}; "
+                            f"clipped_segments={int(clean_bbox_meta.get('clipped_segments', 0) or 0)}"
+                        ),
+                    }
+                logs.append(
+                    "KOMPAS A4 clean-bbox route skipped: "
+                    f"{clean_bbox_meta.get('reason', 'unknown')}."
+                )
+            except Exception as exc:
+                logs.append(f"KOMPAS A4 clean-bbox route failed, falling back to backend preview: {exc}")
 
         ctx = _ctx(f"preview-{time.time_ns()}")
         backend_overrides: dict[str, Any] = {

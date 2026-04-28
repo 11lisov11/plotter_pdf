@@ -23,7 +23,7 @@
     {
       "item": "pass_01",
       "ok": true,
-      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1777225104809824700_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1777225104809824700.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1777225104809824700_vector.pdf",
+      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1777355167327653800_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1777355167327653800.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1777355167327653800_vector.pdf",
       "logs": [
         "TTF centerline postprocess: 126 -> 17 stroke(s) (eps=0.10, gap=0.86, smooth_step=0.13, col=0.028)",
         "TTF centerline text: 'Мч00.52.00.01' -> 17 stroke(s), font=GOST_BU.ttf, size=8.61",
@@ -126,9 +126,9 @@
         "G-code stats: lines=2944, draw=1686, travel=418, bounds=0.000..180.000 x, -277.739..0.000 y",
         "Preflight: ok: lines=2944, draw=1686, travel=418, ratio=0.25",
         "Saved file stats: lines=2944, draw=1686, travel=418, bounds=0.000..180.000 x, -277.739..0.000 y",
-        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1777225104809824700.nc",
-        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1777225104809824700_vector.svg",
-        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1777225104809824700_vector.pdf",
+        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1777355167327653800.nc",
+        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1777355167327653800_vector.svg",
+        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1777355167327653800_vector.pdf",
         "Sheet preview centered on compact source page bbox: ref=(0.353,0.353)..(420.518,297.670) mm",
         "Sheet preview placed on source page: offset=(110.264,304.092) mm"
       ],
@@ -161,7 +161,7 @@
     {
       "item": "pass_02",
       "ok": true,
-      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1777225118436365300_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1777225118436365300.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1777225118436365300_vector.pdf",
+      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1777355190342422200_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1777355190342422200.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1777355190342422200_vector.pdf",
       "logs": [
         "TTF centerline postprocess: 126 -> 17 stroke(s) (eps=0.10, gap=0.86, smooth_step=0.13, col=0.028)",
         "TTF centerline text: 'Мч00.52.00.01' -> 17 stroke(s), font=GOST_BU.ttf, size=8.61",
@@ -267,9 +267,9 @@
         "G-code stats: lines=2597, draw=1750, travel=281, bounds=0.000..180.000 x, -274.666..0.000 y",
         "Preflight: ok: lines=2597, draw=1750, travel=281, ratio=0.16",
         "Saved file stats: lines=2597, draw=1750, travel=281, bounds=0.000..180.000 x, -274.666..0.000 y",
-        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1777225118436365300.nc",
-        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1777225118436365300_vector.svg",
-        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1777225118436365300_vector.pdf",
+        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1777355190342422200.nc",
+        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1777355190342422200_vector.svg",
+        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1777355190342422200_vector.pdf",
         "Sheet preview centered on compact source page bbox: ref=(0.353,0.353)..(420.518,297.670) mm",
         "Sheet preview placed on source page: offset=(118.135,301.019) mm"
       ],

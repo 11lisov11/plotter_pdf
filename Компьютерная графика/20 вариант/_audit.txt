@@ -1,14 +1,14 @@
 20 вариант
-МЧ00.52.00.00 Клапан_pack: quality=0.906446; layout=0.924036; fidelity=0.887075
-МЧ00.52.00.02 Крышка_pack: quality=0.924679; layout=0.944471; fidelity=0.906692
-КНГ.01.22.01 - Маховик_pack: quality=0.925249; layout=0.952031; fidelity=0.913950
-МЧ00.52.00.03 Штуцер_pack: quality=0.927387; layout=0.945409; fidelity=0.907593
-МЧ00.52.00.08 Клапан_pack: quality=0.934231; layout=0.954796; fidelity=0.916604
-МЧ00.52.00.04 Фланец_pack: quality=0.935123; layout=0.954683; fidelity=0.916496
-Корпус аксонометрическая  проекция МЧ00.52.00.01_pack: quality=0.936451; layout=0.952897; fidelity=0.914781
-МЧ00.52.00.05 Маховичок_pack: quality=0.936840; layout=0.955824; fidelity=0.917591
-МЧ00.52.00.09 Прокладка_pack: quality=0.937917; layout=0.957718; fidelity=0.919409
-МЧ00.52.00.06 Шпиндель_pack: quality=0.938929; layout=0.961778; fidelity=0.923307
-МЧ00.52.00.07 Втулка_pack: quality=0.939305; layout=0.961292; fidelity=0.922840
+МЧ00.52.00.00 Клапан_pack: quality=0.907604; layout=0.923184; fidelity=0.886257
+МЧ00.52.00.02 Крышка_pack: quality=0.925050; layout=0.940758; fidelity=0.903128
+МЧ00.52.00.03 Штуцер_pack: quality=0.925459; layout=0.940430; fidelity=0.902813
+КНГ.01.22.01 - Маховик_pack: quality=0.930756; layout=0.948776; fidelity=0.910825
+МЧ00.52.00.05 Маховичок_pack: quality=0.931162; layout=0.947549; fidelity=0.909647
+Корпус аксонометрическая  проекция МЧ00.52.00.01_pack: quality=0.932338; layout=0.946311; fidelity=0.908459
+МЧ00.52.00.08 Клапан_pack: quality=0.932950; layout=0.950914; fidelity=0.912877
+МЧ00.52.00.04 Фланец_pack: quality=0.935380; layout=0.952418; fidelity=0.914321
+МЧ00.52.00.09 Прокладка_pack: quality=0.935897; layout=0.954066; fidelity=0.915903
+МЧ00.52.00.07 Втулка_pack: quality=0.937360; layout=0.956230; fidelity=0.917981
+МЧ00.52.00.06 Шпиндель_pack: quality=0.939356; layout=0.958917; fidelity=0.920560
 МЧ00.52.00.00 СБ Клапан_pack: quality=0.957678; layout=0.962570; fidelity=0.962570
 МЧ00.52.00.01 Корпус_pack: quality=0.968802; layout=0.971113; fidelity=0.971113

@@ -1,14 +1,14 @@
 22 вариант
-МЧ00.60.00.00 Вентиль_pack: quality=0.907720; layout=0.925272; fidelity=0.888261
-КНГ.01.20.01 - Маховик_pack: quality=0.923649; layout=0.951046; fidelity=0.913004
-МЧ00.60.00.07 Гайка клапана_pack: quality=0.930698; layout=0.952329; fidelity=0.914236
-МЧ00.60.00.02 Гайка_pack: quality=0.931146; layout=0.951247; fidelity=0.913197
-МЧ00.60.00.06 Клапан_pack: quality=0.931458; layout=0.953085; fidelity=0.914962
-МЧ00.60.00.05 Рукоятка_pack: quality=0.933945; layout=0.954623; fidelity=0.916438
-МЧ00.60.00.03 Втулка_pack: quality=0.939182; layout=0.962579; fidelity=0.924076
-МЧ00.60.00.09 Кольцо_pack: quality=0.942028; layout=0.966640; fidelity=0.927974
-МЧ00.60.00.10 Кольцо_pack: quality=0.942260; layout=0.966170; fidelity=0.927523
-МЧ00.60.00.08 Шайба_pack: quality=0.942893; layout=0.967618; fidelity=0.928913
+МЧ00.60.00.00 Вентиль_pack: quality=0.906630; layout=0.922521; fidelity=0.885620
+МЧ00.60.00.02 Гайка_pack: quality=0.927865; layout=0.944891; fidelity=0.907095
+КНГ.01.20.01 - Маховик_pack: quality=0.930025; layout=0.948597; fidelity=0.910653
+МЧ00.60.00.06 Клапан_pack: quality=0.930761; layout=0.949313; fidelity=0.911340
+МЧ00.60.00.07 Гайка клапана_pack: quality=0.931161; layout=0.949603; fidelity=0.911619
+МЧ00.60.00.05 Рукоятка_pack: quality=0.932197; layout=0.950334; fidelity=0.912321
+МЧ00.60.00.03 Втулка_pack: quality=0.938115; layout=0.958902; fidelity=0.920546
+МЧ00.60.00.10 Кольцо_pack: quality=0.939792; layout=0.961272; fidelity=0.922821
+МЧ00.60.00.09 Кольцо_pack: quality=0.940781; layout=0.963163; fidelity=0.924636
+МЧ00.60.00.08 Шайба_pack: quality=0.941666; layout=0.964243; fidelity=0.925673
 МЧ00.60.00.00 СБ Вентиль_pack: quality=0.954727; layout=0.955548; fidelity=0.955548
 МЧ00.60.00.01 Корпус_pack: quality=0.958452; layout=0.960927; fidelity=0.960927
 МЧ00.60.00.04 Гайка_pack: quality=0.970873; layout=0.973470; fidelity=0.973470
