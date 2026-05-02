@@ -33,6 +33,24 @@ def usage() -> None:
     print("Usage: python release_motors.py COMx [115200] [--sleep]")
 
 
+def _safe_pen_up_commands() -> tuple[str, ...]:
+    # G-code jobs use Z_UP=0 and Z_DOWN>0. After abort/reset GRBL can have a
+    # stale work Z coordinate, so a plain "G1 Z0" may not physically lift.
+    # Force the current physical position to Z4, then move to Z0 before release.
+    return (
+        "$X",
+        "G21",
+        "G90",
+        "G92 Z4.0000",
+        "G0 Z0.0000 F800.0",
+        "G4 P0.10",
+        "G92 Z0.0000",
+        "G0 Z0.0000 F800.0",
+        "G4 P0.05",
+        "M5",
+    )
+
+
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("port", nargs="?")
@@ -87,8 +105,8 @@ def main(argv: list[str]) -> int:
         except Exception:
             pass
 
-        # Best-effort safe teardown: pen up, stop spindle/servo, release steppers.
-        for cmd in ("G90", "G1 Z0 F800", "G4 P0.05", "M5", "$1=0"):
+        # Best-effort safe teardown: force pen up, stop spindle/servo, release steppers.
+        for cmd in (*_safe_pen_up_commands(), "$1=0"):
             try:
                 ser.write((cmd + "\n").encode("ascii"))
                 ser.flush()

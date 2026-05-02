@@ -145,6 +145,23 @@ def _clean_gcode_lines(text: str) -> list[str]:
     return out
 
 
+def _safe_pen_up_commands() -> tuple[str, ...]:
+    # Same protective lift as generated job preambles. A plain G1/G0 Z0 is not
+    # enough after abort/reset because the work Z coordinate may be stale.
+    return (
+        "$X",
+        "G21",
+        "G90",
+        "G92 Z4.0000",
+        "G0 Z0.0000 F800.0",
+        "G4 P0.10",
+        "G92 Z0.0000",
+        "G0 Z0.0000 F800.0",
+        "G4 P0.05",
+        "M5",
+    )
+
+
 def release_axes(ser, *, sleep: bool = False, wait: bool = True):
     def _send_no_throw(cmd: str):
         try:
@@ -173,11 +190,9 @@ def release_axes(ser, *, sleep: bool = False, wait: bool = True):
         except Exception:
             pass
 
-    # Lift pen (best-effort), stop any spindle/servo.
-    _send_no_throw("G90")
-    _send_no_throw("G1 Z0 F800")
-    _send_no_throw("G4 P0.05")
-    _send_no_throw("M5")
+    # Force pen up (best-effort), stop any spindle/servo.
+    for cmd in _safe_pen_up_commands():
+        _send_no_throw(cmd)
     # GRBL-friendly motor release.
     _send_no_throw("$1=0")
     if sleep:

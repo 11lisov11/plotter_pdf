@@ -18,12 +18,12 @@ Drawable segments after clip: 2743 (100.0% of source)
 Prepared bounds: x(0.000, 180.000) y(-294.634, -15.366)
 Estimated draw length: 14.27 m
 Applying pen-up / pen-down ...
-G-code stats: lines=5405, draw=4367, travel=1024, bounds=0.000..180.000 x, -294.634..0.000 y
-Preflight: ok: lines=5405, draw=4367, travel=1024, ratio=0.23
-Saved file stats: lines=5405, draw=4367, travel=1024, bounds=0.000..180.000 x, -294.634..0.000 y
-Saved: C:\plotter_pdf\_tmp\latest_preview_preview-1777014546761482200.nc
-Preview SVG: C:\plotter_pdf\_tmp\latest_preview_preview-1777014546761482200_vector.svg
-Preview PDF: C:\plotter_pdf\_tmp\latest_preview_preview-1777014546761482200_vector.pdf
+G-code stats: lines=5406, draw=4367, travel=1024, bounds=0.000..180.000 x, -294.634..0.000 y
+Preflight: ok: lines=5406, draw=4367, travel=1024, ratio=0.23
+Saved file stats: lines=5406, draw=4367, travel=1024, bounds=0.000..180.000 x, -294.634..0.000 y
+Saved: C:\plotter_pdf\_tmp\latest_preview_preview-1777731819844848300.nc
+Preview SVG: C:\plotter_pdf\_tmp\latest_preview_preview-1777731819844848300_vector.svg
+Preview PDF: C:\plotter_pdf\_tmp\latest_preview_preview-1777731819844848300_vector.pdf
 Sheet preview centered on compact source page bbox: ref=(0.353,0.353)..(210.457,297.759) mm
 Sheet preview placed on source page: offset=(15.537,304.056) mm
 Fixed-canvas preview centered on page: page=180.000x280.000 mm, offset=(0.000,295.000) mm

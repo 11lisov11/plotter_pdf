@@ -15,13 +15,20 @@ def make_final_with_preamble(
     feed_travel: float,
     go_home_before_draw: bool,
     go_home_after_draw: bool,
+    startup_force_z_lift_mm: float = 4.0,
 ) -> None:
+    forced_lift = max(0.0, float(startup_force_z_lift_mm))
+    startup_z = float(z_up) + forced_lift
     lines = [
         "$X",
         # Hold steppers while a job is running (prevents Z from back-driving).
         "$1=255",
         "G21",
         "G90",
+        # The controller's remembered Z work coordinate can be stale after an
+        # abort/reset. Force the current physical pen position to be below Z_UP,
+        # then lift before any XY move.
+        f"G92 Z{startup_z:.4f}",
         f"G0 Z{float(z_up):.4f} F{float(safe_lift_feed):.1f}",
         f"G4 P{float(z_delay_up):.2f}",
         f"G92 Z{float(z_up):.4f}",
