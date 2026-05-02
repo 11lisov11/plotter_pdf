@@ -1,0 +1,5 @@
+variant=C:\plotter_pdf\Начерт\1 вариант
+ok=True
+packages=10
+failed=0
+warnings=0

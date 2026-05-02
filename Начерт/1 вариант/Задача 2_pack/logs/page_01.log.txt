@@ -1,106 +1,46 @@
 Source pages: 1, selected: 1
-Method3 centerline: threshold=224, candidates=9, paths=506
-Method3 PDF vector graphics: drawings=53, paths=27, thick_paths=20
-Method3 layer split: text_paths=498, graphics_source=pdf_vector, graphics_paths=26
+Method3 centerline: threshold=192, candidates=9, paths=505
+Method3 PDF vector graphics: drawings=53, paths=245, thick_paths=40
+Method3 layer split: text_paths=497, graphics_source=pdf_vector, graphics_paths=237
 Method3 cleanup: restored overlap text paths=4
-Method3 cleanup: removed outer-frame paths=1
-Method3 detail thick-lines multipass: skipped reason=exact_geometry_mode, candidates=26
-Method3 filled accents: skipped square bbox artifacts=10
+Method3 cleanup: removed outer-frame paths=8
+Method3 detail thick-lines multipass: skipped reason=exact_geometry_mode, candidates=237
+Method3 filled accents: paths=10, segments=191
+Method3 cleanup: removed legacy left-strip border lines=38
 Method3 cleanup: restored left vertical frame line.
-Method3 cleanup: removed tiny bottom artifacts=7
+Method3 cleanup: removed tiny bottom artifacts=6
 A4 header text extraction: 5 line(s) from PDF text blocks.
-Technical point marker normalization: replaced 11 point-marker loop(s) with compact dot markers.
-A4 clean source centered on page X: offset_x=12.501 mm
-A4 header text reroute: removed 321 source polyline(s) from the header text band.
-A4 header text cleanup: removed 45 transformed polyline(s) before rerender.
-A4 header thumb cleanup: clipped 3 spill polyline(s) to the thumbnail box.
-TTF centerline postprocess: 24 -> 3 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'На' -> 3 stroke(s), font=GOST_BU.ttf, size=4.08
-TTF centerline postprocess: 63 -> 3 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'эпюре' -> 3 stroke(s), font=GOST_BU.ttf, size=4.08
-TTF centerline postprocess: 22 -> 1 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'в' -> 1 stroke(s), font=GOST_BU.ttf, size=4.08
-TTF centerline postprocess: 125 -> 8 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'системе' -> 8 stroke(s), font=GOST_BU.ttf, size=4.08
-TTF centerline postprocess: 119 -> 2 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'двух' -> 2 stroke(s), font=GOST_BU.ttf, size=4.08
-TTF centerline postprocess: 170 -> 10 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'плоскостей' -> 10 stroke(s), font=GOST_BU.ttf, size=4.08
-TTF centerline postprocess: 124 -> 6 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'проекций' -> 6 stroke(s), font=GOST_BU.ttf, size=4.08
-TTF centerline postprocess: 55 -> 6 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'найти' -> 6 stroke(s), font=GOST_BU.ttf, size=4.08
-TTF centerline postprocess: 79 -> 5 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'следы' -> 5 stroke(s), font=GOST_BU.ttf, size=4.08
-TTF centerline postprocess: 116 -> 7 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'прямой,' -> 7 stroke(s), font=GOST_BU.ttf, size=4.05
-TTF centerline postprocess: 125 -> 10 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'заданной' -> 10 stroke(s), font=GOST_BU.ttf, size=4.05
-TTF centerline postprocess: 188 -> 10 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'отрезком' -> 10 stroke(s), font=GOST_BU.ttf, size=4.05
-TTF centerline postprocess: 33 -> 5 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
-TTF centerline text: '[AB].' -> 5 stroke(s), font=GOST_BU.ttf, size=4.05
-TTF centerline postprocess: 143 -> 8 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'Показать' -> 8 stroke(s), font=GOST_BU.ttf, size=4.05
-TTF centerline postprocess: 136 -> 9 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'видимость' -> 9 stroke(s), font=GOST_BU.ttf, size=4.05
-TTF centerline postprocess: 8 -> 1 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'и' -> 1 stroke(s), font=GOST_BU.ttf, size=4.05
-TTF centerline postprocess: 55 -> 5 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'дать' -> 5 stroke(s), font=GOST_BU.ttf, size=4.05
-TTF centerline postprocess: 224 -> 9 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'характеристику' -> 9 stroke(s), font=GOST_BU.ttf, size=4.13
-TTF centerline postprocess: 170 -> 11 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'положения' -> 11 stroke(s), font=GOST_BU.ttf, size=4.13
-TTF centerline postprocess: 36 -> 4 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'ее' -> 4 stroke(s), font=GOST_BU.ttf, size=4.13
-TTF centerline postprocess: 26 -> 2 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'в' -> 2 stroke(s), font=GOST_BU.ttf, size=4.13
-TTF centerline postprocess: 147 -> 14 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'пространстве' -> 14 stroke(s), font=GOST_BU.ttf, size=4.13
-TTF centerline postprocess: 125 -> 14 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'относительно' -> 14 stroke(s), font=GOST_BU.ttf, size=4.13
-TTF centerline postprocess: 170 -> 11 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'плоскостей' -> 11 stroke(s), font=GOST_BU.ttf, size=4.09
-TTF centerline postprocess: 124 -> 6 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'проекций.' -> 6 stroke(s), font=GOST_BU.ttf, size=4.09
-TTF centerline postprocess: 88 -> 4 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'Через' -> 4 stroke(s), font=GOST_BU.ttf, size=4.09
-TTF centerline postprocess: 94 -> 3 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'точку' -> 3 stroke(s), font=GOST_BU.ttf, size=4.09
-TTF centerline postprocess: 8 -> 1 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
-TTF centerline text: 'C' -> 1 stroke(s), font=GOST_BU.ttf, size=4.09
-TTF centerline postprocess: 121 -> 9 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'провести' -> 9 stroke(s), font=GOST_BU.ttf, size=4.09
-TTF centerline postprocess: 103 -> 5 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'прямую,' -> 5 stroke(s), font=GOST_BU.ttf, size=4.09
-TTF centerline postprocess: 217 -> 16 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'пересекающую' -> 16 stroke(s), font=GOST_BU.ttf, size=4.05
-TTF centerline postprocess: 113 -> 10 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'заданный' -> 10 stroke(s), font=GOST_BU.ttf, size=4.05
-TTF centerline postprocess: 165 -> 8 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'отрезок' -> 8 stroke(s), font=GOST_BU.ttf, size=4.05
-TTF centerline postprocess: 115 -> 3 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'прямой.' -> 3 stroke(s), font=GOST_BU.ttf, size=4.05
-A4 header text reroute: rendered 229 polyline(s) from PDF text blocks.
+Technical point marker normalization: replaced 4 point-marker loop(s) with compact dot markers.
+A4 clean source centered on page X: offset_x=0.018 mm
+A4 header text reroute: removed 325 source polyline(s) from the header text band.
+A4 header text reroute: restored 325 transformed source polyline(s).
+A4 header gutter cleanup: removed 2 tiny artifact polyline(s) from the thumb/text gap.
+A4 header cleanup: removed 3 duplicate axis-aligned frame line(s) in the preserved top band.
+A4 outer frame restore: added 2 missing top/right border line(s).
 --- hybrid fit: detail=1:1, frame=fit-to-work-area ---
 Text render mode: handwriting=off font='Marck Script'; image_contours=off
 Extracting paths from SVG ...
 Raw geometry bounds: x(0.000, 180.000) y(0.000, 280.000)
 SVG page: 180.000 x 280.000 mm
 Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).
-SVG geometry: paths=358, segments=4797.
+SVG geometry: paths=667, segments=7205.
 Source bounds: x(0.000, 180.000) y(0.000, 280.000)
 Fit to work area: scale=1.0000, translate=(0.000,-295.000), from (0.000, 0.000)-(180.000, 280.000)
-Reorder: source order preserved (358 polylines).
-Segment counts: source=4797, fitted=4797, clipped=4797
-Drawable segments after clip: 4797 (100.0% of source)
+Collinear overlap dedup: dropped 16/7205 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
+Reorder: source order preserved (675 polylines).
+Technical text join: merged 166 short gaps (ordered=133, nearest=33, gap<=0.55 mm, dy<=0.75 mm), polylines 675 -> 509
+Segment dedup: dropped 5/7343 retraced segments (0.1%), kept=7338, eps=0.010 mm
+Polyline optimization: 675 -> 514
+Segment counts: source=7205, fitted=7205, clipped=7205
+Drawable segments after clip: 7205 (100.0% of source)
 Prepared bounds: x(0.000, 180.000) y(-295.000, -15.000)
-Estimated draw length: 4.36 m
+Estimated draw length: 4.94 m
 Applying pen-up / pen-down ...
-G-code stats: lines=5888, draw=5511, travel=363, bounds=0.000..180.000 x, -295.000..0.000 y
-Preflight: ok: lines=5888, draw=5511, travel=363, ratio=0.07
-Saved file stats: lines=5888, draw=5511, travel=363, bounds=0.000..180.000 x, -295.000..0.000 y
+G-code stats: lines=8901, draw=8366, travel=520, bounds=0.000..180.000 x, -295.000..0.000 y
+Preflight: ok: lines=8901, draw=8366, travel=520, ratio=0.06
+Saved file stats: lines=8901, draw=8366, travel=520, bounds=0.000..180.000 x, -295.000..0.000 y
 Saved: C:\plotter_pdf\Начерт\1 вариант\Задача 2_pack\_candidates\a4_hybrid_frame.nc
-Sheet preview aligned to reference bbox Y and centered on page X: ref=(0.000,11.641)..(185.152,296.922) mm
-Sheet preview placed on source page: offset=(15.008,306.641) mm
+Sheet preview centered on compact source page bbox: ref=(0.176,0.176)..(185.657,285.736) mm
+Sheet preview placed on source page: offset=(3.049,298.044) mm
+Fixed-canvas preview centered on page: page=180.000x280.000 mm, offset=(0.000,295.000) mm
+Preview canvas switched to machine work area: 180.000x280.000 mm.

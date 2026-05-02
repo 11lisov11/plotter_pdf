@@ -9046,6 +9046,156 @@ def make_final_with_preamble(prepared_gcode: Path, final_gcode: Path) -> None:
         go_home_before_draw=bool(GO_HOME_BEFORE_DRAW),
         go_home_after_draw=bool(GO_HOME_AFTER_DRAW),
     )
+    rewrite_duplicate_draw_segments_as_penup_travel(final_gcode)
+
+
+_GCODE_TOKEN_RE = re.compile(r"([A-Za-z])\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))")
+
+
+def _gcode_line_without_comment(line: str) -> str:
+    line = str(line or "").split(";", 1)[0]
+    out: List[str] = []
+    depth = 0
+    for ch in line:
+        if ch == "(":
+            depth += 1
+            continue
+        if ch == ")" and depth:
+            depth -= 1
+            continue
+        if depth == 0:
+            out.append(ch)
+    return "".join(out).strip()
+
+
+def _gcode_line_tokens(line: str) -> Dict[str, float]:
+    return {axis.upper(): float(value) for axis, value in _GCODE_TOKEN_RE.findall(line)}
+
+
+def _gcode_motion_code(line: str, previous: Optional[str]) -> Optional[str]:
+    upper = line.upper()
+    for code in ("G0", "G00", "G1", "G01", "G2", "G02", "G3", "G03"):
+        if re.search(rf"(^|\s){code}(\s|$)", upper):
+            if code == "G00":
+                return "G0"
+            if code == "G01":
+                return "G1"
+            if code == "G02":
+                return "G2"
+            if code == "G03":
+                return "G3"
+            return code
+    return previous
+
+
+def _gcode_segment_key(
+    x0: float,
+    y0: float,
+    x1: float,
+    y1: float,
+    *,
+    ndigits: int = 3,
+) -> Tuple[Tuple[float, float], Tuple[float, float]]:
+    p0 = (round(float(x0), ndigits), round(float(y0), ndigits))
+    p1 = (round(float(x1), ndigits), round(float(y1), ndigits))
+    return (p0, p1) if p0 <= p1 else (p1, p0)
+
+
+def rewrite_duplicate_draw_segments_as_penup_travel(
+    gcode_path: Path,
+    *,
+    z_up: float = Z_UP,
+    z_down: float = Z_DOWN,
+    feed_travel: float = FEED_TRAVEL,
+    z_feed: float = PEN_FAST_Z_FEED_UP,
+    logger=None,
+) -> int:
+    # Last-resort guard after line/arc fitting. If a final G-code segment would
+    # draw over an already drawn segment, move over that segment with the pen up
+    # and restore the previous down state before the next draw command.
+    try:
+        original = gcode_path.read_text(encoding="utf-8", errors="ignore").splitlines()
+    except OSError:
+        return 0
+
+    cur_x: Optional[float] = None
+    cur_y: Optional[float] = None
+    cur_z: Optional[float] = None
+    modal: Optional[str] = None
+    spindle_down = False
+    seen: set[Tuple[Tuple[float, float], Tuple[float, float]]] = set()
+    rewritten: List[str] = []
+    dropped = 0
+    z_threshold = (float(z_up) + float(z_down)) / 2.0
+
+    def _down(z_value: Optional[float]) -> bool:
+        if spindle_down:
+            return True
+        if z_value is None:
+            return False
+        if float(z_down) >= float(z_up):
+            return float(z_value) > z_threshold
+        return float(z_value) < z_threshold
+
+    for raw_line in original:
+        clean = _gcode_line_without_comment(raw_line)
+        if not clean:
+            rewritten.append(raw_line)
+            continue
+        upper = clean.upper()
+        vals = _gcode_line_tokens(clean)
+
+        if "M3" in upper or "M03" in upper:
+            spindle_down = True
+        if "M5" in upper or "M05" in upper:
+            spindle_down = False
+
+        modal = _gcode_motion_code(clean, modal)
+        if re.search(r"(^|\s)G92(\s|$)", upper):
+            cur_x = vals.get("X", cur_x)
+            cur_y = vals.get("Y", cur_y)
+            cur_z = vals.get("Z", cur_z)
+            rewritten.append(raw_line)
+            continue
+
+        next_x = vals.get("X", cur_x)
+        next_y = vals.get("Y", cur_y)
+        next_z = vals.get("Z", cur_z)
+        has_xy = "X" in vals or "Y" in vals
+        is_draw_xy = (
+            has_xy
+            and modal in {"G1", "G2", "G3"}
+            and cur_x is not None
+            and cur_y is not None
+            and next_x is not None
+            and next_y is not None
+            and _down(next_z)
+            and math.hypot(float(next_x) - float(cur_x), float(next_y) - float(cur_y)) > 0.03
+        )
+
+        if is_draw_xy:
+            key = _gcode_segment_key(float(cur_x), float(cur_y), float(next_x), float(next_y))
+            if key in seen:
+                rewritten.extend(
+                    [
+                        f"G1 Z{float(z_up):.4f} F{float(z_feed):.1f}",
+                        f"G0 X{float(next_x):.4f} Y{float(next_y):.4f} F{float(feed_travel):.1f}",
+                        f"G1 Z{float(z_down):.4f} F{float(z_feed):.1f}",
+                    ]
+                )
+                cur_x, cur_y, cur_z = float(next_x), float(next_y), float(z_down)
+                dropped += 1
+                continue
+            seen.add(key)
+
+        rewritten.append(raw_line)
+        cur_x, cur_y, cur_z = next_x, next_y, next_z
+
+    if dropped > 0:
+        gcode_path.write_text("\n".join(rewritten).rstrip() + "\n", encoding="utf-8")
+        if logger:
+            logger(f"G-code duplicate draw scrub: converted {dropped} retraced segment(s) to pen-up travel.")
+    return dropped
 
 
 def _open_serial_no_reset(port: str, baud: int, *, timeout_s: float = 1.0):
@@ -9349,6 +9499,11 @@ def run_pipeline(
                     logger=log,
                     simplify_collinear_eps=POLYLINE_COLLINEAR_EPS,
                 )
+                # Text joining can reconnect tiny glyph fragments into a path
+                # that retraces a short segment.  Remove only exact/collinear
+                # overlaps after the join, before pen-lift generation.
+                polylines = deduplicate_segments(polylines, eps=max(float(SEGMENT_DEDUP_EPS_MM), 0.05), logger=log)
+                polylines = deduplicate_collinear_overlaps(polylines, logger=log)
             if HANDWRITING_TEXT_ENABLED and not HANDWRITING_STROKE_ACTIVE:
                 # Fallback path-only handwriting (no editable text nodes): avoid aggressive
                 # word merge/smoothing that can cross-connect contour fragments.

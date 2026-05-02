@@ -18,20 +18,12 @@ DEFAULT_ROOT = PROJECT_ROOT / "\u041d\u0430\u0447\u0435\u0440\u0442"
 
 
 def _prune_package_outputs(package_dir: Path, *, is_a3: bool, source_pdf: Path) -> None:
-    keep_files = (
-        {"pass_01.pdf", "pass_01.gcode", "pass_02.pdf", "pass_02.gcode", "combined_preview.pdf", "source_kompas.pdf"}
-        if is_a3
-        else {"page_01.pdf", "page_01.gcode", "source_kompas.pdf"}
-    )
+    # Keep the full production package contract.  Older compact packages removed
+    # reports, summaries, compare panels, logs, pages and clean-source PDFs; that
+    # made later ready-to-plot validation impossible and hid bad G-code.
     source_copy = package_dir / "source_kompas.pdf"
     source_copy.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(source_pdf, source_copy)
-    for child in list(package_dir.iterdir()):
-        if child.is_dir():
-            shutil.rmtree(child, ignore_errors=True)
-            continue
-        if child.name not in keep_files:
-            child.unlink(missing_ok=True)
 def _task_number_from_name(name: str) -> int | None:
     match = re.search(r"(\d+)", str(name or ""))
     if match is None:
@@ -283,6 +275,13 @@ def _prepare_variant(variant_dir: Path, *, only_tasks: set[int] | None = None) -
         report["task_number"] = task_number
         report["task_name"] = task_name
         report["source_meta"] = meta
+        report["package_dir"] = str(package_dir)
+        compare_meta = prep._generate_package_compare_artifacts(package_dir, report, rows)
+        report["compare_generated"] = bool(compare_meta.get("compare_generated"))
+        if "compare" in compare_meta:
+            report["compare"] = dict(compare_meta.get("compare", {}) or {})
+        if str(compare_meta.get("compare_error", "")).strip():
+            report["compare_error"] = str(compare_meta.get("compare_error", ""))
         prep._write_json(package_dir / "report.json", report)
         if rows:
             prep._write_csv(package_dir / "summary.csv", rows)

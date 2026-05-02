@@ -693,6 +693,39 @@ class BackendGeometryTests(unittest.TestCase):
             backend.Z_UP = old_z_up
             backend.Z_DOWN = old_z_down
 
+    def test_rewrite_duplicate_draw_segments_as_penup_travel(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "dup.nc"
+            path.write_text(
+                "\n".join(
+                    [
+                        "G21",
+                        "G90",
+                        "G0 Z0",
+                        "G0 X0 Y0",
+                        "G1 Z11.9",
+                        "G1 X10 Y0 F12000",
+                        "G1 X0 Y0",
+                        "G1 X0 Y10",
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            changed = backend.rewrite_duplicate_draw_segments_as_penup_travel(
+                path,
+                z_up=0.0,
+                z_down=11.9,
+                feed_travel=15000.0,
+                z_feed=8000.0,
+            )
+
+            text = path.read_text(encoding="utf-8")
+            self.assertEqual(changed, 1)
+            self.assertIn("G0 X0.0000 Y0.0000 F15000.0", text)
+            self.assertEqual(text.count("G1 X0 Y0"), 0)
+
     def test_extract_image_tone_hatch_segments_px_simple(self) -> None:
         if backend.cv2 is None or backend.np is None:
             self.skipTest("opencv/numpy unavailable")
