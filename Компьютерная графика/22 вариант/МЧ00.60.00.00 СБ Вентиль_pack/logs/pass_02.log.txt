@@ -89,20 +89,19 @@ Sheet pass transform: rotating geometry by 180 deg for a3 pass 2/2 x 1/1 around 
 Sheet pass transform: translating geometry by (0.000,3.000) mm for a3 pass 2/2 x 1/1.
 Work area clipping: kept 2565 visible segments, dropped 1992 out-of-area segments.
 Segment dedup: dropped 688/2565 retraced segments (26.8%), kept=1877, eps=0.010 mm
-Reorder: source order preserved (867 polylines).
-Technical text join: merged 385 short gaps (ordered=313, nearest=72, gap<=1.10 mm, dy<=1.35 mm), polylines 867 -> 482
-Polyline optimization: 867 -> 482
+Collinear overlap dedup: dropped 9/1827 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
+Reorder: source order preserved (858 polylines).
 Segment counts: source=4557, fitted=4557, clipped=2565
 Drawable segments after clip: 2565 (56.3% of source)
 Warning: significant clipping/transforming occurred. Check that page is inside target work area.
 Prepared bounds: x(0.000, 180.000) y(-283.977, -20.023)
-Estimated draw length: 7.33 m
+Estimated draw length: 7.24 m
 Applying pen-up / pen-down ...
-G-code stats: lines=3237, draw=2768, travel=455, bounds=0.000..180.000 x, -283.977..0.000 y
-Preflight: ok: lines=3237, draw=2768, travel=455, ratio=0.16
-Saved file stats: lines=3237, draw=2768, travel=455, bounds=0.000..180.000 x, -283.977..0.000 y
-Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1777016750334456200.nc
-Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1777016750334456200_vector.svg
-Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1777016750334456200_vector.pdf
+G-code stats: lines=3417, draw=2870, travel=532, bounds=0.000..180.000 x, -283.977..0.000 y
+Preflight: ok: lines=3417, draw=2870, travel=532, ratio=0.19
+Saved file stats: lines=3417, draw=2870, travel=532, bounds=0.000..180.000 x, -283.977..0.000 y
+Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1777735201844622000.nc
+Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1777735201844622000_vector.svg
+Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1777735201844622000_vector.pdf
 Sheet preview centered on compact source page bbox: ref=(0.353,0.353)..(420.518,297.670) mm
 Sheet preview placed on source page: offset=(120.524,301.056) mm

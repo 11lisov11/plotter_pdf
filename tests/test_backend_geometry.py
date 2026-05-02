@@ -1374,6 +1374,28 @@ class BackendGeometryTests(unittest.TestCase):
         self.assertEqual(tokens, ["Привет", "  ", "мир", "\t", "EN"])
 
 
+    def test_collinear_overlap_dedup_removes_retraced_partial_line(self) -> None:
+        polylines = [
+            [(0.0, 0.0), (10.0, 0.0)],
+            [(2.0, 0.01), (8.0, 0.01)],
+        ]
+
+        out = backend.deduplicate_collinear_overlaps(polylines, logger=lambda *_: None)
+
+        segment_count = sum(max(0, len(poly) - 1) for poly in out)
+        self.assertEqual(segment_count, 1)
+        self.assertEqual(out[0], [(0.0, 0.0), (10.0, 0.0)])
+
+    def test_collinear_overlap_dedup_keeps_real_parallel_table_lines(self) -> None:
+        polylines = [
+            [(0.0, 0.0), (10.0, 0.0)],
+            [(0.0, 0.20), (10.0, 0.20)],
+        ]
+
+        out = backend.deduplicate_collinear_overlaps(polylines, logger=lambda *_: None)
+
+        self.assertEqual(out, polylines)
+
     def test_reorder_line_lr_goes_top_to_bottom_then_left_to_right(self) -> None:
         old_mode = backend.DRAW_ORDER_MODE
         old_reorder = backend.REORDER_ENABLED

@@ -1,30 +1,9 @@
 A4 MuPDF source route: direct PDF vector SVG export with text_as_path=True; kompas_archive_strip_removed=8; kompas_service_region_removed=552; kompas_under_frame_removed=1; kompas_top_outer_frame_removed=2; no title-block reroute.
-Render mode: drawing; ExactGeometry=on; Handwriting=off
-Sheet 210.0x297.0 mm is larger than workspace 180.0x280.0 mm. Using the overlapped sheet/workspace window.
-Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-295.000,-15.000), sheet_bounds x(0.000,210.000) y(-295.000,2.000), sheet=a4, anchor=lower_left, offset=(0.00,0.00)
-Text render mode: handwriting=off font='Marck Script'; image_contours=off
-Extracting paths from SVG ...
-Raw geometry bounds: x(20.489, 205.486) y(5.503, 292.523)
-SVG page: 211.074 x 298.111 mm
-Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).
-SVG geometry: paths=1288, segments=2343.
-Source bounds: x(20.489, 205.486) y(5.503, 292.523)
-Fit to work area: scale=0.9730, translate=(-19.936,-299.989), from (20.489, 5.503)-(205.486, 292.523)
-Reorder: source order preserved (1288 polylines).
-Technical text join: merged 640 short gaps (ordered=443, nearest=197, gap<=1.10 mm, dy<=1.35 mm), polylines 1288 -> 648
-Polyline optimization: 1288 -> 648
-Segment counts: source=2343, fitted=2343, clipped=2343
-Drawable segments after clip: 2343 (100.0% of source)
-Prepared bounds: x(0.000, 180.000) y(-294.634, -15.366)
-Estimated draw length: 12.22 m
-Applying pen-up / pen-down ...
-G-code stats: lines=4459, draw=3522, travel=923, bounds=0.000..180.000 x, -294.634..0.000 y
-Preflight: ok: lines=4459, draw=3522, travel=923, ratio=0.26
-Saved file stats: lines=4459, draw=3522, travel=923, bounds=0.000..180.000 x, -294.634..0.000 y
-Saved: C:\plotter_pdf\_tmp\latest_preview_preview-1777017252655533700.nc
-Preview SVG: C:\plotter_pdf\_tmp\latest_preview_preview-1777017252655533700_vector.svg
-Preview PDF: C:\plotter_pdf\_tmp\latest_preview_preview-1777017252655533700_vector.pdf
-Sheet preview centered on compact source page bbox: ref=(0.353,0.353)..(210.457,297.670) mm
-Sheet preview placed on source page: offset=(15.537,304.056) mm
+Segment dedup: dropped 375/2335 retraced segments (16.1%), kept=1960, eps=0.010 mm
+Collinear overlap dedup: dropped 11/1957 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
+Reorder: 1275 polylines ordered (nearest-end).
+KOMPAS A4 clean-bbox route: source-page fit disabled; source_frame_bbox=[20.4893, 5.5033, 205.4859, 292.5232]; content_scale=0.972991; translate=(-19.9359,-299.9885) mm; pre_clip_bbox=[0.0, -294.6338, 180.0, -15.3662]; clipped_segments=0; work_area_frame=full.
+Fixed-canvas preview centered on page: page=180.000x280.000 mm, offset=(0.000,295.000) mm
+Preview canvas switched to machine work area: 180.000x280.000 mm.
 Fixed-canvas preview centered on page: page=180.000x280.000 mm, offset=(0.000,295.000) mm
 Preview canvas switched to machine work area: 180.000x280.000 mm.

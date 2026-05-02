@@ -88,20 +88,19 @@ Fit to work area: scale=0.9196, translate=(-112.071,-292.038), from (24.000, 5.5
 Pass window: col 1/2, row 1/1, source=360.000x263.954 mm, window=180.000x263.954 mm, offset=(0.000,0.000), shift=(90.000,0.000)
 Work area clipping: kept 576 visible segments, dropped 1592 out-of-area segments.
 Segment dedup: dropped 267/576 retraced segments (46.4%), kept=309, eps=0.010 mm
-Reorder: source order preserved (309 polylines).
-Technical text join: merged 139 short gaps (ordered=104, nearest=35, gap<=1.10 mm, dy<=1.35 mm), polylines 309 -> 170
-Polyline optimization: 309 -> 170
+Collinear overlap dedup: dropped 18/309 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
+Reorder: source order preserved (291 polylines).
 Segment counts: source=2168, fitted=2168, clipped=576
 Drawable segments after clip: 576 (26.6% of source)
 Warning: significant clipping/transforming occurred. Check that page is inside target work area.
 Prepared bounds: x(0.000, 180.000) y(-286.977, -23.023)
-Estimated draw length: 3.34 m
+Estimated draw length: 3.09 m
 Applying pen-up / pen-down ...
-G-code stats: lines=862, draw=679, travel=169, bounds=0.000..180.000 x, -286.977..0.000 y
-Preflight: ok: lines=862, draw=679, travel=169, ratio=0.25
-Saved file stats: lines=862, draw=679, travel=169, bounds=0.000..180.000 x, -286.977..0.000 y
-Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1777017042387521400.nc
-Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1777017042387521400_vector.svg
-Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1777017042387521400_vector.pdf
+G-code stats: lines=864, draw=659, travel=190, bounds=0.000..180.000 x, -286.977..0.000 y
+Preflight: ok: lines=864, draw=659, travel=190, ratio=0.29
+Saved file stats: lines=864, draw=659, travel=190, bounds=0.000..180.000 x, -286.977..0.000 y
+Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1777735343489143500.nc
+Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1777735343489143500_vector.svg
+Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1777735343489143500_vector.pdf
 Sheet preview centered on compact source page bbox: ref=(0.353,0.353)..(420.518,297.670) mm
 Sheet preview placed on source page: offset=(120.524,304.056) mm
