@@ -16,6 +16,9 @@ class BackendGeometryTests(unittest.TestCase):
     def _rect(x0: float, y0: float, x1: float, y1: float) -> list[tuple[float, float]]:
         return [(x0, y0), (x1, y0), (x1, y1), (x0, y1), (x0, y0)]
 
+    def test_base_work_area_bounds_use_calibrated_5mm_up_shift(self) -> None:
+        self.assertEqual(backend.base_work_area_bounds(), (0.0, 180.0, -285.0, -5.0))
+
     def test_compute_pass_shift_for_two_columns(self) -> None:
         old = (backend.PASS_COLS, backend.PASS_ROWS, backend.PASS_COL, backend.PASS_ROW)
         try:

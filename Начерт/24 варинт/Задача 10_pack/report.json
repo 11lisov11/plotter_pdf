@@ -23,7 +23,7 @@
     {
       "item": "pass_01",
       "ok": true,
-      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1777759532521557300_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1777759532521557300.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1777759532521557300_vector.pdf",
+      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1777794082918023800_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1777794082918023800.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1777794082918023800_vector.pdf",
       "logs": [
         "A3 header miniature crop: rect=10.02,13.59,195.53,53.81 mm -> crop_px=351,114,1169,950.",
         "Image contour tracing: +102 path(s) from embedded raster.",
@@ -34,7 +34,7 @@
         "--- a3 clean pass ---",
         "Render mode: drawing; ExactGeometry=on; Handwriting=off",
         "Sheet 420.0x297.0 mm is larger than workspace 180.0x280.0 mm. Using the overlapped sheet/workspace window.",
-        "Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-295.000,-15.000), sheet_bounds x(0.000,420.000) y(-295.000,2.000), sheet=a3, anchor=lower_left, offset=(0.00,0.00)",
+        "Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-285.000,-5.000), sheet_bounds x(0.000,420.000) y(-285.000,12.000), sheet=a3, anchor=lower_left, offset=(0.00,0.00)",
         "Text render mode: handwriting=off font='Marck Script'; image_contours=off",
         "Extracting paths from SVG ...",
         "Raw geometry bounds: x(0.158, 420.147) y(0.000, 297.388)",
@@ -42,7 +42,7 @@
         "Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).",
         "SVG geometry: paths=4484, segments=4927.",
         "Source bounds: x(0.158, 420.147) y(0.000, 297.295)",
-        "Fit to work area: scale=0.8572, translate=(-90.135,-282.415), from (0.158, 0.000)-(420.147, 297.295)",
+        "Fit to work area: scale=0.8572, translate=(-90.135,-272.415), from (0.158, 0.000)-(420.147, 297.295)",
         "Pass window: col 1/2, row 1/1, source=360.000x254.831 mm, window=180.000x254.831 mm, offset=(0.000,0.000), shift=(90.000,0.000)",
         "Work area clipping: kept 3669 visible segments, dropped 1258 out-of-area segments.",
         "Segment dedup: dropped 1/3669 retraced segments (0.0%), kept=3668, eps=0.010 mm",
@@ -54,17 +54,17 @@
         "Segment counts: source=4927, fitted=4927, clipped=3669",
         "Drawable segments after clip: 3669 (74.5% of source)",
         "Warning: significant clipping/transforming occurred. Check that page is inside target work area.",
-        "Prepared bounds: x(0.000, 180.000) y(-282.415, -27.585)",
+        "Prepared bounds: x(0.000, 180.000) y(-272.415, -17.585)",
         "Estimated draw length: 8.69 m",
         "Applying pen-up / pen-down ...",
-        "G-code stats: lines=6538, draw=5423, travel=1100, bounds=0.000..180.000 x, -282.415..0.000 y",
+        "G-code stats: lines=6538, draw=5423, travel=1100, bounds=0.000..180.000 x, -272.415..0.000 y",
         "Preflight: ok: lines=6538, draw=5423, travel=1100, ratio=0.20",
-        "Saved file stats: lines=6538, draw=5423, travel=1100, bounds=0.000..180.000 x, -282.415..0.000 y",
-        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1777759532521557300.nc",
-        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1777759532521557300_vector.svg",
-        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1777759532521557300_vector.pdf",
+        "Saved file stats: lines=6538, draw=5423, travel=1100, bounds=0.000..180.000 x, -272.415..0.000 y",
+        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1777794082918023800.nc",
+        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1777794082918023800_vector.svg",
+        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1777794082918023800_vector.pdf",
         "Sheet preview centered on compact source page bbox: ref=(0.088,0.000)..(420.070,296.951) mm",
-        "Sheet preview placed on source page: offset=(120.079,303.519) mm"
+        "Sheet preview placed on source page: offset=(120.079,293.519) mm"
       ],
       "fit_scale": 0.8572,
       "clipping_warning": true,
@@ -82,8 +82,8 @@
         "bounds": {
           "x_min": 0.0,
           "x_max": 180.0,
-          "y_min": -282.4154,
-          "y_max": -27.5846
+          "y_min": -272.4154,
+          "y_max": -17.5846
         }
       },
       "svg": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 10_pack\\pages\\pass_01.svg",
@@ -95,7 +95,7 @@
     {
       "item": "pass_02",
       "ok": true,
-      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1777759561779218500_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1777759561779218500.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1777759561779218500_vector.pdf",
+      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1777794117537427600_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1777794117537427600.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1777794117537427600_vector.pdf",
       "logs": [
         "A3 header miniature crop: rect=10.02,13.59,195.53,53.81 mm -> crop_px=351,114,1169,950.",
         "Image contour tracing: +102 path(s) from embedded raster.",
@@ -107,7 +107,7 @@
         "--- a3 clean pass ---",
         "Render mode: drawing; ExactGeometry=on; Handwriting=off",
         "Sheet 420.0x297.0 mm is larger than workspace 180.0x280.0 mm. Using the overlapped sheet/workspace window.",
-        "Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-295.000,-15.000), sheet_bounds x(0.000,420.000) y(-295.000,2.000), sheet=a3, anchor=lower_left, offset=(0.00,0.00)",
+        "Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-285.000,-5.000), sheet_bounds x(0.000,420.000) y(-285.000,12.000), sheet=a3, anchor=lower_left, offset=(0.00,0.00)",
         "Text render mode: handwriting=off font='Marck Script'; image_contours=off",
         "Extracting paths from SVG ...",
         "Raw geometry bounds: x(0.158, 420.147) y(0.000, 297.388)",
@@ -115,9 +115,9 @@
         "Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).",
         "SVG geometry: paths=4484, segments=4927.",
         "Source bounds: x(0.158, 420.147) y(0.000, 297.295)",
-        "Fit to work area: scale=0.8572, translate=(-90.135,-282.415), from (0.158, 0.000)-(420.147, 297.295)",
+        "Fit to work area: scale=0.8572, translate=(-90.135,-272.415), from (0.158, 0.000)-(420.147, 297.295)",
         "Pass window: col 2/2, row 1/1, source=360.000x254.831 mm, window=180.000x254.831 mm, offset=(180.000,0.000), shift=(-90.000,0.000)",
-        "Sheet pass transform: rotating geometry by 180 deg for a3 pass 2/2 x 1/1 around active area center (90.000,-155.000).",
+        "Sheet pass transform: rotating geometry by 180 deg for a3 pass 2/2 x 1/1 around active area center (90.000,-145.000).",
         "Sheet pass transform: translating geometry by (0.000,3.000) mm for a3 pass 2/2 x 1/1.",
         "Work area clipping: kept 1292 visible segments, dropped 3635 out-of-area segments.",
         "Collinear overlap dedup: dropped 18/1286 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)",
@@ -129,17 +129,17 @@
         "Segment counts: source=4927, fitted=4927, clipped=1292",
         "Drawable segments after clip: 1292 (26.2% of source)",
         "Warning: significant clipping/transforming occurred. Check that page is inside target work area.",
-        "Prepared bounds: x(0.000, 180.000) y(-279.172, -24.585)",
+        "Prepared bounds: x(0.000, 180.000) y(-269.172, -14.585)",
         "Estimated draw length: 5.86 m",
         "Applying pen-up / pen-down ...",
-        "G-code stats: lines=2064, draw=1732, travel=317, bounds=0.000..180.000 x, -279.172..0.000 y",
+        "G-code stats: lines=2064, draw=1732, travel=317, bounds=0.000..180.000 x, -269.172..0.000 y",
         "Preflight: ok: lines=2064, draw=1732, travel=317, ratio=0.18",
-        "Saved file stats: lines=2064, draw=1732, travel=317, bounds=0.000..180.000 x, -279.172..0.000 y",
-        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1777759561779218500.nc",
-        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1777759561779218500_vector.svg",
-        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1777759561779218500_vector.pdf",
+        "Saved file stats: lines=2064, draw=1732, travel=317, bounds=0.000..180.000 x, -269.172..0.000 y",
+        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1777794117537427600.nc",
+        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1777794117537427600_vector.svg",
+        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1777794117537427600_vector.pdf",
         "Sheet preview centered on compact source page bbox: ref=(0.088,0.000)..(420.070,296.951) mm",
-        "Sheet preview placed on source page: offset=(120.079,300.398) mm"
+        "Sheet preview placed on source page: offset=(120.079,290.398) mm"
       ],
       "fit_scale": 0.8572,
       "clipping_warning": true,
@@ -157,8 +157,8 @@
         "bounds": {
           "x_min": 0.0,
           "x_max": 180.0,
-          "y_min": -279.1719,
-          "y_max": -24.5846
+          "y_min": -269.1719,
+          "y_max": -14.5846
         }
       },
       "svg": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 10_pack\\pages\\pass_02.svg",

@@ -11,7 +11,8 @@ from typing import Iterable
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_WORK_AREA = (0.0, 180.0, -295.0, 0.0)
+DEFAULT_WORK_AREA = (0.0, 180.0, -285.0, -5.0)
+A3_TWO_PASS_WORK_AREA = (0.0, 180.0, -285.0, -2.0)
 DEFAULT_Z_UP = 0.0
 DEFAULT_Z_DOWN = 11.9
 _TOKEN_RE = re.compile(r"([A-Za-z])\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))")
@@ -316,9 +317,10 @@ def validate_package(package_dir: Path, rows: list[dict[str, str]]) -> PackageVa
         _require_file(package_dir, "page_01.pdf", problems)
         _require_file(package_dir, "page_01.gcode", problems)
         gcode_paths.append(package_dir / "page_01.gcode")
-    elif {"pass_01", "pass_02"}.issubset(items):
+    elif any(item.startswith("pass_") for item in items):
         _require_file(package_dir, "combined_preview.pdf", problems)
-        for pass_name in ("pass_01", "pass_02"):
+        pass_names = sorted(item for item in items if item.startswith("pass_"))
+        for pass_name in pass_names:
             _require_file(package_dir, f"{pass_name}.pdf", problems)
             _require_file(package_dir, f"{pass_name}.gcode", problems)
             gcode_paths.append(package_dir / f"{pass_name}.gcode")
@@ -329,7 +331,8 @@ def validate_package(package_dir: Path, rows: list[dict[str, str]]) -> PackageVa
     for gcode_path in gcode_paths:
         if not gcode_path.exists():
             continue
-        result = validate_gcode_file(gcode_path)
+        work_area = A3_TWO_PASS_WORK_AREA if gcode_path.name.startswith("pass_") else DEFAULT_WORK_AREA
+        result = validate_gcode_file(gcode_path, work_area=work_area)
         gcode_results[gcode_path.name] = result
         problems.extend(result.problems)
         warnings.extend(result.warnings)

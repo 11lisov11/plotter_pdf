@@ -1,9 +1,43 @@
-A4 MuPDF source route: direct PDF vector SVG export with text_as_path=True; kompas_archive_strip_removed=8; kompas_service_region_removed=552; kompas_under_frame_removed=1; kompas_top_outer_frame_removed=2; no title-block reroute.
-Segment dedup: dropped 571/2661 retraced segments (21.5%), kept=2090, eps=0.010 mm
-Collinear overlap dedup: dropped 11/2088 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
-Reorder: 1424 polylines ordered (nearest-end).
-KOMPAS A4 clean-bbox route: source-page fit disabled; source_frame_bbox=[20.4893, 5.5033, 205.4859, 292.5232]; content_scale=0.972991; translate=(-19.9359,-299.9885) mm; pre_clip_bbox=[0.0, -294.6338, 180.0, -15.3662]; clipped_segments=0; work_area_frame=full.
-Fixed-canvas preview centered on page: page=180.000x280.000 mm, offset=(0.000,295.000) mm
+TTF centerline postprocess: 60 -> 6 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: '30°' -> 6 stroke(s), font=GOST_BU.ttf, size=5.87
+TTF centerline postprocess: 7 -> 4 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: '100°' -> 4 stroke(s), font=GOST_BU.ttf, size=5.49
+TTF centerline postprocess: 10 -> 2 stroke(s) (eps=0.07, gap=0.62, smooth_step=0.13, col=0.020)
+TTF centerline text: 'А' -> 2 stroke(s), font=GOST_BU.ttf, size=6.15
+TTF centerline postprocess: 22 -> 4 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: 'M22' -> 4 stroke(s), font=GOST_BU.ttf, size=3.20
+TTF centerline postprocess: 15 -> 4 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: '60°' -> 4 stroke(s), font=GOST_BU.ttf, size=5.19
+TTF centerline postprocess: 49 -> 5 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: '⌀14' -> 5 stroke(s), font=GOST_BU.ttf, size=5.28
+TTF centerline postprocess: 24 -> 3 stroke(s) (eps=0.14, gap=0.70, smooth_step=0.11, col=0.018)
+TTF centerline text: '5' -> 3 stroke(s), font=GOST_BU.ttf, size=6.37
+TTF centerline postprocess: 6 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline text: '7' -> 1 stroke(s), font=GOST_BU.ttf, size=12.29
+TTF centerline postprocess: 13 -> 2 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: '13' -> 2 stroke(s), font=GOST_BU.ttf, size=4.78
+TTF centerline postprocess: 162 -> 10 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: '3х7=21' -> 10 stroke(s), font=GOST_BU.ttf, size=5.97
+TTF centerline postprocess: 72 -> 6 stroke(s) (eps=0.16, gap=0.79, smooth_step=0.13, col=0.020)
+TTF centerline text: '22' -> 6 stroke(s), font=GOST_BU.ttf, size=7.15
+TTF centerline postprocess: 43 -> 4 stroke(s) (eps=0.14, gap=0.68, smooth_step=0.11, col=0.017)
+TTF centerline text: '60' -> 4 stroke(s), font=GOST_BU.ttf, size=6.20
+TTF centerline postprocess: 10 -> 2 stroke(s) (eps=0.07, gap=0.62, smooth_step=0.13, col=0.020)
+TTF centerline text: 'А' -> 2 stroke(s), font=GOST_BU.ttf, size=6.15
+TTF centerline postprocess: 18 -> 3 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: '36' -> 3 stroke(s), font=GOST_BU.ttf, size=4.85
+TTF centerline postprocess: 56 -> 5 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: '⌀6' -> 5 stroke(s), font=GOST_BU.ttf, size=5.40
+TTF centerline postprocess: 35 -> 3 stroke(s) (eps=0.14, gap=0.70, smooth_step=0.11, col=0.018)
+TTF centerline text: '32' -> 3 stroke(s), font=GOST_BU.ttf, size=6.37
+KOMPAS text reroute: removed 178 outline polyline(s), rendered 64 single-line polyline(s) from 16 PDF text line(s).
+A4 MuPDF source route: direct PDF vector SVG export with text_as_path=True; kompas_archive_strip_removed=8; kompas_service_region_removed=552; kompas_under_frame_removed=1; kompas_top_outer_frame_removed=2; kompas_text_lines=16; kompas_text_removed=178; kompas_text_rendered=64; single-line text reroute.
+Segment dedup: dropped 554/2814 retraced segments (19.7%), kept=2260, eps=0.010 mm
+Collinear overlap dedup: dropped 12/2106 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
+Reorder: 1309 polylines ordered (nearest-end).
+Collinear overlap dedup: dropped 1/2096 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
+KOMPAS A4 clean-bbox route: source-page fit disabled; source_frame_bbox=[20.4893, 5.5033, 205.4859, 292.5232]; content_scale=0.972991; translate=(-19.9359,-289.9885) mm; pre_clip_bbox=[0.0, -284.6338, 180.0, -5.3662]; clipped_segments=0; work_area_frame=full.
+Fixed-canvas preview centered on page: page=180.000x280.000 mm, offset=(0.000,285.000) mm
 Preview canvas switched to machine work area: 180.000x280.000 mm.
-Fixed-canvas preview centered on page: page=180.000x280.000 mm, offset=(0.000,295.000) mm
+Fixed-canvas preview centered on page: page=180.000x280.000 mm, offset=(0.000,285.000) mm
 Preview canvas switched to machine work area: 180.000x280.000 mm.

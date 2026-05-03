@@ -105,11 +105,147 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
         self.assertAlmostEqual(meta["content_scale"], 180.0 / 185.0, places=6)
         self.assertEqual(
             prepared[0],
-            [(0.0, -15.0), (180.0, -15.0), (180.0, -295.0), (0.0, -295.0), (0.0, -15.0)],
+            [(0.0, -5.0), (180.0, -5.0), (180.0, -285.0), (0.0, -285.0), (0.0, -5.0)],
         )
         prepared_lengths = [round(mod._polyline_length(poly), 3) for poly in prepared[1:]]
         self.assertIn(round(50.0 * (180.0 / 185.0), 3), prepared_lengths)
         self.assertTrue(any("source-page fit disabled" in line for line in logs))
+
+    def test_prepare_kompas_a4_clean_bbox_fit_dedups_inner_line_on_work_frame(self) -> None:
+        mod = _load_module()
+        frame = [
+            (20.0, 5.0),
+            (205.0, 5.0),
+            (205.0, 292.0),
+            (20.0, 292.0),
+            (20.0, 5.0),
+        ]
+        inner_on_left_frame = [(20.0, 80.0), (20.0, 140.0)]
+
+        prepared, meta = mod._prepare_kompas_a4_clean_bbox_fit_polylines([frame, inner_on_left_frame], logs=[])
+
+        self.assertTrue(meta["applied"])
+        left_frame_like = []
+        for poly in prepared:
+            for a, b in zip(poly, poly[1:]):
+                if abs(float(a[0])) <= 1e-6 and abs(float(b[0])) <= 1e-6:
+                    left_frame_like.append((a, b))
+        self.assertEqual(len(left_frame_like), 1)
+
+    def test_strip_outer_bbox_frame_ignores_text_above_frame(self) -> None:
+        mod = _load_module()
+        frame = [
+            (20.0, 5.0),
+            (205.0, 5.0),
+            (205.0, 292.0),
+            (20.0, 292.0),
+            (20.0, 5.0),
+        ]
+        text_above_frame = [(35.0, 1.0), (75.0, 3.0)]
+
+        _stripped, meta = mod._strip_outer_bbox_frame_segments([frame, text_above_frame])
+
+        self.assertTrue(meta["applied"])
+        self.assertEqual(meta["source_bbox"], [20.0, 5.0, 205.0, 292.0])
+
+    def test_kompas_text_poly_candidate_preserves_table_lines(self) -> None:
+        mod = _load_module()
+        text_regions = [(50.0, 250.0, 75.0, 258.0)]
+
+        glyph_fragment = [(54.0, 252.0), (54.4, 252.5), (54.8, 252.0)]
+        glyph_fragment_below_pdf_bbox = [(54.0, 260.5), (54.4, 261.0), (54.8, 260.5)]
+        table_line = [(40.0, 254.0), (90.0, 254.0)]
+
+        self.assertTrue(mod._kompas_text_poly_candidate_mm(glyph_fragment, text_regions=text_regions))
+        self.assertTrue(mod._kompas_text_poly_candidate_mm(glyph_fragment_below_pdf_bbox, text_regions=text_regions))
+        self.assertFalse(mod._kompas_text_poly_candidate_mm(table_line, text_regions=text_regions))
+
+    def test_reroute_kompas_text_replaces_outline_fragments_with_single_line_text(self) -> None:
+        mod = _load_module()
+        source_pdf = Path("drawing.pdf")
+        glyph_fragment = [(54.0, 252.0), (54.4, 252.5), (54.8, 252.0)]
+        geometry_line = [(40.0, 254.0), (90.0, 254.0)]
+        rendered_text = [[(50.0, 253.0), (70.0, 253.0)]]
+
+        with mock.patch.object(
+            mod,
+            "_extract_kompas_plot_text_lines_from_pdf",
+            return_value=[{"text": "K1", "bbox_mm": (50.0, 250.0, 75.0, 258.0)}],
+        ), mock.patch.object(
+            mod,
+            "_render_pdf_text_lines_polylines_in_place",
+            return_value=rendered_text,
+        ):
+            logs: list[str] = []
+            out, meta = mod._reroute_kompas_text_polylines(
+                [glyph_fragment, geometry_line],
+                source_pdf=source_pdf,
+                page_index=0,
+                logger=logs.append,
+            )
+
+        self.assertNotIn(glyph_fragment, out)
+        self.assertIn(geometry_line, out)
+        self.assertIn(rendered_text[0], out)
+        self.assertEqual(meta["kompas_text_lines"], 1.0)
+        self.assertEqual(meta["kompas_text_removed"], 1.0)
+        self.assertEqual(meta["kompas_text_rendered"], 1.0)
+        self.assertTrue(any("KOMPAS text reroute" in line for line in logs))
+
+    def test_reroute_kompas_text_places_single_line_on_visible_outline_bbox(self) -> None:
+        mod = _load_module()
+        source_pdf = Path("drawing.pdf")
+        pdf_bbox = (30.0, 1.5, 80.0, 12.0)
+        visible_outline = [(34.0, 12.5), (45.0, 16.0), (60.0, 13.0)]
+        rendered_text = [[(34.0, 14.0), (60.0, 14.0)]]
+
+        def fake_render(lines, **_kwargs):
+            self.assertEqual(lines[0]["bbox_mm"], (34.0, 12.5, 60.0, 16.0))
+            return rendered_text
+
+        with mock.patch.object(
+            mod,
+            "_extract_kompas_plot_text_lines_from_pdf",
+            return_value=[{"text": "M400", "bbox_mm": pdf_bbox}],
+        ), mock.patch.object(
+            mod,
+            "_render_pdf_text_lines_polylines_in_place",
+            side_effect=fake_render,
+        ):
+            out, meta = mod._reroute_kompas_text_polylines(
+                [visible_outline],
+                source_pdf=source_pdf,
+                page_index=0,
+                logger=lambda _msg: None,
+            )
+
+        self.assertEqual(out, rendered_text)
+        self.assertEqual(meta["kompas_text_removed"], 1.0)
+
+    def test_kompas_preserve_source_text_region_keeps_stamp_and_top_designation(self) -> None:
+        mod = _load_module()
+
+        self.assertTrue(
+            mod._kompas_preserve_source_text_region_mm(
+                (30.0, 1.5, 80.0, 12.0),
+                page_h_mm=298.0,
+                archive_cutoff_x_mm=14.5,
+            )
+        )
+        self.assertTrue(
+            mod._kompas_preserve_source_text_region_mm(
+                (121.0, 240.0, 170.0, 251.0),
+                page_h_mm=298.0,
+                archive_cutoff_x_mm=14.5,
+            )
+        )
+        self.assertFalse(
+            mod._kompas_preserve_source_text_region_mm(
+                (96.0, 31.0, 106.0, 39.0),
+                page_h_mm=298.0,
+                archive_cutoff_x_mm=14.5,
+            )
+        )
 
     def test_candidate_fragmentation_score_penalizes_tiny_and_pointlike_strokes(self) -> None:
         mod = _load_module()
@@ -1997,6 +2133,33 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
 
         self.assertEqual(fitted, [[(153.0, -266.0), (151.0, -264.0)]])
         self.assertEqual(source, [[(71.0, -144.0), (70.0, -143.0)]])
+
+    def test_parse_a3_pass_log_accepts_one_to_one_fit_guard(self) -> None:
+        mod = _load_module()
+        with tempfile.TemporaryDirectory(prefix="a3_fit_guard_log_") as td:
+            log_path = Path(td) / "pass_01.log.txt"
+            log_path.write_text(
+                "\n".join(
+                    [
+                        "Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-285.000,-5.000), margin=(0.0,0.0,0.0,0.0)",
+                        "Fit guard (1:1 mm): required fit scale 0.9239 is below threshold 1.000; keeping scale=1.0 and clipping overflow to work area.",
+                        "Pass window: col 1/2, row 1/2, source=389.639x415.375 mm, window=180.000x280.000 mm, offset=(0.000,0.000), shift=(104.819,67.688)",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            info = mod._parse_a3_pass_log(log_path)
+
+        self.assertEqual(info["scale"], 1.0)
+        self.assertEqual(info["fit_tx"], 0.0)
+        self.assertEqual(info["fit_ty"], 0.0)
+        self.assertEqual(info["shift_x"], 104.819)
+        self.assertEqual(info["shift_y"], 67.688)
+        self.assertEqual(info["area_min_x"], 0.0)
+        self.assertEqual(info["area_max_x"], 180.0)
+        self.assertEqual(info["area_min_y"], -285.0)
+        self.assertEqual(info["area_max_y"], -5.0)
 
     def test_should_reroute_title_block_text_disabled_for_computer_graphics_pdf(self) -> None:
         mod = _load_module()

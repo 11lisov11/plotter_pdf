@@ -23,22 +23,22 @@ SVG page: 180.000 x 280.000 mm
 Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).
 SVG geometry: paths=1119, segments=8535.
 Source bounds: x(0.000, 180.000) y(0.000, 280.000)
-Fit to work area: scale=1.0000, translate=(0.000,-295.000), from (0.000, 0.000)-(180.000, 280.000)
-Collinear overlap dedup: dropped 60/8535 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
-Reorder: source order preserved (1142 polylines).
-Technical text join: merged 402 short gaps (ordered=296, nearest=106, gap<=0.55 mm, dy<=0.75 mm), polylines 1142 -> 740
-Segment dedup: dropped 7/8874 retraced segments (0.1%), kept=8867, eps=0.010 mm
-Polyline optimization: 1142 -> 747
+Fit to work area: scale=1.0000, translate=(0.000,-285.000), from (0.000, 0.000)-(180.000, 280.000)
+Collinear overlap dedup: dropped 64/8535 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
+Reorder: source order preserved (1145 polylines).
+Technical text join: merged 403 short gaps (ordered=296, nearest=107, gap<=0.55 mm, dy<=0.75 mm), polylines 1145 -> 742
+Segment dedup: dropped 7/8871 retraced segments (0.1%), kept=8864, eps=0.050 mm
+Polyline optimization: 1145 -> 749
 Segment counts: source=8535, fitted=8535, clipped=8535
 Drawable segments after clip: 8535 (100.0% of source)
-Prepared bounds: x(0.000, 180.000) y(-295.000, -15.000)
-Estimated draw length: 7.08 m
+Prepared bounds: x(0.000, 180.000) y(-285.000, -5.000)
+Estimated draw length: 7.07 m
 Applying pen-up / pen-down ...
-G-code stats: lines=11120, draw=10355, travel=750, bounds=0.000..180.000 x, -295.000..0.000 y
-Preflight: ok: lines=11120, draw=10355, travel=750, ratio=0.07
-Saved file stats: lines=11120, draw=10355, travel=750, bounds=0.000..180.000 x, -295.000..0.000 y
+G-code stats: lines=11123, draw=10356, travel=752, bounds=0.000..180.000 x, -285.000..0.000 y
+Preflight: ok: lines=11123, draw=10356, travel=752, ratio=0.07
+Saved file stats: lines=11123, draw=10356, travel=752, bounds=0.000..180.000 x, -285.000..0.000 y
 Saved: C:\plotter_pdf\Начерт\1 вариант\Задача 4_pack\_candidates\a4_hybrid_frame.nc
 Sheet preview centered on compact source page bbox: ref=(0.176,0.176)..(185.657,285.736) mm
-Sheet preview placed on source page: offset=(3.049,298.044) mm
-Fixed-canvas preview centered on page: page=180.000x280.000 mm, offset=(0.000,295.000) mm
+Sheet preview placed on source page: offset=(3.049,288.044) mm
+Fixed-canvas preview centered on page: page=180.000x280.000 mm, offset=(0.000,285.000) mm
 Preview canvas switched to machine work area: 180.000x280.000 mm.

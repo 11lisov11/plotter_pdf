@@ -1,0 +1,166 @@
+TTF centerline postprocess: 145 -> 18 stroke(s) (eps=0.10, gap=0.84, smooth_step=0.13, col=0.027)
+TTF centerline text: 'Мч00.01.00.00' -> 18 stroke(s), font=GOST_BU.ttf, size=8.43
+TTF centerline postprocess: 59 -> 3 stroke(s) (eps=0.10, gap=0.84, smooth_step=0.13, col=0.027)
+TTF centerline text: 'Сб' -> 3 stroke(s), font=GOST_BU.ttf, size=8.43
+TTF centerline postprocess: 2 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline text: '7' -> 1 stroke(s), font=GOST_BU.ttf, size=13.75
+TTF centerline postprocess: 6 -> 2 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline text: '10' -> 2 stroke(s), font=GOST_BU.ttf, size=11.85
+TTF centerline postprocess: 7 -> 3 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline text: '3' -> 3 stroke(s), font=GOST_BU.ttf, size=13.63
+TTF centerline postprocess: 6 -> 1 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: '5' -> 1 stroke(s), font=GOST_BU.ttf, size=3.20
+TTF centerline postprocess: 4 -> 2 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline text: '2' -> 2 stroke(s), font=GOST_BU.ttf, size=13.75
+TTF centerline postprocess: 5 -> 2 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline text: '4' -> 2 stroke(s), font=GOST_BU.ttf, size=21.29
+TTF centerline postprocess: 8 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline text: '6' -> 1 stroke(s), font=GOST_BU.ttf, size=13.75
+TTF centerline postprocess: 11 -> 2 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline text: '8' -> 2 stroke(s), font=GOST_BU.ttf, size=11.50
+TTF centerline postprocess: 5 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline text: '9' -> 1 stroke(s), font=GOST_BU.ttf, size=13.23
+TTF centerline postprocess: 1 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline text: '1' -> 1 stroke(s), font=GOST_BU.ttf, size=13.75
+TTF centerline postprocess: 23 -> 3 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: '267' -> 3 stroke(s), font=GOST_BU.ttf, size=4.98
+TTF centerline postprocess: 12 -> 3 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: 'Ç25' -> 3 stroke(s), font=GOST_BU.ttf, size=3.20
+TTF centerline postprocess: 35 -> 1 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline text: 'Б' -> 1 stroke(s), font=GOST_BU.ttf, size=11.54
+TTF centerline postprocess: 25 -> 5 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: 'Ç65' -> 5 stroke(s), font=GOST_BU.ttf, size=4.47
+TTF centerline postprocess: 31 -> 4 stroke(s) (eps=0.15, gap=0.77, smooth_step=0.13, col=0.020)
+TTF centerline text: '45' -> 4 stroke(s), font=GOST_BU.ttf, size=7.03
+TTF centerline postprocess: 19 -> 6 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: 'Ç32' -> 6 stroke(s), font=GOST_BU.ttf, size=5.71
+TTF centerline postprocess: 14 -> 3 stroke(s) (eps=0.17, gap=0.83, smooth_step=0.13, col=0.021)
+TTF centerline text: '20' -> 3 stroke(s), font=GOST_BU.ttf, size=7.54
+TTF centerline postprocess: 9 -> 3 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: 'Ç32' -> 3 stroke(s), font=GOST_BU.ttf, size=3.20
+TTF centerline postprocess: 21 -> 5 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.026)
+TTF centerline text: 'M12' -> 5 stroke(s), font=GOST_BU.ttf, size=9.18
+TTF centerline postprocess: 28 -> 2 stroke(s) (eps=0.15, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline text: 'Б' -> 2 stroke(s), font=GOST_BU.ttf, size=12.77
+TTF centerline postprocess: 61 -> 3 stroke(s) (eps=0.15, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline text: 'А' -> 3 stroke(s), font=GOST_BU.ttf, size=12.11
+TTF centerline postprocess: 15 -> 3 stroke(s) (eps=0.14, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline text: 'А' -> 3 stroke(s), font=GOST_BU.ttf, size=11.48
+TTF centerline postprocess: 14 -> 5 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline text: 'Ç64' -> 5 stroke(s), font=GOST_BU.ttf, size=10.03
+TTF centerline postprocess: 6 -> 1 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: '4' -> 1 stroke(s), font=GOST_BU.ttf, size=4.70
+TTF centerline postprocess: 29 -> 4 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'отв.' -> 4 stroke(s), font=GOST_BU.ttf, size=4.70
+TTF centerline postprocess: 9 -> 1 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: '4' -> 1 stroke(s), font=GOST_BU.ttf, size=3.75
+TTF centerline postprocess: 54 -> 4 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'отв.' -> 4 stroke(s), font=GOST_BU.ttf, size=3.75
+TTF centerline postprocess: 3 -> 1 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: '4' -> 1 stroke(s), font=GOST_BU.ttf, size=3.20
+TTF centerline postprocess: 54 -> 3 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'отв.' -> 3 stroke(s), font=GOST_BU.ttf, size=3.20
+TTF centerline postprocess: 6 -> 3 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: 'Ç14' -> 3 stroke(s), font=GOST_BU.ttf, size=3.20
+TTF centerline postprocess: 13 -> 4 stroke(s) (eps=0.17, gap=0.84, smooth_step=0.13, col=0.021)
+TTF centerline text: 'Ç75' -> 4 stroke(s), font=GOST_BU.ttf, size=7.63
+TTF centerline postprocess: 19 -> 4 stroke(s) (eps=0.16, gap=0.78, smooth_step=0.13, col=0.020)
+TTF centerline text: 'Ç11' -> 4 stroke(s), font=GOST_BU.ttf, size=7.07
+TTF centerline postprocess: 2 -> 1 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: '1.' -> 1 stroke(s), font=GOST_BU.ttf, size=5.76
+TTF centerline postprocess: 127 -> 9 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Размеры' -> 9 stroke(s), font=GOST_BU.ttf, size=5.76
+TTF centerline postprocess: 45 -> 2 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'для' -> 2 stroke(s), font=GOST_BU.ttf, size=5.76
+TTF centerline postprocess: 96 -> 9 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'справок.' -> 9 stroke(s), font=GOST_BU.ttf, size=5.76
+TTF centerline postprocess: 145 -> 18 stroke(s) (eps=0.10, gap=0.84, smooth_step=0.13, col=0.027)
+TTF centerline text: 'Мч00.01.00.00' -> 18 stroke(s), font=GOST_BU.ttf, size=8.43
+TTF centerline postprocess: 59 -> 3 stroke(s) (eps=0.10, gap=0.84, smooth_step=0.13, col=0.027)
+TTF centerline text: 'Сб' -> 3 stroke(s), font=GOST_BU.ttf, size=8.43
+TTF centerline postprocess: 47 -> 6 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Лит.' -> 6 stroke(s), font=GOST_BU.ttf, size=4.57
+TTF centerline postprocess: 34 -> 6 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Масса' -> 6 stroke(s), font=GOST_BU.ttf, size=4.64
+TTF centerline postprocess: 100 -> 10 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Масштаб' -> 10 stroke(s), font=GOST_BU.ttf, size=4.38
+TTF centerline postprocess: 106 -> 8 stroke(s) (eps=0.10, gap=0.80, smooth_step=0.13, col=0.026)
+TTF centerline text: 'Клапан' -> 8 stroke(s), font=GOST_BU.ttf, size=8.00
+TTF centerline postprocess: 209 -> 18 stroke(s) (eps=0.10, gap=0.80, smooth_step=0.13, col=0.026)
+TTF centerline text: 'перепускной' -> 18 stroke(s), font=GOST_BU.ttf, size=8.00
+TTF centerline postprocess: 31 -> 6 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: '200' -> 6 stroke(s), font=GOST_BU.ttf, size=3.68
+TTF centerline postprocess: 18 -> 3 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: '№' -> 3 stroke(s), font=GOST_BU.ttf, size=4.00
+TTF centerline postprocess: 79 -> 2 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'докум.' -> 2 stroke(s), font=GOST_BU.ttf, size=4.00
+TTF centerline postprocess: 57 -> 3 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Подп.' -> 3 stroke(s), font=GOST_BU.ttf, size=4.22
+TTF centerline postprocess: 45 -> 3 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Изм.' -> 3 stroke(s), font=GOST_BU.ttf, size=3.79
+TTF centerline postprocess: 24 -> 2 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Лист' -> 2 stroke(s), font=GOST_BU.ttf, size=3.79
+TTF centerline postprocess: 54 -> 4 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Дата' -> 4 stroke(s), font=GOST_BU.ttf, size=4.04
+TTF centerline postprocess: 13 -> 3 stroke(s) (eps=0.17, gap=0.84, smooth_step=0.13, col=0.021)
+TTF centerline text: '1:2' -> 3 stroke(s), font=GOST_BU.ttf, size=7.64
+TTF centerline postprocess: 93 -> 5 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Разраб.' -> 5 stroke(s), font=GOST_BU.ttf, size=3.20
+TTF centerline postprocess: 82 -> 6 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Белов' -> 6 stroke(s), font=GOST_BU.ttf, size=4.27
+TTF centerline postprocess: 30 -> 5 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Пров.' -> 5 stroke(s), font=GOST_BU.ttf, size=4.44
+TTF centerline postprocess: 105 -> 12 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Пузанова' -> 12 stroke(s), font=GOST_BU.ttf, size=4.08
+TTF centerline postprocess: 151 -> 14 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Сборочный' -> 14 stroke(s), font=GOST_BU.ttf, size=5.66
+TTF centerline postprocess: 116 -> 6 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'чертеж' -> 6 stroke(s), font=GOST_BU.ttf, size=5.66
+TTF centerline postprocess: 60 -> 4 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Т.контр.' -> 4 stroke(s), font=GOST_BU.ttf, size=3.51
+TTF centerline postprocess: 33 -> 4 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Лист' -> 4 stroke(s), font=GOST_BU.ttf, size=4.88
+TTF centerline postprocess: 87 -> 5 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Листов' -> 5 stroke(s), font=GOST_BU.ttf, size=4.42
+TTF centerline postprocess: 2 -> 1 stroke(s) (eps=0.15, gap=0.74, smooth_step=0.12, col=0.019)
+TTF centerline text: '1' -> 1 stroke(s), font=GOST_BU.ttf, size=6.71
+TTF centerline postprocess: 76 -> 4 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Н.контр.' -> 4 stroke(s), font=GOST_BU.ttf, size=3.28
+TTF centerline postprocess: 41 -> 5 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Утв.' -> 5 stroke(s), font=GOST_BU.ttf, size=3.20
+KOMPAS text reroute: removed 375 outline polyline(s), rendered 295 single-line polyline(s) from 53 PDF text line(s).
+Literal clean source KOMPAS cleanup: archive_strip_removed=158; service_region_removed=63; under_frame_removed=68; top_outer_frame_removed=2; kompas_text_lines=53; kompas_text_removed=375; kompas_text_rendered=295.
+Literal clean source route: direct PDF vector SVG export (text_as_path=True, page=298.111x421.047 mm, rotated_90=yes).
+tile_cols=2
+tile_rows=2
+tile_col=2
+tile_row=2
+--- tiled clean pass ---
+Render mode: drawing; ExactGeometry=on; Handwriting=off
+Sheet 298.1x421.0 mm is larger than workspace 180.0x280.0 mm. Using the overlapped sheet/workspace window.
+Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-285.000,-5.000), sheet_bounds x(0.000,298.111) y(-285.000,136.047), sheet=custom, anchor=lower_left, offset=(0.00,0.00)
+Text render mode: handwriting=off font='Marck Script'; image_contours=off
+Extracting paths from SVG ...
+Raw geometry bounds: x(23.849, 413.548) y(1.621, 416.910)
+SVG page: 298.111 x 421.047 mm
+Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).
+SVG geometry: paths=4789, segments=10704.
+Source bounds: x(23.849, 413.548) y(1.621, 416.910)
+Fit guard (1:1 mm): required fit scale 0.9238 is below threshold 1.000; keeping scale=1.0 and clipping overflow to work area.
+Pass window: col 2/2, row 2/2, source=389.699x415.289 mm, window=180.000x280.000 mm, offset=(209.699,135.289), shift=(-104.850,-67.645)
+Work area clipping: kept 4959 visible segments, dropped 5745 out-of-area segments.
+Segment dedup: dropped 1158/4959 retraced segments (23.4%), kept=3801, eps=0.010 mm
+Collinear overlap dedup: dropped 21/3799 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
+Reorder: source order preserved (2216 polylines).
+Segment counts: source=10704, fitted=10704, clipped=4959
+Drawable segments after clip: 4959 (46.3% of source)
+Warning: significant clipping/transforming occurred. Check that page is inside target work area.
+Prepared bounds: x(0.000, 180.000) y(-285.000, -5.000)
+Estimated draw length: 7.74 m
+Applying pen-up / pen-down ...
+G-code stats: lines=8188, draw=6704, travel=1469, bounds=0.000..180.000 x, -285.000..0.000 y
+Preflight: ok: lines=8188, draw=6704, travel=1469, ratio=0.22
+Saved file stats: lines=8188, draw=6704, travel=1469, bounds=0.000..180.000 x, -285.000..0.000 y
+Saved: C:\plotter_pdf\_tmp\latest_preview_tiled-clean-pass-4-1777802004826723800.nc
+Preview SVG: C:\plotter_pdf\_tmp\latest_preview_tiled-clean-pass-4-1777802004826723800_vector.svg
+Preview PDF: C:\plotter_pdf\_tmp\latest_preview_tiled-clean-pass-4-1777802004826723800_vector.pdf

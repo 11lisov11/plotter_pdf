@@ -15,6 +15,7 @@ This document is the single source of truth for current machine setup.
   - `WORK_AREA_MAX_X = 180`
   - `WORK_AREA_MIN_Y = -280`
   - `WORK_AREA_MAX_Y = 0`
+  - `WORK_OFFSET_Y_MM = -5.0` (production drawing window is shifted 5 mm up)
 - Pipeline safety:
   - All geometry is clipped to work area before gcode generation.
 
@@ -65,13 +66,18 @@ This removes holding current from the motors after drawing.
 - Top edge (inner): `Y = -280`
 - Bottom edge (inner): `Y = 0`
 
+Production drawing packages apply `WORK_OFFSET_Y_MM = -5.0`, so generated frames use:
+
+- Top edge: `Y = -285`
+- Bottom edge: `Y = -5`
+
 Preferred drawing frame (left-bottom origin):
 
-1. `G0 X0 Y0`
-2. `G1 X180 Y0`
-3. `G1 X180 Y-280`
-4. `G1 X0 Y-280`
-5. `G1 X0 Y0`
+1. `G0 X0 Y-5`
+2. `G1 X180 Y-5`
+3. `G1 X180 Y-285`
+4. `G1 X0 Y-285`
+5. `G1 X0 Y-5`
 
 ## 6) Supported source formats
 
@@ -102,12 +108,12 @@ $X
 $1=255
 G92 Z0
 G0 Z0 F1200
-G0 X0.0000 Y0.0000 F2500
+G0 X0.0000 Y-5.0000 F2500
 G0 Z11.9000 F300
-G1 X180.0000 Y0.0000 F1200
-G1 X180.0000 Y-280.0000
-G1 X0.0000 Y-280.0000
-G1 X0.0000 Y0.0000
+G1 X180.0000 Y-5.0000 F1200
+G1 X180.0000 Y-285.0000
+G1 X0.0000 Y-285.0000
+G1 X0.0000 Y-5.0000
 G0 Z0.0000 F300
 M5
 $1=0

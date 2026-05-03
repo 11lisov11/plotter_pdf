@@ -1,9 +1,37 @@
-A4 MuPDF source route: direct PDF vector SVG export with text_as_path=True; kompas_archive_strip_removed=8; kompas_service_region_removed=552; kompas_under_frame_removed=1; kompas_top_outer_frame_removed=2; no title-block reroute.
-Segment dedup: dropped 236/1907 retraced segments (12.4%), kept=1671, eps=0.010 mm
-Collinear overlap dedup: dropped 12/1670 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
-Reorder: 1022 polylines ordered (nearest-end).
-KOMPAS A4 clean-bbox route: source-page fit disabled; source_frame_bbox=[20.4893, 5.5033, 205.4859, 292.5232]; content_scale=0.972991; translate=(-19.9359,-299.9885) mm; pre_clip_bbox=[0.0, -294.6338, 180.0, -15.3662]; clipped_segments=0; work_area_frame=full.
-Fixed-canvas preview centered on page: page=180.000x280.000 mm, offset=(0.000,295.000) mm
+TTF centerline postprocess: 3 -> 1 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: '4' -> 1 stroke(s), font=GOST_BU.ttf, size=3.20
+TTF centerline postprocess: 45 -> 7 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: 'M12' -> 7 stroke(s), font=GOST_BU.ttf, size=5.63
+TTF centerline postprocess: 13 -> 2 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: '15' -> 2 stroke(s), font=GOST_BU.ttf, size=3.74
+TTF centerline postprocess: 42 -> 5 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: 'R20' -> 5 stroke(s), font=GOST_BU.ttf, size=4.48
+TTF centerline postprocess: 39 -> 4 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: '30' -> 4 stroke(s), font=GOST_BU.ttf, size=5.85
+TTF centerline postprocess: 88 -> 4 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Сфера' -> 4 stroke(s), font=GOST_BU.ttf, size=4.01
+TTF centerline postprocess: 17 -> 3 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: '⌀20' -> 3 stroke(s), font=GOST_BU.ttf, size=3.20
+TTF centerline postprocess: 17 -> 3 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: '⌀20' -> 3 stroke(s), font=GOST_BU.ttf, size=3.20
+TTF centerline postprocess: 39 -> 3 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: '⌀30' -> 3 stroke(s), font=GOST_BU.ttf, size=3.26
+TTF centerline postprocess: 12 -> 4 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: 'M30' -> 4 stroke(s), font=GOST_BU.ttf, size=3.20
+TTF centerline postprocess: 16 -> 4 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: '130' -> 4 stroke(s), font=GOST_BU.ttf, size=3.79
+TTF centerline postprocess: 10 -> 3 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: '175' -> 3 stroke(s), font=GOST_BU.ttf, size=4.00
+TTF centerline postprocess: 35 -> 5 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: '250' -> 5 stroke(s), font=GOST_BU.ttf, size=4.52
+KOMPAS text reroute: removed 153 outline polyline(s), rendered 48 single-line polyline(s) from 13 PDF text line(s).
+A4 MuPDF source route: direct PDF vector SVG export with text_as_path=True; kompas_archive_strip_removed=8; kompas_service_region_removed=552; kompas_under_frame_removed=1; kompas_top_outer_frame_removed=2; kompas_text_lines=13; kompas_text_removed=153; kompas_text_rendered=48; single-line text reroute.
+Segment dedup: dropped 228/2082 retraced segments (11.0%), kept=1854, eps=0.010 mm
+Collinear overlap dedup: dropped 12/1689 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
+Reorder: 917 polylines ordered (nearest-end).
+Collinear overlap dedup: dropped 1/1676 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
+KOMPAS A4 clean-bbox route: source-page fit disabled; source_frame_bbox=[20.4893, 5.5033, 205.4859, 292.5232]; content_scale=0.972991; translate=(-19.9359,-289.9885) mm; pre_clip_bbox=[0.0, -284.6338, 180.0, -5.3662]; clipped_segments=0; work_area_frame=full.
+Fixed-canvas preview centered on page: page=180.000x280.000 mm, offset=(0.000,285.000) mm
 Preview canvas switched to machine work area: 180.000x280.000 mm.
-Fixed-canvas preview centered on page: page=180.000x280.000 mm, offset=(0.000,295.000) mm
+Fixed-canvas preview centered on page: page=180.000x280.000 mm, offset=(0.000,285.000) mm
 Preview canvas switched to machine work area: 180.000x280.000 mm.

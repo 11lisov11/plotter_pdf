@@ -1,39 +1,76 @@
-Source pages: 1, selected: 1
-Method3 centerline: threshold=132, candidates=9, paths=744
-Method3 PDF vector graphics: drawings=190, paths=989, thick_paths=108
-Method3 layer split: text_paths=586, graphics_source=pdf_vector, graphics_paths=957
-Method3 cleanup: restored overlap text paths=2
-Method3 cleanup: removed bottom-row text paths=10
-Method3 cleanup: removed left-column text paths=142
-Method3 cleanup: removed left-column graphics-glyph paths=24
-Method3 cleanup: removed outer-frame paths=9
-Method3 detail thick-lines multipass: skipped reason=exact_geometry_mode, candidates=957
-Method3 filled accents: paths=24, segments=767
-Method3 cleanup: removed legacy left-strip border lines=8
-Method3 cleanup: removed left-of-frame text leftovers=139
-Method3 cleanup: hard-clipped geometry left of frame x<20.50 mm: paths=30
-Method3 cleanup: restored left vertical frame line.
-Method3 cleanup: removed tiny bottom artifacts=67
-Method3 micro-segment prune: segments=6126->5913, min=0.03 mm
-A4 clean source centered on page X: offset_x=-7.480 mm
---- hybrid fit: detail=1:1, frame=fit-to-work-area ---
-Text render mode: handwriting=off font='Marck Script'; image_contours=off
-Extracting paths from SVG ...
-Raw geometry bounds: x(0.000, 180.000) y(0.000, 280.000)
-SVG page: 180.000 x 280.000 mm
-Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).
-SVG geometry: paths=1015, segments=5195.
-Source bounds: x(0.000, 180.000) y(0.000, 280.000)
-Fit to work area: scale=1.0000, translate=(0.000,-295.000), from (0.000, 0.000)-(180.000, 280.000)
-Reorder: source order preserved (1015 polylines).
-Segment counts: source=5195, fitted=5195, clipped=5195
-Drawable segments after clip: 5195 (100.0% of source)
-Prepared bounds: x(0.000, 180.000) y(-295.000, -15.000)
-Estimated draw length: 8.46 m
-Applying pen-up / pen-down ...
-G-code stats: lines=8221, draw=7199, travel=1008, bounds=0.000..180.000 x, -295.000..0.000 y
-Preflight: ok: lines=8221, draw=7199, travel=1008, ratio=0.14
-Saved file stats: lines=8221, draw=7199, travel=1008, bounds=0.000..180.000 x, -295.000..0.000 y
-Saved: C:\plotter_pdf\Компьютерная графика\МЧ00.01.00.05 Тарелка_pack\_candidates\a4_hybrid_frame.nc
-Sheet preview aligned to reference bbox Y and centered on page X: ref=(0.353,0.353)..(210.457,297.670) mm
-Sheet preview placed on source page: offset=(15.537,295.353) mm
+TTF centerline postprocess: 297 -> 14 stroke(s) (eps=0.10, gap=0.82, smooth_step=0.13, col=0.026)
+TTF centerline text: 'Мч00.01.00.05' -> 14 stroke(s), font=GOST_BU.ttf, size=8.22
+TTF centerline postprocess: 12 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline text: '8' -> 1 stroke(s), font=GOST_BU.ttf, size=10.67
+TTF centerline postprocess: 10 -> 3 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: 'Ç46' -> 3 stroke(s), font=GOST_BU.ttf, size=3.20
+TTF centerline postprocess: 23 -> 2 stroke(s) (eps=0.17, gap=0.84, smooth_step=0.13, col=0.021)
+TTF centerline text: 'Ç8' -> 2 stroke(s), font=GOST_BU.ttf, size=7.67
+TTF centerline postprocess: 9 -> 3 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: 'Ç27' -> 3 stroke(s), font=GOST_BU.ttf, size=3.20
+TTF centerline postprocess: 16 -> 3 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: 'Ç53' -> 3 stroke(s), font=GOST_BU.ttf, size=3.26
+TTF centerline postprocess: 12 -> 1 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline text: '8' -> 1 stroke(s), font=GOST_BU.ttf, size=10.70
+TTF centerline postprocess: 13 -> 2 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: '13' -> 2 stroke(s), font=GOST_BU.ttf, size=4.78
+TTF centerline postprocess: 284 -> 14 stroke(s) (eps=0.10, gap=0.83, smooth_step=0.13, col=0.027)
+TTF centerline text: 'Мч00.01.00.05' -> 14 stroke(s), font=GOST_BU.ttf, size=8.33
+TTF centerline postprocess: 37 -> 3 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Лит.' -> 3 stroke(s), font=GOST_BU.ttf, size=3.61
+TTF centerline postprocess: 80 -> 6 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Масса' -> 6 stroke(s), font=GOST_BU.ttf, size=4.20
+TTF centerline postprocess: 114 -> 12 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Масштаб' -> 12 stroke(s), font=GOST_BU.ttf, size=4.24
+TTF centerline postprocess: 18 -> 3 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: '№' -> 3 stroke(s), font=GOST_BU.ttf, size=3.65
+TTF centerline postprocess: 53 -> 3 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'докум.' -> 3 stroke(s), font=GOST_BU.ttf, size=3.65
+TTF centerline postprocess: 49 -> 4 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Подп.' -> 4 stroke(s), font=GOST_BU.ttf, size=3.50
+TTF centerline postprocess: 30 -> 2 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Изм.' -> 2 stroke(s), font=GOST_BU.ttf, size=3.45
+TTF centerline postprocess: 33 -> 3 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Лист' -> 3 stroke(s), font=GOST_BU.ttf, size=3.45
+TTF centerline postprocess: 49 -> 4 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Дата' -> 4 stroke(s), font=GOST_BU.ttf, size=3.52
+TTF centerline postprocess: 158 -> 8 stroke(s) (eps=0.13, gap=0.92, smooth_step=0.13, col=0.028)
+TTF centerline text: 'Тарелка' -> 8 stroke(s), font=GOST_BU.ttf, size=10.46
+TTF centerline postprocess: 25 -> 2 stroke(s) (eps=0.13, gap=0.67, smooth_step=0.11, col=0.017)
+TTF centerline text: '2:1' -> 2 stroke(s), font=GOST_BU.ttf, size=6.12
+TTF centerline postprocess: 75 -> 5 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Разраб.' -> 5 stroke(s), font=GOST_BU.ttf, size=3.56
+TTF centerline postprocess: 83 -> 3 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Белов' -> 3 stroke(s), font=GOST_BU.ttf, size=3.81
+TTF centerline postprocess: 48 -> 4 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Пров.' -> 4 stroke(s), font=GOST_BU.ttf, size=3.48
+TTF centerline postprocess: 83 -> 6 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Пузанова' -> 6 stroke(s), font=GOST_BU.ttf, size=4.00
+TTF centerline postprocess: 58 -> 7 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Т.контр.' -> 7 stroke(s), font=GOST_BU.ttf, size=3.43
+TTF centerline postprocess: 20 -> 4 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Лист' -> 4 stroke(s), font=GOST_BU.ttf, size=4.00
+TTF centerline postprocess: 44 -> 6 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Листов' -> 6 stroke(s), font=GOST_BU.ttf, size=4.00
+TTF centerline postprocess: 2 -> 1 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: '1' -> 1 stroke(s), font=GOST_BU.ttf, size=3.20
+TTF centerline postprocess: 105 -> 10 stroke(s) (eps=0.08, gap=0.69, smooth_step=0.13, col=0.022)
+TTF centerline text: 'Бр05Ц5С5' -> 10 stroke(s), font=GOST_BU.ttf, size=6.87
+TTF centerline postprocess: 42 -> 4 stroke(s) (eps=0.08, gap=0.69, smooth_step=0.13, col=0.022)
+TTF centerline text: 'ГОСТ' -> 4 stroke(s), font=GOST_BU.ttf, size=6.87
+TTF centerline postprocess: 69 -> 9 stroke(s) (eps=0.15, gap=0.76, smooth_step=0.12, col=0.019)
+TTF centerline text: '613-79' -> 9 stroke(s), font=GOST_BU.ttf, size=6.87
+TTF centerline postprocess: 66 -> 4 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Н.контр.' -> 4 stroke(s), font=GOST_BU.ttf, size=3.62
+TTF centerline postprocess: 41 -> 5 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Утв.' -> 5 stroke(s), font=GOST_BU.ttf, size=3.20
+KOMPAS text reroute: removed 690 outline polyline(s), rendered 161 single-line polyline(s) from 29 PDF text line(s).
+A4 MuPDF source route: direct PDF vector SVG export with text_as_path=True; kompas_archive_strip_removed=8; kompas_service_region_removed=580; kompas_under_frame_removed=1; kompas_top_outer_frame_removed=2; kompas_text_lines=29; kompas_text_removed=690; kompas_text_rendered=161; single-line text reroute.
+Segment dedup: dropped 135/2064 retraced segments (6.5%), kept=1929, eps=0.010 mm
+Collinear overlap dedup: dropped 5/1382 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
+Reorder: 312 polylines ordered (nearest-end).
+KOMPAS A4 clean-bbox route: source-page fit disabled; source_frame_bbox=[20.4893, 5.5033, 205.4859, 292.5232]; content_scale=0.972991; translate=(-19.9359,-289.9885) mm; pre_clip_bbox=[0.0, -284.6338, 180.0, -5.3662]; clipped_segments=0; work_area_frame=full.
+Fixed-canvas preview centered on page: page=180.000x280.000 mm, offset=(0.000,285.000) mm
+Preview canvas switched to machine work area: 180.000x280.000 mm.
+Fixed-canvas preview centered on page: page=180.000x280.000 mm, offset=(0.000,285.000) mm
+Preview canvas switched to machine work area: 180.000x280.000 mm.

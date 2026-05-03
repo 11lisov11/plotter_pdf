@@ -530,6 +530,8 @@ def _candidate_title_block_strategy(source_pdf: Path, row: dict[str, Any]) -> st
     if frame_class == "standard_frame":
         return "source_vector_preserved"
     if frame_class == "kompas_full_frame":
+        if "kompas_text_reroute=True" in str(row.get("notes", "") or ""):
+            return "source_vector_with_single_line_text"
         return "source_vector_as_path"
     if variant in {"forced_a4_single_page"}:
         return "single_line_reroute"
@@ -1679,6 +1681,112 @@ def _extract_title_block_text_lines_from_pdf(
         doc.close()
 
 
+def _kompas_preserve_source_text_region_mm(
+    bbox_mm: tuple[float, float, float, float],
+    *,
+    page_h_mm: float,
+    archive_cutoff_x_mm: float,
+) -> bool:
+    x0, y0, _x1, y1 = [float(v) for v in bbox_mm]
+    # The KOMPAS title block and the top designation cell are very sensitive:
+    # their tiny italic text uses KOMPAS font metrics that do not match our
+    # single-line TTF fallback closely enough. Keep the source vectors there
+    # and reroute only drawing/dimension text.
+    if y0 >= float(page_h_mm) - 60.5:
+        return True
+    if y1 <= 20.0 and x0 >= float(archive_cutoff_x_mm) - 1.0:
+        return True
+    return False
+
+
+def _extract_kompas_plot_text_lines_from_pdf(
+    source_pdf: Path,
+    *,
+    page_index: int,
+) -> list[dict[str, Any]]:
+    """Return KOMPAS text lines that belong to the plotted drawing area.
+
+    KOMPAS PDFs often export visible glyphs as vector outlines when converted
+    with text_as_path=True. PyMuPDF still exposes the logical text and its
+    bbox; use those bboxes to replace outline glyph fragments with single-line
+    plotter text while keeping dimensions and frame vectors untouched.
+    """
+
+    if fitz is None or _drawing_frame_class(source_pdf) != "kompas_full_frame":
+        return []
+    doc = fitz.open(str(source_pdf))
+    try:
+        if page_index < 0 or page_index >= int(doc.page_count):
+            return []
+        page = doc[page_index]
+        page_w_mm = float(page.rect.width) * 25.4 / 72.0
+        page_h_mm = float(page.rect.height) * 25.4 / 72.0
+        specification_table = _is_kompas_specification_table_source(source_pdf)
+        archive_cutoff_x = _kompas_archive_strip_mm(page_w_mm, specification_table=specification_table)
+        bottom_y = float(page_h_mm) - _kompas_under_frame_strip_mm(page_h_mm)
+        service_regions = _kompas_service_regions_from_pdf(source_pdf, page_index=page_index)
+
+        def _in_service_region(x0: float, y0: float, x1: float, y1: float) -> bool:
+            cx = (float(x0) + float(x1)) * 0.5
+            cy = (float(y0) + float(y1)) * 0.5
+            for rx0, ry0, rx1, ry1 in service_regions:
+                if float(rx0) <= cx <= float(rx1) and float(ry0) <= cy <= float(ry1):
+                    return True
+            return False
+
+        lines: list[dict[str, Any]] = []
+        seen: set[tuple[str, int, int, int, int]] = set()
+        for block in page.get_text("dict").get("blocks", []):
+            if block.get("type") != 0:
+                continue
+            for line in block.get("lines", []):
+                line_bbox = list(line.get("bbox", []) or [])
+                if len(line_bbox) < 4:
+                    continue
+                spans = list(line.get("spans", []) or [])
+                text = "".join(str(span.get("text", "") or "") for span in spans).strip()
+                if not text:
+                    continue
+                lx0_mm, ly0_mm, lx1_mm, ly1_mm = [float(v) * 25.4 / 72.0 for v in line_bbox]
+                line_w = float(lx1_mm) - float(lx0_mm)
+                line_h = float(ly1_mm) - float(ly0_mm)
+                if line_w < 0.45 or line_h < 0.45:
+                    continue
+                if not specification_table and float(lx1_mm) <= float(archive_cutoff_x) + 0.8:
+                    continue
+                if float(ly0_mm) >= float(bottom_y) - 0.5:
+                    continue
+                if _kompas_preserve_source_text_region_mm(
+                    (float(lx0_mm), float(ly0_mm), float(lx1_mm), float(ly1_mm)),
+                    page_h_mm=float(page_h_mm),
+                    archive_cutoff_x_mm=float(archive_cutoff_x),
+                ):
+                    continue
+                if _in_service_region(float(lx0_mm), float(ly0_mm), float(lx1_mm), float(ly1_mm)):
+                    continue
+                key = (
+                    text,
+                    round(float(lx0_mm) * 100),
+                    round(float(ly0_mm) * 100),
+                    round(float(lx1_mm) * 100),
+                    round(float(ly1_mm) * 100),
+                )
+                if key in seen:
+                    continue
+                seen.add(key)
+                lines.append(
+                    {
+                        "text": text,
+                        "bbox_mm": (float(lx0_mm), float(ly0_mm), float(lx1_mm), float(ly1_mm)),
+                        "font_names": [str(span.get("font", "") or "") for span in spans],
+                    }
+                )
+        lines.sort(key=lambda row: (float(row["bbox_mm"][1]), float(row["bbox_mm"][0]), str(row["text"])))
+        return lines
+    finally:
+        doc.close()
+
+
 def _should_reroute_title_block_text(source_pdf: Path) -> bool:
     try:
         path_text = str(source_pdf).lower()
@@ -2044,6 +2152,140 @@ def _title_block_text_poly_candidate_mm(
     return True
 
 
+def _kompas_text_poly_candidate_mm(
+    poly: list[tuple[float, float]],
+    *,
+    text_regions: list[tuple[float, float, float, float]],
+    pad_mm: float = 0.45,
+) -> bool:
+    if len(poly) < 2 or not text_regions:
+        return False
+    x0, y0, x1, y1 = _poly_bbox_mm(poly)
+    bw = float(x1) - float(x0)
+    bh = float(y1) - float(y0)
+    # Preserve table/frame/dimension vectors. Text glyph outlines can contain
+    # short straight strokes, but real technical lines are longer axis-aligned
+    # segments and must not be removed.
+    if _poly_is_axis_aligned_mm(poly, eps=0.18) and min(bw, bh) <= 0.70 and max(bw, bh) >= 4.0:
+        return False
+    for rx0, ry0, rx1, ry1 in text_regions:
+        region_h = max(0.0, float(ry1) - float(ry0))
+        pad_x = max(float(pad_mm), min(2.5, region_h * 0.25))
+        pad_y = max(float(pad_mm), min(5.0, region_h * 0.50))
+        if (
+            float(x0) >= float(rx0) - pad_x
+            and float(y0) >= float(ry0) - pad_y
+            and float(x1) <= float(rx1) + pad_x
+            and float(y1) <= float(ry1) + pad_y
+        ):
+            return True
+    return False
+
+
+def _kompas_text_region_index_for_poly_mm(
+    poly: list[tuple[float, float]],
+    *,
+    text_regions: list[tuple[float, float, float, float]],
+    pad_mm: float = 0.45,
+) -> int | None:
+    if not _kompas_text_poly_candidate_mm(poly, text_regions=text_regions, pad_mm=pad_mm):
+        return None
+    x0, y0, x1, y1 = _poly_bbox_mm(poly)
+    cx = (float(x0) + float(x1)) * 0.5
+    cy = (float(y0) + float(y1)) * 0.5
+    best_idx: int | None = None
+    best_dist = float("inf")
+    for idx, (rx0, ry0, rx1, ry1) in enumerate(text_regions):
+        region_h = max(0.0, float(ry1) - float(ry0))
+        pad_x = max(float(pad_mm), min(2.5, region_h * 0.25))
+        pad_y = max(float(pad_mm), min(5.0, region_h * 0.50))
+        if not (
+            float(x0) >= float(rx0) - pad_x
+            and float(y0) >= float(ry0) - pad_y
+            and float(x1) <= float(rx1) + pad_x
+            and float(y1) <= float(ry1) + pad_y
+        ):
+            continue
+        rcx = (float(rx0) + float(rx1)) * 0.5
+        rcy = (float(ry0) + float(ry1)) * 0.5
+        dist = (cx - rcx) ** 2 + (cy - rcy) ** 2
+        if dist < best_dist:
+            best_dist = dist
+            best_idx = idx
+    return best_idx
+
+
+def _reroute_kompas_text_polylines(
+    polys_mm: list[list[tuple[float, float]]],
+    *,
+    source_pdf: Path,
+    page_index: int,
+    logger,
+) -> tuple[list[list[tuple[float, float]]], dict[str, float]]:
+    text_lines = _extract_kompas_plot_text_lines_from_pdf(source_pdf, page_index=page_index)
+    if not text_lines:
+        return list(polys_mm), {
+            "kompas_text_lines": 0.0,
+            "kompas_text_removed": 0.0,
+            "kompas_text_rendered": 0.0,
+        }
+    text_regions = [
+        tuple(line.get("bbox_mm", ()) or ())
+        for line in text_lines
+        if len(tuple(line.get("bbox_mm", ()) or ())) >= 4
+    ]
+    text_regions = [(float(a), float(b), float(c), float(d)) for a, b, c, d in text_regions]
+    if not text_regions:
+        return list(polys_mm), {
+            "kompas_text_lines": 0.0,
+            "kompas_text_removed": 0.0,
+            "kompas_text_rendered": 0.0,
+        }
+
+    kept: list[list[tuple[float, float]]] = []
+    removed = 0
+    removed_bboxes_by_region: dict[int, list[tuple[float, float, float, float]]] = {}
+    for poly in polys_mm:
+        region_idx = _kompas_text_region_index_for_poly_mm(poly, text_regions=text_regions)
+        if region_idx is not None:
+            removed += 1
+            removed_bboxes_by_region.setdefault(region_idx, []).append(_poly_bbox_mm(poly))
+            continue
+        kept.append(poly)
+
+    render_lines: list[dict[str, Any]] = []
+    for idx, line in enumerate(text_lines):
+        row = dict(line)
+        visible_boxes = removed_bboxes_by_region.get(idx, [])
+        if visible_boxes:
+            vx0 = min(float(box[0]) for box in visible_boxes)
+            vy0 = min(float(box[1]) for box in visible_boxes)
+            vx1 = max(float(box[2]) for box in visible_boxes)
+            vy1 = max(float(box[3]) for box in visible_boxes)
+            if (vx1 - vx0) >= 0.35 and (vy1 - vy0) >= 0.35:
+                row["bbox_mm"] = (vx0, vy0, vx1, vy1)
+        render_lines.append(row)
+
+    rerendered = _render_pdf_text_lines_polylines_in_place(
+        render_lines,
+        tight_layout=True,
+        ttf_backend="skeleton",
+        logger=logger,
+    )
+    if rerendered:
+        kept.extend(rerendered)
+        logger(
+            "KOMPAS text reroute: removed "
+            f"{removed} outline polyline(s), rendered {len(rerendered)} single-line polyline(s) "
+            f"from {len(text_lines)} PDF text line(s)."
+        )
+    return kept, {
+        "kompas_text_lines": float(len(text_lines)),
+        "kompas_text_removed": float(removed),
+        "kompas_text_rendered": float(len(rerendered)),
+    }
+
+
 def _reroute_title_block_text_polylines(
     polys_mm: list[list[tuple[float, float]]],
     *,
@@ -2289,8 +2531,19 @@ def _parse_a3_pass_log(log_path: Path) -> dict[str, float | int]:
     text = log_path.read_text(encoding="utf-8", errors="ignore")
     fit_match = _A3_FIT_RE.search(text)
     pass_match = _A3_PASS_RE.search(text)
-    if fit_match is None or pass_match is None:
+    if pass_match is None:
         raise ValueError(f"Cannot parse A3 pass transform from log: {log_path}")
+    if fit_match is None:
+        if "Fit guard (1:1 mm)" in text or "keeping scale=1.0" in text:
+            fit_scale = 1.0
+            fit_tx = 0.0
+            fit_ty = 0.0
+        else:
+            raise ValueError(f"Cannot parse A3 pass transform from log: {log_path}")
+    else:
+        fit_scale = float(fit_match.group(1))
+        fit_tx = float(fit_match.group(2))
+        fit_ty = float(fit_match.group(3))
     area_match = _A3_AREA_RE.search(text)
     if area_match is not None:
         area_min_x, area_max_x, area_min_y, area_max_y = [float(area_match.group(i)) for i in range(1, 5)]
@@ -2300,9 +2553,9 @@ def _parse_a3_pass_log(log_path: Path) -> dict[str, float | int]:
     post_tx = float(translate_match.group(1)) if translate_match is not None else 0.0
     post_ty = float(translate_match.group(2)) if translate_match is not None else 0.0
     return {
-        "scale": float(fit_match.group(1)),
-        "fit_tx": float(fit_match.group(2)),
-        "fit_ty": float(fit_match.group(3)),
+        "scale": float(fit_scale),
+        "fit_tx": float(fit_tx),
+        "fit_ty": float(fit_ty),
         "shift_x": float(pass_match.group(1)),
         "shift_y": float(pass_match.group(2)),
         "rotation_deg": 180 if "rotating geometry by 180 deg" in text else 0,
@@ -2764,13 +3017,40 @@ def _is_outer_bbox_frame_segment(
     return False
 
 
+def _structural_outer_frame_bbox_mm(
+    polylines: list[list[tuple[float, float]]],
+) -> tuple[float, float, float, float]:
+    content_bbox = _polys_bbox_mm(polylines)
+    content_w = max(1e-9, float(content_bbox[2]) - float(content_bbox[0]))
+    content_h = max(1e-9, float(content_bbox[3]) - float(content_bbox[1]))
+    horizontal_ys: list[float] = []
+    vertical_xs: list[float] = []
+    for poly in polylines:
+        if len(poly) < 2:
+            continue
+        for idx in range(1, len(poly)):
+            ax, ay = poly[idx - 1]
+            bx, by = poly[idx]
+            x0, x1 = sorted((float(ax), float(bx)))
+            y0, y1 = sorted((float(ay), float(by)))
+            bw = float(x1) - float(x0)
+            bh = float(y1) - float(y0)
+            if bh <= 0.35 and bw >= max(40.0, content_w * 0.35):
+                horizontal_ys.append((float(y0) + float(y1)) * 0.5)
+            if bw <= 0.35 and bh >= max(40.0, content_h * 0.35):
+                vertical_xs.append((float(x0) + float(x1)) * 0.5)
+    if len(horizontal_ys) >= 2 and len(vertical_xs) >= 2:
+        return min(vertical_xs), min(horizontal_ys), max(vertical_xs), max(horizontal_ys)
+    return content_bbox
+
+
 def _strip_outer_bbox_frame_segments(
     polylines: list[list[tuple[float, float]]],
 ) -> tuple[list[list[tuple[float, float]]], dict[str, Any]]:
     clean_polys = [list(poly) for poly in polylines if len(poly) >= 2]
     if not clean_polys:
         return [], {"applied": False, "removed_segments": 0}
-    bbox = _polys_bbox_mm(clean_polys)
+    bbox = _structural_outer_frame_bbox_mm(clean_polys)
     kept: list[list[tuple[float, float]]] = []
     removed_segments = 0
     for poly in clean_polys:
@@ -2848,6 +3128,8 @@ def _prepare_kompas_a4_clean_bbox_fit_polylines(
     optimized_inner = backend.deduplicate_collinear_overlaps(optimized_inner, logger=logs.append)
     optimized_inner = backend.reorder_polylines(optimized_inner, logger=logs.append)
     final_polys = [_work_area_frame_polyline((work_x0, work_x1, work_y0, work_y1)), *optimized_inner]
+    final_polys = backend.deduplicate_segments(final_polys, logger=logs.append)
+    final_polys = backend.deduplicate_collinear_overlaps(final_polys, logger=logs.append)
     logs.append(
         "KOMPAS A4 clean-bbox route: source-page fit disabled; "
         f"source_frame_bbox={[round(float(v), 4) for v in frame_meta['source_bbox']]}; "
@@ -5601,6 +5883,7 @@ def _prepare_mupdf_svg_paths_candidate(
             source_polys = backend.to_drawing_polylines(page_items)
             cleanup_meta = {"left_strip_removed": 0, "footer_removed": 0, "outer_frame_removed": 0}
             kompas_cleanup_meta = {"archive_strip_removed": 0, "under_frame_removed": 0}
+            kompas_text_meta = {"kompas_text_lines": 0.0, "kompas_text_removed": 0.0, "kompas_text_rendered": 0.0}
             title_block_meta = {"title_block_text_removed": 0.0, "title_block_text_rendered": 0.0}
             if _drawing_frame_class(source_pdf) == "kompas_full_frame":
                 source_polys, kompas_cleanup_meta = _cleanup_kompas_archive_strip_polylines(
@@ -5609,6 +5892,12 @@ def _prepare_mupdf_svg_paths_candidate(
                     page_h_mm=float(page_h_mm),
                     specification_table=_is_kompas_specification_table_source(source_pdf),
                     service_regions_mm=_kompas_service_regions_from_pdf(source_pdf, page_index=0),
+                )
+                source_polys, kompas_text_meta = _reroute_kompas_text_polylines(
+                    source_polys,
+                    source_pdf=source_pdf,
+                    page_index=0,
+                    logger=logs.append,
                 )
             else:
                 source_polys, cleanup_meta = _cleanup_mupdf_a4_source_polylines(
@@ -5642,7 +5931,10 @@ def _prepare_mupdf_svg_paths_candidate(
                     f"kompas_service_region_removed={kompas_cleanup_meta['service_region_removed']}; "
                     f"kompas_under_frame_removed={kompas_cleanup_meta['under_frame_removed']}; "
                     f"kompas_top_outer_frame_removed={kompas_cleanup_meta['top_outer_frame_removed']}; "
-                    "no title-block reroute."
+                    f"kompas_text_lines={int(kompas_text_meta.get('kompas_text_lines', 0.0))}; "
+                    f"kompas_text_removed={int(kompas_text_meta.get('kompas_text_removed', 0.0))}; "
+                    f"kompas_text_rendered={int(kompas_text_meta.get('kompas_text_rendered', 0.0))}; "
+                    "single-line text reroute."
                 )
             else:
                 logs.append(
@@ -5709,6 +6001,9 @@ def _prepare_mupdf_svg_paths_candidate(
                         "notes": (
                             "source_cleanup=direct_pdf_svg; mupdf_svg_paths=True; "
                             "kompas_source_page_fit_disabled=True; work_area_frame=full; "
+                            "kompas_text_reroute=True; "
+                            f"kompas_text_lines={int(kompas_text_meta.get('kompas_text_lines', 0.0))}; "
+                            f"kompas_text_rendered={int(kompas_text_meta.get('kompas_text_rendered', 0.0))}; "
                             f"kompas_clean_bbox_scale={float(clean_bbox_meta.get('content_scale', 1.0) or 1.0):.6f}; "
                             f"clipped_segments={int(clean_bbox_meta.get('clipped_segments', 0) or 0)}"
                         ),
@@ -5799,8 +6094,10 @@ def _prepare_forced_a4_candidate(
         ascii_pdf = td_path / "input.pdf"
         clean_svg = td_path / "forced_a4_source.svg"
         shutil.copy2(source_pdf, ascii_pdf)
+        prep_logs: list[str] = []
         removed_nodes = 0
         appended = 0
+        kompas_text_meta = {"kompas_text_lines": 0.0, "kompas_text_removed": 0.0, "kompas_text_rendered": 0.0}
         try:
             page_w_mm, page_h_mm = _export_pdf_page_to_mupdf_svg(
                 ascii_pdf,
@@ -5808,48 +6105,91 @@ def _prepare_forced_a4_candidate(
                 clean_svg,
                 text_as_path=False,
             )
-            title_lines = _extract_title_block_text_lines_from_pdf(ascii_pdf, page_index=0)
-            region_mm = _svg_title_block_region_from_pdf_lines(title_lines)
-            if region_mm is not None:
-                removed_nodes = _remove_svg_text_nodes_in_region(
+            if _drawing_frame_class(source_pdf) == "kompas_full_frame":
+                bridge = BackendBridge(PROJECT_ROOT)
+                path_items = backend.extract_polylines(clean_svg)
+                page_items, _unit_scale = backend.normalize_path_units_to_page(
+                    path_items,
+                    float(page_w_mm),
+                    float(page_h_mm),
+                    logger=lambda *_args, **_kwargs: None,
+                )
+                source_polys = backend.to_drawing_polylines(page_items)
+                source_polys, kompas_cleanup_meta = _cleanup_kompas_archive_strip_polylines(
+                    source_polys,
+                    page_w_mm=float(page_w_mm),
+                    page_h_mm=float(page_h_mm),
+                    specification_table=_is_kompas_specification_table_source(source_pdf),
+                    service_regions_mm=_kompas_service_regions_from_pdf(source_pdf, page_index=0),
+                )
+                source_polys, kompas_text_meta = _reroute_kompas_text_polylines(
+                    source_polys,
+                    source_pdf=source_pdf,
+                    page_index=0,
+                    logger=prep_logs.append,
+                )
+                bridge._write_method3_svg(
                     clean_svg,
-                    region_mm=region_mm,
+                    source_polys,
                     page_w_mm=float(page_w_mm),
                     page_h_mm=float(page_h_mm),
                 )
-                rerendered = _render_pdf_text_lines_polylines_in_place(
-                    title_lines,
-                    tight_layout=True,
-                    ttf_backend="skeleton",
-                    logger=lambda _msg: None,
+                prep_logs.append(
+                    "Forced A4 KOMPAS cleanup: "
+                    f"archive_strip_removed={kompas_cleanup_meta['archive_strip_removed']}; "
+                    f"service_region_removed={kompas_cleanup_meta['service_region_removed']}; "
+                    f"under_frame_removed={kompas_cleanup_meta['under_frame_removed']}; "
+                    f"top_outer_frame_removed={kompas_cleanup_meta['top_outer_frame_removed']}; "
+                    f"kompas_text_lines={int(kompas_text_meta.get('kompas_text_lines', 0.0))}; "
+                    f"kompas_text_removed={int(kompas_text_meta.get('kompas_text_removed', 0.0))}; "
+                    f"kompas_text_rendered={int(kompas_text_meta.get('kompas_text_rendered', 0.0))}."
                 )
-                appended = _append_overlay_polylines_to_existing_svg(
-                    clean_svg,
-                    rerendered,
-                    page_w_mm=float(page_w_mm),
-                    page_h_mm=float(page_h_mm),
-                )
+            else:
+                title_lines = _extract_title_block_text_lines_from_pdf(ascii_pdf, page_index=0)
+                region_mm = _svg_title_block_region_from_pdf_lines(title_lines)
+                if region_mm is not None:
+                    removed_nodes = _remove_svg_text_nodes_in_region(
+                        clean_svg,
+                        region_mm=region_mm,
+                        page_w_mm=float(page_w_mm),
+                        page_h_mm=float(page_h_mm),
+                    )
+                    rerendered = _render_pdf_text_lines_polylines_in_place(
+                        title_lines,
+                        tight_layout=True,
+                        ttf_backend="skeleton",
+                        logger=lambda _msg: None,
+                    )
+                    appended = _append_overlay_polylines_to_existing_svg(
+                        clean_svg,
+                        rerendered,
+                        page_w_mm=float(page_w_mm),
+                        page_h_mm=float(page_h_mm),
+                    )
         except Exception:
             clean_svg = ascii_pdf
         ctx = _ctx(f"preview-{time.time_ns()}")
-        ok, msg, logs = _bridge_run_preview(
-            ctx=ctx,
-            input_path=clean_svg,
-            sheet=SheetConfig(sheet_format="a4", anchor="center"),
-            tool_mode="pen",
-            render_mode="drawing",
-            quality_profile="high",
-            force_text_to_path=True,
-            handwriting_enabled=False,
-            handwriting_font="Marck Script",
-            handwriting_formula_font="Times New Roman",
-            image_contours_mode="off",
-            source_page_index=1,
-            source_all_pages=False,
-            exact_geometry_mode=False,
-            safe_travel_lift=True,
-            strict_one_to_one=False,
-        )
+        with _backend_override_context(_kompas_text_join_backend_overrides(source_pdf)):
+            ok, msg, logs = _bridge_run_preview(
+                ctx=ctx,
+                input_path=clean_svg,
+                sheet=SheetConfig(sheet_format="a4", anchor="center"),
+                tool_mode="pen",
+                render_mode="drawing",
+                quality_profile="high",
+                force_text_to_path=True,
+                handwriting_enabled=False,
+                handwriting_font="Marck Script",
+                handwriting_formula_font="Times New Roman",
+                image_contours_mode="off",
+                source_page_index=1,
+                source_all_pages=False,
+                exact_geometry_mode=False,
+                safe_travel_lift=True,
+                strict_one_to_one=False,
+            )
+        if prep_logs:
+            logs = [*prep_logs, *logs]
         if clean_svg != ascii_pdf:
             logs.insert(0, "Forced A4 direct vector scale: source PDF exported to SVG for A4 fit.")
         if removed_nodes > 0 or appended > 0:
@@ -5900,7 +6240,16 @@ def _prepare_forced_a4_candidate(
             "gcode": str(gcode_path),
             "reference_source": str(pdf_path),
             "reference_source_svg": str(svg_path),
-            "notes": "forced_a4_single_page=True",
+            "notes": (
+                "forced_a4_single_page=True"
+                + (
+                    "; kompas_text_reroute=True; "
+                    f"kompas_text_lines={int(kompas_text_meta.get('kompas_text_lines', 0.0))}; "
+                    f"kompas_text_rendered={int(kompas_text_meta.get('kompas_text_rendered', 0.0))}"
+                    if _drawing_frame_class(source_pdf) == "kompas_full_frame"
+                    else ""
+                )
+            ),
         }
 
 
@@ -6129,6 +6478,12 @@ def _prepare_a3_clean_source_svg(
                 specification_table=_is_kompas_specification_table_source(source_pdf),
                 service_regions_mm=_kompas_service_regions_from_pdf(source_pdf, page_index=0),
             )
+            source_polys, kompas_text_meta = _reroute_kompas_text_polylines(
+                source_polys,
+                source_pdf=source_pdf,
+                page_index=0,
+                logger=logs.append,
+            )
             bridge._write_method3_svg(
                 source_svg,
                 source_polys,
@@ -6145,7 +6500,10 @@ def _prepare_a3_clean_source_svg(
                 f"archive_strip_removed={kompas_cleanup_meta['archive_strip_removed']}; "
                 f"service_region_removed={kompas_cleanup_meta['service_region_removed']}; "
                 f"under_frame_removed={kompas_cleanup_meta['under_frame_removed']}; "
-                f"top_outer_frame_removed={kompas_cleanup_meta['top_outer_frame_removed']}."
+                f"top_outer_frame_removed={kompas_cleanup_meta['top_outer_frame_removed']}; "
+                f"kompas_text_lines={int(kompas_text_meta.get('kompas_text_lines', 0.0))}; "
+                f"kompas_text_removed={int(kompas_text_meta.get('kompas_text_removed', 0.0))}; "
+                f"kompas_text_rendered={int(kompas_text_meta.get('kompas_text_rendered', 0.0))}."
             )
         logs.append(
             "A3 clean source route: direct PDF vector SVG export "
@@ -6265,6 +6623,7 @@ def _prepare_a3_pass_from_clean_svg(
     source_route = "direct_pdf_svg" if any(
         "direct PDF vector SVG export" in str(line) for line in (prep_logs or [])
     ) else "method3"
+    kompas_text_reroute = any("kompas_text_rendered=" in str(line) for line in (prep_logs or []))
     return {
         "item": f"pass_{pass_index:02d}",
         "ok": True,
@@ -6284,6 +6643,7 @@ def _prepare_a3_pass_from_clean_svg(
                 f"source_cleanup={source_route}",
                 "left_strip_removed=True",
                 "outer_border_removed=True",
+                "kompas_text_reroute=True" if kompas_text_reroute else "",
                 *pass_notes,
             ]
             if part
@@ -6347,6 +6707,12 @@ def _prepare_literal_clean_source_svg(
                 specification_table=_is_kompas_specification_table_source(source_pdf),
                 service_regions_mm=_kompas_service_regions_from_pdf(source_pdf, page_index=0),
             )
+            source_polys, kompas_text_meta = _reroute_kompas_text_polylines(
+                source_polys,
+                source_pdf=source_pdf,
+                page_index=0,
+                logger=logs.append,
+            )
             bridge._write_method3_svg(
                 source_svg,
                 source_polys,
@@ -6363,7 +6729,10 @@ def _prepare_literal_clean_source_svg(
                 f"archive_strip_removed={kompas_cleanup_meta['archive_strip_removed']}; "
                 f"service_region_removed={kompas_cleanup_meta['service_region_removed']}; "
                 f"under_frame_removed={kompas_cleanup_meta['under_frame_removed']}; "
-                f"top_outer_frame_removed={kompas_cleanup_meta['top_outer_frame_removed']}."
+                f"top_outer_frame_removed={kompas_cleanup_meta['top_outer_frame_removed']}; "
+                f"kompas_text_lines={int(kompas_text_meta.get('kompas_text_lines', 0.0))}; "
+                f"kompas_text_removed={int(kompas_text_meta.get('kompas_text_removed', 0.0))}; "
+                f"kompas_text_rendered={int(kompas_text_meta.get('kompas_text_rendered', 0.0))}."
             )
         logs.append(
             "Literal clean source route: direct PDF vector SVG export "
@@ -6439,6 +6808,7 @@ def _prepare_tiled_pass_from_clean_svg(
     source_route = "direct_pdf_svg" if any(
         "direct PDF vector SVG export" in str(line) for line in (prep_logs or [])
     ) else "method3"
+    kompas_text_reroute = any("kompas_text_rendered=" in str(line) for line in (prep_logs or []))
     return {
         "item": f"pass_{pass_index:02d}",
         "ok": True,
@@ -6458,6 +6828,7 @@ def _prepare_tiled_pass_from_clean_svg(
                 f"source_cleanup={source_route}",
                 "left_strip_removed=True",
                 "outer_border_removed=True",
+                "kompas_text_reroute=True" if kompas_text_reroute else "",
                 *pass_notes,
             ]
             if part
@@ -7191,7 +7562,7 @@ def _prepare_drawing_package(source_pdf: Path, package_dir: Path) -> tuple[dict[
                         ),
                     )
                 )
-        combined_preview = None if literal_one_to_one_tiled else _build_tiled_combined_preview(
+        combined_preview = _build_tiled_combined_preview(
             source_pdf=source_pdf,
             package_dir=package_dir,
             report=report,
