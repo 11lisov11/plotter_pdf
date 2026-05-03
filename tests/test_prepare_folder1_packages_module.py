@@ -148,6 +148,39 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
         self.assertTrue(meta["applied"])
         self.assertEqual(meta["source_bbox"], [20.0, 5.0, 205.0, 292.0])
 
+    def test_strip_kompas_a3_outer_sheet_frame_keeps_stamp_edges_only(self) -> None:
+        mod = _load_module()
+        outer_frame = [
+            (20.0, 5.0),
+            (410.0, 5.0),
+            (410.0, 292.0),
+            (20.0, 292.0),
+            (20.0, 5.0),
+        ]
+        stamp_inner_top = [(220.0, 230.0), (410.0, 230.0)]
+        stamp_inner_left = [(220.0, 230.0), (220.0, 292.0)]
+        drawing = [(90.0, 120.0), (180.0, 135.0)]
+
+        out, meta = mod._strip_kompas_a3_outer_sheet_frame_polylines(
+            [outer_frame, stamp_inner_top, stamp_inner_left, drawing],
+            page_w_mm=420.0,
+            page_h_mm=297.0,
+        )
+
+        self.assertTrue(meta["applied"])
+        self.assertEqual(meta["removed_segments"], 4)
+        self.assertEqual(meta["kept_stamp_segments"], 2)
+        self._find_poly_bbox(mod, out, lambda box: abs(box[1] - 292.0) < 1e-6 and abs(box[0] - 220.0) < 1e-6)
+        self._find_poly_bbox(mod, out, lambda box: abs(box[0] - 410.0) < 1e-6 and abs(box[1] - 230.0) < 1e-6)
+        self._find_poly_bbox(mod, out, lambda box: abs(box[0] - 90.0) < 1e-6 and abs(box[2] - 180.0) < 1e-6)
+        self.assertFalse(
+            any(
+                abs(mod._poly_bbox_mm(poly)[1] - 5.0) < 1e-6
+                and abs(mod._poly_bbox_mm(poly)[3] - 5.0) < 1e-6
+                for poly in out
+            )
+        )
+
     def test_kompas_text_poly_candidate_preserves_table_lines(self) -> None:
         mod = _load_module()
         text_regions = [(50.0, 250.0, 75.0, 258.0)]
@@ -222,6 +255,34 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
         self.assertEqual(out, rendered_text)
         self.assertEqual(meta["kompas_text_removed"], 1.0)
 
+    def test_reroute_kompas_text_does_not_overlay_unremoved_source_text(self) -> None:
+        mod = _load_module()
+        source_pdf = Path("drawing.pdf")
+        old_source_text = [(100.0, 100.0), (101.0, 101.0)]
+        rendered_text = [[(10.0, 10.0), (20.0, 10.0)]]
+
+        with mock.patch.object(
+            mod,
+            "_extract_kompas_plot_text_lines_from_pdf",
+            return_value=[{"text": "100", "bbox_mm": (10.0, 10.0, 20.0, 14.0)}],
+        ), mock.patch.object(
+            mod,
+            "_render_pdf_text_lines_polylines_in_place",
+            return_value=rendered_text,
+        ) as render_mock:
+            out, meta = mod._reroute_kompas_text_polylines(
+                [old_source_text],
+                source_pdf=source_pdf,
+                page_index=0,
+                logger=lambda _msg: None,
+            )
+
+        render_mock.assert_not_called()
+        self.assertEqual(out, [old_source_text])
+        self.assertEqual(meta["kompas_text_lines"], 1.0)
+        self.assertEqual(meta["kompas_text_removed"], 0.0)
+        self.assertEqual(meta["kompas_text_rendered"], 0.0)
+
     def test_kompas_preserve_source_text_region_keeps_stamp_and_top_designation(self) -> None:
         mod = _load_module()
 
@@ -246,6 +307,15 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
                 archive_cutoff_x_mm=14.5,
             )
         )
+
+    def test_kompas_preserve_source_text_value_keeps_dimension_digits(self) -> None:
+        mod = _load_module()
+
+        self.assertTrue(mod._kompas_preserve_source_text_value("100"))
+        self.assertTrue(mod._kompas_preserve_source_text_value("R20"))
+        self.assertTrue(mod._kompas_preserve_source_text_value("45\u00b0"))
+        self.assertTrue(mod._kompas_preserve_source_text_value("\u00d84"))
+        self.assertFalse(mod._kompas_preserve_source_text_value("Section label"))
 
     def test_candidate_fragmentation_score_penalizes_tiny_and_pointlike_strokes(self) -> None:
         mod = _load_module()
@@ -283,7 +353,7 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
         self.assertIsNotNone(strong)
         self.assertGreater(float(strong), float(weak))
 
-    def test_should_reroute_title_block_text_only_for_large_computer_graphics_sheets(self) -> None:
+    def test_should_not_reroute_title_block_text_for_computer_graphics_sheets(self) -> None:
         mod = _load_module()
         with tempfile.TemporaryDirectory(prefix="title_block_reroute_rule_") as td:
             root = Path(td)
@@ -317,8 +387,21 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
                     [{"text": "x", "bbox_mm": (1.0, 1.0, 2.0, 2.0)} for _ in range(6)],
                 ],
             ):
-                self.assertTrue(mod._should_reroute_title_block_text(a3_pdf))
+                self.assertFalse(mod._should_reroute_title_block_text(a3_pdf))
                 self.assertFalse(mod._should_reroute_title_block_text(a4_pdf))
+
+    def test_should_not_reroute_kompas_text_for_production_sources(self) -> None:
+        mod = _load_module()
+        self.assertFalse(
+            mod._should_reroute_kompas_text(
+                Path(r"C:\plotter_pdf\Компьютерная графика\20 вариант\КНГ.01.22.01 - Маховик.pdf")
+            )
+        )
+        self.assertFalse(
+            mod._should_reroute_kompas_text(
+                Path(r"C:\plotter_pdf\Компьютерная графика\22 вариант\МЧ00.60.00.00 Вентиль.pdf")
+            )
+        )
 
     def test_build_sheet_preview_centers_compact_source_page(self) -> None:
         mod = _load_module()

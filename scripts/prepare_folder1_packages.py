@@ -18,7 +18,7 @@ import xml.etree.ElementTree as ET
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Iterable
 
 import cv2  # type: ignore
 import fitz  # type: ignore
@@ -861,6 +861,173 @@ def _cleanup_kompas_archive_strip_polylines(
     }
 
 
+def _clip_axis_segment_to_rect(
+    a: tuple[float, float],
+    b: tuple[float, float],
+    *,
+    rect_mm: tuple[float, float, float, float],
+    eps_mm: float = 0.25,
+) -> list[tuple[float, float]] | None:
+    ax, ay = float(a[0]), float(a[1])
+    bx, by = float(b[0]), float(b[1])
+    rx0, ry0, rx1, ry1 = [float(v) for v in rect_mm]
+    if abs(ay - by) <= float(eps_mm):
+        y = (ay + by) * 0.5
+        if y < ry0 - eps_mm or y > ry1 + eps_mm:
+            return None
+        sx0, sx1 = sorted((ax, bx))
+        ix0 = max(sx0, rx0)
+        ix1 = min(sx1, rx1)
+        if ix1 - ix0 <= eps_mm:
+            return None
+        if ax <= bx:
+            return [(ix0, y), (ix1, y)]
+        return [(ix1, y), (ix0, y)]
+    if abs(ax - bx) <= float(eps_mm):
+        x = (ax + bx) * 0.5
+        if x < rx0 - eps_mm or x > rx1 + eps_mm:
+            return None
+        sy0, sy1 = sorted((ay, by))
+        iy0 = max(sy0, ry0)
+        iy1 = min(sy1, ry1)
+        if iy1 - iy0 <= eps_mm:
+            return None
+        if ay <= by:
+            return [(x, iy0), (x, iy1)]
+        return [(x, iy1), (x, iy0)]
+    return None
+
+
+def _strip_kompas_a3_outer_sheet_frame_polylines(
+    polylines: list[list[tuple[float, float]]],
+    *,
+    page_w_mm: float,
+    page_h_mm: float,
+    stamp_keep_w_mm: float = 190.0,
+    stamp_keep_h_mm: float = 62.0,
+) -> tuple[list[list[tuple[float, float]]], dict[str, Any]]:
+    """Remove only the large KOMPAS sheet border on A3/A2 drawing packs.
+
+    The title block often uses the bottom/right sheet border as its own border,
+    so edge segments are clipped instead of blindly removed when they overlap
+    the stamp area.
+    """
+    source_polys = [list(poly) for poly in polylines if len(poly) >= 2]
+    if not source_polys:
+        return [], {"applied": False, "removed_segments": 0, "kept_stamp_segments": 0}
+
+    def _fallback_outer_frame_bbox() -> tuple[float, float, float, float] | None:
+        horizontal_edges: list[tuple[float, float, float]] = []
+        vertical_edges: list[tuple[float, float, float]] = []
+        for candidate_poly in source_polys:
+            for idx in range(1, len(candidate_poly)):
+                ax, ay = candidate_poly[idx - 1]
+                bx, by = candidate_poly[idx]
+                x0, x1 = sorted((float(ax), float(bx)))
+                y0, y1 = sorted((float(ay), float(by)))
+                bw = x1 - x0
+                bh = y1 - y0
+                if bh <= 0.40 and bw >= max(100.0, float(page_w_mm) * 0.45):
+                    horizontal_edges.append((x0, (y0 + y1) * 0.5, x1))
+                if bw <= 0.40 and bh >= max(80.0, float(page_h_mm) * 0.45):
+                    vertical_edges.append(((x0 + x1) * 0.5, y0, y1))
+        if len(horizontal_edges) < 2:
+            return None
+        fx0 = min(row[0] for row in horizontal_edges)
+        fx1 = max(row[2] for row in horizontal_edges)
+        fy0 = min(row[1] for row in horizontal_edges)
+        fy1 = max(row[1] for row in horizontal_edges)
+        if vertical_edges:
+            fx0 = min(fx0, min(row[0] for row in vertical_edges))
+            fx1 = max(fx1, max(row[0] for row in vertical_edges))
+            fy0 = min(fy0, min(row[1] for row in vertical_edges))
+            fy1 = max(fy1, max(row[2] for row in vertical_edges))
+        return fx0, fy0, fx1, fy1
+
+    frame_bbox = _structural_outer_frame_bbox_mm(source_polys)
+    fx0, fy0, fx1, fy1 = [float(v) for v in frame_bbox]
+    fw = max(1e-9, fx1 - fx0)
+    fh = max(1e-9, fy1 - fy0)
+    if fw < 250.0 or fh < 180.0:
+        fallback_bbox = _fallback_outer_frame_bbox()
+        if fallback_bbox is None:
+            return source_polys, {
+                "applied": False,
+                "removed_segments": 0,
+                "kept_stamp_segments": 0,
+                "source_bbox": [round(float(v), 4) for v in frame_bbox],
+                "reason": "outer_frame_too_small_for_a3",
+            }
+        frame_bbox = fallback_bbox
+        fx0, fy0, fx1, fy1 = [float(v) for v in frame_bbox]
+        fw = max(1e-9, fx1 - fx0)
+        fh = max(1e-9, fy1 - fy0)
+
+    stamp_x0 = max(fx0, fx1 - float(stamp_keep_w_mm))
+    stamp_y0 = max(fy0, fy1 - float(stamp_keep_h_mm))
+    stamp_rect = (stamp_x0, stamp_y0, fx1, fy1)
+    edge_eps = 0.45
+    removed_segments = 0
+    kept_stamp_segments = 0
+    kept: list[list[tuple[float, float]]] = []
+
+    for poly in source_polys:
+        current: list[tuple[float, float]] = []
+        for idx in range(1, len(poly)):
+            a = (float(poly[idx - 1][0]), float(poly[idx - 1][1]))
+            b = (float(poly[idx][0]), float(poly[idx][1]))
+            ax, ay = a
+            bx, by = b
+            dx = abs(bx - ax)
+            dy = abs(by - ay)
+            horizontal_edge = dy <= edge_eps and dx >= max(40.0, fw * 0.35) and (
+                abs(((ay + by) * 0.5) - fy0) <= edge_eps
+                or abs(((ay + by) * 0.5) - fy1) <= edge_eps
+            )
+            vertical_edge = dx <= edge_eps and dy >= max(40.0, fh * 0.35) and (
+                abs(((ax + bx) * 0.5) - fx0) <= edge_eps
+                or abs(((ax + bx) * 0.5) - fx1) <= edge_eps
+            )
+            if horizontal_edge or vertical_edge:
+                clipped = _clip_axis_segment_to_rect(a, b, rect_mm=stamp_rect, eps_mm=edge_eps)
+                if len(current) >= 2:
+                    kept.append(current)
+                current = []
+                removed_segments += 1
+                if clipped is not None and len(clipped) >= 2:
+                    kept.append(clipped)
+                    kept_stamp_segments += 1
+                continue
+            if not current:
+                current = [a]
+            current.append(b)
+        if len(current) >= 2:
+            kept.append(current)
+
+    if removed_segments <= 0:
+        return source_polys, {
+            "applied": False,
+            "removed_segments": 0,
+            "kept_stamp_segments": 0,
+            "source_bbox": [round(float(v), 4) for v in frame_bbox],
+        }
+    if not kept:
+        return source_polys, {
+            "applied": False,
+            "removed_segments": int(removed_segments),
+            "kept_stamp_segments": int(kept_stamp_segments),
+            "source_bbox": [round(float(v), 4) for v in frame_bbox],
+            "reason": "would_remove_all_geometry",
+        }
+    return kept, {
+        "applied": True,
+        "removed_segments": int(removed_segments),
+        "kept_stamp_segments": int(kept_stamp_segments),
+        "source_bbox": [round(float(v), 4) for v in frame_bbox],
+        "stamp_keep_rect": [round(float(v), 4) for v in stamp_rect],
+    }
+
+
 def _layout_similarity_pdf(source_pdf: Path, preview_pdf: Path, source_page_index: int = 0) -> float:
     src = _render_pdf_page_gray(source_pdf, page_index=source_page_index)
     cur = _render_pdf_page_gray(preview_pdf, page_index=0)
@@ -1699,6 +1866,21 @@ def _kompas_preserve_source_text_region_mm(
     return False
 
 
+def _kompas_preserve_source_text_value(text: str) -> bool:
+    compact = re.sub(r"\s+", "", str(text or ""))
+    if not compact:
+        return False
+    # Dimension callouts and numeric labels are small and position-sensitive.
+    # KOMPAS source vectors are more faithful there than our fallback TTF
+    # skeleton, so do not replace them with generated single-line text.
+    if len(compact) <= 20 and any(ch.isdigit() for ch in compact):
+        return True
+    dimension_marks = "RrMm\u041c\u043c\u00d8\u00f8\u2300\u03c6\u03a6\u0444\u00b0'\"\u2032\u2033+-/\u00b1"
+    if len(compact) <= 12 and any(ch in dimension_marks for ch in compact):
+        return True
+    return False
+
+
 def _extract_kompas_plot_text_lines_from_pdf(
     source_pdf: Path,
     *,
@@ -1762,6 +1944,8 @@ def _extract_kompas_plot_text_lines_from_pdf(
                     archive_cutoff_x_mm=float(archive_cutoff_x),
                 ):
                     continue
+                if _kompas_preserve_source_text_value(text):
+                    continue
                 if _in_service_region(float(lx0_mm), float(ly0_mm), float(lx1_mm), float(ly1_mm)):
                     continue
                 key = (
@@ -1800,23 +1984,31 @@ def _should_reroute_title_block_text(source_pdf: Path) -> bool:
 
 
 def _should_reroute_title_block_text(source_pdf: Path) -> bool:
-    if not _is_computer_graphics_source(source_pdf):
-        return False
-    if fitz is None:
-        return False
-    try:
-        with fitz.open(str(source_pdf)) as doc:
-            if int(doc.page_count) < 1:
-                return False
-            page = doc[0]
-            page_w_mm = float(page.rect.width) * 25.4 / 72.0
-            page_h_mm = float(page.rect.height) * 25.4 / 72.0
-    except Exception:
-        return False
-    if max(page_w_mm, page_h_mm) < 320.0:
-        return False
-    title_lines = _extract_title_block_text_lines_from_pdf(source_pdf, page_index=0)
-    return len(title_lines) >= 6
+    # KOMPAS title blocks are source-of-truth vectors. Earlier single-line
+    # rerendering made the stamp less faithful and could move text baselines.
+    return False
+
+
+def _should_reroute_kompas_text(source_pdf: Path) -> bool:
+    # Production drawing packages must preserve KOMPAS source text. The
+    # explicit reroute helper remains available for tests/fallbacks, but the
+    # default route is source-faithful text-as-path.
+    return False
+
+
+def _empty_kompas_text_meta() -> dict[str, float]:
+    return {"kompas_text_lines": 0.0, "kompas_text_removed": 0.0, "kompas_text_rendered": 0.0}
+
+
+def _logs_indicate_kompas_text_reroute(logs: Iterable[object] | None) -> bool:
+    for line in logs or []:
+        text = str(line)
+        if "KOMPAS text reroute:" in text:
+            return True
+        match = re.search(r"kompas_text_rendered=(\d+)", text)
+        if match and int(match.group(1)) > 0:
+            return True
+    return False
 
 
 def _header_text_poly_candidate_mm(
@@ -2257,21 +2449,28 @@ def _reroute_kompas_text_polylines(
     for idx, line in enumerate(text_lines):
         row = dict(line)
         visible_boxes = removed_bboxes_by_region.get(idx, [])
-        if visible_boxes:
-            vx0 = min(float(box[0]) for box in visible_boxes)
-            vy0 = min(float(box[1]) for box in visible_boxes)
-            vx1 = max(float(box[2]) for box in visible_boxes)
-            vy1 = max(float(box[3]) for box in visible_boxes)
-            if (vx1 - vx0) >= 0.35 and (vy1 - vy0) >= 0.35:
-                row["bbox_mm"] = (vx0, vy0, vx1, vy1)
+        if not visible_boxes:
+            # Do not draw replacement text unless the old KOMPAS glyph vectors
+            # were actually removed. Otherwise the preview/G-code contains
+            # unreadable double text: original outlines plus our single-line
+            # replacement.
+            continue
+        vx0 = min(float(box[0]) for box in visible_boxes)
+        vy0 = min(float(box[1]) for box in visible_boxes)
+        vx1 = max(float(box[2]) for box in visible_boxes)
+        vy1 = max(float(box[3]) for box in visible_boxes)
+        if (vx1 - vx0) >= 0.35 and (vy1 - vy0) >= 0.35:
+            row["bbox_mm"] = (vx0, vy0, vx1, vy1)
         render_lines.append(row)
 
-    rerendered = _render_pdf_text_lines_polylines_in_place(
-        render_lines,
-        tight_layout=True,
-        ttf_backend="skeleton",
-        logger=logger,
-    )
+    rerendered = []
+    if render_lines:
+        rerendered = _render_pdf_text_lines_polylines_in_place(
+            render_lines,
+            tight_layout=True,
+            ttf_backend="skeleton",
+            logger=logger,
+        )
     if rerendered:
         kept.extend(rerendered)
         logger(
@@ -5883,7 +6082,7 @@ def _prepare_mupdf_svg_paths_candidate(
             source_polys = backend.to_drawing_polylines(page_items)
             cleanup_meta = {"left_strip_removed": 0, "footer_removed": 0, "outer_frame_removed": 0}
             kompas_cleanup_meta = {"archive_strip_removed": 0, "under_frame_removed": 0}
-            kompas_text_meta = {"kompas_text_lines": 0.0, "kompas_text_removed": 0.0, "kompas_text_rendered": 0.0}
+            kompas_text_meta = _empty_kompas_text_meta()
             title_block_meta = {"title_block_text_removed": 0.0, "title_block_text_rendered": 0.0}
             if _drawing_frame_class(source_pdf) == "kompas_full_frame":
                 source_polys, kompas_cleanup_meta = _cleanup_kompas_archive_strip_polylines(
@@ -5893,12 +6092,15 @@ def _prepare_mupdf_svg_paths_candidate(
                     specification_table=_is_kompas_specification_table_source(source_pdf),
                     service_regions_mm=_kompas_service_regions_from_pdf(source_pdf, page_index=0),
                 )
-                source_polys, kompas_text_meta = _reroute_kompas_text_polylines(
-                    source_polys,
-                    source_pdf=source_pdf,
-                    page_index=0,
-                    logger=logs.append,
-                )
+                if _should_reroute_kompas_text(source_pdf):
+                    source_polys, kompas_text_meta = _reroute_kompas_text_polylines(
+                        source_polys,
+                        source_pdf=source_pdf,
+                        page_index=0,
+                        logger=logs.append,
+                    )
+                else:
+                    logs.append("KOMPAS source text preserved: single-line text reroute disabled for production.")
             else:
                 source_polys, cleanup_meta = _cleanup_mupdf_a4_source_polylines(
                     source_polys,
@@ -5934,7 +6136,7 @@ def _prepare_mupdf_svg_paths_candidate(
                     f"kompas_text_lines={int(kompas_text_meta.get('kompas_text_lines', 0.0))}; "
                     f"kompas_text_removed={int(kompas_text_meta.get('kompas_text_removed', 0.0))}; "
                     f"kompas_text_rendered={int(kompas_text_meta.get('kompas_text_rendered', 0.0))}; "
-                    "single-line text reroute."
+                    "source text preserved."
                 )
             else:
                 logs.append(
@@ -6001,8 +6203,12 @@ def _prepare_mupdf_svg_paths_candidate(
                         "notes": (
                             "source_cleanup=direct_pdf_svg; mupdf_svg_paths=True; "
                             "kompas_source_page_fit_disabled=True; work_area_frame=full; "
-                            "kompas_text_reroute=True; "
-                            f"kompas_text_lines={int(kompas_text_meta.get('kompas_text_lines', 0.0))}; "
+                            + (
+                                "kompas_text_reroute=True; "
+                                if int(kompas_text_meta.get("kompas_text_rendered", 0.0)) > 0
+                                else "kompas_source_text_preserved=True; "
+                            )
+                            + f"kompas_text_lines={int(kompas_text_meta.get('kompas_text_lines', 0.0))}; "
                             f"kompas_text_rendered={int(kompas_text_meta.get('kompas_text_rendered', 0.0))}; "
                             f"kompas_clean_bbox_scale={float(clean_bbox_meta.get('content_scale', 1.0) or 1.0):.6f}; "
                             f"clipped_segments={int(clean_bbox_meta.get('clipped_segments', 0) or 0)}"
@@ -6097,7 +6303,7 @@ def _prepare_forced_a4_candidate(
         prep_logs: list[str] = []
         removed_nodes = 0
         appended = 0
-        kompas_text_meta = {"kompas_text_lines": 0.0, "kompas_text_removed": 0.0, "kompas_text_rendered": 0.0}
+        kompas_text_meta = _empty_kompas_text_meta()
         try:
             page_w_mm, page_h_mm = _export_pdf_page_to_mupdf_svg(
                 ascii_pdf,
@@ -6122,12 +6328,15 @@ def _prepare_forced_a4_candidate(
                     specification_table=_is_kompas_specification_table_source(source_pdf),
                     service_regions_mm=_kompas_service_regions_from_pdf(source_pdf, page_index=0),
                 )
-                source_polys, kompas_text_meta = _reroute_kompas_text_polylines(
-                    source_polys,
-                    source_pdf=source_pdf,
-                    page_index=0,
-                    logger=prep_logs.append,
-                )
+                if _should_reroute_kompas_text(source_pdf):
+                    source_polys, kompas_text_meta = _reroute_kompas_text_polylines(
+                        source_polys,
+                        source_pdf=source_pdf,
+                        page_index=0,
+                        logger=prep_logs.append,
+                    )
+                else:
+                    prep_logs.append("KOMPAS source text preserved: single-line text reroute disabled for production.")
                 bridge._write_method3_svg(
                     clean_svg,
                     source_polys,
@@ -6243,9 +6452,16 @@ def _prepare_forced_a4_candidate(
             "notes": (
                 "forced_a4_single_page=True"
                 + (
-                    "; kompas_text_reroute=True; "
-                    f"kompas_text_lines={int(kompas_text_meta.get('kompas_text_lines', 0.0))}; "
-                    f"kompas_text_rendered={int(kompas_text_meta.get('kompas_text_rendered', 0.0))}"
+                    (
+                        "; "
+                        + (
+                            "kompas_text_reroute=True; "
+                            if int(kompas_text_meta.get("kompas_text_rendered", 0.0)) > 0
+                            else "kompas_source_text_preserved=True; "
+                        )
+                        + f"kompas_text_lines={int(kompas_text_meta.get('kompas_text_lines', 0.0))}; "
+                        + f"kompas_text_rendered={int(kompas_text_meta.get('kompas_text_rendered', 0.0))}"
+                    )
                     if _drawing_frame_class(source_pdf) == "kompas_full_frame"
                     else ""
                 )
@@ -6478,12 +6694,21 @@ def _prepare_a3_clean_source_svg(
                 specification_table=_is_kompas_specification_table_source(source_pdf),
                 service_regions_mm=_kompas_service_regions_from_pdf(source_pdf, page_index=0),
             )
-            source_polys, kompas_text_meta = _reroute_kompas_text_polylines(
+            source_polys, kompas_a3_frame_meta = _strip_kompas_a3_outer_sheet_frame_polylines(
                 source_polys,
-                source_pdf=source_pdf,
-                page_index=0,
-                logger=logs.append,
+                page_w_mm=float(page_w_mm),
+                page_h_mm=float(page_h_mm),
             )
+            kompas_text_meta = _empty_kompas_text_meta()
+            if _should_reroute_kompas_text(source_pdf):
+                source_polys, kompas_text_meta = _reroute_kompas_text_polylines(
+                    source_polys,
+                    source_pdf=source_pdf,
+                    page_index=0,
+                    logger=logs.append,
+                )
+            else:
+                logs.append("KOMPAS source text preserved: single-line text reroute disabled for production.")
             bridge._write_method3_svg(
                 source_svg,
                 source_polys,
@@ -6501,6 +6726,8 @@ def _prepare_a3_clean_source_svg(
                 f"service_region_removed={kompas_cleanup_meta['service_region_removed']}; "
                 f"under_frame_removed={kompas_cleanup_meta['under_frame_removed']}; "
                 f"top_outer_frame_removed={kompas_cleanup_meta['top_outer_frame_removed']}; "
+                f"a3_outer_sheet_frame_removed={kompas_a3_frame_meta['removed_segments']}; "
+                f"a3_outer_sheet_frame_kept_stamp_edges={kompas_a3_frame_meta['kept_stamp_segments']}; "
                 f"kompas_text_lines={int(kompas_text_meta.get('kompas_text_lines', 0.0))}; "
                 f"kompas_text_removed={int(kompas_text_meta.get('kompas_text_removed', 0.0))}; "
                 f"kompas_text_rendered={int(kompas_text_meta.get('kompas_text_rendered', 0.0))}."
@@ -6623,7 +6850,7 @@ def _prepare_a3_pass_from_clean_svg(
     source_route = "direct_pdf_svg" if any(
         "direct PDF vector SVG export" in str(line) for line in (prep_logs or [])
     ) else "method3"
-    kompas_text_reroute = any("kompas_text_rendered=" in str(line) for line in (prep_logs or []))
+    kompas_text_reroute = _logs_indicate_kompas_text_reroute(prep_logs)
     return {
         "item": f"pass_{pass_index:02d}",
         "ok": True,
@@ -6707,12 +6934,21 @@ def _prepare_literal_clean_source_svg(
                 specification_table=_is_kompas_specification_table_source(source_pdf),
                 service_regions_mm=_kompas_service_regions_from_pdf(source_pdf, page_index=0),
             )
-            source_polys, kompas_text_meta = _reroute_kompas_text_polylines(
+            source_polys, kompas_a3_frame_meta = _strip_kompas_a3_outer_sheet_frame_polylines(
                 source_polys,
-                source_pdf=source_pdf,
-                page_index=0,
-                logger=logs.append,
+                page_w_mm=float(page_w_mm),
+                page_h_mm=float(page_h_mm),
             )
+            kompas_text_meta = _empty_kompas_text_meta()
+            if _should_reroute_kompas_text(source_pdf):
+                source_polys, kompas_text_meta = _reroute_kompas_text_polylines(
+                    source_polys,
+                    source_pdf=source_pdf,
+                    page_index=0,
+                    logger=logs.append,
+                )
+            else:
+                logs.append("KOMPAS source text preserved: single-line text reroute disabled for production.")
             bridge._write_method3_svg(
                 source_svg,
                 source_polys,
@@ -6730,6 +6966,8 @@ def _prepare_literal_clean_source_svg(
                 f"service_region_removed={kompas_cleanup_meta['service_region_removed']}; "
                 f"under_frame_removed={kompas_cleanup_meta['under_frame_removed']}; "
                 f"top_outer_frame_removed={kompas_cleanup_meta['top_outer_frame_removed']}; "
+                f"a3_outer_sheet_frame_removed={kompas_a3_frame_meta['removed_segments']}; "
+                f"a3_outer_sheet_frame_kept_stamp_edges={kompas_a3_frame_meta['kept_stamp_segments']}; "
                 f"kompas_text_lines={int(kompas_text_meta.get('kompas_text_lines', 0.0))}; "
                 f"kompas_text_removed={int(kompas_text_meta.get('kompas_text_removed', 0.0))}; "
                 f"kompas_text_rendered={int(kompas_text_meta.get('kompas_text_rendered', 0.0))}."
@@ -6808,7 +7046,7 @@ def _prepare_tiled_pass_from_clean_svg(
     source_route = "direct_pdf_svg" if any(
         "direct PDF vector SVG export" in str(line) for line in (prep_logs or [])
     ) else "method3"
-    kompas_text_reroute = any("kompas_text_rendered=" in str(line) for line in (prep_logs or []))
+    kompas_text_reroute = _logs_indicate_kompas_text_reroute(prep_logs)
     return {
         "item": f"pass_{pass_index:02d}",
         "ok": True,

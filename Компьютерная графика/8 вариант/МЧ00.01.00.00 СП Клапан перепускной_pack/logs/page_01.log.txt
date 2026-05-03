@@ -1,4 +1,5 @@
-A4 MuPDF source route: direct PDF vector SVG export with text_as_path=True; kompas_archive_strip_removed=170; kompas_service_region_removed=0; kompas_under_frame_removed=56; kompas_top_outer_frame_removed=2; kompas_text_lines=0; kompas_text_removed=0; kompas_text_rendered=0; single-line text reroute.
+KOMPAS source text preserved: single-line text reroute disabled for production.
+A4 MuPDF source route: direct PDF vector SVG export with text_as_path=True; kompas_archive_strip_removed=170; kompas_service_region_removed=0; kompas_under_frame_removed=56; kompas_top_outer_frame_removed=2; kompas_text_lines=0; kompas_text_removed=0; kompas_text_rendered=0; source text preserved.
 KOMPAS A4 1:1 clip: Work area clipping: kept 2339 visible segments, dropped 1 out-of-area segments.
 Reorder: 1347 polylines ordered (nearest-end).
 KOMPAS A4 clean-bbox route: source-page fit disabled; source_frame_bbox=[20.0, 5.0, 205.0, 292.0]; content_scale=0.972973; translate=(-19.4595,-289.4865) mm; pre_clip_bbox=[-0.0, -284.6216, 180.0, -5.3784]; clipped_segments=1; work_area_frame=full.

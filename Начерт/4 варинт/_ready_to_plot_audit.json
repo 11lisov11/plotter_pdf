@@ -6,6 +6,8 @@
   "warnings": [],
   "preflight": {
     "checked_gcode_files": 6,
-    "duplicate_segments": 0
+    "duplicate_segments": 0,
+    "missing_motor_release": 0,
+    "unsafe_endings": 0
   }
 }

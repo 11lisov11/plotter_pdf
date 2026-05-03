@@ -1,4 +1,5 @@
-A4 MuPDF source route: direct PDF vector SVG export with text_as_path=True; kompas_archive_strip_removed=8; kompas_service_region_removed=552; kompas_under_frame_removed=1; kompas_top_outer_frame_removed=2; kompas_text_lines=0; kompas_text_removed=0; kompas_text_rendered=0; single-line text reroute.
+KOMPAS source text preserved: single-line text reroute disabled for production.
+A4 MuPDF source route: direct PDF vector SVG export with text_as_path=True; kompas_archive_strip_removed=8; kompas_service_region_removed=552; kompas_under_frame_removed=1; kompas_top_outer_frame_removed=2; kompas_text_lines=0; kompas_text_removed=0; kompas_text_rendered=0; source text preserved.
 Segment dedup: dropped 591/2286 retraced segments (25.9%), kept=1695, eps=0.010 mm
 Collinear overlap dedup: dropped 2/1691 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
 Reorder: 1188 polylines ordered (nearest-end).

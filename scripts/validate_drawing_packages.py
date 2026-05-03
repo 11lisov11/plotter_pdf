@@ -5,6 +5,7 @@ import csv
 import json
 import math
 import re
+import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable
@@ -16,6 +17,8 @@ A3_TWO_PASS_WORK_AREA = (0.0, 180.0, -285.0, -2.0)
 DEFAULT_Z_UP = 0.0
 DEFAULT_Z_DOWN = 11.9
 _TOKEN_RE = re.compile(r"([A-Za-z])\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))")
+_SVG_COORD_RE = re.compile(r"[ML]\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))[\s,]+([+-]?(?:\d+(?:\.\d*)?|\.\d+))", re.I)
+_SVG_POINT_RE = re.compile(r"([+-]?(?:\d+(?:\.\d*)?|\.\d+))[\s,]+([+-]?(?:\d+(?:\.\d*)?|\.\d+))")
 
 
 @dataclass
@@ -26,6 +29,8 @@ class GcodeValidation:
     travel_moves: int = 0
     duplicate_segments: int = 0
     bounds: tuple[float, float, float, float] | None = None
+    final_position: tuple[float, float, float | None] | None = None
+    motor_release_seen: bool = False
     problems: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
 
@@ -109,8 +114,11 @@ def validate_gcode_file(
     cur_z: float | None = None
     modal: str | None = None
     spindle_down = False
-    first_pen_down_seen = False
     first_xy_seen = False
+    motor_release_seen = False
+    last_xy_line = 0
+    spindle_off_line = 0
+    motor_release_line = 0
     draw_bounds: list[float] | None = None
     segments_seen: set[tuple[tuple[float, float], tuple[float, float]]] = set()
     duplicate_segments = 0
@@ -130,9 +138,12 @@ def validate_gcode_file(
 
         if "M3" in upper or "M03" in upper:
             spindle_down = True
-            first_pen_down_seen = True
         if "M5" in upper or "M05" in upper:
             spindle_down = False
+            spindle_off_line = lines
+        if upper.replace(" ", "") == "$1=0":
+            motor_release_seen = True
+            motor_release_line = lines
 
         old_x, old_y, old_z = cur_x, cur_y, cur_z
         modal = _motion_code(line, modal)
@@ -154,15 +165,15 @@ def validate_gcode_file(
         was_down = _is_pen_down(cur_z, z_up, z_down, spindle_down)
         would_be_down = _is_pen_down(next_z, z_up, z_down, spindle_down)
         if has_z and not was_down and would_be_down:
-            first_pen_down_seen = True
             if has_xy:
                 problems.append(f"{gcode_path.name}: line {lines}: pen-down command also moves XY")
 
         if has_xy:
-            first_xy_seen = True
-            if not first_pen_down_seen and would_be_down:
+            last_xy_line = lines
+            if not first_xy_seen and would_be_down:
                 problems.append(f"{gcode_path.name}: line {lines}: first XY move happens with pen down")
-            if modal == "G0" and would_be_down:
+            first_xy_seen = True
+            if modal == "G0" and (was_down or would_be_down):
                 problems.append(f"{gcode_path.name}: line {lines}: rapid XY travel with pen down")
 
             if old_x is not None and old_y is not None and next_x is not None and next_y is not None:
@@ -195,6 +206,14 @@ def validate_gcode_file(
         problems.append(f"{gcode_path.name}: no pen-down drawing moves")
     if duplicate_segments > 0:
         problems.append(f"{gcode_path.name}: duplicate draw segments={duplicate_segments}")
+    if _is_pen_down(cur_z, z_up, z_down, spindle_down):
+        problems.append(f"{gcode_path.name}: file ends with pen down")
+    if cur_x is None or cur_y is None or abs(float(cur_x)) > 0.25 or abs(float(cur_y)) > 0.25:
+        problems.append(f"{gcode_path.name}: file does not return home at end")
+    if spindle_off_line <= last_xy_line:
+        problems.append(f"{gcode_path.name}: missing spindle/pen-off M5 after final XY")
+    if not motor_release_seen or motor_release_line <= max(last_xy_line, spindle_off_line):
+        problems.append(f"{gcode_path.name}: missing motor release $1=0 after home/M5")
 
     if draw_bounds is None:
         bounds = None
@@ -215,6 +234,10 @@ def validate_gcode_file(
         travel_moves=travel_moves,
         duplicate_segments=duplicate_segments,
         bounds=bounds,
+        final_position=(float(cur_x), float(cur_y), float(cur_z) if cur_z is not None else None)
+        if cur_x is not None and cur_y is not None
+        else None,
+        motor_release_seen=motor_release_seen,
         problems=problems,
         warnings=warnings,
     )
@@ -267,9 +290,78 @@ def _logs_contain(item: dict[str, object] | None, needle: str) -> bool:
     return any(needle in str(line) for line in item.get("logs", []) or [])
 
 
+def _notes_contain(item: dict[str, object] | None, needle: str) -> bool:
+    if not item:
+        return False
+    return needle in str(item.get("notes") or "")
+
+
 def _require_file(package_dir: Path, rel: str, problems: list[str]) -> None:
     if not (package_dir / rel).exists():
         problems.append(f"missing {rel}")
+
+
+def _local_name(tag: str) -> str:
+    return tag.rsplit("}", 1)[-1]
+
+
+def _svg_polyline_segments(svg_path: Path) -> list[tuple[float, float, float, float]]:
+    try:
+        root = ET.parse(svg_path).getroot()
+    except (ET.ParseError, OSError):
+        return []
+
+    segments: list[tuple[float, float, float, float]] = []
+    for elem in root.iter():
+        name = _local_name(str(elem.tag))
+        points: list[tuple[float, float]] = []
+        if name == "path":
+            points = [(float(x), float(y)) for x, y in _SVG_COORD_RE.findall(str(elem.attrib.get("d") or ""))]
+        elif name in {"polyline", "polygon"}:
+            points = [(float(x), float(y)) for x, y in _SVG_POINT_RE.findall(str(elem.attrib.get("points") or ""))]
+            if name == "polygon" and len(points) > 1:
+                points.append(points[0])
+        if len(points) < 2:
+            continue
+        for (x0, y0), (x1, y1) in zip(points, points[1:]):
+            segments.append((x0, y0, x1, y1))
+    return segments
+
+
+def _kompas_a3_outer_frame_problems(package_dir: Path) -> list[str]:
+    svg_path = package_dir / "_candidates" / "a3_clean_source.svg"
+    if not svg_path.exists():
+        return []
+
+    segments = _svg_polyline_segments(svg_path)
+    if not segments:
+        return []
+
+    xs = [coord for x0, _, x1, _ in segments for coord in (x0, x1)]
+    ys = [coord for _, y0, _, y1 in segments for coord in (y0, y1)]
+    min_x, max_x = min(xs), max(xs)
+    min_y, max_y = min(ys), max(ys)
+    found: dict[str, tuple[float, float, float, float]] = {}
+
+    for x0, y0, x1, y1 in segments:
+        dx = abs(x1 - x0)
+        dy = abs(y1 - y0)
+        if dy <= 0.15 and dx >= 300.0 and abs(y0 - min_y) <= 3.0:
+            found.setdefault("top", (x0, y0, x1, y1))
+        if dy <= 0.15 and dx >= 300.0 and abs(y0 - max_y) <= 3.0:
+            found.setdefault("bottom", (x0, y0, x1, y1))
+        if dx <= 0.15 and dy >= 220.0 and abs(x0 - min_x) <= 3.0:
+            found.setdefault("left", (x0, y0, x1, y1))
+        if dx <= 0.15 and dy >= 220.0 and abs(x0 - max_x) <= 3.0:
+            found.setdefault("right", (x0, y0, x1, y1))
+
+    return [
+        (
+            "KOMPAS A3 clean source still contains outer sheet frame "
+            f"{edge} segment ({segment[0]:.2f},{segment[1]:.2f})-({segment[2]:.2f},{segment[3]:.2f})"
+        )
+        for edge, segment in sorted(found.items())
+    ]
 
 
 def validate_package(package_dir: Path, rows: list[dict[str, str]]) -> PackageValidation:
@@ -306,6 +398,10 @@ def validate_package(package_dir: Path, rows: list[dict[str, str]]) -> PackageVa
         problems.append("KOMPAS package selected forbidden a4_hybrid_frame route")
     if frame_class == "kompas_full_frame" and _logs_contain(selected_item, "Technical text join"):
         problems.append("KOMPAS selected route still runs Technical text join")
+    if frame_class == "kompas_full_frame" and _logs_contain(selected_item, "KOMPAS text reroute:"):
+        problems.append("KOMPAS selected route reroutes source text")
+    if frame_class == "kompas_full_frame" and _notes_contain(selected_item, "kompas_text_reroute=True"):
+        problems.append("KOMPAS selected route marks kompas_text_reroute=True")
     duplicate_count = _metrics_duplicate_count(selected_item)
     if duplicate_count > 0:
         problems.append(f"selected route reports duplicate segments={duplicate_count}")
@@ -324,6 +420,8 @@ def validate_package(package_dir: Path, rows: list[dict[str, str]]) -> PackageVa
             _require_file(package_dir, f"{pass_name}.pdf", problems)
             _require_file(package_dir, f"{pass_name}.gcode", problems)
             gcode_paths.append(package_dir / f"{pass_name}.gcode")
+        if frame_class == "kompas_full_frame":
+            problems.extend(_kompas_a3_outer_frame_problems(package_dir))
     else:
         problems.append(f"unknown package items: {sorted(items)}")
 
@@ -378,6 +476,19 @@ def validate_variant(variant_dir: Path, *, write_reports: bool = True) -> dict[s
         "preflight": {
             "checked_gcode_files": sum(len(pkg.gcode) for pkg in packages),
             "duplicate_segments": sum(result.duplicate_segments for pkg in packages for result in pkg.gcode.values()),
+            "missing_motor_release": sum(
+                1 for pkg in packages for result in pkg.gcode.values() if not result.motor_release_seen
+            ),
+            "unsafe_endings": sum(
+                1
+                for pkg in packages
+                for result in pkg.gcode.values()
+                if any(
+                    marker in problem
+                    for problem in result.problems
+                    for marker in ("file ends with pen down", "does not return home", "missing spindle/pen-off")
+                )
+            ),
         },
     }
     if write_reports:

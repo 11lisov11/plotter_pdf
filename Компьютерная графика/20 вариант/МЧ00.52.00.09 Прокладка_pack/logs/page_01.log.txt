@@ -1,15 +1,9 @@
-TTF centerline postprocess: 7 -> 2 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.025)
-TTF centerline text: '2' -> 2 stroke(s), font=GOST_BU.ttf, size=8.77
-TTF centerline postprocess: 35 -> 5 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
-TTF centerline text: '⌀120' -> 5 stroke(s), font=GOST_BU.ttf, size=4.45
-TTF centerline postprocess: 75 -> 6 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
-TTF centerline text: '⌀74' -> 6 stroke(s), font=GOST_BU.ttf, size=5.36
-KOMPAS text reroute: removed 34 outline polyline(s), rendered 13 single-line polyline(s) from 3 PDF text line(s).
-A4 MuPDF source route: direct PDF vector SVG export with text_as_path=True; kompas_archive_strip_removed=7; kompas_service_region_removed=643; kompas_under_frame_removed=1; kompas_top_outer_frame_removed=2; kompas_text_lines=3; kompas_text_removed=34; kompas_text_rendered=13; single-line text reroute.
-Segment dedup: dropped 248/1928 retraced segments (12.9%), kept=1680, eps=0.010 mm
-Collinear overlap dedup: dropped 2/1639 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
-Reorder: 960 polylines ordered (nearest-end).
-Collinear overlap dedup: dropped 1/1640 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
+KOMPAS source text preserved: single-line text reroute disabled for production.
+A4 MuPDF source route: direct PDF vector SVG export with text_as_path=True; kompas_archive_strip_removed=7; kompas_service_region_removed=643; kompas_under_frame_removed=1; kompas_top_outer_frame_removed=2; kompas_text_lines=0; kompas_text_removed=0; kompas_text_rendered=0; source text preserved.
+Segment dedup: dropped 249/1890 retraced segments (13.2%), kept=1641, eps=0.010 mm
+Collinear overlap dedup: dropped 2/1635 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
+Reorder: 981 polylines ordered (nearest-end).
+Collinear overlap dedup: dropped 1/1636 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
 KOMPAS A4 clean-bbox route: source-page fit disabled; source_frame_bbox=[20.4893, 5.5033, 205.4859, 292.5232]; content_scale=0.972991; translate=(-19.9359,-289.9885) mm; pre_clip_bbox=[0.0, -284.6338, 180.0, -5.3662]; clipped_segments=0; work_area_frame=full.
 Fixed-canvas preview centered on page: page=180.000x280.000 mm, offset=(0.000,285.000) mm
 Preview canvas switched to machine work area: 180.000x280.000 mm.
