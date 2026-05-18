@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import math
 import re
@@ -28,6 +29,7 @@ class GcodeValidation:
     draw_moves: int = 0
     travel_moves: int = 0
     duplicate_segments: int = 0
+    overlap_segments: int = 0
     bounds: tuple[float, float, float, float] | None = None
     final_position: tuple[float, float, float | None] | None = None
     motor_release_seen: bool = False
@@ -64,19 +66,14 @@ def _tokens(line: str) -> dict[str, float]:
     return {axis.upper(): float(value) for axis, value in _TOKEN_RE.findall(line)}
 
 
+def _has_gcode_word(line: str, letter: str, number: int) -> bool:
+    return re.search(rf"(?<![A-Z0-9.]){letter.upper()}0*{number}(?![0-9.])", line.upper()) is not None
+
+
 def _motion_code(line: str, previous: str | None) -> str | None:
-    upper = line.upper()
-    for code in ("G0", "G00", "G1", "G01", "G2", "G02", "G3", "G03"):
-        if re.search(rf"(^|\s){code}(\s|$)", upper):
-            if code in {"G00"}:
-                return "G0"
-            if code in {"G01"}:
-                return "G1"
-            if code in {"G02"}:
-                return "G2"
-            if code in {"G03"}:
-                return "G3"
-            return code
+    for number, canonical in ((0, "G0"), (1, "G1"), (2, "G2"), (3, "G3")):
+        if _has_gcode_word(line, "G", number):
+            return canonical
     return previous
 
 
@@ -95,6 +92,116 @@ def _segment_key(x0: float, y0: float, x1: float, y1: float, *, decimals: int = 
     p0 = (round(float(x0), decimals), round(float(y0), decimals))
     p1 = (round(float(x1), decimals), round(float(y1), decimals))
     return (p0, p1) if p0 <= p1 else (p1, p0)
+
+
+def _segment_axis(
+    x0: float,
+    y0: float,
+    x1: float,
+    y1: float,
+    *,
+    min_len: float,
+) -> tuple[float, float, float, float, float, float, float] | None:
+    dx = float(x1) - float(x0)
+    dy = float(y1) - float(y0)
+    length = math.hypot(dx, dy)
+    if length < float(min_len):
+        return None
+    ux = dx / length
+    uy = dy / length
+    if ux < -1e-9 or (abs(ux) <= 1e-9 and uy < 0.0):
+        ux = -ux
+        uy = -uy
+    nx = -uy
+    ny = ux
+    offset = float(x0) * nx + float(y0) * ny
+    t0 = float(x0) * ux + float(y0) * uy
+    t1 = float(x1) * ux + float(y1) * uy
+    if t0 > t1:
+        t0, t1 = t1, t0
+    return ux, uy, nx, ny, offset, t0, t1
+
+
+def _count_collinear_overlaps(
+    segments: Iterable[tuple[float, float, float, float]],
+    *,
+    dist_tol: float = 0.12,
+    angle_tol_deg: float = 1.0,
+    min_len: float = 0.40,
+    min_overlap_ratio: float = 0.90,
+) -> int:
+    angle_tol = math.radians(float(angle_tol_deg))
+    dist_tol = float(dist_tol)
+    min_len = float(min_len)
+    min_ratio = max(0.0, min(1.0, float(min_overlap_ratio)))
+    buckets: dict[tuple[int, int], list[tuple[float, float, float, float, float, float, float]]] = {}
+    overlap_count = 0
+
+    def _angle_key(ux: float, uy: float) -> int:
+        angle = math.atan2(float(uy), float(ux))
+        if angle < 0.0:
+            angle += math.pi
+        return int(round(angle / angle_tol))
+
+    def _offset_key_for_angle(angle_key: int, x: float, y: float) -> int:
+        bucket_angle = float(angle_key) * angle_tol
+        bucket_nx = -math.sin(bucket_angle)
+        bucket_ny = math.cos(bucket_angle)
+        return int(round((float(x) * bucket_nx + float(y) * bucket_ny) / max(dist_tol, 1e-9)))
+
+    for x0, y0, x1, y1 in segments:
+        axis = _segment_axis(x0, y0, x1, y1, min_len=min_len)
+        if axis is None:
+            continue
+        ux, uy, nx, ny, offset, t0, t1 = axis
+        angle_key = _angle_key(ux, uy)
+        overlapped = False
+
+        for da in (-1, 0, 1):
+            query_angle_key = angle_key + da
+            offset_key = _offset_key_for_angle(query_angle_key, x0, y0)
+            for dk in range(-3, 4):
+                for other in buckets.get((query_angle_key, offset_key + dk), []):
+                    oux, ouy, _onx, _ony, other_offset, other_t0, other_t1 = other
+                    dot = max(-1.0, min(1.0, ux * oux + uy * ouy))
+                    if math.acos(abs(dot)) > angle_tol:
+                        continue
+                    cur_t0 = float(x0) * oux + float(y0) * ouy
+                    cur_t1 = float(x1) * oux + float(y1) * ouy
+                    if cur_t0 > cur_t1:
+                        cur_t0, cur_t1 = cur_t1, cur_t0
+                    overlap_len = min(cur_t1, other_t1) - max(cur_t0, other_t0)
+                    if overlap_len <= 0.0:
+                        continue
+                    other_len = max(1e-9, other_t1 - other_t0)
+                    current_len_on_other = max(1e-9, cur_t1 - cur_t0)
+                    if overlap_len < min_len or overlap_len / min(current_len_on_other, other_len) < min_ratio:
+                        continue
+                    overlap_mid_t = (max(cur_t0, other_t0) + min(cur_t1, other_t1)) * 0.5
+                    other_mid_x = oux * overlap_mid_t + _onx * other_offset
+                    other_mid_y = ouy * overlap_mid_t + _ony * other_offset
+                    current_mid_t = (other_mid_x - float(x0)) * ux + (other_mid_y - float(y0)) * uy
+                    current_mid_x = float(x0) + ux * current_mid_t
+                    current_mid_y = float(y0) + uy * current_mid_t
+                    if math.hypot(current_mid_x - other_mid_x, current_mid_y - other_mid_y) <= dist_tol:
+                        overlapped = True
+                        break
+                if overlapped:
+                    break
+            if overlapped:
+                break
+
+        if overlapped:
+            overlap_count += 1
+        stored_keys: set[tuple[int, int]] = set()
+        for store_angle_key in (angle_key - 1, angle_key, angle_key + 1):
+            store_key = (store_angle_key, _offset_key_for_angle(store_angle_key, x0, y0))
+            if store_key in stored_keys:
+                continue
+            stored_keys.add(store_key)
+            buckets.setdefault(store_key, []).append(axis)
+
+    return overlap_count
 
 
 def validate_gcode_file(
@@ -121,6 +228,7 @@ def validate_gcode_file(
     motor_release_line = 0
     draw_bounds: list[float] | None = None
     segments_seen: set[tuple[tuple[float, float], tuple[float, float]]] = set()
+    draw_segments: list[tuple[float, float, float, float]] = []
     duplicate_segments = 0
 
     try:
@@ -136,9 +244,9 @@ def validate_gcode_file(
         upper = line.upper()
         vals = _tokens(line)
 
-        if "M3" in upper or "M03" in upper:
+        if _has_gcode_word(upper, "M", 3):
             spindle_down = True
-        if "M5" in upper or "M05" in upper:
+        if _has_gcode_word(upper, "M", 5):
             spindle_down = False
             spindle_off_line = lines
         if upper.replace(" ", "") == "$1=0":
@@ -186,6 +294,7 @@ def validate_gcode_file(
                             duplicate_segments += 1
                         else:
                             segments_seen.add(key)
+                        draw_segments.append((x0, y0, x1, y1))
                     if draw_bounds is None:
                         draw_bounds = [x0, x1, y0, y1]
                     else:
@@ -206,6 +315,9 @@ def validate_gcode_file(
         problems.append(f"{gcode_path.name}: no pen-down drawing moves")
     if duplicate_segments > 0:
         problems.append(f"{gcode_path.name}: duplicate draw segments={duplicate_segments}")
+    overlap_segments = _count_collinear_overlaps(draw_segments)
+    if overlap_segments > 0:
+        problems.append(f"{gcode_path.name}: collinear overlapping draw segments={overlap_segments}")
     if _is_pen_down(cur_z, z_up, z_down, spindle_down):
         problems.append(f"{gcode_path.name}: file ends with pen down")
     if cur_x is None or cur_y is None or abs(float(cur_x)) > 0.25 or abs(float(cur_y)) > 0.25:
@@ -233,6 +345,7 @@ def validate_gcode_file(
         draw_moves=draw_moves,
         travel_moves=travel_moves,
         duplicate_segments=duplicate_segments,
+        overlap_segments=overlap_segments,
         bounds=bounds,
         final_position=(float(cur_x), float(cur_y), float(cur_z) if cur_z is not None else None)
         if cur_x is not None and cur_y is not None
@@ -299,6 +412,74 @@ def _notes_contain(item: dict[str, object] | None, needle: str) -> bool:
 def _require_file(package_dir: Path, rel: str, problems: list[str]) -> None:
     if not (package_dir / rel).exists():
         problems.append(f"missing {rel}")
+
+
+def _append_unique_path(paths: list[Path], seen: set[Path], path: Path) -> None:
+    key = path.resolve(strict=False)
+    if key in seen:
+        return
+    seen.add(key)
+    paths.append(path)
+
+
+def _collect_package_plotter_files(package_dir: Path, canonical_paths: Iterable[Path]) -> list[Path]:
+    """Validate every G-code-like file that may be sent to the plotter.
+
+    The package contract requires root ``*.gcode`` files, but the pipeline also
+    writes ``*.nc`` aliases and ``pages/`` mirrors. A stale alias is enough to
+    reproduce a bad plot even when the canonical ``*.gcode`` is clean.
+    """
+
+    paths: list[Path] = []
+    seen: set[Path] = set()
+    for path in canonical_paths:
+        if path.exists():
+            _append_unique_path(paths, seen, path)
+    for path in sorted(
+        list(package_dir.rglob("*.gcode")) + list(package_dir.rglob("*.nc")),
+        key=lambda p: p.relative_to(package_dir).as_posix().casefold(),
+    ):
+        _append_unique_path(paths, seen, path)
+    return paths
+
+
+def _plotter_alias_mismatch_problems(package_dir: Path, stems: Iterable[str]) -> list[str]:
+    problems: list[str] = []
+    for stem in sorted(set(stems)):
+        paths = [
+            package_dir / f"{stem}.gcode",
+            package_dir / f"{stem}.nc",
+            package_dir / "pages" / f"{stem}.gcode",
+            package_dir / "pages" / f"{stem}.nc",
+        ]
+        existing = [path for path in paths if path.exists()]
+        if len(existing) < 2:
+            continue
+        hashes: dict[str, list[str]] = {}
+        for path in existing:
+            try:
+                digest = hashlib.sha256(path.read_bytes()).hexdigest()
+            except OSError as exc:
+                problems.append(f"cannot read plotter alias {path.relative_to(package_dir).as_posix()}: {exc}")
+                continue
+            hashes.setdefault(digest, []).append(path.relative_to(package_dir).as_posix())
+        if len(hashes) > 1:
+            groups = ["+".join(group) for group in hashes.values()]
+            problems.append(f"plotter aliases differ for {stem}: {' != '.join(groups)}")
+    return problems
+
+
+def _unexpected_plotter_file_problems(package_dir: Path, stems: Iterable[str]) -> list[str]:
+    expected_stems = set(stems)
+    problems: list[str] = []
+    for path in sorted(
+        list(package_dir.rglob("*.gcode")) + list(package_dir.rglob("*.nc")),
+        key=lambda p: p.relative_to(package_dir).as_posix().casefold(),
+    ):
+        if path.stem in expected_stems:
+            continue
+        problems.append(f"unexpected plotter file {path.relative_to(package_dir).as_posix()}")
+    return problems
 
 
 def _local_name(tag: str) -> str:
@@ -407,33 +588,41 @@ def validate_package(package_dir: Path, rows: list[dict[str, str]]) -> PackageVa
         problems.append(f"selected route reports duplicate segments={duplicate_count}")
 
     items = {str(row.get("item") or "") for row in rows}
-    gcode_paths: list[Path] = []
+    canonical_gcode_paths: list[Path] = []
+    canonical_gcode_stems: list[str] = []
     if items == {"page_01"}:
         _require_file(package_dir, "a4_clean_source.pdf", problems)
         _require_file(package_dir, "page_01.pdf", problems)
         _require_file(package_dir, "page_01.gcode", problems)
-        gcode_paths.append(package_dir / "page_01.gcode")
+        canonical_gcode_paths.append(package_dir / "page_01.gcode")
+        canonical_gcode_stems.append("page_01")
     elif any(item.startswith("pass_") for item in items):
         _require_file(package_dir, "combined_preview.pdf", problems)
         pass_names = sorted(item for item in items if item.startswith("pass_"))
         for pass_name in pass_names:
             _require_file(package_dir, f"{pass_name}.pdf", problems)
             _require_file(package_dir, f"{pass_name}.gcode", problems)
-            gcode_paths.append(package_dir / f"{pass_name}.gcode")
+            canonical_gcode_paths.append(package_dir / f"{pass_name}.gcode")
+            canonical_gcode_stems.append(pass_name)
         if frame_class == "kompas_full_frame":
             problems.extend(_kompas_a3_outer_frame_problems(package_dir))
     else:
         problems.append(f"unknown package items: {sorted(items)}")
 
+    problems.extend(_unexpected_plotter_file_problems(package_dir, canonical_gcode_stems))
+    problems.extend(_plotter_alias_mismatch_problems(package_dir, canonical_gcode_stems))
+
     gcode_results: dict[str, GcodeValidation] = {}
+    gcode_paths = _collect_package_plotter_files(package_dir, canonical_gcode_paths)
     for gcode_path in gcode_paths:
         if not gcode_path.exists():
             continue
         work_area = A3_TWO_PASS_WORK_AREA if gcode_path.name.startswith("pass_") else DEFAULT_WORK_AREA
         result = validate_gcode_file(gcode_path, work_area=work_area)
-        gcode_results[gcode_path.name] = result
-        problems.extend(result.problems)
-        warnings.extend(result.warnings)
+        rel_name = gcode_path.relative_to(package_dir).as_posix()
+        gcode_results[rel_name] = result
+        problems.extend(f"{rel_name}: {problem}" for problem in result.problems)
+        warnings.extend(f"{rel_name}: {warning}" for warning in result.warnings)
 
     return PackageValidation(
         package_dir=str(package_dir),
@@ -476,6 +665,7 @@ def validate_variant(variant_dir: Path, *, write_reports: bool = True) -> dict[s
         "preflight": {
             "checked_gcode_files": sum(len(pkg.gcode) for pkg in packages),
             "duplicate_segments": sum(result.duplicate_segments for pkg in packages for result in pkg.gcode.values()),
+            "overlap_segments": sum(result.overlap_segments for pkg in packages for result in pkg.gcode.values()),
             "missing_motor_release": sum(
                 1 for pkg in packages for result in pkg.gcode.values() if not result.motor_release_seen
             ),

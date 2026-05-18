@@ -212,6 +212,38 @@ G0 X20 Y-20 Z0
     assert any("rapid XY travel with pen down" in problem for problem in result.problems)
 
 
+def test_validate_gcode_rejects_compact_rapid_xy_with_pen_down(tmp_path: Path) -> None:
+    gcode_path = tmp_path / "bad_compact_rapid.gcode"
+    gcode_path.write_text(
+        """G21
+G90
+G92Z0
+G0X0Y0
+G1Z11.9000
+G0X10Y-10
+G0Z0
+G0X0Y0
+M5
+$1=0
+""",
+        encoding="utf-8",
+    )
+
+    result = mod.validate_gcode_file(gcode_path)
+
+    assert not result.ok
+    assert any("rapid XY travel with pen down" in problem for problem in result.problems)
+
+
+def test_validate_gcode_does_not_treat_m30_as_pen_down(tmp_path: Path) -> None:
+    gcode_path = tmp_path / "program_end.gcode"
+    gcode_path.write_text(VALID_GCODE + "M30\n", encoding="utf-8")
+
+    result = mod.validate_gcode_file(gcode_path)
+
+    assert result.ok
+
+
 def test_validate_gcode_rejects_duplicate_draw_segment(tmp_path: Path) -> None:
     gcode_path = tmp_path / "duplicate.gcode"
     gcode_path.write_text(
@@ -234,6 +266,139 @@ G1 X10 Y-10
 
     assert not result.ok
     assert result.duplicate_segments == 1
+
+
+def test_validate_gcode_rejects_partial_collinear_overlap(tmp_path: Path) -> None:
+    gcode_path = tmp_path / "partial_overlap.gcode"
+    gcode_path.write_text(
+        """G21
+G90
+G92 Z4
+G0 Z0
+G0 X0 Y-10
+G1 Z11.9
+G1 X10 Y-10
+G0 Z0
+G0 X2 Y-10
+G1 Z11.9
+G1 X8 Y-10
+G0 Z0
+G0 X0 Y0
+M5
+$1=0
+""",
+        encoding="utf-8",
+    )
+
+    result = mod.validate_gcode_file(gcode_path)
+
+    assert not result.ok
+    assert result.duplicate_segments == 0
+    assert result.overlap_segments == 1
+    assert any("collinear overlapping draw segments=1" in problem for problem in result.problems)
+
+
+def test_validate_gcode_rejects_pdf_jitter_collinear_overlap(tmp_path: Path) -> None:
+    gcode_path = tmp_path / "jitter_overlap.gcode"
+    gcode_path.write_text(
+        """G21
+G90
+G92 Z4
+G0 Z0
+G0 X123.4761 Y-200.4955
+G1 Z11.9
+G1 X143.4627 Y-200.4955
+G0 Z0
+G0 X142.5181 Y-200.4132
+G1 Z11.9
+G1 X141.7319 Y-200.4180
+G0 Z0
+G0 X0 Y0
+M5
+$1=0
+""",
+        encoding="utf-8",
+    )
+
+    result = mod.validate_gcode_file(gcode_path)
+
+    assert not result.ok
+    assert result.overlap_segments == 1
+
+
+def test_validate_gcode_rejects_overlap_when_long_segment_is_seen_first(tmp_path: Path) -> None:
+    gcode_path = tmp_path / "long_first_overlap.gcode"
+    gcode_path.write_text(
+        """G21
+G90
+G92 Z4
+G0 Z0
+G0 X74.4331 Y-97.8639
+G1 Z11.9
+G1 X168.3499 Y-98.8800
+G0 Z0
+G0 X121.8903 Y-98.3108
+G1 Z11.9
+G1 X124.6551 Y-98.3120
+G0 Z0
+G0 X0 Y0
+M5
+$1=0
+""",
+        encoding="utf-8",
+    )
+
+    result = mod.validate_gcode_file(gcode_path)
+
+    assert not result.ok
+    assert result.overlap_segments == 1
+
+
+def test_validate_package_checks_optional_nc_alias(tmp_path: Path) -> None:
+    package_dir = _write_package(tmp_path)
+    (package_dir / "page_01.nc").write_text("G21\nG90\nG92 Z11.9000\nG1 X10 Y-10\n", encoding="utf-8")
+
+    result = mod.validate_package(package_dir, [{"package_dir": str(package_dir), "item": "page_01"}])
+
+    assert not result.ok
+    assert "page_01.nc" in result.gcode
+    assert any("page_01.nc: line" in problem and "first XY move happens with pen down" in problem for problem in result.problems)
+
+
+def test_validate_package_rejects_stale_valid_nc_alias(tmp_path: Path) -> None:
+    package_dir = _write_package(tmp_path)
+    (package_dir / "page_01.nc").write_text(VALID_GCODE.replace("X2.0000", "X3.0000"), encoding="utf-8")
+
+    result = mod.validate_package(package_dir, [{"package_dir": str(package_dir), "item": "page_01"}])
+
+    assert not result.ok
+    assert any("plotter aliases differ for page_01" in problem for problem in result.problems)
+
+
+def test_validate_package_rejects_unexpected_valid_plotter_file(tmp_path: Path) -> None:
+    package_dir = _write_package(tmp_path)
+    (package_dir / "old_page_01.gcode").write_text(VALID_GCODE, encoding="utf-8")
+
+    result = mod.validate_package(package_dir, [{"package_dir": str(package_dir), "item": "page_01"}])
+
+    assert not result.ok
+    assert any("unexpected plotter file old_page_01.gcode" in problem for problem in result.problems)
+
+
+def test_validate_package_checks_pages_mirror_nc(tmp_path: Path) -> None:
+    package_dir = _write_package(tmp_path)
+    pages_dir = package_dir / "pages"
+    pages_dir.mkdir()
+    (pages_dir / "page_01.nc").write_text("G21\nG90\nG92 Z11.9000\nG1 X10 Y-10\n", encoding="utf-8")
+
+    result = mod.validate_package(package_dir, [{"package_dir": str(package_dir), "item": "page_01"}])
+
+    assert not result.ok
+    assert "pages/page_01.nc" in result.gcode
+    assert any(
+        "pages/page_01.nc:" in problem and "first XY move happens with pen down" in problem
+        for problem in result.problems
+    )
 
 
 def test_validate_package_rejects_kompas_technical_text_join(tmp_path: Path) -> None:

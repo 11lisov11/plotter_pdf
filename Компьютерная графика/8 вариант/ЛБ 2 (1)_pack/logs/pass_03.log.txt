@@ -1,5 +1,5 @@
 KOMPAS source text preserved: single-line text reroute disabled for production.
-Literal clean source KOMPAS cleanup: archive_strip_removed=5; service_region_removed=14; under_frame_removed=68; top_outer_frame_removed=2; a3_outer_sheet_frame_removed=8; a3_outer_sheet_frame_kept_stamp_edges=6; kompas_text_lines=0; kompas_text_removed=0; kompas_text_rendered=0.
+Literal clean source KOMPAS cleanup: archive_strip_removed=5; service_region_removed=14; under_frame_removed=68; top_outer_frame_removed=2; a3_outer_sheet_frame_removed=8; a3_outer_sheet_frame_kept_stamp_edges=6; kompas_text_lines=0; kompas_text_removed=0; kompas_text_rendered=0; kompas_stamp_text_lines=18; kompas_stamp_text_removed=0; kompas_stamp_text_rendered=0.
 Literal clean source route: direct PDF vector SVG export (text_as_path=True, page=298.111x421.047 mm, rotated_90=yes).
 tile_cols=2
 tile_rows=2
@@ -20,7 +20,7 @@ Fit to work area: scale=1.0000, translate=(-70.733,-356.249), from (23.849, 5.58
 Pass window: col 1/2, row 2/2, source=273.768x411.322 mm, window=180.000x280.000 mm, offset=(0.000,131.322), shift=(46.884,-65.661)
 Work area clipping: kept 1538 visible segments, dropped 1639 out-of-area segments.
 Segment dedup: dropped 415/1538 retraced segments (27.0%), kept=1123, eps=0.010 mm
-Collinear overlap dedup: dropped 15/1123 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
+Collinear overlap dedup: dropped 15/1123 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
 Reorder: source order preserved (740 polylines).
 Segment counts: source=3177, fitted=3177, clipped=1538
 Drawable segments after clip: 1538 (48.4% of source)
@@ -31,6 +31,6 @@ Applying pen-up / pen-down ...
 G-code stats: lines=2731, draw=2176, travel=540, bounds=0.000..180.000 x, -285.000..0.000 y
 Preflight: ok: lines=2731, draw=2176, travel=540, ratio=0.25
 Saved file stats: lines=2731, draw=2176, travel=540, bounds=0.000..180.000 x, -285.000..0.000 y
-Saved: C:\plotter_pdf\_tmp\latest_preview_tiled-clean-pass-3-1777825164687351500.nc
-Preview SVG: C:\plotter_pdf\_tmp\latest_preview_tiled-clean-pass-3-1777825164687351500_vector.svg
-Preview PDF: C:\plotter_pdf\_tmp\latest_preview_tiled-clean-pass-3-1777825164687351500_vector.pdf
+Saved: C:\plotter_pdf\_tmp\latest_preview_tiled-clean-pass-3-1778013065418469300.nc
+Preview SVG: C:\plotter_pdf\_tmp\latest_preview_tiled-clean-pass-3-1778013065418469300_vector.svg
+Preview PDF: C:\plotter_pdf\_tmp\latest_preview_tiled-clean-pass-3-1778013065418469300_vector.pdf

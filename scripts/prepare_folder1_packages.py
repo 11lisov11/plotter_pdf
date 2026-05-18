@@ -532,6 +532,8 @@ def _candidate_title_block_strategy(source_pdf: Path, row: dict[str, Any]) -> st
     if frame_class == "kompas_full_frame":
         if "kompas_text_reroute=True" in str(row.get("notes", "") or ""):
             return "source_vector_with_single_line_text"
+        if "kompas_stamp_text_repair=True" in str(row.get("notes", "") or ""):
+            return "source_vector_with_stamp_title_text_repair"
         return "source_vector_as_path"
     if variant in {"forced_a4_single_page"}:
         return "single_line_reroute"
@@ -1870,6 +1872,36 @@ def _kompas_preserve_source_text_value(text: str) -> bool:
     compact = re.sub(r"\s+", "", str(text or ""))
     if not compact:
         return False
+    compact_key = re.sub(r"[^0-9A-Za-zА-Яа-яЁё№]+", "", compact).casefold()
+    stamp_label_values = {
+        "изм",
+        "лист",
+        "листов",
+        "лит",
+        "масса",
+        "масштаб",
+        "№докум",
+        "подп",
+        "дата",
+        "разраб",
+        "пров",
+        "тконтр",
+        "нконтр",
+        "утв",
+        "копировал",
+        "формат",
+        "недлякоммерческогоиспользования",
+    }
+    if compact_key in stamp_label_values:
+        return False
+    stamp_label_phrases = {
+        "измлист",
+        "изменлист",
+        "листлистов",
+        "подпдата",
+    }
+    if compact_key in stamp_label_phrases:
+        return False
     # Dimension callouts and numeric labels are small and position-sensitive.
     # KOMPAS source vectors are more faithful there than our fallback TTF
     # skeleton, so do not replace them with generated single-line text.
@@ -1972,18 +2004,6 @@ def _extract_kompas_plot_text_lines_from_pdf(
 
 
 def _should_reroute_title_block_text(source_pdf: Path) -> bool:
-    try:
-        path_text = str(source_pdf).lower()
-    except Exception:
-        return False
-    if "компьютерная графика" in path_text:
-        # For these technical drawings the direct PDF->SVG text-as-path route
-        # preserves the title block more faithfully than single-line rerender.
-        return False
-    return False
-
-
-def _should_reroute_title_block_text(source_pdf: Path) -> bool:
     # KOMPAS title blocks are source-of-truth vectors. Earlier single-line
     # rerendering made the stamp less faithful and could move text baselines.
     return False
@@ -2000,6 +2020,14 @@ def _empty_kompas_text_meta() -> dict[str, float]:
     return {"kompas_text_lines": 0.0, "kompas_text_removed": 0.0, "kompas_text_rendered": 0.0}
 
 
+def _empty_kompas_stamp_text_meta() -> dict[str, float]:
+    return {
+        "kompas_stamp_text_lines": 0.0,
+        "kompas_stamp_text_removed": 0.0,
+        "kompas_stamp_text_rendered": 0.0,
+    }
+
+
 def _logs_indicate_kompas_text_reroute(logs: Iterable[object] | None) -> bool:
     for line in logs or []:
         text = str(line)
@@ -2009,6 +2037,230 @@ def _logs_indicate_kompas_text_reroute(logs: Iterable[object] | None) -> bool:
         if match and int(match.group(1)) > 0:
             return True
     return False
+
+
+def _logs_indicate_kompas_stamp_text_repair(logs: Iterable[object] | None) -> bool:
+    for line in logs or []:
+        text = str(line)
+        if "KOMPAS stamp/title text repair:" in text:
+            return True
+        match = re.search(r"kompas_stamp_text_rendered=(\d+)", text)
+        if match and int(match.group(1)) > 0:
+            return True
+    return False
+
+
+def _kompas_stamp_text_line_allowed(
+    text: str,
+    bbox_mm: tuple[float, float, float, float],
+    *,
+    page_w_mm: float,
+    page_h_mm: float,
+    archive_cutoff_x_mm: float,
+    line_dir: tuple[float, float] | None = None,
+) -> bool:
+    """Select only KOMPAS title-block/top-designation text for repair.
+
+    This is deliberately narrower than the old full KOMPAS text reroute: it
+    targets the regions where real plotting showed broken `5`, `Г`, `Л`,
+    `ЛТ-...` and drawing names, while leaving dimensions and geometry labels in
+    the source vectors.
+    """
+
+    compact = re.sub(r"\s+", "", str(text or ""))
+    if not compact:
+        return False
+    compact_key = re.sub(r"[^0-9A-Za-zА-Яа-яЁё№]+", "", compact).casefold()
+    forbidden_service_values = {
+        "копировал",
+        "формат",
+        "недлякоммерческогоиспользования",
+    }
+    if compact_key in forbidden_service_values:
+        return False
+    x0, y0, x1, y1 = [float(v) for v in bbox_mm]
+    w = max(0.0, float(x1 - x0))
+    h = max(0.0, float(y1 - y0))
+    if w < 0.35 or h < 0.35:
+        return False
+    if line_dir is not None:
+        dx, dy = [float(v) for v in line_dir]
+        # Do not flatten rotated service notes into horizontal text.
+        if abs(dy) > 0.20 and abs(dy) > abs(dx) * 0.28:
+            return False
+
+    bottom_cutoff = max(float(page_h_mm) - max(72.0, float(page_h_mm) * 0.23), float(page_h_mm) * 0.62)
+    in_bottom_stamp = float(y0) >= float(bottom_cutoff) and float(x1) >= float(archive_cutoff_x_mm) - 1.0
+    in_top_designation = (
+        float(y1) <= min(34.0, float(page_h_mm) * 0.13)
+        and float(x0) >= float(archive_cutoff_x_mm) - 1.0
+        and float(x1) <= float(page_w_mm) - 2.0
+    )
+    if not (in_bottom_stamp or in_top_designation):
+        return False
+
+    # Single technical glyphs in stamp cells are valid (`Г`, `5`, `Л`).
+    if len(compact) == 1:
+        return compact in {"5", "Г", "г", "Л", "л"}
+    if re.fullmatch(r"[А-Яа-яA-Za-z]{1,3}", compact):
+        return False
+    if re.search(r"\d", compact) and any(ch in compact for ch in ".-"):
+        return True
+    # Larger title/name fields are where source vector text most often turns
+    # into point-like fragments on the physical plot.
+    return len(compact) >= 4 and any(ch.isalpha() for ch in compact)
+
+
+def _extract_kompas_stamp_title_text_lines_from_pdf(
+    source_pdf: Path,
+    *,
+    page_index: int,
+) -> list[dict[str, Any]]:
+    if fitz is None or _drawing_frame_class(source_pdf) != "kompas_full_frame":
+        return []
+    doc = fitz.open(str(source_pdf))
+    try:
+        if page_index < 0 or page_index >= int(doc.page_count):
+            return []
+        page = doc[page_index]
+        page_w_mm = float(page.rect.width) * 25.4 / 72.0
+        page_h_mm = float(page.rect.height) * 25.4 / 72.0
+        archive_cutoff_x = _kompas_archive_strip_mm(
+            page_w_mm,
+            specification_table=_is_kompas_specification_table_source(source_pdf),
+        )
+        lines: list[dict[str, Any]] = []
+        seen: set[tuple[str, int, int, int, int]] = set()
+        for block in page.get_text("dict").get("blocks", []):
+            if block.get("type") != 0:
+                continue
+            for line in block.get("lines", []):
+                line_bbox = list(line.get("bbox", []) or [])
+                if len(line_bbox) < 4:
+                    continue
+                spans = list(line.get("spans", []) or [])
+                text = " ".join(
+                    str(span.get("text", "") or "").strip()
+                    for span in spans
+                    if str(span.get("text", "") or "").strip()
+                ).strip()
+                text = re.sub(r"\s+", " ", text)
+                if not text:
+                    continue
+                bbox_mm = tuple(float(v) * 25.4 / 72.0 for v in line_bbox[:4])
+                line_dir_raw = line.get("dir")
+                line_dir = None
+                if isinstance(line_dir_raw, (list, tuple)) and len(line_dir_raw) >= 2:
+                    line_dir = (float(line_dir_raw[0]), float(line_dir_raw[1]))
+                if not _kompas_stamp_text_line_allowed(
+                    text,
+                    bbox_mm,  # type: ignore[arg-type]
+                    page_w_mm=float(page_w_mm),
+                    page_h_mm=float(page_h_mm),
+                    archive_cutoff_x_mm=float(archive_cutoff_x),
+                    line_dir=line_dir,
+                ):
+                    continue
+                key = (
+                    text,
+                    round(float(bbox_mm[0]) * 100),
+                    round(float(bbox_mm[1]) * 100),
+                    round(float(bbox_mm[2]) * 100),
+                    round(float(bbox_mm[3]) * 100),
+                )
+                if key in seen:
+                    continue
+                seen.add(key)
+                lines.append(
+                    {
+                        "text": text,
+                        "bbox_mm": tuple(float(v) for v in bbox_mm),
+                        "font_names": [str(span.get("font", "") or "") for span in spans],
+                    }
+                )
+        lines.sort(key=lambda row: (float(row["bbox_mm"][1]), float(row["bbox_mm"][0]), str(row["text"])))
+        return lines
+    finally:
+        doc.close()
+
+
+def _reroute_kompas_stamp_title_text_polylines(
+    polys_mm: list[list[tuple[float, float]]],
+    *,
+    source_pdf: Path,
+    page_index: int,
+    logger,
+) -> tuple[list[list[tuple[float, float]]], dict[str, float]]:
+    text_lines = _extract_kompas_stamp_title_text_lines_from_pdf(source_pdf, page_index=page_index)
+    if not text_lines:
+        return list(polys_mm), _empty_kompas_stamp_text_meta()
+
+    text_regions = [
+        tuple(line.get("bbox_mm", ()) or ())
+        for line in text_lines
+        if len(tuple(line.get("bbox_mm", ()) or ())) >= 4
+    ]
+    text_regions = [(float(a), float(b), float(c), float(d)) for a, b, c, d in text_regions]
+    if not text_regions:
+        return list(polys_mm), _empty_kompas_stamp_text_meta()
+
+    kept: list[list[tuple[float, float]]] = []
+    removed = 0
+    removed_bboxes_by_region: dict[int, list[tuple[float, float, float, float]]] = {}
+    for poly in polys_mm:
+        region_idx = _kompas_text_region_index_for_poly_mm(poly, text_regions=text_regions, pad_mm=0.90)
+        if region_idx is not None:
+            removed += 1
+            removed_bboxes_by_region.setdefault(region_idx, []).append(_poly_bbox_mm(poly))
+            continue
+        kept.append(poly)
+
+    render_lines: list[dict[str, Any]] = []
+    for idx, line in enumerate(text_lines):
+        visible_boxes = removed_bboxes_by_region.get(idx, [])
+        if not visible_boxes:
+            continue
+        row = dict(line)
+        vx0 = min(float(box[0]) for box in visible_boxes)
+        vy0 = min(float(box[1]) for box in visible_boxes)
+        vx1 = max(float(box[2]) for box in visible_boxes)
+        vy1 = max(float(box[3]) for box in visible_boxes)
+        if (vx1 - vx0) >= 0.35 and (vy1 - vy0) >= 0.35:
+            # Use the actual visible vector bbox, not only PyMuPDF's logical
+            # text bbox. This keeps baseline/height where KOMPAS really drew it.
+            row["bbox_mm"] = (vx0, vy0, vx1, vy1)
+        render_lines.append(row)
+
+    rerendered: list[list[tuple[float, float]]] = []
+    if render_lines:
+        rerendered = _render_pdf_text_lines_polylines_in_place(
+            render_lines,
+            tight_layout=False,
+            ttf_backend="skeleton",
+            logger=logger,
+        )
+    if removed > 0 and not rerendered:
+        logger(
+            "KOMPAS stamp/title text repair skipped: renderer produced no replacement "
+            "strokes; source vectors kept."
+        )
+        return list(polys_mm), {
+            "kompas_stamp_text_lines": float(len(text_lines)),
+            "kompas_stamp_text_removed": 0.0,
+            "kompas_stamp_text_rendered": 0.0,
+        }
+    if rerendered:
+        kept.extend(rerendered)
+        logger(
+            "KOMPAS stamp/title text repair: removed "
+            f"{removed} outline polyline(s), rendered {len(rerendered)} single-line polyline(s) "
+            f"from {len(text_lines)} PDF text line(s)."
+        )
+    return kept, {
+        "kompas_stamp_text_lines": float(len(text_lines)),
+        "kompas_stamp_text_removed": float(removed),
+        "kompas_stamp_text_rendered": float(len(rerendered)),
+    }
 
 
 def _header_text_poly_candidate_mm(
@@ -2471,6 +2723,13 @@ def _reroute_kompas_text_polylines(
             ttf_backend="skeleton",
             logger=logger,
         )
+    if removed > 0 and not rerendered:
+        logger("KOMPAS text reroute skipped: renderer produced no replacement strokes; source vectors kept.")
+        return list(polys_mm), {
+            "kompas_text_lines": float(len(text_lines)),
+            "kompas_text_removed": 0.0,
+            "kompas_text_rendered": 0.0,
+        }
     if rerendered:
         kept.extend(rerendered)
         logger(
@@ -2525,6 +2784,13 @@ def _reroute_title_block_text_polylines(
         ttf_backend=str(ttf_backend),
         logger=logger,
     )
+    if removed > 0 and not rerendered:
+        logger("Title block text reroute skipped: renderer produced no replacement strokes; source vectors kept.")
+        return list(polys_mm), {
+            "title_block_text_lines": float(len(title_lines)),
+            "title_block_text_removed": 0.0,
+            "title_block_text_rendered": 0.0,
+        }
     if rerendered:
         kept.extend(rerendered)
         logger(
@@ -6083,6 +6349,7 @@ def _prepare_mupdf_svg_paths_candidate(
             cleanup_meta = {"left_strip_removed": 0, "footer_removed": 0, "outer_frame_removed": 0}
             kompas_cleanup_meta = {"archive_strip_removed": 0, "under_frame_removed": 0}
             kompas_text_meta = _empty_kompas_text_meta()
+            kompas_stamp_text_meta = _empty_kompas_stamp_text_meta()
             title_block_meta = {"title_block_text_removed": 0.0, "title_block_text_rendered": 0.0}
             if _drawing_frame_class(source_pdf) == "kompas_full_frame":
                 source_polys, kompas_cleanup_meta = _cleanup_kompas_archive_strip_polylines(
@@ -6101,6 +6368,12 @@ def _prepare_mupdf_svg_paths_candidate(
                     )
                 else:
                     logs.append("KOMPAS source text preserved: single-line text reroute disabled for production.")
+                source_polys, kompas_stamp_text_meta = _reroute_kompas_stamp_title_text_polylines(
+                    source_polys,
+                    source_pdf=source_pdf,
+                    page_index=0,
+                    logger=logs.append,
+                )
             else:
                 source_polys, cleanup_meta = _cleanup_mupdf_a4_source_polylines(
                     source_polys,
@@ -6136,7 +6409,10 @@ def _prepare_mupdf_svg_paths_candidate(
                     f"kompas_text_lines={int(kompas_text_meta.get('kompas_text_lines', 0.0))}; "
                     f"kompas_text_removed={int(kompas_text_meta.get('kompas_text_removed', 0.0))}; "
                     f"kompas_text_rendered={int(kompas_text_meta.get('kompas_text_rendered', 0.0))}; "
-                    "source text preserved."
+                    f"kompas_stamp_text_lines={int(kompas_stamp_text_meta.get('kompas_stamp_text_lines', 0.0))}; "
+                    f"kompas_stamp_text_removed={int(kompas_stamp_text_meta.get('kompas_stamp_text_removed', 0.0))}; "
+                    f"kompas_stamp_text_rendered={int(kompas_stamp_text_meta.get('kompas_stamp_text_rendered', 0.0))}; "
+                    "source text preserved outside stamp/title repair regions."
                 )
             else:
                 logs.append(
@@ -6208,8 +6484,14 @@ def _prepare_mupdf_svg_paths_candidate(
                                 if int(kompas_text_meta.get("kompas_text_rendered", 0.0)) > 0
                                 else "kompas_source_text_preserved=True; "
                             )
+                            + (
+                                "kompas_stamp_text_repair=True; "
+                                if int(kompas_stamp_text_meta.get("kompas_stamp_text_rendered", 0.0)) > 0
+                                else ""
+                            )
                             + f"kompas_text_lines={int(kompas_text_meta.get('kompas_text_lines', 0.0))}; "
                             f"kompas_text_rendered={int(kompas_text_meta.get('kompas_text_rendered', 0.0))}; "
+                            f"kompas_stamp_text_rendered={int(kompas_stamp_text_meta.get('kompas_stamp_text_rendered', 0.0))}; "
                             f"kompas_clean_bbox_scale={float(clean_bbox_meta.get('content_scale', 1.0) or 1.0):.6f}; "
                             f"clipped_segments={int(clean_bbox_meta.get('clipped_segments', 0) or 0)}"
                         ),
@@ -6700,6 +6982,7 @@ def _prepare_a3_clean_source_svg(
                 page_h_mm=float(page_h_mm),
             )
             kompas_text_meta = _empty_kompas_text_meta()
+            kompas_stamp_text_meta = _empty_kompas_stamp_text_meta()
             if _should_reroute_kompas_text(source_pdf):
                 source_polys, kompas_text_meta = _reroute_kompas_text_polylines(
                     source_polys,
@@ -6709,6 +6992,12 @@ def _prepare_a3_clean_source_svg(
                 )
             else:
                 logs.append("KOMPAS source text preserved: single-line text reroute disabled for production.")
+            source_polys, kompas_stamp_text_meta = _reroute_kompas_stamp_title_text_polylines(
+                source_polys,
+                source_pdf=source_pdf,
+                page_index=0,
+                logger=logs.append,
+            )
             bridge._write_method3_svg(
                 source_svg,
                 source_polys,
@@ -6730,7 +7019,10 @@ def _prepare_a3_clean_source_svg(
                 f"a3_outer_sheet_frame_kept_stamp_edges={kompas_a3_frame_meta['kept_stamp_segments']}; "
                 f"kompas_text_lines={int(kompas_text_meta.get('kompas_text_lines', 0.0))}; "
                 f"kompas_text_removed={int(kompas_text_meta.get('kompas_text_removed', 0.0))}; "
-                f"kompas_text_rendered={int(kompas_text_meta.get('kompas_text_rendered', 0.0))}."
+                f"kompas_text_rendered={int(kompas_text_meta.get('kompas_text_rendered', 0.0))}; "
+                f"kompas_stamp_text_lines={int(kompas_stamp_text_meta.get('kompas_stamp_text_lines', 0.0))}; "
+                f"kompas_stamp_text_removed={int(kompas_stamp_text_meta.get('kompas_stamp_text_removed', 0.0))}; "
+                f"kompas_stamp_text_rendered={int(kompas_stamp_text_meta.get('kompas_stamp_text_rendered', 0.0))}."
             )
         logs.append(
             "A3 clean source route: direct PDF vector SVG export "
@@ -6851,6 +7143,7 @@ def _prepare_a3_pass_from_clean_svg(
         "direct PDF vector SVG export" in str(line) for line in (prep_logs or [])
     ) else "method3"
     kompas_text_reroute = _logs_indicate_kompas_text_reroute(prep_logs)
+    kompas_stamp_text_repair = _logs_indicate_kompas_stamp_text_repair(prep_logs)
     return {
         "item": f"pass_{pass_index:02d}",
         "ok": True,
@@ -6871,6 +7164,7 @@ def _prepare_a3_pass_from_clean_svg(
                 "left_strip_removed=True",
                 "outer_border_removed=True",
                 "kompas_text_reroute=True" if kompas_text_reroute else "",
+                "kompas_stamp_text_repair=True" if kompas_stamp_text_repair else "",
                 *pass_notes,
             ]
             if part
@@ -6940,6 +7234,7 @@ def _prepare_literal_clean_source_svg(
                 page_h_mm=float(page_h_mm),
             )
             kompas_text_meta = _empty_kompas_text_meta()
+            kompas_stamp_text_meta = _empty_kompas_stamp_text_meta()
             if _should_reroute_kompas_text(source_pdf):
                 source_polys, kompas_text_meta = _reroute_kompas_text_polylines(
                     source_polys,
@@ -6949,6 +7244,12 @@ def _prepare_literal_clean_source_svg(
                 )
             else:
                 logs.append("KOMPAS source text preserved: single-line text reroute disabled for production.")
+            source_polys, kompas_stamp_text_meta = _reroute_kompas_stamp_title_text_polylines(
+                source_polys,
+                source_pdf=source_pdf,
+                page_index=0,
+                logger=logs.append,
+            )
             bridge._write_method3_svg(
                 source_svg,
                 source_polys,
@@ -6970,7 +7271,10 @@ def _prepare_literal_clean_source_svg(
                 f"a3_outer_sheet_frame_kept_stamp_edges={kompas_a3_frame_meta['kept_stamp_segments']}; "
                 f"kompas_text_lines={int(kompas_text_meta.get('kompas_text_lines', 0.0))}; "
                 f"kompas_text_removed={int(kompas_text_meta.get('kompas_text_removed', 0.0))}; "
-                f"kompas_text_rendered={int(kompas_text_meta.get('kompas_text_rendered', 0.0))}."
+                f"kompas_text_rendered={int(kompas_text_meta.get('kompas_text_rendered', 0.0))}; "
+                f"kompas_stamp_text_lines={int(kompas_stamp_text_meta.get('kompas_stamp_text_lines', 0.0))}; "
+                f"kompas_stamp_text_removed={int(kompas_stamp_text_meta.get('kompas_stamp_text_removed', 0.0))}; "
+                f"kompas_stamp_text_rendered={int(kompas_stamp_text_meta.get('kompas_stamp_text_rendered', 0.0))}."
             )
         logs.append(
             "Literal clean source route: direct PDF vector SVG export "
@@ -7692,10 +7996,15 @@ def _prepare_drawing_package(source_pdf: Path, package_dir: Path) -> tuple[dict[
 
     a3_selected_variant = "a3_two_pass_clean_source" if ok_clean else "a3_two_pass_direct"
     a3_selection_reason = "forced_a3_two_pass" if forced_a3_two_pass else ("a3_two_pass_clean_source" if ok_clean else "a3_two_pass_direct")
-    a3_title_block_strategy = "source_vector_as_path"
+    a3_title_block_strategy = (
+        "source_vector_with_stamp_title_text_repair"
+        if _logs_indicate_kompas_stamp_text_repair(a3_clean_logs)
+        else "source_vector_as_path"
+    )
+    a3_route_notes = "kompas_stamp_text_repair=True" if _logs_indicate_kompas_stamp_text_repair(a3_clean_logs) else ""
     a3_route_class = _candidate_route_class(
         source_pdf,
-        {"variant": a3_selected_variant, "notes": ""},
+        {"variant": a3_selected_variant, "notes": a3_route_notes},
         is_a3=True,
         forced_a3_two_pass=forced_a3_two_pass,
     )

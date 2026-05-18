@@ -58,20 +58,21 @@ Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-
 SVG geometry: paths=1653, segments=7391.
 Source bounds: x(0.000, 195.687) y(0.000, 280.000)
 Fit to work area: scale=0.9198, translate=(0.000,-273.777), from (0.000, 0.000)-(195.687, 280.000)
-Collinear overlap dedup: dropped 278/7391 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
-Reorder: source order preserved (1501 polylines).
-Technical text join: merged 778 short gaps (ordered=595, nearest=183, gap<=0.55 mm, dy<=0.75 mm), polylines 1501 -> 723
-Segment dedup: dropped 51/7840 retraced segments (0.7%), kept=7789, eps=0.050 mm
-Collinear overlap dedup: dropped 5/7789 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
-Polyline optimization: 1501 -> 775
+Collinear overlap dedup: dropped 537/7391 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
+Reorder: source order preserved (1423 polylines).
+Technical text join: merged 707 short gaps (ordered=519, nearest=188, gap<=0.55 mm, dy<=0.75 mm), polylines 1423 -> 716
+Segment dedup: dropped 35/7514 retraced segments (0.5%), kept=7479, eps=0.050 mm
+Collinear overlap dedup: dropped 13/7479 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
+Polyline optimization: 1423 -> 759
 Segment counts: source=7391, fitted=7391, clipped=7391
 Drawable segments after clip: 7391 (100.0% of source)
 Prepared bounds: x(0.000, 180.000) y(-273.777, -16.245)
-Estimated draw length: 7.14 m
+Estimated draw length: 6.19 m
+Final XY G-code overlap cleanup: converted 1 redundant draw move(s) to travel.
 Applying pen-up / pen-down ...
-G-code stats: lines=10019, draw=9260, travel=744, bounds=0.000..180.000 x, -273.777..0.000 y
-Preflight: ok: lines=10019, draw=9260, travel=744, ratio=0.08
-Saved file stats: lines=10019, draw=9260, travel=744, bounds=0.000..180.000 x, -273.777..0.000 y
+G-code stats: lines=9707, draw=8945, travel=747, bounds=0.000..180.000 x, -273.777..0.000 y
+Preflight: ok: lines=9707, draw=8945, travel=747, ratio=0.08
+Saved file stats: lines=9707, draw=8945, travel=747, bounds=0.000..180.000 x, -273.777..0.000 y
 Saved: C:\plotter_pdf\Начерт\24 варинт\Задача 6_pack\_candidates\a4_hybrid_frame.nc
 Sheet preview centered on compact source page bbox: ref=(0.353,0.353)..(210.457,297.494) mm
 Sheet preview placed on source page: offset=(15.537,294.067) mm

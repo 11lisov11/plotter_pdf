@@ -259,9 +259,9 @@ SEGMENT_DEDUP_EPS_MM = 0.01
 # Remove retraced/overlapping vector strokes that make technical lines look bold.
 # Conservative tolerances keep real parallel frame/table lines intact.
 COLLINEAR_OVERLAP_DEDUP_ENABLED = True
-COLLINEAR_OVERLAP_DEDUP_DIST_MM = 0.08
+COLLINEAR_OVERLAP_DEDUP_DIST_MM = 0.12
 COLLINEAR_OVERLAP_DEDUP_ANGLE_DEG = 1.0
-COLLINEAR_OVERLAP_DEDUP_MIN_LEN_MM = 0.60
+COLLINEAR_OVERLAP_DEDUP_MIN_LEN_MM = 0.40
 COLLINEAR_OVERLAP_DEDUP_MIN_RATIO = 0.90
 BACKTRACK_SPIKE_MAX_MM = 0.30
 FILL_HATCH_ENABLED = False
@@ -2693,12 +2693,13 @@ def _autotrace_path_d_to_polylines(path_d: str, *, curve_step_px: float) -> List
             continue
 
         if cmd in "sS":
+            smooth_prev_cmd = prev_cmd
             for i in range(0, len(params), 4):
                 if i + 3 >= len(params):
                     break
                 c2 = (float(params[i]), float(params[i + 1]))
                 p = (float(params[i + 2]), float(params[i + 3]))
-                if prev_cmd in "CcSs" and last_cubic is not None:
+                if smooth_prev_cmd in "CcSs" and last_cubic is not None:
                     c1 = (
                         (2.0 * x) - float(last_cubic[0][0]),
                         (2.0 * y) - float(last_cubic[0][1]),
@@ -2713,6 +2714,7 @@ def _autotrace_path_d_to_polylines(path_d: str, *, curve_step_px: float) -> List
                 x, y = p
                 last_cubic = (c2, p)
                 last_quadratic = None
+                smooth_prev_cmd = cmd
             last_cmd = cmd
             continue
 
@@ -2734,11 +2736,12 @@ def _autotrace_path_d_to_polylines(path_d: str, *, curve_step_px: float) -> List
             continue
 
         if cmd in "tT":
+            smooth_prev_cmd = prev_cmd
             for i in range(0, len(params), 2):
                 if i + 1 >= len(params):
                     break
                 p = (float(params[i]), float(params[i + 1]))
-                if prev_cmd in "QqTt" and last_quadratic is not None:
+                if smooth_prev_cmd in "QqTt" and last_quadratic is not None:
                     c1 = (
                         (2.0 * x) - float(last_quadratic[0]),
                         (2.0 * y) - float(last_quadratic[1]),
@@ -2752,6 +2755,7 @@ def _autotrace_path_d_to_polylines(path_d: str, *, curve_step_px: float) -> List
                 x, y = p
                 last_quadratic = c1
                 last_cubic = None
+                smooth_prev_cmd = cmd
             last_cmd = cmd
             continue
 
@@ -6600,6 +6604,8 @@ def get_path_polylines(
 
             if cmd in "lL":
                 for i in range(0, len(params), 2):
+                    if i + 1 >= len(params):
+                        break
                     nx, ny = params[i], params[i + 1]
                     if cmd == "l":
                         x += nx
@@ -6639,6 +6645,8 @@ def get_path_polylines(
 
             if cmd in "cC":
                 for i in range(0, len(params), 6):
+                    if i + 5 >= len(params):
+                        break
                     p1 = (params[i], params[i + 1])
                     p2 = (params[i + 2], params[i + 3])
                     p3 = (params[i + 4], params[i + 5])
@@ -6655,10 +6663,13 @@ def get_path_polylines(
                 continue
 
             if cmd in "sS":
+                smooth_prev_cmd = prev_cmd
                 for i in range(0, len(params), 4):
+                    if i + 3 >= len(params):
+                        break
                     p1 = (params[i], params[i + 1])
                     p2 = (params[i + 2], params[i + 3])
-                    if prev_cmd.lower() in "cs":
+                    if smooth_prev_cmd.lower() in "cs":
                         x1, y1 = x, y
                         x2, y2 = last_cubic if last_cubic is not None else (x, y)
                         p0 = (2 * x1 - x2, 2 * y1 - y2)
@@ -6674,11 +6685,14 @@ def get_path_polylines(
                     x, y = p2
                     last_cubic = p1
                     last_quadratic = None
+                    smooth_prev_cmd = cmd
                 last_cmd = cmd
                 continue
 
             if cmd in "qQ":
                 for i in range(0, len(params), 4):
+                    if i + 3 >= len(params):
+                        break
                     p1 = (params[i], params[i + 1])
                     p2 = (params[i + 2], params[i + 3])
                     if cmd == "q":
@@ -6693,9 +6707,12 @@ def get_path_polylines(
                 continue
 
             if cmd in "tT":
+                smooth_prev_cmd = prev_cmd
                 for i in range(0, len(params), 2):
+                    if i + 1 >= len(params):
+                        break
                     p2 = (params[i], params[i + 1])
-                    if prev_cmd.lower() in "qt":
+                    if smooth_prev_cmd.lower() in "qt":
                         q1 = last_quadratic if last_quadratic is not None else (x, y)
                         p1 = (2 * x - q1[0], 2 * y - q1[1])
                     else:
@@ -6707,11 +6724,14 @@ def get_path_polylines(
                     x, y = p2
                     last_quadratic = p1
                     last_cubic = None
+                    smooth_prev_cmd = cmd
                 last_cmd = cmd
                 continue
 
             if cmd in "aA":
                 for i in range(0, len(params), 7):
+                    if i + 6 >= len(params):
+                        break
                     rx, ry, rot, laf, sf, nx, ny = params[i : i + 7]
                     ex, ey = nx, ny
                     if cmd == "a":
@@ -7576,6 +7596,103 @@ def _collinear_overlap_ratio(a0: float, a1: float, b0: float, b1: float) -> Tupl
     return overlap / shorter, overlap
 
 
+def _find_redundant_collinear_segment_keys(
+    segments: List[Tuple[object, Tuple[float, float], Tuple[float, float]]],
+    *,
+    dist_mm: float = COLLINEAR_OVERLAP_DEDUP_DIST_MM,
+    angle_deg: float = COLLINEAR_OVERLAP_DEDUP_ANGLE_DEG,
+    min_len_mm: float = COLLINEAR_OVERLAP_DEDUP_MIN_LEN_MM,
+    min_overlap_ratio: float = COLLINEAR_OVERLAP_DEDUP_MIN_RATIO,
+) -> set[object]:
+    if not segments or not COLLINEAR_OVERLAP_DEDUP_ENABLED:
+        return set()
+
+    dist_tol = max(0.0, float(dist_mm))
+    angle_tol = math.radians(max(0.01, float(angle_deg)))
+    min_len = max(0.0, float(min_len_mm))
+    min_ratio = max(0.0, min(1.0, float(min_overlap_ratio)))
+    if dist_tol <= 0.0 or min_ratio <= 0.0:
+        return set()
+
+    indexed: List[
+        Tuple[
+            float,
+            object,
+            Tuple[float, float],
+            Tuple[float, float],
+            Tuple[float, float, float, float, float, float, float, float, float],
+        ]
+    ] = []
+    for key, a, b in segments:
+        axis = _canonical_segment_axis(a, b)
+        if axis is not None and axis[7] >= min_len:
+            indexed.append((axis[7], key, a, b, axis))
+
+    angle_cell = max(angle_tol, 1e-6)
+    offset_cell = max(dist_tol, 1e-6)
+    accepted: dict[Tuple[int, int], List[Tuple[float, float, float, float, float, float, float, float, float]]] = {}
+    dropped: set[object] = set()
+    cos_tol = math.cos(angle_tol)
+
+    def _angle_bucket(axis: Tuple[float, float, float, float, float, float, float, float, float]) -> int:
+        return int(round(axis[8] / angle_cell))
+
+    def _offset_bucket_for_angle(angle_key: int, point: Tuple[float, float]) -> int:
+        bucket_angle = float(angle_key) * angle_cell
+        bucket_nx = -math.sin(bucket_angle)
+        bucket_ny = math.cos(bucket_angle)
+        return int(round((float(point[0]) * bucket_nx + float(point[1]) * bucket_ny) / offset_cell))
+
+    for _length, key, a, b, axis in sorted(indexed, key=lambda row: row[0], reverse=True):
+        angle_key = _angle_bucket(axis)
+        duplicate = False
+        for da in (-1, 0, 1):
+            query_angle_key = angle_key + da
+            offset_key = _offset_bucket_for_angle(query_angle_key, a)
+            for doff in range(-3, 4):
+                for other in accepted.get((query_angle_key, offset_key + doff), []):
+                    dot = abs(axis[0] * other[0] + axis[1] * other[1])
+                    if dot < cos_tol:
+                        continue
+                    current_t0 = float(a[0]) * other[0] + float(a[1]) * other[1]
+                    current_t1 = float(b[0]) * other[0] + float(b[1]) * other[1]
+                    if current_t1 < current_t0:
+                        current_t0, current_t1 = current_t1, current_t0
+                    ratio, overlap_len = _collinear_overlap_ratio(current_t0, current_t1, other[5], other[6])
+                    if ratio < min_ratio or overlap_len < min_len:
+                        continue
+                    overlap_mid_t = (max(current_t0, other[5]) + min(current_t1, other[6])) * 0.5
+                    other_mid = (
+                        other[0] * overlap_mid_t + other[2] * other[4],
+                        other[1] * overlap_mid_t + other[3] * other[4],
+                    )
+                    current_mid_t = (other_mid[0] - float(a[0])) * axis[0] + (other_mid[1] - float(a[1])) * axis[1]
+                    current_mid = (
+                        float(a[0]) + axis[0] * current_mid_t,
+                        float(a[1]) + axis[1] * current_mid_t,
+                    )
+                    if points_distance(current_mid, other_mid) <= dist_tol:
+                        duplicate = True
+                        break
+                if duplicate:
+                    break
+            if duplicate:
+                break
+        if duplicate:
+            dropped.add(key)
+            continue
+
+        stored_keys: set[Tuple[int, int]] = set()
+        for store_angle_key in (angle_key - 1, angle_key, angle_key + 1):
+            store_key = (store_angle_key, _offset_bucket_for_angle(store_angle_key, a))
+            if store_key in stored_keys:
+                continue
+            stored_keys.add(store_key)
+            accepted.setdefault(store_key, []).append(axis)
+
+    return dropped
+
+
 def deduplicate_collinear_overlaps(
     polylines: List[List[Tuple[float, float]]],
     *,
@@ -7594,19 +7711,7 @@ def deduplicate_collinear_overlaps(
     angle_tol = math.radians(max(0.01, float(angle_deg)))
     min_len = max(0.0, float(min_len_mm))
     min_ratio = max(0.0, min(1.0, float(min_overlap_ratio)))
-    if dist_tol <= 0.0 or min_ratio <= 0.0:
-        return polylines
-
-    segments: List[
-        Tuple[
-            float,
-            int,
-            int,
-            Tuple[float, float],
-            Tuple[float, float],
-            Tuple[float, float, float, float, float, float, float, float, float],
-        ]
-    ] = []
+    segments: List[Tuple[Tuple[int, int], Tuple[float, float], Tuple[float, float]]] = []
     for poly_idx, poly in enumerate(polylines):
         if len(poly) < 2:
             continue
@@ -7614,44 +7719,19 @@ def deduplicate_collinear_overlaps(
         for seg_idx, pt in enumerate(poly[1:]):
             axis = _canonical_segment_axis(prev, pt)
             if axis is not None and axis[7] >= min_len:
-                segments.append((axis[7], poly_idx, seg_idx, prev, pt, axis))
+                segments.append(((poly_idx, seg_idx), prev, pt))
             prev = pt
 
     if not segments:
         return polylines
 
-    angle_cell = max(angle_tol, 1e-6)
-    offset_cell = max(dist_tol, 1e-6)
-    accepted: dict[Tuple[int, int], List[Tuple[float, float, float, float, float, float, float, float, float]]] = {}
-    dropped: set[Tuple[int, int]] = set()
-    cos_tol = math.cos(angle_tol)
-
-    def _bucket(axis: Tuple[float, float, float, float, float, float, float, float, float]) -> Tuple[int, int]:
-        return (int(round(axis[8] / angle_cell)), int(round(axis[4] / offset_cell)))
-
-    for _length, poly_idx, seg_idx, _a, _b, axis in sorted(segments, key=lambda row: row[0], reverse=True):
-        angle_key, offset_key = _bucket(axis)
-        duplicate = False
-        for da in (-1, 0, 1):
-            for doff in (-1, 0, 1):
-                for other in accepted.get((angle_key + da, offset_key + doff), []):
-                    dot = abs(axis[0] * other[0] + axis[1] * other[1])
-                    if dot < cos_tol:
-                        continue
-                    if abs(axis[4] - other[4]) > dist_tol:
-                        continue
-                    ratio, overlap_len = _collinear_overlap_ratio(axis[5], axis[6], other[5], other[6])
-                    if ratio >= min_ratio and overlap_len >= min_len:
-                        duplicate = True
-                        break
-                if duplicate:
-                    break
-            if duplicate:
-                break
-        if duplicate:
-            dropped.add((poly_idx, seg_idx))
-            continue
-        accepted.setdefault((angle_key, offset_key), []).append(axis)
+    dropped = _find_redundant_collinear_segment_keys(
+        segments,
+        dist_mm=dist_mm,
+        angle_deg=angle_deg,
+        min_len_mm=min_len_mm,
+        min_overlap_ratio=min_overlap_ratio,
+    )
 
     if not dropped:
         return polylines
@@ -7694,6 +7774,48 @@ def deduplicate_collinear_overlaps(
             f"(dist<={dist_tol:.3f} mm, angle<={math.degrees(angle_tol):.2f} deg, overlap>={min_ratio:.2f})"
         )
     return out if out else polylines
+
+
+def final_cleanup_polylines_for_gcode(
+    polylines: List[List[Tuple[float, float]]],
+    *,
+    exact_eps: float = SEGMENT_DEDUP_EPS_MM,
+    max_rounds: int = 3,
+    logger=print,
+) -> List[List[Tuple[float, float]]]:
+    line_fit_tol = 0.0 if HANDWRITING_TEXT_ENABLED else float(LINE_FIT_TOL_MM)
+
+    def _normalize_for_writer(src: List[List[Tuple[float, float]]]) -> List[List[Tuple[float, float]]]:
+        normalized: List[List[Tuple[float, float]]] = []
+        for poly in src:
+            if len(poly) < 2:
+                continue
+            current = simplify_polyline(poly)
+            if line_fit_tol > 0.0 and len(current) >= 2 and polyline_is_near_line(current, line_fit_tol):
+                current = [current[0], current[-1]]
+            if len(current) >= 2:
+                normalized.append(current)
+        return normalized
+
+    simplified = _normalize_for_writer(polylines)
+    if not simplified:
+        return polylines
+    cleaned = simplified
+    rounds = max(1, int(max_rounds))
+    for _round in range(rounds):
+        # Dedup can split a noisy polyline into a shape that the writer later
+        # line-fits into one long G1 move. Re-normalize every round so overlap
+        # checks see the exact same line-fit form that write_xy_gcode will emit.
+        cleaned = _normalize_for_writer(cleaned)
+        before_segments = sum(max(0, len(poly) - 1) for poly in cleaned)
+        next_cleaned = deduplicate_segments(cleaned, eps=exact_eps, logger=logger)
+        next_cleaned = deduplicate_collinear_overlaps(next_cleaned, logger=logger)
+        next_cleaned = _normalize_for_writer(next_cleaned)
+        after_segments = sum(max(0, len(poly) - 1) for poly in next_cleaned)
+        cleaned = next_cleaned
+        if after_segments >= before_segments:
+            break
+    return cleaned
 
 
 def _effective_draw_order_mode() -> str:
@@ -9072,20 +9194,58 @@ def _gcode_line_tokens(line: str) -> Dict[str, float]:
     return {axis.upper(): float(value) for axis, value in _GCODE_TOKEN_RE.findall(line)}
 
 
+def _gcode_has_word(line: str, letter: str, number: int) -> bool:
+    return re.search(rf"(?<![A-Z0-9.]){letter.upper()}0*{number}(?![0-9.])", str(line).upper()) is not None
+
+
 def _gcode_motion_code(line: str, previous: Optional[str]) -> Optional[str]:
-    upper = line.upper()
-    for code in ("G0", "G00", "G1", "G01", "G2", "G02", "G3", "G03"):
-        if re.search(rf"(^|\s){code}(\s|$)", upper):
-            if code == "G00":
-                return "G0"
-            if code == "G01":
-                return "G1"
-            if code == "G02":
-                return "G2"
-            if code == "G03":
-                return "G3"
-            return code
+    for number, canonical in ((0, "G0"), (1, "G1"), (2, "G2"), (3, "G3")):
+        if _gcode_has_word(line, "G", number):
+            return canonical
     return previous
+
+
+def cleanup_xy_gcode_overlaps(xy_gcode: Path, logger=print) -> int:
+    try:
+        raw_lines = xy_gcode.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return 0
+
+    cur_x: Optional[float] = None
+    cur_y: Optional[float] = None
+    modal: Optional[str] = None
+    segments: List[Tuple[int, Tuple[float, float], Tuple[float, float]]] = []
+
+    for line_idx, raw_line in enumerate(raw_lines):
+        line = _gcode_line_without_comment(raw_line)
+        if not line:
+            continue
+        modal = _gcode_motion_code(line, modal)
+        vals = _gcode_line_tokens(line)
+        old_x, old_y = cur_x, cur_y
+        next_x = vals.get("X", cur_x)
+        next_y = vals.get("Y", cur_y)
+        has_xy = "X" in vals or "Y" in vals
+        if has_xy and old_x is not None and old_y is not None and next_x is not None and next_y is not None:
+            if modal == "G1" and points_distance((float(old_x), float(old_y)), (float(next_x), float(next_y))) > 1e-6:
+                segments.append((line_idx, (float(old_x), float(old_y)), (float(next_x), float(next_y))))
+        cur_x, cur_y = next_x, next_y
+
+    dropped = _find_redundant_collinear_segment_keys(segments)
+    if not dropped:
+        return 0
+
+    for line_idx in sorted(int(idx) for idx in dropped):
+        raw = raw_lines[line_idx]
+        replaced = re.sub(r"(?i)(?<![A-Z0-9.])G0*1(?![0-9.])", "G0", raw, count=1)
+        if replaced == raw:
+            replaced = "G0 " + raw
+        raw_lines[line_idx] = replaced
+
+    xy_gcode.write_text("\n".join(raw_lines) + "\n", encoding="utf-8")
+    if logger:
+        logger(f"Final XY G-code overlap cleanup: converted {len(dropped)} redundant draw move(s) to travel.")
+    return len(dropped)
 
 
 def _gcode_segment_key(
@@ -9519,6 +9679,13 @@ def run_pipeline(
                 after_natural_segments = sum(max(0, len(p) - 1) for p in polylines)
                 if after_natural_segments != before_natural_segments:
                     log(f"Pencil naturalization segments: {before_natural_segments} -> {after_natural_segments}")
+                polylines = deduplicate_segments(polylines, eps=max(float(SEGMENT_DEDUP_EPS_MM), 0.05), logger=log)
+                polylines = deduplicate_collinear_overlaps(polylines, logger=log)
+            polylines = final_cleanup_polylines_for_gcode(
+                polylines,
+                exact_eps=max(float(SEGMENT_DEDUP_EPS_MM), 0.05),
+                logger=log,
+            )
             after_poly_count = len(polylines)
             if after_poly_count != before_poly_count:
                 log(f"Polyline optimization: {before_poly_count} -> {after_poly_count}")
@@ -9571,6 +9738,7 @@ def run_pipeline(
                 feed_draw,
                 join_eps=(HANDWRITING_CONTINUOUS_JOIN_EPS if HANDWRITING_TEXT_ENABLED else CONTINUOUS_JOIN_EPS),
             )
+            cleanup_xy_gcode_overlaps(xy_path, logger=log)
             log("Applying pen-up / pen-down ...")
             apply_penlift(
                 xy_path,

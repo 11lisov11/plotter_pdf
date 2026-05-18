@@ -1,14 +1,14 @@
 22 вариант
-МЧ00.60.00.00 Вентиль_pack: quality=0.906819; layout=0.922689; fidelity=0.885781
-МЧ00.60.00.02 Гайка_pack: quality=0.928131; layout=0.945165; fidelity=0.907358
-КНГ.01.20.01 - Маховик_pack: quality=0.929988; layout=0.948539; fidelity=0.910597
-МЧ00.60.00.06 Клапан_pack: quality=0.931080; layout=0.949633; fidelity=0.911648
-МЧ00.60.00.07 Гайка клапана_pack: quality=0.931410; layout=0.949959; fidelity=0.911961
-МЧ00.60.00.05 Рукоятка_pack: quality=0.932524; layout=0.950620; fidelity=0.912595
-МЧ00.60.00.03 Втулка_pack: quality=0.938349; layout=0.959176; fidelity=0.920809
-МЧ00.60.00.10 Кольцо_pack: quality=0.940092; layout=0.961554; fidelity=0.923092
-МЧ00.60.00.09 Кольцо_pack: quality=0.941009; layout=0.963424; fidelity=0.924887
-МЧ00.60.00.08 Шайба_pack: quality=0.941919; layout=0.964533; fidelity=0.925952
-МЧ00.60.00.00 СБ Вентиль_pack: quality=0.944105; layout=0.955527; fidelity=0.955527
-МЧ00.60.00.01 Корпус_pack: quality=0.949157; layout=0.961250; fidelity=0.961250
-МЧ00.60.00.04 Гайка_pack: quality=0.959313; layout=0.973616; fidelity=0.973616
+МЧ00.60.00.00 Вентиль_pack: quality=0.912518; layout=0.922884; fidelity=0.885969
+КНГ.01.20.01 - Маховик_pack: quality=0.938352; layout=0.948414; fidelity=0.910477
+МЧ00.60.00.02 Гайка_pack: quality=0.939527; layout=0.945052; fidelity=0.907250
+МЧ00.60.00.06 Клапан_pack: quality=0.943238; layout=0.949494; fidelity=0.911514
+МЧ00.60.00.07 Гайка клапана_pack: quality=0.943659; layout=0.949915; fidelity=0.911918
+МЧ00.60.00.05 Рукоятка_pack: quality=0.945991; layout=0.950548; fidelity=0.912526
+МЧ00.60.00.00 СБ Вентиль_pack: quality=0.952703; layout=0.955308; fidelity=0.955308
+МЧ00.60.00.03 Втулка_pack: quality=0.953669; layout=0.959055; fidelity=0.920693
+МЧ00.60.00.10 Кольцо_pack: quality=0.955640; layout=0.961513; fidelity=0.923052
+МЧ00.60.00.01 Корпус_pack: quality=0.956699; layout=0.960850; fidelity=0.960850
+МЧ00.60.00.09 Кольцо_pack: quality=0.957562; layout=0.963350; fidelity=0.924816
+МЧ00.60.00.08 Шайба_pack: quality=0.959215; layout=0.964539; fidelity=0.925957
+МЧ00.60.00.04 Гайка_pack: quality=0.969830; layout=0.973416; fidelity=0.973416

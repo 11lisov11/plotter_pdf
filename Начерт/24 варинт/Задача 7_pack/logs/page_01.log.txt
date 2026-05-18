@@ -97,19 +97,20 @@ SVG geometry: paths=1914, segments=9549.
 Source bounds: x(0.000, 180.000) y(0.000, 280.000)
 Fit to work area: scale=1.0000, translate=(0.000,-285.000), from (0.000, 0.000)-(180.000, 280.000)
 Segment dedup: dropped 1/9549 retraced segments (0.0%), kept=9548, eps=0.010 mm
-Collinear overlap dedup: dropped 58/9548 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
-Reorder: source order preserved (1925 polylines).
-Technical text join: merged 1014 short gaps (ordered=778, nearest=236, gap<=0.55 mm, dy<=0.75 mm), polylines 1925 -> 911
-Segment dedup: dropped 63/10446 retraced segments (0.6%), kept=10383, eps=0.050 mm
-Polyline optimization: 1925 -> 970
+Collinear overlap dedup: dropped 596/9548 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
+Reorder: source order preserved (1540 polylines).
+Technical text join: merged 657 short gaps (ordered=471, nearest=186, gap<=0.55 mm, dy<=0.75 mm), polylines 1540 -> 883
+Segment dedup: dropped 36/9557 retraced segments (0.4%), kept=9521, eps=0.050 mm
+Collinear overlap dedup: dropped 20/9521 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
+Polyline optimization: 1540 -> 935
 Segment counts: source=9549, fitted=9549, clipped=9549
 Drawable segments after clip: 9549 (100.0% of source)
 Prepared bounds: x(0.000, 180.000) y(-285.000, -5.024)
-Estimated draw length: 8.52 m
+Estimated draw length: 7.14 m
 Applying pen-up / pen-down ...
-G-code stats: lines=13293, draw=12309, travel=969, bounds=0.000..180.000 x, -285.000..0.000 y
-Preflight: ok: lines=13293, draw=12309, travel=969, ratio=0.08
-Saved file stats: lines=13293, draw=12309, travel=969, bounds=0.000..180.000 x, -285.000..0.000 y
+G-code stats: lines=12306, draw=11357, travel=934, bounds=0.000..180.000 x, -285.000..0.000 y
+Preflight: ok: lines=12306, draw=11357, travel=934, ratio=0.08
+Saved file stats: lines=12306, draw=11357, travel=934, bounds=0.000..180.000 x, -285.000..0.000 y
 Saved: C:\plotter_pdf\Начерт\24 варинт\Задача 7_pack\_candidates\a4_hybrid_frame.nc
 Sheet preview centered on compact source page bbox: ref=(0.353,0.353)..(210.457,297.494) mm
 Sheet preview placed on source page: offset=(15.537,294.068) mm

@@ -328,13 +328,24 @@ def _iter_variant_dirs(root_dir: Path, only_variants: Iterable[str]) -> list[Pat
     only = [str(item or "").casefold() for item in only_variants if str(item or "").strip()]
     if not only:
         return dirs
-    return [path for path in dirs if any(token in path.name.casefold() for token in only)]
+
+    def _matches(path: Path, token: str) -> bool:
+        name = path.name.casefold()
+        if token == name:
+            return True
+        token_number = _task_number_from_name(token)
+        name_number = _task_number_from_name(name)
+        if token_number is not None:
+            return name_number == token_number
+        return token in name
+
+    return [path for path in dirs if any(_matches(path, token) for token in only)]
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Prepare drawing packages for Начерт variants.")
     parser.add_argument("--root", default=str(DEFAULT_ROOT), help="Root folder with variant subfolders.")
-    parser.add_argument("--only-variant", action="append", default=[], help="Optional substring filter for variant dirs.")
+    parser.add_argument("--only-variant", action="append", default=[], help="Optional variant filter; numeric tokens match exact variant number.")
     parser.add_argument("--only-task", type=int, action="append", default=[], help="Optional task number filter.")
     args = parser.parse_args()
 

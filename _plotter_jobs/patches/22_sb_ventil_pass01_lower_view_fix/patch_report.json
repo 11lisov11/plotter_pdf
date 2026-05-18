@@ -1,0 +1,56 @@
+{
+  "source_gcode": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.00 СБ Вентиль_pack\\pass_01.gcode",
+  "pack_dir": "C:\\plotter_pdf\\Компьютерная графика\\22 вариант\\МЧ00.60.00.00 СБ Вентиль_pack",
+  "crop_bbox": [
+    30.0,
+    180.0,
+    -132.5,
+    -72.0
+  ],
+  "strokes": 114,
+  "points": 472,
+  "bounds": [
+    30.0187,
+    180.0,
+    -132.5,
+    -72.7436
+  ],
+  "first_xy": [
+    11,
+    "G0 X31.8096 Y-72.7436 F15000.0",
+    false
+  ],
+  "pen_down_travel_violations": [],
+  "outputs": {
+    "gcode": "C:\\plotter_pdf\\_plotter_jobs\\patches\\22_sb_ventil_pass01_lower_view_fix\\patch_pass01_lower_view_fix.gcode",
+    "nc": "C:\\plotter_pdf\\_plotter_jobs\\patches\\22_sb_ventil_pass01_lower_view_fix\\patch_pass01_lower_view_fix.nc",
+    "preview_svg": "C:\\plotter_pdf\\_plotter_jobs\\patches\\22_sb_ventil_pass01_lower_view_fix\\patch_preview.svg",
+    "preview_pdf": "C:\\plotter_pdf\\_plotter_jobs\\patches\\22_sb_ventil_pass01_lower_view_fix\\patch_preview.pdf",
+    "location_overlay_png": "C:\\plotter_pdf\\_plotter_jobs\\patches\\22_sb_ventil_pass01_lower_view_fix\\patch_location_overlay.png",
+    "location_overlay_pdf_orientation_png": "C:\\plotter_pdf\\_plotter_jobs\\patches\\22_sb_ventil_pass01_lower_view_fix\\patch_location_overlay_pdf_orientation.png",
+    "preview_pdf_orientation_pdf": "C:\\plotter_pdf\\_plotter_jobs\\patches\\22_sb_ventil_pass01_lower_view_fix\\patch_preview_pdf_orientation.pdf",
+    "preview_pdf_orientation_png": "C:\\plotter_pdf\\_plotter_jobs\\patches\\22_sb_ventil_pass01_lower_view_fix\\patch_preview_pdf_orientation.png"
+  },
+  "preflight": {
+    "ok": true,
+    "first_xy_pen_down": false,
+    "pen_down_g0_moves": 0,
+    "duplicate_segments_rounded_001": 0,
+    "draw_moves": 358,
+    "travel_moves": 115,
+    "draw_len_mm": 1589.1,
+    "travel_len_mm": 742.9,
+    "bounds_inside_workspace": true,
+    "file_tail_motor_release_inside_gcode": false,
+    "tail_fix": "Removed inline $1=0; sender releases motors after GRBL Idle to avoid error:8."
+  },
+  "visualization_note": "Original overlay used machine Y orientation and looked vertically mirrored; *_pdf_orientation files show pass_01/PDF orientation. G-code is still pass_01, no pass_02 rotation.",
+  "last_send": {
+    "port": "COM11",
+    "baud": 115200,
+    "streamed_lines": 710,
+    "controller_error": "error:8 on old inline $1=0 after drawing/home commands",
+    "post_status": "<Idle|MPos:0.000,0.000,62.750|FS:0,0|Pn:XY>",
+    "resent_after_tail_fix": false
+  }
+}

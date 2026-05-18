@@ -21,23 +21,23 @@ Pass window: col 2/2, row 1/1, source=360.000x254.831 mm, window=180.000x254.831
 Sheet pass transform: rotating geometry by 180 deg for a3 pass 2/2 x 1/1 around active area center (90.000,-145.000).
 Sheet pass transform: translating geometry by (0.000,3.000) mm for a3 pass 2/2 x 1/1.
 Work area clipping: kept 1292 visible segments, dropped 3635 out-of-area segments.
-Collinear overlap dedup: dropped 18/1286 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
-Reorder: source order preserved (1251 polylines).
-Technical text join: merged 773 short gaps (ordered=652, nearest=121, gap<=0.55 mm, dy<=0.75 mm), polylines 1251 -> 478
-Segment dedup: dropped 2/1146 retraced segments (0.2%), kept=1144, eps=0.050 mm
-Collinear overlap dedup: dropped 2/1144 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
-Polyline optimization: 1251 -> 479
+Collinear overlap dedup: dropped 26/1286 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
+Reorder: source order preserved (1243 polylines).
+Technical text join: merged 767 short gaps (ordered=642, nearest=125, gap<=0.55 mm, dy<=0.75 mm), polylines 1243 -> 476
+Segment dedup: dropped 2/1150 retraced segments (0.2%), kept=1148, eps=0.050 mm
+Collinear overlap dedup: dropped 2/1148 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
+Polyline optimization: 1243 -> 478
 Segment counts: source=4927, fitted=4927, clipped=1292
 Drawable segments after clip: 1292 (26.2% of source)
 Warning: significant clipping/transforming occurred. Check that page is inside target work area.
 Prepared bounds: x(0.000, 180.000) y(-269.172, -14.585)
-Estimated draw length: 5.86 m
+Estimated draw length: 5.85 m
 Applying pen-up / pen-down ...
-G-code stats: lines=2064, draw=1732, travel=317, bounds=0.000..180.000 x, -269.172..0.000 y
-Preflight: ok: lines=2064, draw=1732, travel=317, ratio=0.18
-Saved file stats: lines=2064, draw=1732, travel=317, bounds=0.000..180.000 x, -269.172..0.000 y
-Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1777794117537427600.nc
-Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1777794117537427600_vector.svg
-Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1777794117537427600_vector.pdf
+G-code stats: lines=2068, draw=1736, travel=317, bounds=0.000..180.000 x, -269.172..0.000 y
+Preflight: ok: lines=2068, draw=1736, travel=317, ratio=0.18
+Saved file stats: lines=2068, draw=1736, travel=317, bounds=0.000..180.000 x, -269.172..0.000 y
+Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1778020180790910000.nc
+Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1778020180790910000_vector.svg
+Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1778020180790910000_vector.pdf
 Sheet preview centered on compact source page bbox: ref=(0.088,0.000)..(420.070,296.951) mm
 Sheet preview placed on source page: offset=(120.079,290.398) mm

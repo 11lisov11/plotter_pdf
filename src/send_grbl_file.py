@@ -193,6 +193,17 @@ def release_axes(ser, *, sleep: bool = False, wait: bool = True):
     # Force pen up (best-effort), stop any spindle/servo.
     for cmd in _safe_pen_up_commands():
         _send_no_throw(cmd)
+    # If streaming was interrupted before the generated file tail, the normal
+    # return-home command was never sent. Keep the pen lifted and bring XY back
+    # to the work origin before releasing the motors.
+    _send_no_throw("G0 X0.0000 Y0.0000 F900.0")
+    if wait:
+        try:
+            wait_for_idle(ser, timeout_s=45.0)
+        except Exception:
+            # Teardown must still release motors even if status polling fails.
+            pass
+    _send_no_throw("G0 Z0.0000 F800.0")
     # GRBL-friendly motor release.
     _send_no_throw("$1=0")
     if sleep:

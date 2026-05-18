@@ -28,6 +28,17 @@ def _write_two_page_pdf(path: Path) -> None:
     doc.close()
 
 
+def test_iter_variant_dirs_matches_numeric_variant_exactly(tmp_path: Path) -> None:
+    variant_4 = tmp_path / "4 variant"
+    variant_24 = tmp_path / "24 variant"
+    variant_4.mkdir()
+    variant_24.mkdir()
+
+    assert mod._iter_variant_dirs(tmp_path, ["4"]) == [variant_4]
+    assert mod._iter_variant_dirs(tmp_path, ["4 variant"]) == [variant_4]
+    assert mod._iter_variant_dirs(tmp_path, ["variant"]) == [variant_24, variant_4]
+
+
 def test_iter_variant_sources_falls_back_to_generated_pdf(tmp_path: Path) -> None:
     variant_dir = tmp_path / "1 вариант"
     generated_dir = variant_dir / "_generated_pdf"

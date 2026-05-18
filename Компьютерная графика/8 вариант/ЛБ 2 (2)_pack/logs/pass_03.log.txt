@@ -1,5 +1,8 @@
 KOMPAS source text preserved: single-line text reroute disabled for production.
-Literal clean source KOMPAS cleanup: archive_strip_removed=87; service_region_removed=8; under_frame_removed=68; top_outer_frame_removed=2; a3_outer_sheet_frame_removed=8; a3_outer_sheet_frame_kept_stamp_edges=6; kompas_text_lines=0; kompas_text_removed=0; kompas_text_rendered=0.
+TTF centerline postprocess: 114 -> 3 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Кнг.02.01' -> 3 stroke(s), font=arial.ttf, size=3.20
+KOMPAS stamp/title text repair: removed 3 outline polyline(s), rendered 3 single-line polyline(s) from 21 PDF text line(s).
+Literal clean source KOMPAS cleanup: archive_strip_removed=87; service_region_removed=8; under_frame_removed=68; top_outer_frame_removed=2; a3_outer_sheet_frame_removed=8; a3_outer_sheet_frame_kept_stamp_edges=6; kompas_text_lines=0; kompas_text_removed=0; kompas_text_rendered=0; kompas_stamp_text_lines=21; kompas_stamp_text_removed=3; kompas_stamp_text_rendered=3.
 Literal clean source route: direct PDF vector SVG export (text_as_path=True, page=298.111x421.047 mm, rotated_90=yes).
 tile_cols=2
 tile_rows=2
@@ -14,16 +17,16 @@ Extracting paths from SVG ...
 Raw geometry bounds: x(23.849, 297.617) y(5.588, 416.910)
 SVG page: 298.111 x 421.047 mm
 Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).
-SVG geometry: paths=1511, segments=3035.
+SVG geometry: paths=1511, segments=3064.
 Source bounds: x(23.849, 297.617) y(5.588, 416.910)
 Fit to work area: scale=1.0000, translate=(-70.733,-356.249), from (23.849, 5.588)-(297.617, 416.910)
 Pass window: col 1/2, row 2/2, source=273.768x411.322 mm, window=180.000x280.000 mm, offset=(0.000,131.322), shift=(46.884,-65.661)
-Work area clipping: kept 1030 visible segments, dropped 2005 out-of-area segments.
+Work area clipping: kept 1030 visible segments, dropped 2034 out-of-area segments.
 Segment dedup: dropped 208/1030 retraced segments (20.2%), kept=822, eps=0.010 mm
-Collinear overlap dedup: dropped 1/822 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
+Collinear overlap dedup: dropped 1/822 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
 Reorder: source order preserved (515 polylines).
-Segment counts: source=3035, fitted=3035, clipped=1030
-Drawable segments after clip: 1030 (33.9% of source)
+Segment counts: source=3064, fitted=3064, clipped=1030
+Drawable segments after clip: 1030 (33.6% of source)
 Warning: significant clipping/transforming occurred. Check that page is inside target work area.
 Prepared bounds: x(0.000, 180.000) y(-285.000, -5.000)
 Estimated draw length: 3.30 m
@@ -31,6 +34,6 @@ Applying pen-up / pen-down ...
 G-code stats: lines=2135, draw=1683, travel=437, bounds=0.000..180.000 x, -285.000..0.000 y
 Preflight: ok: lines=2135, draw=1683, travel=437, ratio=0.26
 Saved file stats: lines=2135, draw=1683, travel=437, bounds=0.000..180.000 x, -285.000..0.000 y
-Saved: C:\plotter_pdf\_tmp\latest_preview_tiled-clean-pass-3-1777825175757580300.nc
-Preview SVG: C:\plotter_pdf\_tmp\latest_preview_tiled-clean-pass-3-1777825175757580300_vector.svg
-Preview PDF: C:\plotter_pdf\_tmp\latest_preview_tiled-clean-pass-3-1777825175757580300_vector.pdf
+Saved: C:\plotter_pdf\_tmp\latest_preview_tiled-clean-pass-3-1778013089563975800.nc
+Preview SVG: C:\plotter_pdf\_tmp\latest_preview_tiled-clean-pass-3-1778013089563975800_vector.svg
+Preview PDF: C:\plotter_pdf\_tmp\latest_preview_tiled-clean-pass-3-1778013089563975800_vector.pdf

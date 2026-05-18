@@ -6,6 +6,22 @@ from pathlib import Path
 from typing import Callable, Optional, Tuple
 
 
+_TOKEN_RE = re.compile(r"([A-Za-z])\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)")
+
+
+def _values(tokens: list[tuple[str, str]], letter: str) -> list[float]:
+    result: list[float] = []
+    target = letter.upper()
+    for axis, raw in tokens:
+        if axis.upper() != target:
+            continue
+        try:
+            result.append(float(raw))
+        except ValueError:
+            continue
+    return result
+
+
 def strip_gcode_comments(line: str) -> str:
     s = (line or "").strip()
     if not s:
@@ -39,14 +55,6 @@ def gcode_draw_bounds(
     points_distance: Callable[[Tuple[float, float], Tuple[float, float]], float],
     arc_extents_xy: Callable[[Tuple[float, float], Tuple[float, float], Tuple[float, float], bool], Tuple[float, float, float, float]],
 ) -> Optional[Tuple[float, float, float, float]]:
-    x_re = re.compile(r"\bX(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)")
-    y_re = re.compile(r"\bY(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)")
-    z_re = re.compile(r"\bZ(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)")
-    i_re = re.compile(r"\bI(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)")
-    j_re = re.compile(r"\bJ(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)")
-    g_re = re.compile(r"\bG(\d+(?:\.\d+)?)")
-    m_re = re.compile(r"\bM(\d+(?:\.\d+)?)")
-
     cur_x = 0.0
     cur_y = 0.0
     cur_z = float(z_up)
@@ -74,11 +82,8 @@ def gcode_draw_bounds(
                 continue
 
             motion: Optional[int] = None
-            for gm in g_re.findall(body):
-                try:
-                    gval = float(gm)
-                except Exception:
-                    continue
+            tokens = _TOKEN_RE.findall(body)
+            for gval in _values(tokens, "G"):
                 if abs(gval - 90.0) <= 1e-9:
                     abs_mode = True
                 elif abs(gval - 91.0) <= 1e-9:
@@ -100,51 +105,41 @@ def gcode_draw_bounds(
             else:
                 last_motion = motion
 
-            for mm in m_re.findall(body):
-                try:
-                    mval = int(float(mm))
-                except Exception:
+            for mval_raw in _values(tokens, "M"):
+                mval = int(round(mval_raw))
+                if abs(float(mval_raw) - float(mval)) > 1e-9:
                     continue
                 if mval == 3:
                     pen_down = True
                 elif mval == 5:
                     pen_down = False
 
-            mz = z_re.search(body)
-            if mz:
-                try:
-                    z_val = float(mz.group(1))
-                    cur_z = z_val if abs_mode else (cur_z + z_val)
-                    pen_down = pen_down_from_z_level(cur_z, z_up, z_down)
-                except Exception:
-                    pass
+            z_values = _values(tokens, "Z")
+            if z_values:
+                z_val = z_values[-1]
+                cur_z = z_val if abs_mode else (cur_z + z_val)
+                pen_down = pen_down_from_z_level(cur_z, z_up, z_down)
 
-            sx = x_re.search(body)
-            sy = y_re.search(body)
-            has_xy = sx is not None or sy is not None
+            x_values = _values(tokens, "X")
+            y_values = _values(tokens, "Y")
+            i_values = _values(tokens, "I")
+            j_values = _values(tokens, "J")
+            has_xy = bool(x_values or y_values)
             tx = cur_x
             ty = cur_y
-            if sx:
-                try:
-                    xv = float(sx.group(1))
-                    tx = xv if abs_mode else (cur_x + xv)
-                except Exception:
-                    tx = cur_x
-            if sy:
-                try:
-                    yv = float(sy.group(1))
-                    ty = yv if abs_mode else (cur_y + yv)
-                except Exception:
-                    ty = cur_y
+            if x_values:
+                xv = x_values[-1]
+                tx = xv if abs_mode else (cur_x + xv)
+            if y_values:
+                yv = y_values[-1]
+                ty = yv if abs_mode else (cur_y + yv)
 
             if pen_down and has_xy and motion in {1, 2, 3}:
                 if motion in {2, 3}:
-                    si = i_re.search(body)
-                    sj = j_re.search(body)
-                    if si and sj:
+                    if i_values and j_values:
                         try:
-                            i_val = float(si.group(1))
-                            j_val = float(sj.group(1))
+                            i_val = i_values[-1]
+                            j_val = j_values[-1]
                             center = (i_val, j_val) if ijk_abs else (cur_x + i_val, cur_y + j_val)
                             if points_distance((cur_x, cur_y), (tx, ty)) <= 1e-6:
                                 r = math.hypot(cur_x - center[0], cur_y - center[1])

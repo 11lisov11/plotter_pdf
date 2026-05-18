@@ -255,6 +255,35 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
         self.assertEqual(out, rendered_text)
         self.assertEqual(meta["kompas_text_removed"], 1.0)
 
+    def test_reroute_kompas_text_keeps_source_when_renderer_fails(self) -> None:
+        mod = _load_module()
+        source_pdf = Path("drawing.pdf")
+        glyph_fragment = [(54.0, 252.0), (54.4, 252.5), (54.8, 252.0)]
+        geometry_line = [(40.0, 254.0), (90.0, 254.0)]
+
+        with mock.patch.object(
+            mod,
+            "_extract_kompas_plot_text_lines_from_pdf",
+            return_value=[{"text": "K1", "bbox_mm": (50.0, 250.0, 75.0, 258.0)}],
+        ), mock.patch.object(
+            mod,
+            "_render_pdf_text_lines_polylines_in_place",
+            return_value=[],
+        ):
+            logs: list[str] = []
+            out, meta = mod._reroute_kompas_text_polylines(
+                [glyph_fragment, geometry_line],
+                source_pdf=source_pdf,
+                page_index=0,
+                logger=logs.append,
+            )
+
+        self.assertEqual(out, [glyph_fragment, geometry_line])
+        self.assertEqual(meta["kompas_text_lines"], 1.0)
+        self.assertEqual(meta["kompas_text_removed"], 0.0)
+        self.assertEqual(meta["kompas_text_rendered"], 0.0)
+        self.assertTrue(any("source vectors kept" in line for line in logs))
+
     def test_reroute_kompas_text_does_not_overlay_unremoved_source_text(self) -> None:
         mod = _load_module()
         source_pdf = Path("drawing.pdf")
@@ -316,6 +345,205 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
         self.assertTrue(mod._kompas_preserve_source_text_value("45\u00b0"))
         self.assertTrue(mod._kompas_preserve_source_text_value("\u00d84"))
         self.assertFalse(mod._kompas_preserve_source_text_value("Section label"))
+
+    def test_kompas_stamp_text_line_allowed_targets_stamp_and_top_designation(self) -> None:
+        mod = _load_module()
+
+        self.assertTrue(
+            mod._kompas_stamp_text_line_allowed(
+                "\u041b\u0422-319-3",
+                (140.0, 258.0, 176.0, 266.0),
+                page_w_mm=210.0,
+                page_h_mm=297.0,
+                archive_cutoff_x_mm=14.5,
+            )
+        )
+        self.assertTrue(
+            mod._kompas_stamp_text_line_allowed(
+                "\u041c\u0430\u0445\u043e\u0432\u0438\u043a",
+                (85.0, 246.0, 132.0, 258.0),
+                page_w_mm=210.0,
+                page_h_mm=297.0,
+                archive_cutoff_x_mm=14.5,
+            )
+        )
+        self.assertTrue(
+            mod._kompas_stamp_text_line_allowed(
+                "5",
+                (160.0, 263.0, 163.0, 268.0),
+                page_w_mm=210.0,
+                page_h_mm=297.0,
+                archive_cutoff_x_mm=14.5,
+            )
+        )
+        self.assertTrue(
+            mod._kompas_stamp_text_line_allowed(
+                "\u041a\u041d\u0413.01.20.01",
+                (30.0, 5.0, 84.0, 13.0),
+                page_w_mm=210.0,
+                page_h_mm=297.0,
+                archive_cutoff_x_mm=14.5,
+            )
+        )
+        self.assertFalse(
+            mod._kompas_stamp_text_line_allowed(
+                "R20",
+                (110.0, 78.0, 123.0, 85.0),
+                page_w_mm=210.0,
+                page_h_mm=297.0,
+                archive_cutoff_x_mm=14.5,
+            )
+        )
+        self.assertFalse(
+            mod._kompas_stamp_text_line_allowed(
+                "\u041b\u0422-319-3",
+                (140.0, 258.0, 176.0, 266.0),
+                page_w_mm=210.0,
+                page_h_mm=297.0,
+                archive_cutoff_x_mm=14.5,
+                line_dir=(0.0, 1.0),
+            )
+        )
+        self.assertTrue(
+            mod._kompas_stamp_text_line_allowed(
+                "\u041c\u0430\u0441\u0441\u0430",
+                (150.0, 250.0, 165.0, 255.0),
+                page_w_mm=210.0,
+                page_h_mm=297.0,
+                archive_cutoff_x_mm=14.5,
+            )
+        )
+        self.assertFalse(
+            mod._kompas_stamp_text_line_allowed(
+                "\u041a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u043b",
+                (150.0, 292.0, 165.0, 297.0),
+                page_w_mm=210.0,
+                page_h_mm=297.0,
+                archive_cutoff_x_mm=14.5,
+            )
+        )
+        self.assertFalse(
+            mod._kompas_stamp_text_line_allowed(
+                "\u0424\u043e\u0440\u043c\u0430\u0442",
+                (2.0, 140.0, 10.0, 170.0),
+                page_w_mm=210.0,
+                page_h_mm=297.0,
+                archive_cutoff_x_mm=14.5,
+            )
+        )
+        self.assertFalse(
+            mod._kompas_stamp_text_line_allowed(
+                "\u041d\u0435 \u0434\u043b\u044f \u043a\u043e\u043c\u043c\u0435\u0440\u0447\u0435\u0441\u043a\u043e\u0433\u043e \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u043d\u0438\u044f",
+                (10.0, 292.0, 140.0, 297.0),
+                page_w_mm=210.0,
+                page_h_mm=297.0,
+                archive_cutoff_x_mm=14.5,
+            )
+        )
+
+    def test_repair_kompas_stamp_text_replaces_selected_stamp_regions(self) -> None:
+        mod = _load_module()
+        source_pdf = Path("drawing.pdf")
+        stamp_glyph_l = [(102.0, 254.0), (102.4, 256.0), (103.1, 254.0)]
+        stamp_glyph_5 = [(160.0, 263.0), (161.0, 263.6), (160.4, 264.8)]
+        table_line = [(90.0, 258.0), (178.0, 258.0)]
+        drawing_dimension = [(111.0, 78.0), (118.0, 78.0)]
+        rendered = [[(100.0, 255.0), (128.0, 255.0)], [(160.0, 265.0), (163.0, 265.0)]]
+
+        with mock.patch.object(
+            mod,
+            "_extract_kompas_stamp_title_text_lines_from_pdf",
+            return_value=[
+                {"text": "\u041b\u0422-319-3", "bbox_mm": (100.0, 252.0, 130.0, 258.0)},
+                {"text": "5", "bbox_mm": (158.0, 262.0, 164.0, 268.0)},
+            ],
+        ), mock.patch.object(
+            mod,
+            "_render_pdf_text_lines_polylines_in_place",
+            return_value=rendered,
+        ) as render_mock:
+            logs: list[str] = []
+            out, meta = mod._reroute_kompas_stamp_title_text_polylines(
+                [stamp_glyph_l, stamp_glyph_5, table_line, drawing_dimension],
+                source_pdf=source_pdf,
+                page_index=0,
+                logger=logs.append,
+            )
+
+        self.assertNotIn(stamp_glyph_l, out)
+        self.assertNotIn(stamp_glyph_5, out)
+        self.assertIn(table_line, out)
+        self.assertIn(drawing_dimension, out)
+        self.assertIn(rendered[0], out)
+        self.assertIn(rendered[1], out)
+        self.assertEqual(meta["kompas_stamp_text_lines"], 2.0)
+        self.assertEqual(meta["kompas_stamp_text_removed"], 2.0)
+        self.assertEqual(meta["kompas_stamp_text_rendered"], 2.0)
+        render_mock.assert_called_once()
+        _args, kwargs = render_mock.call_args
+        self.assertFalse(kwargs["tight_layout"])
+        self.assertEqual(kwargs["ttf_backend"], "skeleton")
+        self.assertTrue(any("KOMPAS stamp/title text repair" in line for line in logs))
+
+    def test_repair_kompas_stamp_text_keeps_source_when_renderer_fails(self) -> None:
+        mod = _load_module()
+        source_pdf = Path("drawing.pdf")
+        stamp_glyph = [(102.0, 254.0), (102.4, 256.0), (103.1, 254.0)]
+        table_line = [(90.0, 258.0), (178.0, 258.0)]
+
+        with mock.patch.object(
+            mod,
+            "_extract_kompas_stamp_title_text_lines_from_pdf",
+            return_value=[
+                {"text": "\u041b\u0422-319-3", "bbox_mm": (100.0, 252.0, 130.0, 258.0)},
+            ],
+        ), mock.patch.object(
+            mod,
+            "_render_pdf_text_lines_polylines_in_place",
+            return_value=[],
+        ):
+            logs: list[str] = []
+            out, meta = mod._reroute_kompas_stamp_title_text_polylines(
+                [stamp_glyph, table_line],
+                source_pdf=source_pdf,
+                page_index=0,
+                logger=logs.append,
+            )
+
+        self.assertEqual(out, [stamp_glyph, table_line])
+        self.assertEqual(meta["kompas_stamp_text_lines"], 1.0)
+        self.assertEqual(meta["kompas_stamp_text_removed"], 0.0)
+        self.assertEqual(meta["kompas_stamp_text_rendered"], 0.0)
+        self.assertTrue(any("source vectors kept" in line for line in logs))
+
+    def test_reroute_title_block_text_keeps_source_when_renderer_fails(self) -> None:
+        mod = _load_module()
+        source_pdf = Path("drawing.pdf")
+        title_glyph = [(102.0, 254.0), (102.4, 256.0), (103.1, 254.0)]
+        frame_line = [(90.0, 258.0), (178.0, 258.0)]
+
+        with mock.patch.object(
+            mod,
+            "_extract_title_block_text_lines_from_pdf",
+            return_value=[{"text": "Title", "bbox_mm": (100.0, 252.0, 130.0, 258.0)}],
+        ), mock.patch.object(
+            mod,
+            "_render_pdf_text_lines_polylines_in_place",
+            return_value=[],
+        ):
+            logs: list[str] = []
+            out, meta = mod._reroute_title_block_text_polylines(
+                [title_glyph, frame_line],
+                source_pdf=source_pdf,
+                page_index=0,
+                logger=logs.append,
+            )
+
+        self.assertEqual(out, [title_glyph, frame_line])
+        self.assertEqual(meta["title_block_text_lines"], 1.0)
+        self.assertEqual(meta["title_block_text_removed"], 0.0)
+        self.assertEqual(meta["title_block_text_rendered"], 0.0)
+        self.assertTrue(any("source vectors kept" in line for line in logs))
 
     def test_candidate_fragmentation_score_penalizes_tiny_and_pointlike_strokes(self) -> None:
         mod = _load_module()

@@ -1,5 +1,16 @@
 KOMPAS source text preserved: single-line text reroute disabled for production.
-Literal clean source KOMPAS cleanup: archive_strip_removed=158; service_region_removed=63; under_frame_removed=68; top_outer_frame_removed=2; a3_outer_sheet_frame_removed=8; a3_outer_sheet_frame_kept_stamp_edges=6; kompas_text_lines=0; kompas_text_removed=0; kompas_text_rendered=0.
+TTF centerline postprocess: 98 -> 6 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Разраб.' -> 6 stroke(s), font=arial.ttf, size=3.20
+TTF centerline postprocess: 57 -> 5 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Пров.' -> 5 stroke(s), font=arial.ttf, size=3.69
+TTF centerline postprocess: 85 -> 7 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Т.контр.' -> 7 stroke(s), font=arial.ttf, size=3.33
+TTF centerline postprocess: 75 -> 3 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Н.контр.' -> 3 stroke(s), font=arial.ttf, size=3.20
+TTF centerline postprocess: 63 -> 1 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Утв.' -> 1 stroke(s), font=arial.ttf, size=3.20
+KOMPAS stamp/title text repair: removed 80 outline polyline(s), rendered 22 single-line polyline(s) from 20 PDF text line(s).
+Literal clean source KOMPAS cleanup: archive_strip_removed=158; service_region_removed=63; under_frame_removed=68; top_outer_frame_removed=2; a3_outer_sheet_frame_removed=8; a3_outer_sheet_frame_kept_stamp_edges=6; kompas_text_lines=0; kompas_text_removed=0; kompas_text_rendered=0; kompas_stamp_text_lines=20; kompas_stamp_text_removed=80; kompas_stamp_text_rendered=22.
 Literal clean source route: direct PDF vector SVG export (text_as_path=True, page=298.111x421.047 mm, rotated_90=yes).
 tile_cols=2
 tile_rows=2
@@ -14,23 +25,23 @@ Extracting paths from SVG ...
 Raw geometry bounds: x(23.849, 297.617) y(5.588, 416.910)
 SVG page: 298.111 x 421.047 mm
 Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).
-SVG geometry: paths=4868, segments=9494.
+SVG geometry: paths=4810, segments=9522.
 Source bounds: x(23.849, 297.617) y(5.588, 416.910)
 Fit to work area: scale=1.0000, translate=(-70.733,-356.249), from (23.849, 5.588)-(297.617, 416.910)
 Pass window: col 2/2, row 1/2, source=273.768x411.322 mm, window=180.000x280.000 mm, offset=(93.768,0.000), shift=(-46.884,65.661)
-Work area clipping: kept 4785 visible segments, dropped 4709 out-of-area segments.
-Segment dedup: dropped 1613/4785 retraced segments (33.7%), kept=3172, eps=0.010 mm
-Collinear overlap dedup: dropped 16/3172 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
-Reorder: source order preserved (2442 polylines).
-Segment counts: source=9494, fitted=9494, clipped=4785
-Drawable segments after clip: 4785 (50.4% of source)
+Work area clipping: kept 4809 visible segments, dropped 4713 out-of-area segments.
+Segment dedup: dropped 1542/4809 retraced segments (32.1%), kept=3267, eps=0.010 mm
+Collinear overlap dedup: dropped 27/3266 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
+Reorder: source order preserved (2381 polylines).
+Segment counts: source=9522, fitted=9522, clipped=4809
+Drawable segments after clip: 4809 (50.5% of source)
 Warning: significant clipping/transforming occurred. Check that page is inside target work area.
 Prepared bounds: x(0.000, 179.691) y(-285.000, -5.000)
-Estimated draw length: 7.36 m
+Estimated draw length: 7.33 m
 Applying pen-up / pen-down ...
-G-code stats: lines=7035, draw=5728, travel=1292, bounds=0.000..179.691 x, -285.000..0.000 y
-Preflight: ok: lines=7035, draw=5728, travel=1292, ratio=0.23
-Saved file stats: lines=7035, draw=5728, travel=1292, bounds=0.000..179.691 x, -285.000..0.000 y
-Saved: C:\plotter_pdf\_tmp\latest_preview_tiled-clean-pass-2-1777825189253367100.nc
-Preview SVG: C:\plotter_pdf\_tmp\latest_preview_tiled-clean-pass-2-1777825189253367100_vector.svg
-Preview PDF: C:\plotter_pdf\_tmp\latest_preview_tiled-clean-pass-2-1777825189253367100_vector.pdf
+G-code stats: lines=7142, draw=5827, travel=1300, bounds=0.000..179.691 x, -285.000..0.000 y
+Preflight: ok: lines=7142, draw=5827, travel=1300, ratio=0.22
+Saved file stats: lines=7142, draw=5827, travel=1300, bounds=0.000..179.691 x, -285.000..0.000 y
+Saved: C:\plotter_pdf\_tmp\latest_preview_tiled-clean-pass-2-1778013109478676300.nc
+Preview SVG: C:\plotter_pdf\_tmp\latest_preview_tiled-clean-pass-2-1778013109478676300_vector.svg
+Preview PDF: C:\plotter_pdf\_tmp\latest_preview_tiled-clean-pass-2-1778013109478676300_vector.pdf

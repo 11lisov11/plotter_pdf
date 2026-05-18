@@ -26,19 +26,19 @@ Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-
 SVG geometry: paths=667, segments=7205.
 Source bounds: x(0.000, 180.000) y(0.000, 280.000)
 Fit to work area: scale=1.0000, translate=(0.000,-285.000), from (0.000, 0.000)-(180.000, 280.000)
-Collinear overlap dedup: dropped 15/7205 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
-Reorder: source order preserved (674 polylines).
-Technical text join: merged 166 short gaps (ordered=133, nearest=33, gap<=0.55 mm, dy<=0.75 mm), polylines 674 -> 508
-Segment dedup: dropped 5/7344 retraced segments (0.1%), kept=7339, eps=0.050 mm
-Polyline optimization: 674 -> 513
+Collinear overlap dedup: dropped 110/7205 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
+Reorder: source order preserved (583 polylines).
+Technical text join: merged 95 short gaps (ordered=80, nearest=15, gap<=0.55 mm, dy<=0.75 mm), polylines 583 -> 488
+Segment dedup: dropped 5/7178 retraced segments (0.1%), kept=7173, eps=0.050 mm
+Polyline optimization: 583 -> 493
 Segment counts: source=7205, fitted=7205, clipped=7205
 Drawable segments after clip: 7205 (100.0% of source)
 Prepared bounds: x(0.000, 180.000) y(-285.000, -5.000)
-Estimated draw length: 4.95 m
+Estimated draw length: 4.77 m
 Applying pen-up / pen-down ...
-G-code stats: lines=8899, draw=8365, travel=519, bounds=0.000..180.000 x, -285.000..0.000 y
-Preflight: ok: lines=8899, draw=8365, travel=519, ratio=0.06
-Saved file stats: lines=8899, draw=8365, travel=519, bounds=0.000..180.000 x, -285.000..0.000 y
+G-code stats: lines=8673, draw=8159, travel=499, bounds=0.000..180.000 x, -285.000..0.000 y
+Preflight: ok: lines=8673, draw=8159, travel=499, ratio=0.06
+Saved file stats: lines=8673, draw=8159, travel=499, bounds=0.000..180.000 x, -285.000..0.000 y
 Saved: C:\plotter_pdf\Начерт\1 вариант\Задача 2_pack\_candidates\a4_hybrid_frame.nc
 Sheet preview centered on compact source page bbox: ref=(0.176,0.176)..(185.657,285.736) mm
 Sheet preview placed on source page: offset=(3.049,288.044) mm

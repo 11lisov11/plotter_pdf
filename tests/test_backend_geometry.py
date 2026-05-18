@@ -84,6 +84,81 @@ class BackendGeometryTests(unittest.TestCase):
         self.assertIn("nx", plan)
         self.assertIn("ny", plan)
 
+    def test_autotrace_smooth_cubic_reuses_previous_segment_inside_same_command(self) -> None:
+        calls: list[tuple[tuple[float, float], tuple[float, float], tuple[float, float], tuple[float, float]]] = []
+
+        def fake_cubic(p0, p1, p2, p3, step=1.0):
+            calls.append((p0, p1, p2, p3))
+            return [p3]
+
+        with mock.patch.object(backend, "cubic_approx", side_effect=fake_cubic):
+            backend._autotrace_path_d_to_polylines(
+                "M0 0 C 10 0 10 10 20 10 S 30 20 40 10 50 0 60 10",
+                curve_step_px=1.0,
+            )
+
+        self.assertEqual(len(calls), 3)
+        self.assertEqual(calls[1][1], (30.0, 10.0))
+        self.assertEqual(calls[2][1], (50.0, 0.0))
+
+    def test_autotrace_smooth_quadratic_reuses_previous_segment_inside_same_command(self) -> None:
+        calls: list[tuple[tuple[float, float], tuple[float, float], tuple[float, float]]] = []
+
+        def fake_quadratic(p0, p1, p2, step=1.0):
+            calls.append((p0, p1, p2))
+            return [p2]
+
+        with mock.patch.object(backend, "quadratic_approx", side_effect=fake_quadratic):
+            backend._autotrace_path_d_to_polylines(
+                "M0 0 Q 10 10 20 0 T 40 0 60 0",
+                curve_step_px=1.0,
+            )
+
+        self.assertEqual(len(calls), 3)
+        self.assertEqual(calls[1][1], (30.0, -10.0))
+        self.assertEqual(calls[2][1], (50.0, 10.0))
+
+    def test_svg_path_item_smooth_cubic_reuses_previous_segment_inside_same_command(self) -> None:
+        calls: list[tuple[tuple[float, float], tuple[float, float], tuple[float, float], tuple[float, float]]] = []
+        node = backend.ET.fromstring(
+            '<path d="M0 0 C 10 0 10 10 20 10 S 30 20 40 10 50 0 60 10" stroke="#000" fill="none" />'
+        )
+
+        def fake_cubic(p0, p1, p2, p3, step=1.0):
+            calls.append((p0, p1, p2, p3))
+            return [p3]
+
+        with mock.patch.object(backend, "cubic_approx", side_effect=fake_cubic):
+            backend.get_path_polylines(node, (1.0, 0.0, 0.0, 1.0, 0.0, 0.0), 1.0)
+
+        self.assertEqual(len(calls), 3)
+        self.assertEqual(calls[1][1], (30.0, 10.0))
+        self.assertEqual(calls[2][1], (50.0, 0.0))
+
+    def test_svg_path_item_smooth_quadratic_reuses_previous_segment_inside_same_command(self) -> None:
+        calls: list[tuple[tuple[float, float], tuple[float, float], tuple[float, float]]] = []
+        node = backend.ET.fromstring('<path d="M0 0 Q 10 10 20 0 T 40 0 60 0" stroke="#000" fill="none" />')
+
+        def fake_quadratic(p0, p1, p2, step=1.0):
+            calls.append((p0, p1, p2))
+            return [p2]
+
+        with mock.patch.object(backend, "quadratic_approx", side_effect=fake_quadratic):
+            backend.get_path_polylines(node, (1.0, 0.0, 0.0, 1.0, 0.0, 0.0), 1.0)
+
+        self.assertEqual(len(calls), 3)
+        self.assertEqual(calls[1][1], (30.0, -10.0))
+        self.assertEqual(calls[2][1], (50.0, 10.0))
+
+    def test_svg_path_item_skips_incomplete_curve_segments(self) -> None:
+        node = backend.ET.fromstring(
+            '<path d="M0 0 L 10 C 10 0 10 Q 4 5 A 5 5 0 0" stroke="#000" fill="none" />'
+        )
+
+        items = backend.get_path_polylines(node, (1.0, 0.0, 0.0, 1.0, 0.0, 0.0), 1.0)
+
+        self.assertEqual(items, [])
+
     def test_apply_handwriting_font_updates_text_nodes(self) -> None:
         svg = """<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="10mm" height="10mm">
@@ -1426,6 +1501,113 @@ class BackendGeometryTests(unittest.TestCase):
         polylines = [
             [(0.0, 0.0), (10.0, 0.0)],
             [(0.0, 0.20), (10.0, 0.20)],
+        ]
+
+        out = backend.deduplicate_collinear_overlaps(polylines, logger=lambda *_: None)
+
+        self.assertEqual(out, polylines)
+
+    def test_collinear_overlap_dedup_keeps_nearly_collinear_extension(self) -> None:
+        polylines = [
+            [(0.0, 0.0), (5.0, 0.0)],
+            [(5.0, 0.0), (9.0, 0.04)],
+        ]
+
+        out = backend.deduplicate_collinear_overlaps(polylines, logger=lambda *_: None)
+
+        self.assertEqual(out, polylines)
+
+    def test_collinear_overlap_dedup_removes_pdf_jitter_retrace(self) -> None:
+        polylines = [
+            [(123.4761, -200.4955), (143.4627, -200.4955)],
+            [(142.5181, -200.4132), (141.7319, -200.4180)],
+        ]
+
+        out = backend.deduplicate_collinear_overlaps(polylines, logger=lambda *_: None)
+
+        segment_count = sum(max(0, len(poly) - 1) for poly in out)
+        self.assertEqual(segment_count, 1)
+        self.assertEqual(out[0], [(123.4761, -200.4955), (143.4627, -200.4955)])
+
+    def test_final_cleanup_removes_simplification_backtrack(self) -> None:
+        polylines = [
+            [
+                (69.3802, -226.9926),
+                (69.8860, -227.4524),
+                (69.7940, -227.3144),
+                (69.8400, -227.4064),
+                (69.3802, -226.9926),
+                (68.5985, -227.0385),
+            ]
+        ]
+
+        out = backend.final_cleanup_polylines_for_gcode(polylines, logger=lambda *_: None)
+
+        segments = [(a, b) for poly in out for a, b in zip(poly, poly[1:])]
+        self.assertEqual(len(segments), 2)
+        self.assertNotIn(((69.8400, -227.4064), (69.3802, -226.9926)), segments)
+
+    def test_final_cleanup_dedups_after_line_fit(self) -> None:
+        polylines = [
+            [(55.8210, -105.4336), (66.1019, -100.2931)],
+            [(38.3568, -114.2065), (52.6000, -107.0970), (66.8960, -99.9808)],
+        ]
+
+        out = backend.final_cleanup_polylines_for_gcode(polylines, logger=lambda *_: None)
+
+        segments = [(a, b) for poly in out for a, b in zip(poly, poly[1:])]
+        self.assertEqual(segments, [((38.3568, -114.2065), (66.896, -99.9808))])
+
+    def test_final_cleanup_removes_a4_header_near_horizontal_overlap(self) -> None:
+        polylines = [
+            [(74.4331, -97.8639), (168.3499, -98.8800)],
+            [(121.8903, -98.3108), (124.6551, -98.3120)],
+        ]
+
+        out = backend.final_cleanup_polylines_for_gcode(polylines, logger=lambda *_: None)
+
+        segments = [(a, b) for poly in out for a, b in zip(poly, poly[1:])]
+        self.assertEqual(segments, [((74.4331, -97.8639), (168.3499, -98.88))])
+
+    def test_final_cleanup_removes_short_parallel_retrace(self) -> None:
+        polylines = [
+            [(77.9697, -124.9313), (77.1128, -124.9313)],
+            [(77.2686, -124.8534), (78.0476, -124.8534)],
+        ]
+
+        out = backend.final_cleanup_polylines_for_gcode(polylines, logger=lambda *_: None)
+
+        segments = [(a, b) for poly in out for a, b in zip(poly, poly[1:])]
+        self.assertEqual(segments, [((77.9697, -124.9313), (77.1128, -124.9313))])
+
+    def test_cleanup_xy_gcode_overlaps_converts_redundant_draw_to_travel(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            gcode = Path(td) / "xy.gcode"
+            gcode.write_text(
+                "\n".join(
+                    [
+                        "G21",
+                        "G90",
+                        "G0 X77.9697 Y-124.9313",
+                        "G1 X77.1128 Y-124.9313 F12000.0",
+                        "G0 X77.2686 Y-124.8534 F12000.0",
+                        "G1 X78.0476 Y-124.8534 F12000.0",
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            changed = backend.cleanup_xy_gcode_overlaps(gcode, logger=lambda *_: None)
+
+            self.assertEqual(changed, 1)
+            lines = gcode.read_text(encoding="utf-8").splitlines()
+            self.assertEqual(lines[-1], "G0 X78.0476 Y-124.8534 F12000.0")
+
+    def test_collinear_overlap_dedup_uses_overlap_midpoint_distance(self) -> None:
+        polylines = [
+            [(125.3321, -61.1424), (48.7960, -61.1424)],
+            [(59.7293, -62.2243), (59.2573, -62.2323)],
         ]
 
         out = backend.deduplicate_collinear_overlaps(polylines, logger=lambda *_: None)

@@ -1,5 +1,60 @@
 KOMPAS source text preserved: single-line text reroute disabled for production.
-A3 clean source KOMPAS cleanup: archive_strip_removed=9; service_region_removed=547; under_frame_removed=1; top_outer_frame_removed=2; a3_outer_sheet_frame_removed=6; a3_outer_sheet_frame_kept_stamp_edges=4; kompas_text_lines=0; kompas_text_removed=0; kompas_text_rendered=0.
+TTF centerline postprocess: 432 -> 20 stroke(s) (eps=0.08, gap=0.66, smooth_step=0.13, col=0.021)
+TTF centerline text: 'Мч00.60.00.00' -> 20 stroke(s), font=arial.ttf, size=6.62
+TTF centerline postprocess: 66 -> 4 stroke(s) (eps=0.08, gap=0.66, smooth_step=0.13, col=0.021)
+TTF centerline text: 'Сб' -> 4 stroke(s), font=arial.ttf, size=6.62
+TTF centerline postprocess: 399 -> 19 stroke(s) (eps=0.08, gap=0.67, smooth_step=0.13, col=0.021)
+TTF centerline text: 'Мч00.60.00.00' -> 19 stroke(s), font=arial.ttf, size=6.65
+TTF centerline postprocess: 84 -> 6 stroke(s) (eps=0.08, gap=0.67, smooth_step=0.13, col=0.021)
+TTF centerline text: 'Сб' -> 6 stroke(s), font=arial.ttf, size=6.65
+TTF centerline postprocess: 19 -> 3 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Лит.' -> 3 stroke(s), font=arial.ttf, size=3.42
+TTF centerline postprocess: 100 -> 7 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Масса' -> 7 stroke(s), font=arial.ttf, size=3.46
+TTF centerline postprocess: 100 -> 9 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Масштаб' -> 9 stroke(s), font=arial.ttf, size=3.67
+TTF centerline postprocess: 146 -> 12 stroke(s) (eps=0.08, gap=0.69, smooth_step=0.13, col=0.022)
+TTF centerline text: 'Вентиль' -> 12 stroke(s), font=arial.ttf, size=6.95
+TTF centerline postprocess: 7 -> 2 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
+TTF centerline text: '№' -> 2 stroke(s), font=arial.ttf, size=3.68
+TTF centerline postprocess: 104 -> 5 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'докум.' -> 5 stroke(s), font=arial.ttf, size=3.68
+TTF centerline postprocess: 33 -> 2 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Подп.' -> 2 stroke(s), font=arial.ttf, size=3.20
+TTF centerline postprocess: 42 -> 3 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Изм.' -> 3 stroke(s), font=arial.ttf, size=3.20
+TTF centerline postprocess: 39 -> 3 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Лист' -> 3 stroke(s), font=arial.ttf, size=3.20
+TTF centerline postprocess: 54 -> 2 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Дата' -> 2 stroke(s), font=arial.ttf, size=3.30
+TTF centerline postprocess: 93 -> 6 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Разраб.' -> 6 stroke(s), font=arial.ttf, size=3.20
+TTF centerline postprocess: 136 -> 5 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Федоров' -> 5 stroke(s), font=arial.ttf, size=3.20
+TTF centerline postprocess: 37 -> 3 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'К.В' -> 3 stroke(s), font=arial.ttf, size=3.20
+TTF centerline postprocess: 285 -> 19 stroke(s) (eps=0.08, gap=0.67, smooth_step=0.13, col=0.021)
+TTF centerline text: 'Сборочный' -> 19 stroke(s), font=arial.ttf, size=6.69
+TTF centerline postprocess: 204 -> 12 stroke(s) (eps=0.08, gap=0.67, smooth_step=0.13, col=0.021)
+TTF centerline text: 'чертеж' -> 12 stroke(s), font=arial.ttf, size=6.69
+TTF centerline postprocess: 55 -> 4 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Пров.' -> 4 stroke(s), font=arial.ttf, size=3.20
+TTF centerline postprocess: 135 -> 7 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Пузанова' -> 7 stroke(s), font=arial.ttf, size=3.37
+TTF centerline postprocess: 66 -> 5 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Т.контр.' -> 5 stroke(s), font=arial.ttf, size=3.20
+TTF centerline postprocess: 35 -> 6 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Лист' -> 6 stroke(s), font=arial.ttf, size=4.00
+TTF centerline postprocess: 72 -> 5 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Листов' -> 5 stroke(s), font=arial.ttf, size=3.83
+TTF centerline postprocess: 179 -> 11 stroke(s) (eps=0.09, gap=0.73, smooth_step=0.13, col=0.023)
+TTF centerline text: 'ЛТ-519-3' -> 11 stroke(s), font=arial.ttf, size=7.27
+TTF centerline postprocess: 72 -> 4 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Н.контр.' -> 4 stroke(s), font=arial.ttf, size=3.20
+TTF centerline postprocess: 55 -> 2 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
+TTF centerline text: 'Утв.' -> 2 stroke(s), font=arial.ttf, size=3.26
+KOMPAS stamp/title text repair: removed 580 outline polyline(s), rendered 186 single-line polyline(s) from 21 PDF text line(s).
+A3 clean source KOMPAS cleanup: archive_strip_removed=9; service_region_removed=696; under_frame_removed=1; top_outer_frame_removed=2; a3_outer_sheet_frame_removed=6; a3_outer_sheet_frame_kept_stamp_edges=4; kompas_text_lines=0; kompas_text_removed=0; kompas_text_rendered=0; kompas_stamp_text_lines=21; kompas_stamp_text_removed=580; kompas_stamp_text_rendered=186.
 A3 clean source route: direct PDF vector SVG export (text_as_path=True).
 --- a3 clean pass ---
 Render mode: drawing; ExactGeometry=on; Handwriting=off
@@ -10,25 +65,26 @@ Extracting paths from SVG ...
 Raw geometry bounds: x(24.000, 415.459) y(5.503, 292.523)
 SVG page: 421.047 x 298.111 mm
 Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).
-SVG geometry: paths=2588, segments=4878.
+SVG geometry: paths=2049, segments=4831.
 Source bounds: x(24.000, 415.459) y(5.503, 292.523)
 Fit to work area: scale=0.9196, translate=(-112.071,-282.038), from (24.000, 5.503)-(415.459, 292.523)
 Pass window: col 1/2, row 1/1, source=360.000x263.954 mm, window=180.000x263.954 mm, offset=(0.000,0.000), shift=(90.000,0.000)
-Work area clipping: kept 2383 visible segments, dropped 2495 out-of-area segments.
-Segment dedup: dropped 975/2383 retraced segments (40.9%), kept=1408, eps=0.010 mm
-Collinear overlap dedup: dropped 53/1403 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
-Reorder: source order preserved (1214 polylines).
-Segment counts: source=4878, fitted=4878, clipped=2383
-Drawable segments after clip: 2383 (48.9% of source)
+Work area clipping: kept 2260 visible segments, dropped 2571 out-of-area segments.
+Segment dedup: dropped 960/2260 retraced segments (42.5%), kept=1300, eps=0.010 mm
+Collinear overlap dedup: dropped 55/1294 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
+Reorder: source order preserved (1077 polylines).
+Segment dedup: dropped 2/1239 retraced segments (0.2%), kept=1237, eps=0.050 mm
+Segment counts: source=4831, fitted=4831, clipped=2260
+Drawable segments after clip: 2260 (46.8% of source)
 Warning: significant clipping/transforming occurred. Check that page is inside target work area.
 Prepared bounds: x(0.000, 180.000) y(-276.977, -72.744)
-Estimated draw length: 6.73 m
+Estimated draw length: 6.70 m
 Applying pen-up / pen-down ...
-G-code stats: lines=4113, draw=3178, travel=920, bounds=0.000..180.000 x, -276.977..0.000 y
-Preflight: ok: lines=4113, draw=3178, travel=920, ratio=0.29
-Saved file stats: lines=4113, draw=3178, travel=920, bounds=0.000..180.000 x, -276.977..0.000 y
-Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1777824682875204900.nc
-Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1777824682875204900_vector.svg
-Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1777824682875204900_vector.pdf
+G-code stats: lines=3604, draw=2801, travel=788, bounds=0.000..180.000 x, -276.977..0.000 y
+Preflight: ok: lines=3604, draw=2801, travel=788, ratio=0.28
+Saved file stats: lines=3604, draw=2801, travel=788, bounds=0.000..180.000 x, -276.977..0.000 y
+Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1778012890904438900.nc
+Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1778012890904438900_vector.svg
+Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1778012890904438900_vector.pdf
 Sheet preview centered on compact source page bbox: ref=(0.353,0.353)..(420.518,297.670) mm
 Sheet preview placed on source page: offset=(120.524,323.916) mm

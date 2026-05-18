@@ -25,18 +25,19 @@ SVG geometry: paths=782, segments=5208.
 Source bounds: x(0.000, 180.000) y(0.000, 280.000)
 Fit to work area: scale=1.0000, translate=(0.000,-285.000), from (0.000, 0.000)-(180.000, 280.000)
 Segment dedup: dropped 2/5208 retraced segments (0.0%), kept=5206, eps=0.010 mm
-Collinear overlap dedup: dropped 80/5206 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
-Reorder: source order preserved (820 polylines).
-Technical text join: merged 326 short gaps (ordered=233, nearest=93, gap<=0.55 mm, dy<=0.75 mm), polylines 820 -> 494
-Polyline optimization: 820 -> 494
+Collinear overlap dedup: dropped 462/5206 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
+Reorder: source order preserved (663 polylines).
+Technical text join: merged 171 short gaps (ordered=116, nearest=55, gap<=0.55 mm, dy<=0.75 mm), polylines 663 -> 492
+Collinear overlap dedup: dropped 5/4910 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
+Polyline optimization: 663 -> 494
 Segment counts: source=5208, fitted=5208, clipped=5208
 Drawable segments after clip: 5208 (100.0% of source)
 Prepared bounds: x(0.000, 180.000) y(-285.000, -5.000)
-Estimated draw length: 7.78 m
+Estimated draw length: 6.47 m
 Applying pen-up / pen-down ...
-G-code stats: lines=6950, draw=6436, travel=499, bounds=0.000..180.000 x, -285.000..0.000 y
-Preflight: ok: lines=6950, draw=6436, travel=499, ratio=0.08
-Saved file stats: lines=6950, draw=6436, travel=499, bounds=0.000..180.000 x, -285.000..0.000 y
+G-code stats: lines=6405, draw=5891, travel=499, bounds=0.000..180.000 x, -285.000..0.000 y
+Preflight: ok: lines=6405, draw=5891, travel=499, ratio=0.08
+Saved file stats: lines=6405, draw=5891, travel=499, bounds=0.000..180.000 x, -285.000..0.000 y
 Saved: C:\plotter_pdf\Начерт\4 варинт\Задача 6_pack\_candidates\a4_hybrid_frame.nc
 Sheet preview centered on compact source page bbox: ref=(0.176,0.176)..(185.657,285.736) mm
 Sheet preview placed on source page: offset=(3.049,288.044) mm

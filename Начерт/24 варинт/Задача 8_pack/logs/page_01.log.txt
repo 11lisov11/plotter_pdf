@@ -74,19 +74,20 @@ SVG geometry: paths=1091, segments=8598.
 Source bounds: x(0.000, 182.996) y(0.000, 280.000)
 Fit to work area: scale=0.9836, translate=(0.000,-282.708), from (0.000, 0.000)-(182.996, 280.000)
 Segment dedup: dropped 3/8598 retraced segments (0.0%), kept=8595, eps=0.010 mm
-Collinear overlap dedup: dropped 56/8595 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
-Reorder: source order preserved (1105 polylines).
-Technical text join: merged 391 short gaps (ordered=271, nearest=120, gap<=0.55 mm, dy<=0.75 mm), polylines 1105 -> 714
-Segment dedup: dropped 9/8924 retraced segments (0.1%), kept=8915, eps=0.050 mm
-Polyline optimization: 1105 -> 722
+Collinear overlap dedup: dropped 447/8595 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
+Reorder: source order preserved (929 polylines).
+Technical text join: merged 196 short gaps (ordered=127, nearest=69, gap<=0.55 mm, dy<=0.75 mm), polylines 929 -> 733
+Segment dedup: dropped 10/8337 retraced segments (0.1%), kept=8327, eps=0.050 mm
+Collinear overlap dedup: dropped 1/8327 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
+Polyline optimization: 929 -> 742
 Segment counts: source=8598, fitted=8598, clipped=8598
 Drawable segments after clip: 8598 (100.0% of source)
 Prepared bounds: x(0.000, 180.000) y(-282.708, -7.316)
-Estimated draw length: 8.38 m
+Estimated draw length: 7.26 m
 Applying pen-up / pen-down ...
-G-code stats: lines=11096, draw=10355, travel=726, bounds=0.000..180.000 x, -282.708..0.000 y
-Preflight: ok: lines=11096, draw=10355, travel=726, ratio=0.07
-Saved file stats: lines=11096, draw=10355, travel=726, bounds=0.000..180.000 x, -282.708..0.000 y
+G-code stats: lines=10567, draw=9806, travel=746, bounds=0.000..180.000 x, -282.708..0.000 y
+Preflight: ok: lines=10567, draw=9806, travel=746, ratio=0.08
+Saved file stats: lines=10567, draw=9806, travel=746, bounds=0.000..180.000 x, -282.708..0.000 y
 Saved: C:\plotter_pdf\Начерт\24 варинт\Задача 8_pack\_candidates\a4_hybrid_frame.nc
 Sheet preview centered on compact source page bbox: ref=(0.353,0.353)..(210.457,297.494) mm
 Sheet preview placed on source page: offset=(15.537,294.068) mm

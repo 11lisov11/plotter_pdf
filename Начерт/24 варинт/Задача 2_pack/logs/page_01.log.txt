@@ -95,19 +95,19 @@ SVG geometry: paths=878, segments=6911.
 Source bounds: x(0.000, 188.820) y(0.000, 280.000)
 Fit to work area: scale=0.9533, translate=(0.000,-278.460), from (0.000, 0.000)-(188.820, 280.000)
 Segment dedup: dropped 2/6911 retraced segments (0.0%), kept=6909, eps=0.010 mm
-Collinear overlap dedup: dropped 47/6909 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
-Reorder: source order preserved (841 polylines).
-Technical text join: merged 233 short gaps (ordered=165, nearest=68, gap<=0.55 mm, dy<=0.75 mm), polylines 841 -> 608
-Segment dedup: dropped 45/7092 retraced segments (0.6%), kept=7047, eps=0.050 mm
-Polyline optimization: 841 -> 646
+Collinear overlap dedup: dropped 217/6909 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
+Reorder: source order preserved (717 polylines).
+Technical text join: merged 106 short gaps (ordered=66, nearest=40, gap<=0.55 mm, dy<=0.75 mm), polylines 717 -> 611
+Segment dedup: dropped 42/6797 retraced segments (0.6%), kept=6755, eps=0.050 mm
+Polyline optimization: 717 -> 647
 Segment counts: source=6911, fitted=6911, clipped=6911
 Drawable segments after clip: 6911 (100.0% of source)
 Prepared bounds: x(0.000, 180.000) y(-278.460, -11.563)
-Estimated draw length: 5.47 m
+Estimated draw length: 4.91 m
 Applying pen-up / pen-down ...
-G-code stats: lines=8997, draw=8333, travel=649, bounds=0.000..180.000 x, -278.460..0.000 y
-Preflight: ok: lines=8997, draw=8333, travel=649, ratio=0.08
-Saved file stats: lines=8997, draw=8333, travel=649, bounds=0.000..180.000 x, -278.460..0.000 y
+G-code stats: lines=8708, draw=8043, travel=650, bounds=0.000..180.000 x, -278.460..0.000 y
+Preflight: ok: lines=8708, draw=8043, travel=650, ratio=0.08
+Saved file stats: lines=8708, draw=8043, travel=650, bounds=0.000..180.000 x, -278.460..0.000 y
 Saved: C:\plotter_pdf\Начерт\24 варинт\Задача 2_pack\_candidates\a4_hybrid_frame.nc
 Sheet preview centered on compact source page bbox: ref=(0.353,0.353)..(210.457,297.494) mm
 Sheet preview placed on source page: offset=(15.537,294.067) mm

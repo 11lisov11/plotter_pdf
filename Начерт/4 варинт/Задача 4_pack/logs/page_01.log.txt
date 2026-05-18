@@ -25,18 +25,19 @@ SVG geometry: paths=1179, segments=5954.
 Source bounds: x(0.000, 180.000) y(0.000, 280.000)
 Fit to work area: scale=1.0000, translate=(0.000,-285.000), from (0.000, 0.000)-(180.000, 280.000)
 Segment dedup: dropped 2/5954 retraced segments (0.0%), kept=5952, eps=0.010 mm
-Collinear overlap dedup: dropped 109/5952 overlapping segments (dist<=0.080 mm, angle<=1.00 deg, overlap>=0.90)
-Reorder: source order preserved (1236 polylines).
-Technical text join: merged 596 short gaps (ordered=412, nearest=184, gap<=0.55 mm, dy<=0.75 mm), polylines 1236 -> 640
-Polyline optimization: 1236 -> 640
+Collinear overlap dedup: dropped 698/5952 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
+Reorder: source order preserved (993 polylines).
+Technical text join: merged 325 short gaps (ordered=201, nearest=124, gap<=0.55 mm, dy<=0.75 mm), polylines 993 -> 668
+Collinear overlap dedup: dropped 14/5576 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
+Polyline optimization: 993 -> 670
 Segment counts: source=5954, fitted=5954, clipped=5954
 Drawable segments after clip: 5954 (100.0% of source)
 Prepared bounds: x(0.000, 180.000) y(-285.000, -5.000)
-Estimated draw length: 8.64 m
+Estimated draw length: 7.12 m
 Applying pen-up / pen-down ...
-G-code stats: lines=8370, draw=7711, travel=644, bounds=0.000..180.000 x, -285.000..0.000 y
-Preflight: ok: lines=8370, draw=7711, travel=644, ratio=0.08
-Saved file stats: lines=8370, draw=7711, travel=644, bounds=0.000..180.000 x, -285.000..0.000 y
+G-code stats: lines=7587, draw=6898, travel=674, bounds=0.000..180.000 x, -285.000..0.000 y
+Preflight: ok: lines=7587, draw=6898, travel=674, ratio=0.10
+Saved file stats: lines=7587, draw=6898, travel=674, bounds=0.000..180.000 x, -285.000..0.000 y
 Saved: C:\plotter_pdf\Начерт\4 варинт\Задача 4_pack\_candidates\a4_hybrid_frame.nc
 Sheet preview centered on compact source page bbox: ref=(0.176,0.176)..(185.657,285.736) mm
 Sheet preview placed on source page: offset=(3.049,288.044) mm

@@ -1,18 +1,18 @@
 8 вариант
-Спецификация_pack: quality=0.917808; layout=0.931758; fidelity=0.894488
-МЧ00.01.00.00 СБ Клапан перепускной_pack: quality=0.925458; layout=0.937325; fidelity=0.937325
+МЧ00.01.00.00 СБ Клапан перепускной_pack: quality=0.925945; layout=0.937313; fidelity=0.937313
+Спецификация_pack: quality=0.926838; layout=0.932260; fidelity=0.894970
 МЧ00.01.00.00 СП Клапан перепускной_pack: quality=0.930346; layout=0.932996; fidelity=0.895676
-СБ_pack: quality=0.931485; layout=0.946673; fidelity=0.908806
-МЧ00.01.00.04 Клапан_pack: quality=0.933396; layout=0.949831; fidelity=0.911838
-Переходник_pack: quality=0.933534; layout=0.949389; fidelity=0.911413
-МЧ00.01.00.06 Пружина_pack: quality=0.934919; layout=0.952676; fidelity=0.914569
-МЧ00.01.00.03 Колпак_pack: quality=0.935406; layout=0.953687; fidelity=0.915540
-МЧ00.01.00.05 Тарелка_pack: quality=0.938727; layout=0.959348; fidelity=0.920974
-МЧ00.01.00.07 Винт М16_pack: quality=0.940160; layout=0.959915; fidelity=0.921518
-Заглушка_pack: quality=0.940720; layout=0.957092; fidelity=0.918808
-Втулка_pack: quality=0.941260; layout=0.956978; fidelity=0.918699
-ЛБ 1 Маховик_pack: quality=0.941280; layout=0.956686; fidelity=0.918419
-МЧ00.01.00.01 Корпус_pack: quality=0.952180; layout=0.971904; fidelity=0.971904
-ЛБ 2 (2)_pack: quality=0.952924; layout=0.963348; fidelity=0.963348
-ЛБ 2 (1)_pack: quality=0.956899; layout=0.966206; fidelity=0.966206
-МЧ00.01.00.02 Крышка_pack: quality=0.962775; layout=0.971394; fidelity=0.932538
+СБ_pack: quality=0.942449; layout=0.946787; fidelity=0.908916
+Переходник_pack: quality=0.943003; layout=0.949675; fidelity=0.911688
+МЧ00.01.00.04 Клапан_pack: quality=0.943602; layout=0.949839; fidelity=0.911845
+МЧ00.01.00.06 Пружина_pack: quality=0.945046; layout=0.952719; fidelity=0.914610
+МЧ00.01.00.03 Колпак_pack: quality=0.947751; layout=0.953653; fidelity=0.915507
+Втулка_pack: quality=0.952083; layout=0.957119; fidelity=0.918834
+Заглушка_pack: quality=0.952264; layout=0.957268; fidelity=0.918977
+ЛБ 1 Маховик_pack: quality=0.952408; layout=0.956867; fidelity=0.918592
+ЛБ 2 (2)_pack: quality=0.953019; layout=0.963342; fidelity=0.963342
+МЧ00.01.00.05 Тарелка_pack: quality=0.954165; layout=0.959387; fidelity=0.921012
+МЧ00.01.00.07 Винт М16_pack: quality=0.954598; layout=0.960022; fidelity=0.921621
+ЛБ 2 (1)_pack: quality=0.956885; layout=0.966206; fidelity=0.966206
+МЧ00.01.00.01 Корпус_pack: quality=0.957810; layout=0.971808; fidelity=0.971808
+МЧ00.01.00.02 Крышка_pack: quality=0.962831; layout=0.971394; fidelity=0.932538

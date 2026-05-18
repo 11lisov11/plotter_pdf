@@ -51,6 +51,61 @@ class GcodeStatsModuleTests(unittest.TestCase):
             self.assertEqual(travel, 2)
             self.assertEqual(bounds, (1.0, 5.0, 2.0, 6.0))
 
+    def test_summarize_gcode_file_handles_compact_and_modal_xy_moves(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="plotter_gcode_stats_compact_") as td:
+            gcode = Path(td) / "compact.nc"
+            gcode.write_text(
+                "\n".join(
+                    [
+                        "G90",
+                        "G0X1Y2",
+                        "G1X3Y4",
+                        "X5Y6",
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            total, draw, travel, bounds = gcode_stats.summarize_gcode_file(
+                gcode,
+                points_distance=lambda _a, _b: 1.0,
+                arc_extents_xy=lambda *_args, **_kwargs: (0.0, 0.0, 0.0, 0.0),
+            )
+
+            self.assertEqual(total, 4)
+            self.assertEqual(draw, 2)
+            self.assertEqual(travel, 1)
+            self.assertEqual(bounds, (1.0, 5.0, 2.0, 6.0))
+
+    def test_summarize_gcode_file_respects_relative_xy_mode(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="plotter_gcode_stats_relative_") as td:
+            gcode = Path(td) / "relative.nc"
+            gcode.write_text(
+                "\n".join(
+                    [
+                        "G90",
+                        "G0 X10 Y10",
+                        "G91",
+                        "G1 X2 Y-3",
+                        "X1 Y1",
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            total, draw, travel, bounds = gcode_stats.summarize_gcode_file(
+                gcode,
+                points_distance=lambda _a, _b: 1.0,
+                arc_extents_xy=lambda *_args, **_kwargs: (0.0, 0.0, 0.0, 0.0),
+            )
+
+            self.assertEqual(total, 5)
+            self.assertEqual(draw, 2)
+            self.assertEqual(travel, 1)
+            self.assertEqual(bounds, (10.0, 13.0, 7.0, 10.0))
+
     def test_summarize_gcode_file_uses_arc_extents_for_arc_moves(self) -> None:
         with tempfile.TemporaryDirectory(prefix="plotter_gcode_stats_arc_") as td:
             gcode = Path(td) / "arc.nc"

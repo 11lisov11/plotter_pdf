@@ -46,6 +46,36 @@ class GcodeBoundsModuleTests(unittest.TestCase):
 
             self.assertEqual(bounds, (0.0, 10.0, 0.0, 0.0))
 
+    def test_gcode_draw_bounds_handles_compact_and_modal_xy_moves(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="plotter_gcode_bounds_compact_") as td:
+            gcode = Path(td) / "compact.nc"
+            gcode.write_text(
+                "\n".join(
+                    [
+                        "G21",
+                        "G90",
+                        "G0X0Y0",
+                        "M3",
+                        "G1X10Y0",
+                        "X12Y-2",
+                        "M5",
+                        "G0X50Y50",
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            bounds = gcode_bounds.gcode_draw_bounds(
+                gcode,
+                z_up=0.0,
+                z_down=11.9,
+                points_distance=lambda _a, _b: 1.0,
+                arc_extents_xy=lambda *_args, **_kwargs: (0.0, 0.0, 0.0, 0.0),
+            )
+
+            self.assertEqual(bounds, (0.0, 12.0, -2.0, 0.0))
+
     def test_gcode_draw_bounds_uses_arc_extents_for_arc_motion(self) -> None:
         with tempfile.TemporaryDirectory(prefix="plotter_gcode_bounds_arc_") as td:
             gcode = Path(td) / "arc.nc"

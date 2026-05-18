@@ -1,14 +1,14 @@
 20 вариант
-МЧ00.52.00.00 Клапан_pack: quality=0.907597; layout=0.923180; fidelity=0.886253
-МЧ00.52.00.02 Крышка_pack: quality=0.925218; layout=0.940906; fidelity=0.903270
-МЧ00.52.00.03 Штуцер_pack: quality=0.925625; layout=0.940609; fidelity=0.902985
-КНГ.01.22.01 - Маховик_pack: quality=0.930711; layout=0.948750; fidelity=0.910800
-МЧ00.52.00.05 Маховичок_pack: quality=0.931487; layout=0.947837; fidelity=0.909924
-Корпус аксонометрическая  проекция МЧ00.52.00.01_pack: quality=0.932552; layout=0.946550; fidelity=0.908688
-МЧ00.52.00.08 Клапан_pack: quality=0.933132; layout=0.951126; fidelity=0.913081
-МЧ00.52.00.04 Фланец_pack: quality=0.935610; layout=0.952638; fidelity=0.914532
-МЧ00.52.00.09 Прокладка_pack: quality=0.935713; layout=0.953880; fidelity=0.915725
-МЧ00.52.00.07 Втулка_pack: quality=0.937512; layout=0.956404; fidelity=0.918148
-МЧ00.52.00.06 Шпиндель_pack: quality=0.939590; layout=0.959181; fidelity=0.920814
-МЧ00.52.00.00 СБ Клапан_pack: quality=0.952597; layout=0.966130; fidelity=0.966130
-МЧ00.52.00.01 Корпус_pack: quality=0.959567; layout=0.971074; fidelity=0.971074
+МЧ00.52.00.00 Клапан_pack: quality=0.912495; layout=0.923107; fidelity=0.886183
+МЧ00.52.00.02 Крышка_pack: quality=0.936126; layout=0.940857; fidelity=0.903223
+МЧ00.52.00.03 Штуцер_pack: quality=0.936541; layout=0.940537; fidelity=0.902916
+КНГ.01.22.01 - Маховик_pack: quality=0.938765; layout=0.948617; fidelity=0.910672
+МЧ00.52.00.05 Маховичок_pack: quality=0.943671; layout=0.947985; fidelity=0.910066
+Корпус аксонометрическая  проекция МЧ00.52.00.01_pack: quality=0.943846; layout=0.946418; fidelity=0.908561
+МЧ00.52.00.08 Клапан_pack: quality=0.946985; layout=0.951136; fidelity=0.913091
+МЧ00.52.00.04 Фланец_pack: quality=0.947514; layout=0.952595; fidelity=0.914491
+МЧ00.52.00.09 Прокладка_pack: quality=0.949977; layout=0.953890; fidelity=0.915734
+МЧ00.52.00.07 Втулка_pack: quality=0.951133; layout=0.956350; fidelity=0.918096
+МЧ00.52.00.06 Шпиндель_pack: quality=0.952348; layout=0.959287; fidelity=0.920916
+МЧ00.52.00.00 СБ Клапан_pack: quality=0.959700; layout=0.965811; fidelity=0.965811
+МЧ00.52.00.01 Корпус_pack: quality=0.967935; layout=0.970866; fidelity=0.970866
