@@ -23,6 +23,11 @@ class CommonUtilsModuleTests(unittest.TestCase):
         self.assertEqual(common_utils.strip_unpaired_surrogates(raw, replacement="?"), "ok?done")
         self.assertEqual(common_utils.safe_log_text(raw), "ok?done")
 
+    def test_repair_mojibake_text_recovers_cyrillic_paths(self) -> None:
+        self.assertEqual(common_utils.repair_mojibake_text("РљРѕРјРїСЊСЋС‚РµСЂРЅР°СЏ РіСЂР°С„РёРєР°"), "Компьютерная графика")
+        cleaned = common_utils.clean_report_value({"path": "РљРќР“.01.20.01 - РњР°С…РѕРІРёРє"})
+        self.assertEqual(cleaned["path"], "КНГ.01.20.01 - Маховик")
+
     def test_resolve_bundle_and_work_root(self) -> None:
         fake_sys = types.SimpleNamespace(_MEIPASS="C:/bundle", frozen=False, executable="C:/bin/app.exe")
         bundle = common_utils.resolve_bundle_root(file_path="C:/repo/src/plotter_pdf_drawer.py", sys_module=fake_sys)

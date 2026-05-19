@@ -102,6 +102,12 @@ def build_cli_parser(backend: Any) -> argparse.ArgumentParser:
     )
     parser.add_argument("--corner-mark-size", type=float, default=2.0, help="Corner mark size in mm")
     parser.add_argument(
+        "--calibration-profile",
+        choices=["safe", "fast"],
+        default="safe",
+        help="Corner calibration Z-travel profile: safe uses full lifts, fast uses short travel lifts.",
+    )
+    parser.add_argument(
         "--quality",
         default=backend.DEFAULT_QUALITY_PROFILE,
         choices=["fast", "normal", "high"],
@@ -457,6 +463,7 @@ def run_cli_action(backend: Any, args, parser: argparse.ArgumentParser, *, com: 
             send_to_plotter=not args.dry_run,
             output_path=output_path,
             mark_size=args.corner_mark_size,
+            fast=args.calibration_profile == "fast",
         )
         print(msg)
         return 0 if ok else 1
@@ -504,6 +511,7 @@ def run_cli_action(backend: Any, args, parser: argparse.ArgumentParser, *, com: 
             feed_travel=args.feed_travel,
             feed_draw=args.feed_draw,
             auto_resume=bool(args.auto_resume),
+            calibration_fast=args.calibration_profile == "fast",
         )
         if ok and args.preview:
             output_guess = output_path or input_path.with_name(f"{input_path.stem}_prepared.nc")

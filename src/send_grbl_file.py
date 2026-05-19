@@ -3,6 +3,8 @@ import time
 from pathlib import Path
 import argparse
 from collections import deque
+import os
+import subprocess
 
 try:
     from src.plotter_backend.machine.windows_bt_spp import build_serial_open_hint
@@ -143,6 +145,63 @@ def _clean_gcode_lines(text: str) -> list[str]:
             continue
         out.append(line)
     return out
+
+
+def _find_conflicting_sender_processes(port: str, file_path: Path) -> list[tuple[int, str]]:
+    """Return other running sender processes for the same port/file on Windows."""
+    if os.name != "nt":
+        return []
+    try:
+        target_file = str(file_path.resolve()).casefold()
+    except Exception:
+        target_file = str(file_path).casefold()
+    target_port = str(port or "").casefold()
+    ps = (
+        "Get-CimInstance Win32_Process -Filter \"name = 'python.exe' or name = 'py.exe'\" | "
+        "Select-Object ProcessId,CommandLine | ConvertTo-Json -Compress"
+    )
+    try:
+        proc = subprocess.run(
+            ["powershell", "-NoProfile", "-Command", ps],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=5,
+            check=False,
+        )
+    except Exception:
+        return []
+    if proc.returncode != 0 or not proc.stdout.strip():
+        return []
+    try:
+        import json
+
+        payload = json.loads(proc.stdout)
+    except Exception:
+        return []
+    rows = payload if isinstance(payload, list) else [payload]
+    current_pid = os.getpid()
+    conflicts: list[tuple[int, str]] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        try:
+            pid = int(row.get("ProcessId") or 0)
+        except Exception:
+            continue
+        if pid <= 0 or pid == current_pid:
+            continue
+        cmd = str(row.get("CommandLine") or "")
+        cmd_norm = cmd.casefold()
+        if "send_grbl_file.py" not in cmd_norm:
+            continue
+        if target_port and target_port not in cmd_norm:
+            continue
+        if target_file and target_file not in cmd_norm:
+            continue
+        conflicts.append((pid, cmd))
+    return conflicts
 
 
 def _safe_pen_up_commands() -> tuple[str, ...]:
@@ -385,6 +444,14 @@ def main(argv):
     if not file_path.exists():
         _safe_print(f'File not found: {file_path}')
         return 2
+
+    conflicts = _find_conflicting_sender_processes(port, file_path)
+    if conflicts:
+        _safe_print("Refusing to start: another send_grbl_file.py is already streaming this file/port.")
+        for pid, cmd in conflicts[:5]:
+            _safe_print(f"  PID {pid}: {cmd}")
+        _safe_print("Stop the old sender first, then rerun this command.")
+        return 4
 
     ser = None
     try:

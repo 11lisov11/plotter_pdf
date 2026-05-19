@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import unittest
+from pathlib import Path
+from unittest import mock
 
 from src import send_grbl_file
 
@@ -69,6 +71,21 @@ class SendGrblFileModuleTests(unittest.TestCase):
         self.assertIn("?", cmds)
         self.assertLess(cmds.index("G0 X0.0000 Y0.0000 F900.0"), cmds.index("?"))
         self.assertLess(cmds.index("?"), cmds.index("$1=0"))
+
+    def test_main_refuses_duplicate_sender_for_same_port_and_file(self) -> None:
+        with (
+            mock.patch.object(Path, "exists", return_value=True),
+            mock.patch.object(
+                send_grbl_file,
+                "_find_conflicting_sender_processes",
+                return_value=[(123, "python src\\send_grbl_file.py COM6 115200 D:\\job.nc")],
+            ),
+            mock.patch.object(send_grbl_file, "open_grbl") as open_grbl,
+        ):
+            rc = send_grbl_file.main(["send_grbl_file.py", "COM6", "115200", "D:\\job.nc"])
+
+        self.assertEqual(rc, 4)
+        open_grbl.assert_not_called()
 
 
 if __name__ == "__main__":

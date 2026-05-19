@@ -6,13 +6,17 @@ import hashlib
 import json
 import math
 import re
+import sys
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+from src.plotter_backend.common_utils import clean_report_value
+
 DEFAULT_WORK_AREA = (0.0, 180.0, -285.0, -5.0)
 A3_TWO_PASS_WORK_AREA = (0.0, 180.0, -285.0, -2.0)
 DEFAULT_Z_UP = 0.0
@@ -683,7 +687,7 @@ def validate_variant(variant_dir: Path, *, write_reports: bool = True) -> dict[s
     }
     if write_reports:
         (variant_dir / "_ready_to_plot_audit.json").write_text(
-            json.dumps(payload, ensure_ascii=False, indent=2),
+            json.dumps(clean_report_value(payload), ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
         lines = [

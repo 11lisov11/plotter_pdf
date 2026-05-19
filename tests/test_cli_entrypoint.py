@@ -96,6 +96,23 @@ class CliEntrypointTests(unittest.TestCase):
         self.assertFalse(bool(kwargs["send_to_plotter"]))
         self.assertEqual(kwargs["output_path"], Path("out.nc"))
 
+    def test_main_corner_calibration_fast_profile_passes_short_lift_flag(self) -> None:
+        with (
+            mock.patch.object(backend, "load_pencil_profile", return_value={}),
+            mock.patch.object(backend, "apply_pencil_profile"),
+            mock.patch.object(backend, "configure_active_work_area"),
+            mock.patch.object(backend, "resolve_sheet_size_mm", return_value=(180.0, 280.0)),
+            mock.patch.object(backend, "detect_com_port", return_value="COM6"),
+            mock.patch.object(backend, "apply_quality_profile"),
+            mock.patch.object(backend, "quality_state", return_value="mock-profile"),
+            mock.patch.object(backend, "run_corner_calibration_pipeline", return_value=(True, "ok")) as run_calibration,
+            mock.patch("builtins.print"),
+        ):
+            rc = backend.main(["--calibrate-corners", "--dry-run", "--calibration-profile", "fast"])
+
+        self.assertEqual(rc, 0)
+        self.assertTrue(run_calibration.call_args.kwargs["fast"])
+
     def test_main_without_action_returns_usage_error(self) -> None:
         with (
             mock.patch("builtins.print") as print_mock,

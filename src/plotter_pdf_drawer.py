@@ -9874,6 +9874,7 @@ def run_pipeline_with_corner_calibration(
     feed_travel: float = FEED_TRAVEL,
     feed_draw: float = FEED_DRAW,
     auto_resume: bool = True,
+    calibration_fast: bool = False,
 ) -> Tuple[bool, str]:
     if send_to_plotter and not skip_calibration:
         ok, msg = run_corner_calibration_pipeline(
@@ -9882,6 +9883,7 @@ def run_pipeline_with_corner_calibration(
             baud=baud,
             send_to_plotter=send_to_plotter,
             mark_size=corner_mark_size,
+            fast=bool(calibration_fast),
         )
         if not ok:
             return False, msg
@@ -9945,6 +9947,7 @@ def run_corner_calibration_pipeline(
     send_to_plotter: bool = True,
     output_path: Optional[Path] = None,
     mark_size: float = 2.0,
+    fast: bool = False,
 ) -> Tuple[bool, str]:
     try:
         log(
@@ -9954,7 +9957,8 @@ def run_corner_calibration_pipeline(
             f"anchor={ACTIVE_SHEET_CONFIG.get('anchor')}, "
             f"offset=({float(ACTIVE_SHEET_CONFIG.get('offset_x_mm') or 0.0):.2f},"
             f"{float(ACTIVE_SHEET_CONFIG.get('offset_y_mm') or 0.0):.2f}), "
-            f"pass={int(PASS_COL)}/{int(PASS_COLS)} x {int(PASS_ROW)}/{int(PASS_ROWS)}"
+            f"pass={int(PASS_COL)}/{int(PASS_COLS)} x {int(PASS_ROW)}/{int(PASS_ROWS)}, "
+            f"z_travel={'short' if fast else 'full'}"
         )
         marks = build_area_corner_mark_polylines(mark_size=mark_size)
         if not marks:
@@ -9975,8 +9979,15 @@ def run_corner_calibration_pipeline(
 
             write_xy_gcode(xy_path, all_paths, FEED_TRAVEL, FEED_DRAW)
             log("Applying pen-up / pen-down ...")
-            apply_penlift(xy_path, pen_path, force_full_lift=True)
+            apply_penlift(xy_path, pen_path, force_full_lift=not bool(fast))
             make_final_with_preamble(pen_path, final_path)
+            gcode_lines, gcode_draw, gcode_travel, gcode_bounds = summarize_gcode_file(final_path)
+            log(
+                f"Calibration G-code stats: lines={gcode_lines}, draw={gcode_draw}, travel={gcode_travel}, "
+                f"bounds={gcode_bounds[0]:.3f}..{gcode_bounds[1]:.3f} x, "
+                f"{gcode_bounds[2]:.3f}..{gcode_bounds[3]:.3f} y, "
+                f"feed_xy=travel {FEED_TRAVEL:.1f}/draw {FEED_DRAW:.1f}, z_down={Z_DOWN:.3f}"
+            )
 
             if send_to_plotter:
                 send_to_grbl(final_path, com, baud, log, sleep_after=True)
