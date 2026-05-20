@@ -152,9 +152,14 @@ def _find_conflicting_sender_processes(port: str, file_path: Path) -> list[tuple
     if os.name != "nt":
         return []
     try:
-        target_file = str(file_path.resolve()).casefold()
+        resolved_file = str(file_path.resolve()).casefold()
     except Exception:
-        target_file = str(file_path).casefold()
+        resolved_file = str(file_path).casefold()
+    target_file_tokens: list[str] = []
+    for item in (str(file_path), str(Path(file_path)), resolved_file, Path(file_path).name):
+        token = str(item or "").strip().casefold()
+        if token and token not in target_file_tokens:
+            target_file_tokens.append(token)
     target_port = str(port or "").casefold()
     ps = (
         "Get-CimInstance Win32_Process -Filter \"name = 'python.exe' or name = 'py.exe'\" | "
@@ -198,7 +203,7 @@ def _find_conflicting_sender_processes(port: str, file_path: Path) -> list[tuple
             continue
         if target_port and target_port not in cmd_norm:
             continue
-        if target_file and target_file not in cmd_norm:
+        if target_file_tokens and not any(token in cmd_norm for token in target_file_tokens):
             continue
         conflicts.append((pid, cmd))
     return conflicts

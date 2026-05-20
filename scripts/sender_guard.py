@@ -25,6 +25,18 @@ def _normalize_path(value: str | Path | None) -> str:
         return str(value).casefold()
 
 
+def _path_match_tokens(value: str | Path | None) -> list[str]:
+    if value is None:
+        return []
+    raw = str(value)
+    tokens: list[str] = []
+    for item in (raw, str(Path(raw)), _normalize_path(raw), Path(raw).name):
+        item_norm = str(item or "").strip().casefold()
+        if item_norm and item_norm not in tokens:
+            tokens.append(item_norm)
+    return tokens
+
+
 def _query_python_process_rows(*, run: Callable[..., Any] = subprocess.run) -> list[dict[str, Any]]:
     if os.name != "nt":
         return []
@@ -62,7 +74,7 @@ def find_sender_processes(
     current_pid: int | None = None,
 ) -> list[SenderProcess]:
     target_port = str(port or "").casefold()
-    target_file = _normalize_path(file_path)
+    target_file_tokens = _path_match_tokens(file_path)
     rows = list(process_rows) if process_rows is not None else _query_python_process_rows()
     own_pid = os.getpid() if current_pid is None else int(current_pid)
     matches: list[SenderProcess] = []
@@ -79,7 +91,7 @@ def find_sender_processes(
             continue
         if target_port and target_port not in cmd_norm:
             continue
-        if target_file and target_file not in cmd_norm:
+        if target_file_tokens and not any(token in cmd_norm for token in target_file_tokens):
             continue
         matches.append(SenderProcess(pid=pid, command_line=cmd))
     return matches

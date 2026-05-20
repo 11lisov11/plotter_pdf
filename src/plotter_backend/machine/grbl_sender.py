@@ -15,8 +15,10 @@ from ..errors import SerialTransportError, ToolDependencyError
 def find_nearest_g0_xy_line(gcode_file: Path, *, x: float, y: float) -> int:
     # Find nearest G0 XY endpoint to current position. Resume at a travel move
     # to avoid dragging pen/pencil through already drawn geometry.
-    x_re = re.compile(r"\bX(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)")
-    y_re = re.compile(r"\bY(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)")
+    g_re = re.compile(r"\bG0*([0123])(?:\.0*)?\b", flags=re.IGNORECASE)
+    number = r"([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)"
+    x_re = re.compile(r"\bX" + number)
+    y_re = re.compile(r"\bY" + number)
 
     cur_x: Optional[float] = None
     cur_y: Optional[float] = None
@@ -25,19 +27,21 @@ def find_nearest_g0_xy_line(gcode_file: Path, *, x: float, y: float) -> int:
 
     with gcode_file.open("r", encoding="utf-8", errors="ignore") as fh:
         for ln, raw in enumerate(fh, 1):
-            line = raw.strip()
+            line = raw.split(";", 1)[0].strip()
             if not line or line.startswith(";") or line.startswith("("):
                 continue
-            sx = x_re.search(line)
-            sy = y_re.search(line)
+            sx = x_re.search(line.upper())
+            sy = y_re.search(line.upper())
             if sx:
                 cur_x = float(sx.group(1))
             if sy:
                 cur_y = float(sy.group(1))
 
-            if not line.startswith("G0"):
+            g_match = g_re.search(line)
+            if not g_match or int(g_match.group(1)) != 0:
                 continue
-            if ("X" not in line) and ("Y" not in line):
+            line_upper = line.upper()
+            if ("X" not in line_upper) and ("Y" not in line_upper):
                 continue
             if cur_x is None or cur_y is None:
                 continue

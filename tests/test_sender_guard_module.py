@@ -29,6 +29,23 @@ class SenderGuardTests(unittest.TestCase):
 
         self.assertEqual([proc.pid for proc in found], [10])
 
+    def test_find_sender_processes_matches_relative_and_absolute_file_forms(self) -> None:
+        rows = [
+            {
+                "ProcessId": 10,
+                "CommandLine": r'python D:\plotter_pdf\src\send_grbl_file.py COM6 115200 job.nc',
+            }
+        ]
+
+        found = sender_guard.find_sender_processes(
+            port="COM6",
+            file_path=r"D:\plotter_pdf\job.nc",
+            process_rows=rows,
+            current_pid=99,
+        )
+
+        self.assertEqual([proc.pid for proc in found], [10])
+
     def test_stop_sender_processes_uses_stop_process(self) -> None:
         calls = []
 

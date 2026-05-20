@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest import mock
 
 from src import send_grbl_file
@@ -86,6 +87,25 @@ class SendGrblFileModuleTests(unittest.TestCase):
 
         self.assertEqual(rc, 4)
         open_grbl.assert_not_called()
+
+    def test_find_conflicting_sender_processes_matches_relative_file_command(self) -> None:
+        proc_payload = (
+            '[{"ProcessId":123,'
+            '"CommandLine":"python D:\\\\plotter_pdf\\\\src\\\\send_grbl_file.py COM6 115200 job.nc"}]'
+        )
+
+        with (
+            mock.patch.object(send_grbl_file.os, "name", "nt"),
+            mock.patch.object(send_grbl_file.os, "getpid", return_value=999),
+            mock.patch.object(
+                send_grbl_file.subprocess,
+                "run",
+                return_value=SimpleNamespace(returncode=0, stdout=proc_payload),
+            ),
+        ):
+            conflicts = send_grbl_file._find_conflicting_sender_processes("COM6", Path(r"D:\plotter_pdf\job.nc"))
+
+        self.assertEqual(conflicts, [(123, r"python D:\plotter_pdf\src\send_grbl_file.py COM6 115200 job.nc")])
 
 
 if __name__ == "__main__":

@@ -51,6 +51,28 @@ class GrblSenderModuleTests(unittest.TestCase):
             line = grbl_sender.find_nearest_g0_xy_line(gcode, x=5.2, y=6.1)
             self.assertEqual(line, 6)
 
+    def test_find_nearest_g0_xy_line_accepts_common_gcode_variants(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="plotter_grbl_sender_find_variants_") as td:
+            root = Path(td)
+            gcode = root / "test.nc"
+            gcode.write_text(
+                "\n".join(
+                    [
+                        "G21",
+                        "G90",
+                        "  g00 x0 y0",
+                        "G1 X10 Y0",
+                        "G00 X20 Y20 ; far travel",
+                        "g0 X+5.2 Y6.",
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            line = grbl_sender.find_nearest_g0_xy_line(gcode, x=5.2, y=6.1)
+            self.assertEqual(line, 6)
+
     def test_write_resume_file_writes_preamble_and_payload(self) -> None:
         with tempfile.TemporaryDirectory(prefix="plotter_grbl_sender_resume_") as td:
             root = Path(td)
