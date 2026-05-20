@@ -12,12 +12,18 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_ROOT = PROJECT_ROOT / "Компьютерная графика"
 
 
-def _prune_package_outputs(package_dir: Path, *, is_a3: bool, source_pdf: Path) -> None:
-    keep_files = (
-        {"pass_01.pdf", "pass_01.gcode", "pass_02.pdf", "pass_02.gcode", source_pdf.name}
-        if is_a3
-        else {"page_01.pdf", "page_01.gcode", source_pdf.name}
-    )
+def _prune_package_outputs(package_dir: Path, *, is_a3: bool, source_pdf: Path, is_custom_tiled: bool = False) -> None:
+    if is_custom_tiled:
+        keep_files = {
+            child.name
+            for child in package_dir.iterdir()
+            if child.is_file() and child.stem.startswith("pass_") and child.suffix.lower() in {".pdf", ".gcode"}
+        }
+        keep_files.update({"combined_preview.pdf", source_pdf.name})
+    elif is_a3:
+        keep_files = {"pass_01.pdf", "pass_01.gcode", "pass_02.pdf", "pass_02.gcode", source_pdf.name}
+    else:
+        keep_files = {"page_01.pdf", "page_01.gcode", source_pdf.name}
     source_copy = package_dir / source_pdf.name
     source_copy.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(source_pdf, source_copy)
@@ -43,13 +49,13 @@ def _prepare_variant(variant_dir: Path) -> None:
         print(f"[{idx}/{len(pdfs)}] processing: {source_pdf.name}")
         report, _rows = prep._prepare_drawing_package(source_pdf, package_dir)
         is_a3 = bool(report.get("a3_two_pass", False))
-        if bool(report.get("custom_tiled", False)):
-            raise RuntimeError(
-                f"Unexpected custom_tiled output for {source_pdf.name}. "
-                "Variants 20/22 must be prepared as A4 single-page or A3 two-pass."
-            )
-        _prune_package_outputs(package_dir, is_a3=is_a3, source_pdf=source_pdf)
-        print(f"    done: {'A3-2pass' if is_a3 else 'A4'} -> {package_dir.name}")
+        is_custom_tiled = bool(report.get("custom_tiled", False))
+        _prune_package_outputs(package_dir, is_a3=is_a3, is_custom_tiled=is_custom_tiled, source_pdf=source_pdf)
+        if is_custom_tiled:
+            label = "custom-tiled"
+        else:
+            label = "A3-2pass" if is_a3 else "A4"
+        print(f"    done: {label} -> {package_dir.name}")
 
 
 def main() -> int:

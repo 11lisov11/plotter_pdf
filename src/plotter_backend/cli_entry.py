@@ -4,8 +4,15 @@ import argparse
 from pathlib import Path
 from typing import Any, Optional, Tuple
 
+from scripts.find_ready_package import find_first_ready_package
+
 
 SUPPORTED_INPUT_EXTENSIONS = {".pdf", ".svg", ".frw", ".cdw", ".doc", ".docx"}
+
+
+def _arg_value(args, name: str, default=None):
+    values = vars(args) if hasattr(args, "__dict__") else {}
+    return values.get(name, default)
 
 
 def optional_path_arg(value: Optional[str]) -> Optional[Path]:
@@ -18,24 +25,26 @@ def optional_path_arg(value: Optional[str]) -> Optional[Path]:
 def should_exit_after_pencil_maintenance(args, *, did_pencil_command: bool) -> bool:
     return bool(
         did_pencil_command
-        and not args.frame
-        and not args.calibrate_corners
-        and not args.pencil_wear_test
-        and not args.input
-        and not args.plan_sheet
+        and not _arg_value(args, "frame", False)
+        and not _arg_value(args, "calibrate_corners", False)
+        and not _arg_value(args, "pencil_wear_test", False)
+        and not _arg_value(args, "draw_ready", None)
+        and not _arg_value(args, "input", None)
+        and not _arg_value(args, "plan_sheet", False)
     )
 
 
 def has_cli_action(args) -> bool:
     return bool(
-        args.frame
-        or args.calibrate_corners
-        or args.pencil_wear_test
-        or args.input
-        or args.plan_sheet
-        or args.pencil_sharpened
-        or args.pencil_status
-        or args.pencil_calibrate_from_last_test_stage is not None
+        _arg_value(args, "frame", False)
+        or _arg_value(args, "calibrate_corners", False)
+        or _arg_value(args, "pencil_wear_test", False)
+        or _arg_value(args, "draw_ready", None)
+        or _arg_value(args, "input", None)
+        or _arg_value(args, "plan_sheet", False)
+        or _arg_value(args, "pencil_sharpened", False)
+        or _arg_value(args, "pencil_status", False)
+        or _arg_value(args, "pencil_calibrate_from_last_test_stage", None) is not None
     )
 
 
@@ -198,6 +207,24 @@ def build_cli_parser(backend: Any) -> argparse.ArgumentParser:
     parser.add_argument("--pencil-wear-test-loops", type=int, default=1, help="Cross-hatch loop count per wear-test block.")
     parser.add_argument("--pencil-wear-test-margin-mm", type=float, default=8.0, help="Wear-test margin from active area borders (mm).")
     parser.add_argument("--pencil-wear-test-gap-mm", type=float, default=6.0, help="Wear-test gap between blocks (mm).")
+    parser.add_argument(
+        "--draw-ready",
+        default=None,
+        help="Select and draw the first ready package from a prepared variant directory.",
+    )
+    parser.add_argument(
+        "--ready-kind",
+        "--kind",
+        dest="ready_kind",
+        default="a4",
+        help="Ready package kind for --draw-ready (default: a4).",
+    )
+    parser.add_argument(
+        "--ready-sleep",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Send $SLP after drawing a ready package (default: true).",
+    )
     parser.add_argument(
         "--force-text-to-path",
         action="store_true",
@@ -441,7 +468,14 @@ def apply_cli_quality_profile(backend: Any, args) -> Optional[int]:
 def run_cli_action(backend: Any, args, parser: argparse.ArgumentParser, *, com: str) -> int:
     output_path = optional_path_arg(args.output)
 
-    if args.plan_sheet and not args.frame and not args.calibrate_corners and not args.pencil_wear_test and not args.input:
+    if (
+        args.plan_sheet
+        and not args.frame
+        and not args.calibrate_corners
+        and not args.pencil_wear_test
+        and not args.draw_ready
+        and not args.input
+    ):
         return 0
 
     if args.frame:
@@ -487,6 +521,41 @@ def run_cli_action(backend: Any, args, parser: argparse.ArgumentParser, *, com: 
         )
         print(msg)
         return 0 if ok else 1
+
+    if args.draw_ready:
+        try:
+            selection = find_first_ready_package(Path(args.draw_ready), kind=str(args.ready_kind or "a4"))
+        except Exception as exc:
+            print(f"Ready package selection failed: {exc}")
+            return 1
+        nc_path = Path(selection.nc)
+        print(f"Ready package: {selection.task}")
+        print(f"  kind={selection.kind} item={selection.item}")
+        print(f"  nc={nc_path}")
+        print(f"  lines={selection.line_count} draw_length_m={selection.draw_length_m}")
+        print(f"  bounds={selection.bounds}")
+        print(f"  preview_pdf={selection.preview_pdf}")
+        if args.dry_run or args.preview:
+            print("Dry run: ready package selected, not sent.")
+            return 0
+        try:
+            plot_time_s = backend.send_to_grbl(
+                nc_path,
+                com,
+                args.baud,
+                print,
+                sleep_after=bool(args.ready_sleep),
+                auto_resume=bool(args.auto_resume),
+                max_resume_attempts=1,
+            )
+        except Exception as exc:
+            print(backend._format_backend_exception(exc))
+            return 1
+        print(
+            "Done: ready package sent. "
+            f"Plot time: {backend.format_duration_hms(plot_time_s)} ({plot_time_s:.1f}s)."
+        )
+        return 0
 
     if args.input:
         input_path = Path(args.input)
