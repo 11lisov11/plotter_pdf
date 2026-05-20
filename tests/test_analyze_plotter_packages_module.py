@@ -80,3 +80,13 @@ def test_main_default_root_is_computer_graphics(tmp_path: Path, monkeypatch, cap
     payload = json.loads(capsys.readouterr().out)
     assert payload["roots"] == [str(default_root)]
     assert payload["summary"]["files"] == 1
+
+
+def test_main_returns_error_when_no_gcode_files_found(tmp_path: Path, capsys) -> None:
+    empty_root = tmp_path / "empty"
+    empty_root.mkdir()
+
+    rc = analyzer.main(["--root", str(empty_root), "--no-write"])
+
+    assert rc == 2
+    assert "No .nc/.gcode files found" in capsys.readouterr().out

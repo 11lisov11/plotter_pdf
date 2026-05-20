@@ -21,7 +21,7 @@ DEFAULT_WORK_AREA = (0.0, 180.0, -285.0, -5.0)
 A3_TWO_PASS_WORK_AREA = (0.0, 180.0, -285.0, -2.0)
 DEFAULT_Z_UP = 0.0
 DEFAULT_Z_DOWN = 11.9
-_TOKEN_RE = re.compile(r"([A-Za-z])\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))")
+_TOKEN_RE = re.compile(r"([A-Za-z])\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)")
 _SVG_COORD_RE = re.compile(r"[ML]\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))[\s,]+([+-]?(?:\d+(?:\.\d*)?|\.\d+))", re.I)
 _SVG_POINT_RE = re.compile(r"([+-]?(?:\d+(?:\.\d*)?|\.\d+))[\s,]+([+-]?(?:\d+(?:\.\d*)?|\.\d+))")
 
@@ -300,7 +300,7 @@ def validate_gcode_file(
                             segments_seen.add(key)
                         draw_segments.append((x0, y0, x1, y1))
                     if draw_bounds is None:
-                        draw_bounds = [x0, x1, y0, y1]
+                        draw_bounds = [min(x0, x1), max(x0, x1), min(y0, y1), max(y0, y1)]
                     else:
                         draw_bounds[0] = min(draw_bounds[0], x0, x1)
                         draw_bounds[1] = max(draw_bounds[1], x0, x1)
@@ -653,9 +653,12 @@ def validate_variant(variant_dir: Path, *, write_reports: bool = True) -> dict[s
     packages = [validate_package(package_dir, package_rows) for package_dir, package_rows in sorted(grouped.items())]
     failed = [pkg for pkg in packages if not pkg.ok]
     warnings = [warning for pkg in packages for warning in pkg.warnings]
+    scope_problems: list[str] = []
+    if not packages:
+        scope_problems.append("no packages listed in _prepared_summary.csv")
     payload = {
         "variant_dir": str(variant_dir),
-        "ok": not failed,
+        "ok": not failed and not scope_problems,
         "packages": len(packages),
         "failed_packages": [
             {
@@ -664,7 +667,18 @@ def validate_variant(variant_dir: Path, *, write_reports: bool = True) -> dict[s
                 "warnings": pkg.warnings,
             }
             for pkg in failed
-        ],
+        ]
+        + (
+            [
+                {
+                    "package_dir": str(variant_dir),
+                    "problems": scope_problems,
+                    "warnings": [],
+                }
+            ]
+            if scope_problems
+            else []
+        ),
         "warnings": warnings,
         "preflight": {
             "checked_gcode_files": sum(len(pkg.gcode) for pkg in packages),

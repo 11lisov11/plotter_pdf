@@ -249,6 +249,12 @@ def main(argv: list[str] | None = None) -> int:
 
     roots = [Path(item) for item in [*args.root, *args.paths]] if (args.root or args.paths) else [PROJECT_ROOT / "Компьютерная графика"]
     files = collect_gcode_files(roots)
+    if not files:
+        print(
+            "No .nc/.gcode files found under: "
+            + ", ".join(str(path) for path in roots)
+        )
+        return 2
     metrics = [analyze_gcode_file(path) for path in files]
     payload = {
         "generated_at_unix": int(time.time()),

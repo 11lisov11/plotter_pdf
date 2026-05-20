@@ -244,6 +244,32 @@ def test_validate_gcode_does_not_treat_m30_as_pen_down(tmp_path: Path) -> None:
     assert result.ok
 
 
+def test_validate_gcode_parses_exponent_coordinates(tmp_path: Path) -> None:
+    gcode_path = tmp_path / "exp.nc"
+    gcode_path.write_text(
+        """G21
+G90
+G92 Z4
+G0 Z0 F800
+M5
+G0 X0 Y-1.0e1
+G1 Z11.9
+G1 X1.0e1 Y-2.0e1
+G0 Z0
+M5
+G0 X0 Y0
+M5
+$1=0
+""",
+        encoding="utf-8",
+    )
+
+    result = mod.validate_gcode_file(gcode_path)
+
+    assert result.ok, result.problems
+    assert result.bounds == (0.0, 10.0, -20.0, -10.0)
+
+
 def test_validate_gcode_rejects_duplicate_draw_segment(tmp_path: Path) -> None:
     gcode_path = tmp_path / "duplicate.gcode"
     gcode_path.write_text(
@@ -572,3 +598,16 @@ def test_validate_variant_writes_ready_to_plot_audit(tmp_path: Path) -> None:
     assert payload["preflight"]["unsafe_endings"] == 0
     assert (variant_dir / "_ready_to_plot_audit.json").exists()
     assert (variant_dir / "_ready_to_plot_audit.txt").exists()
+
+
+def test_validate_variant_rejects_empty_prepared_summary(tmp_path: Path) -> None:
+    variant_dir = tmp_path / "variant"
+    variant_dir.mkdir()
+    (variant_dir / "_prepared_summary.csv").write_text("package_dir,item\n", encoding="utf-8")
+
+    payload = mod.validate_variant(variant_dir, write_reports=False)
+
+    assert payload["ok"] is False
+    assert payload["packages"] == 0
+    assert payload["failed_packages"]
+    assert "no packages listed" in payload["failed_packages"][0]["problems"][0]
