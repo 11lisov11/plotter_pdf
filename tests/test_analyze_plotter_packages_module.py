@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from scripts import analyze_plotter_packages as analyzer
@@ -53,3 +54,29 @@ def test_collect_gcode_files_uses_only_nc_and_gcode(tmp_path: Path) -> None:
     found = analyzer.collect_gcode_files([tmp_path])
 
     assert found == [keep_nc, keep_gcode]
+
+
+def test_main_accepts_positional_gcode_files(tmp_path: Path, capsys) -> None:
+    gcode = tmp_path / "job.nc"
+    gcode.write_text("G90\nG0 X0 Y0\nG1 X1 Y0\n", encoding="utf-8")
+
+    rc = analyzer.main([str(gcode), "--no-write"])
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["roots"] == [str(gcode)]
+    assert payload["summary"]["files"] == 1
+
+
+def test_main_default_root_is_computer_graphics(tmp_path: Path, monkeypatch, capsys) -> None:
+    default_root = tmp_path / "Компьютерная графика"
+    default_root.mkdir()
+    (default_root / "job.nc").write_text("G90\nG0 X0 Y0\nG1 X1 Y0\n", encoding="utf-8")
+    monkeypatch.setattr(analyzer, "PROJECT_ROOT", tmp_path)
+
+    rc = analyzer.main(["--no-write"])
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["roots"] == [str(default_root)]
+    assert payload["summary"]["files"] == 1

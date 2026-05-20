@@ -94,6 +94,18 @@ def _is_within(path: Path, parent: Path) -> bool:
         return False
 
 
+def _normalize_kind(kind: str) -> str:
+    value = str(kind or "a4").strip().lower().replace("-", "_")
+    aliases = {
+        "first_a4": "a4",
+        "page": "a4",
+        "a3": "a3_two_pass",
+        "a3_two": "a3_two_pass",
+        "two_pass": "a3_two_pass",
+    }
+    return aliases.get(value, value)
+
+
 def find_first_ready_package(variant_dir: Path, *, kind: str = "a4") -> ReadyPackageSelection:
     variant_dir = Path(variant_dir)
     if not variant_dir.exists():
@@ -101,7 +113,7 @@ def find_first_ready_package(variant_dir: Path, *, kind: str = "a4") -> ReadyPac
     if not _ready_audit_ok(variant_dir):
         raise RuntimeError(f"Variant is not ready to plot: {variant_dir / '_ready_to_plot_audit.json'}")
 
-    wanted_kind = str(kind or "a4").strip().lower()
+    wanted_kind = _normalize_kind(kind)
     for item in _audit_items(variant_dir):
         item = clean_report_value(item)
         item_kind = str(item.get("kind") or "").strip().lower()

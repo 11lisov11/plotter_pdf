@@ -241,12 +241,13 @@ def summarize(metrics: list[GcodeAlgorithmMetrics]) -> dict[str, object]:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Measure plotter G-code topology without modifying packages.")
+    parser.add_argument("paths", nargs="*", help="Variant/package directories or .nc/.gcode files.")
     parser.add_argument("--root", action="append", default=[], help="Variant/package directory or .nc/.gcode file.")
     parser.add_argument("--output", default=None, help="Output JSON path. Defaults to _tmp/algorithm_baseline/<timestamp>.json.")
     parser.add_argument("--no-write", action="store_true", help="Print JSON only; do not write a report file.")
     args = parser.parse_args(argv)
 
-    roots = [Path(item) for item in args.root] if args.root else [PROJECT_ROOT / "Компьютерная графика"]
+    roots = [Path(item) for item in [*args.root, *args.paths]] if (args.root or args.paths) else [PROJECT_ROOT / "Компьютерная графика"]
     files = collect_gcode_files(roots)
     metrics = [analyze_gcode_file(path) for path in files]
     payload = {

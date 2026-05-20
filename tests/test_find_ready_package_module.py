@@ -4,7 +4,7 @@ import csv
 import json
 from pathlib import Path
 
-from scripts.find_ready_package import find_first_ready_package
+from scripts.find_ready_package import find_first_ready_package, _normalize_kind
 
 
 def test_find_first_ready_a4_package_uses_audit_order_and_summary(tmp_path: Path) -> None:
@@ -62,3 +62,9 @@ def test_find_first_ready_a4_package_uses_audit_order_and_summary(tmp_path: Path
     assert selection.nc == str(nc)
     assert selection.line_count == 3
     assert selection.draw_length_m == 7.197
+
+
+def test_ready_kind_aliases_match_audit_kind_names() -> None:
+    assert _normalize_kind("a3") == "a3_two_pass"
+    assert _normalize_kind("a3-two") == "a3_two_pass"
+    assert _normalize_kind("first_a4") == "a4"
