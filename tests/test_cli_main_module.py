@@ -4,6 +4,7 @@ import unittest
 from unittest import mock
 
 from src import cli_main
+from src import plotter_pdf_drawer as backend
 
 
 class CliMainModuleTests(unittest.TestCase):
@@ -16,6 +17,15 @@ class CliMainModuleTests(unittest.TestCase):
         backend_arg, argv_arg = run_cli_main.call_args.args
         self.assertIs(backend_arg, cli_main.CLI_BACKEND)
         self.assertEqual(argv_arg, ["--plan-sheet"])
+
+    def test_cli_backend_proxy_writes_runtime_flags_to_backend_module(self) -> None:
+        old_value = backend.TECH_TEXT_CLUSTER_STITCH_ENABLE
+        try:
+            cli_main.CLI_BACKEND.TECH_TEXT_CLUSTER_STITCH_ENABLE = True
+            self.assertTrue(backend.TECH_TEXT_CLUSTER_STITCH_ENABLE)
+            self.assertTrue(cli_main.CLI_BACKEND.TECH_TEXT_CLUSTER_STITCH_ENABLE)
+        finally:
+            backend.TECH_TEXT_CLUSTER_STITCH_ENABLE = old_value
 
 
 if __name__ == "__main__":

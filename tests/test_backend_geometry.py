@@ -1075,6 +1075,39 @@ class BackendGeometryTests(unittest.TestCase):
         finally:
             backend.HANDWRITING_TEXT_ENABLED = old_hw
 
+    def test_technical_singleline_opt_relaxes_small_text_bbox_but_rejects_frame(self) -> None:
+        old_hw = backend.HANDWRITING_TEXT_ENABLED
+        old_flag = backend.TECH_TEXT_SINGLELINE_OPT_ENABLE
+        try:
+            backend.HANDWRITING_TEXT_ENABLED = False
+            relaxed_group = [
+                backend.PathItem(
+                    points=self._rect(0.0, 0.0, 34.0, 6.0),
+                    closed=True,
+                    is_fill=True,
+                    is_stroke=False,
+                    source_id=121,
+                )
+            ]
+            frame_like = [
+                backend.PathItem(
+                    points=self._rect(0.0, 0.0, 120.0, 80.0),
+                    closed=True,
+                    is_fill=True,
+                    is_stroke=False,
+                    source_id=122,
+                )
+            ]
+
+            backend.TECH_TEXT_SINGLELINE_OPT_ENABLE = False
+            self.assertFalse(backend._likely_technical_text_group(relaxed_group))
+            backend.TECH_TEXT_SINGLELINE_OPT_ENABLE = True
+            self.assertTrue(backend._likely_technical_text_group(relaxed_group))
+            self.assertFalse(backend._likely_technical_text_group(frame_like))
+        finally:
+            backend.HANDWRITING_TEXT_ENABLED = old_hw
+            backend.TECH_TEXT_SINGLELINE_OPT_ENABLE = old_flag
+
     def test_centerline_fill_group_ignores_open_polylines(self) -> None:
         if backend.np is None or backend.cv2 is None:
             self.skipTest("opencv/numpy unavailable")
@@ -1287,6 +1320,24 @@ class BackendGeometryTests(unittest.TestCase):
         self.assertEqual(out[0][0], polys[0][0])
         self.assertEqual(out[0][-1], polys[1][-1])
         self.assertEqual(out[1], polys[2])
+
+    def test_technical_cluster_stitch_flag_relaxes_default_gap_only_under_flag(self) -> None:
+        old_flag = backend.TECH_TEXT_CLUSTER_STITCH_ENABLE
+        try:
+            polys = [
+                [(0.0, 0.0), (0.7, 0.0)],
+                [(1.28, 0.05), (1.8, 0.05)],
+            ]
+
+            backend.TECH_TEXT_CLUSTER_STITCH_ENABLE = False
+            base = backend.merge_technical_text_strokes(polys, logger=lambda *_: None)
+            backend.TECH_TEXT_CLUSTER_STITCH_ENABLE = True
+            opt = backend.merge_technical_text_strokes(polys, logger=lambda *_: None)
+
+            self.assertEqual(len(base), 2)
+            self.assertEqual(len(opt), 1)
+        finally:
+            backend.TECH_TEXT_CLUSTER_STITCH_ENABLE = old_flag
 
     def test_merge_technical_text_strokes_merges_close_tiny_strokes_out_of_order(self) -> None:
         polys = [

@@ -242,6 +242,16 @@ TECH_TEXT_SINGLELINE_OPT_ENABLE = False
 TECH_TEXT_CLUSTER_STITCH_ENABLE = False
 TECH_TEXT_REORDER_OPT_ENABLE = False
 TECH_TEXT_PENLIFT_OPT_ENABLE = False
+TECH_TEXT_OPT_MAX_BBOX_W_MM = 36.0
+TECH_TEXT_OPT_MAX_BBOX_H_MM = 13.5
+TECH_TEXT_OPT_MAX_BBOX_AREA_MM2 = 260.0
+TECH_TEXT_OPT_MAX_TOTAL_SOURCE_LEN_MM = 1200.0
+TECH_TEXT_OPT_LOCAL_STITCH_EPS_MM = 0.16
+TECH_TEXT_OPT_LOCAL_GAP_EPS_MM = 0.55
+TECH_TEXT_OPT_LOCAL_ANGLE_DEG = 50.0
+TECH_TEXT_OPT_JOIN_GAP_MM = 0.60
+TECH_TEXT_OPT_JOIN_MAX_DY_MM = 0.85
+TECH_TEXT_OPT_JOIN_MAX_BACKTRACK_MM = 0.30
 TECH_TEXT_PENLIFT_SHORT_TRAVEL_MM = 0.60
 TECH_TEXT_PENLIFT_SHORT_TRAVEL_FEED = 5000.0
 HANDWRITING_PRESERVE_FILL_OUTLINES = False
@@ -5245,9 +5255,14 @@ def refine_centerline_paths(
         gap = float(FILL_CENTERLINE_HANDWRITING_LOCAL_GAP_EPS_MM)
         ang = float(FILL_CENTERLINE_HANDWRITING_LOCAL_ANGLE_DEG)
     elif technical:
-        eps = float(TECH_TEXT_LOCAL_STITCH_EPS_MM)
-        gap = float(TECH_TEXT_LOCAL_GAP_EPS_MM)
-        ang = float(TECH_TEXT_LOCAL_ANGLE_DEG)
+        if TECH_TEXT_CLUSTER_STITCH_ENABLE:
+            eps = max(float(TECH_TEXT_LOCAL_STITCH_EPS_MM), float(TECH_TEXT_OPT_LOCAL_STITCH_EPS_MM))
+            gap = max(float(TECH_TEXT_LOCAL_GAP_EPS_MM), float(TECH_TEXT_OPT_LOCAL_GAP_EPS_MM))
+            ang = max(float(TECH_TEXT_LOCAL_ANGLE_DEG), float(TECH_TEXT_OPT_LOCAL_ANGLE_DEG))
+        else:
+            eps = float(TECH_TEXT_LOCAL_STITCH_EPS_MM)
+            gap = float(TECH_TEXT_LOCAL_GAP_EPS_MM)
+            ang = float(TECH_TEXT_LOCAL_ANGLE_DEG)
     else:
         eps = float(FILL_CENTERLINE_LOCAL_STITCH_EPS_MM)
         gap = float(FILL_CENTERLINE_LOCAL_GAP_EPS_MM)
@@ -5391,11 +5406,15 @@ def _likely_technical_text_group(group: List["PathItem"]) -> bool:
     _x0, _x1, _y0, _y1, w, h, area = bbox
     if w <= 0.0 or h <= 0.0:
         return False
-    if w > float(TECH_TEXT_MAX_BBOX_W_MM):
+    max_w = float(TECH_TEXT_OPT_MAX_BBOX_W_MM if TECH_TEXT_SINGLELINE_OPT_ENABLE else TECH_TEXT_MAX_BBOX_W_MM)
+    max_h = float(TECH_TEXT_OPT_MAX_BBOX_H_MM if TECH_TEXT_SINGLELINE_OPT_ENABLE else TECH_TEXT_MAX_BBOX_H_MM)
+    max_area = float(TECH_TEXT_OPT_MAX_BBOX_AREA_MM2 if TECH_TEXT_SINGLELINE_OPT_ENABLE else TECH_TEXT_MAX_BBOX_AREA_MM2)
+    max_len = float(TECH_TEXT_OPT_MAX_TOTAL_SOURCE_LEN_MM if TECH_TEXT_SINGLELINE_OPT_ENABLE else TECH_TEXT_MAX_TOTAL_SOURCE_LEN_MM)
+    if w > max_w:
         return False
-    if h > float(TECH_TEXT_MAX_BBOX_H_MM):
+    if h > max_h:
         return False
-    if area > float(TECH_TEXT_MAX_BBOX_AREA_MM2):
+    if area > max_area:
         return False
     # Avoid near-square filled geometry blocks.
     if w > 10.0 and h > 8.0:
@@ -5405,7 +5424,7 @@ def _likely_technical_text_group(group: List["PathItem"]) -> bool:
     for item in group:
         if len(item.points) >= 2:
             total_len += polyline_length(item.points)
-    if total_len > float(TECH_TEXT_MAX_TOTAL_SOURCE_LEN_MM):
+    if total_len > max_len:
         return False
     return True
 
@@ -5775,14 +5794,17 @@ def _centerline_quality_ok_for_technical(centerlines: List[List[Tuple[float, flo
     if not lengths:
         return False
     n = len(lengths)
-    if n > int(TECH_TEXT_MAX_PATHS_PER_GROUP):
+    max_paths = int(TECH_TEXT_MAX_PATHS_PER_GROUP) + (20 if TECH_TEXT_SINGLELINE_OPT_ENABLE else 0)
+    if n > max_paths:
         return False
     s = sorted(lengths)
     med = s[n // 2]
-    if med < float(TECH_TEXT_MEDIAN_MIN_PATH_MM):
+    min_med = min(float(TECH_TEXT_MEDIAN_MIN_PATH_MM), 0.16) if TECH_TEXT_SINGLELINE_OPT_ENABLE else float(TECH_TEXT_MEDIAN_MIN_PATH_MM)
+    if med < min_med:
         return False
     short = sum(1 for L in lengths if L < float(TECH_TEXT_SHORT_PATH_MM))
-    if (short / float(n)) > float(TECH_TEXT_SHORT_RATIO_MAX):
+    max_short_ratio = max(float(TECH_TEXT_SHORT_RATIO_MAX), 0.82) if TECH_TEXT_SINGLELINE_OPT_ENABLE else float(TECH_TEXT_SHORT_RATIO_MAX)
+    if (short / float(n)) > max_short_ratio:
         return False
     return True
 
@@ -8154,11 +8176,18 @@ def merge_technical_text_strokes(
     if not polylines:
         return polylines
 
-    gap_max = max(0.0, float(TECH_TEXT_JOIN_GAP_MM if join_gap_mm is None else join_gap_mm))
-    dy_max = max(0.0, float(TECH_TEXT_JOIN_MAX_DY_MM if join_max_dy_mm is None else join_max_dy_mm))
+    default_gap = max(float(TECH_TEXT_JOIN_GAP_MM), float(TECH_TEXT_OPT_JOIN_GAP_MM)) if TECH_TEXT_CLUSTER_STITCH_ENABLE else float(TECH_TEXT_JOIN_GAP_MM)
+    default_dy = max(float(TECH_TEXT_JOIN_MAX_DY_MM), float(TECH_TEXT_OPT_JOIN_MAX_DY_MM)) if TECH_TEXT_CLUSTER_STITCH_ENABLE else float(TECH_TEXT_JOIN_MAX_DY_MM)
+    default_backtrack = (
+        max(float(TECH_TEXT_JOIN_MAX_BACKTRACK_MM), float(TECH_TEXT_OPT_JOIN_MAX_BACKTRACK_MM))
+        if TECH_TEXT_REORDER_OPT_ENABLE
+        else float(TECH_TEXT_JOIN_MAX_BACKTRACK_MM)
+    )
+    gap_max = max(0.0, float(default_gap if join_gap_mm is None else join_gap_mm))
+    dy_max = max(0.0, float(default_dy if join_max_dy_mm is None else join_max_dy_mm))
     backtrack_max = max(
         0.0,
-        float(TECH_TEXT_JOIN_MAX_BACKTRACK_MM if join_max_backtrack_mm is None else join_max_backtrack_mm),
+        float(default_backtrack if join_max_backtrack_mm is None else join_max_backtrack_mm),
     )
     if gap_max <= 1e-9:
         return polylines
@@ -8957,6 +8986,9 @@ def apply_quality_profile(
 
 
 def quality_state() -> str:
+    def onoff(value: bool) -> str:
+        return "on" if value else "off"
+
     return (
         f"Quality profile: {QUALITY_PROFILE}; "
         f"CURVE_SEGMENT_MM={CURVE_SEGMENT_MM:.3f}; "
@@ -8975,6 +9007,9 @@ def quality_state() -> str:
         f"Handwriting={'on' if HANDWRITING_TEXT_ENABLED else 'off'}({normalize_handwriting_font_name(HANDWRITING_FONT_FAMILY)}); "
         f"HandwritingCenterline={_normalize_singleline_ttf_backend(HANDWRITING_SINGLELINE_TTF_BACKEND)}; "
         f"HandwritingDirectVector={'on' if HANDWRITING_DIRECT_VECTOR_TEXT_ENABLED else 'off'}; "
+        f"TechTextOpt={onoff(TECH_TEXT_SINGLELINE_OPT_ENABLE or TECH_TEXT_CLUSTER_STITCH_ENABLE or TECH_TEXT_REORDER_OPT_ENABLE or TECH_TEXT_PENLIFT_OPT_ENABLE)}"
+        f"(singleline={onoff(TECH_TEXT_SINGLELINE_OPT_ENABLE)}, stitch={onoff(TECH_TEXT_CLUSTER_STITCH_ENABLE)}, "
+        f"reorder={onoff(TECH_TEXT_REORDER_OPT_ENABLE)}, penlift={onoff(TECH_TEXT_PENLIFT_OPT_ENABLE)}); "
         f"ImageContours={normalize_image_contour_mode(IMAGE_CONTOUR_MODE)}"
     )
 
