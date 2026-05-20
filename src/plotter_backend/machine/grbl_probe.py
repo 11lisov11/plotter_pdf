@@ -8,18 +8,9 @@ from typing import Any, Optional, Tuple
 def open_serial_no_reset(port: str, baud: int, *, timeout_s: float = 1.0):
     # IMPORTANT: Many GRBL boards reset on DTR when opening the port.
     # Open serial the same way as src/send_grbl_file.py to avoid losing coordinates mid-job.
-    import serial  # pyserial
+    from .grbl_transport import open_grbl_transport
 
-    ser = serial.Serial()
-    ser.port = port
-    ser.baudrate = int(baud)
-    ser.timeout = float(timeout_s)
-    try:
-        ser.dtr = False
-        ser.rts = False
-    except Exception:
-        pass
-    ser.open()
+    ser = open_grbl_transport(port, int(baud), timeout_s=timeout_s)
     time.sleep(0.2)
     try:
         ser.reset_input_buffer()

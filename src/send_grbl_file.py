@@ -8,12 +8,18 @@ import subprocess
 
 try:
     from src.plotter_backend.machine.windows_bt_spp import build_serial_open_hint
+    from src.plotter_backend.machine.grbl_transport import open_grbl_transport, parse_tcp_endpoint
 except Exception:
     try:
         from plotter_backend.machine.windows_bt_spp import build_serial_open_hint  # type: ignore
+        from plotter_backend.machine.grbl_transport import open_grbl_transport, parse_tcp_endpoint  # type: ignore
     except Exception:
         def build_serial_open_hint(_port: str, diagnostics=None) -> str:
             return ""
+        def parse_tcp_endpoint(_value: str, *, default_port: int = 23):
+            return None
+        def open_grbl_transport(_port: str, _baud: int, *, timeout_s: float = 1.0):
+            raise RuntimeError("GRBL transport helper is not available")
 
 
 def _force_utf8_stdio() -> None:
@@ -52,7 +58,7 @@ def _safe_print(*args, **kwargs) -> None:
 
 
 def usage():
-    _safe_print('Usage: python send_grbl_file.py COMx 115200 path\\to\\file.nc [--sleep]')
+    _safe_print('Usage: python send_grbl_file.py COMx|tcp://host:port 115200 path\\to\\file.nc [--sleep]')
 
 
 def _format_duration_hms(seconds: float) -> str:
@@ -68,18 +74,7 @@ def _format_duration_hms(seconds: float) -> str:
 
 def open_grbl(port: str, baud: int):
     try:
-        # Some boards reset on DTR when opening the serial port.
-        # Create the object first, force DTR/RTS low, then open.
-        ser = serial.Serial()
-        ser.port = port
-        ser.baudrate = baud
-        ser.timeout = 1
-        try:
-            ser.dtr = False
-            ser.rts = False
-        except Exception:
-            pass
-        ser.open()
+        ser = open_grbl_transport(port, baud, timeout_s=1.0)
     except SerialException as exc:
         hint = ""
         try:
@@ -90,6 +85,11 @@ def open_grbl(port: str, baud: int):
         if hint and hint not in message:
             message = f"{message}\n{hint}"
         raise RuntimeError(message) from exc
+    except Exception as exc:
+        endpoint = parse_tcp_endpoint(port)
+        if endpoint is not None:
+            raise RuntimeError(f"Cannot open TCP GRBL {endpoint.host}:{endpoint.port}: {exc}") from exc
+        raise
     time.sleep(0.2)
     ser.reset_input_buffer()
     ser.reset_output_buffer()

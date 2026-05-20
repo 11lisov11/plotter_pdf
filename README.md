@@ -13,6 +13,7 @@
   - логи о применённом pass transform.
 - Handwriting / Method3 pipeline для конспектов и текстовых страниц.
 - Диагностика и восстановление Bluetooth SPP / RFCOMM.
+- Wi-Fi/TCP отправка на GRBL без USB/Bluetooth после настройки IP-эндпоинта.
 - Пакетная подготовка документов из папки `1/`.
 
 ## Что убрано
@@ -378,7 +379,19 @@ python scripts\bt_spp_recovery.py --preferred-port COM11 --attempt-soft-repair
 ```
 
 3. Если Bluetooth SPP снова умер, но USB жив:
-   продолжайте работу через USB COM-порт, пока не восстановите RFCOMM.
+    продолжайте работу через USB COM-порт, пока не восстановите RFCOMM.
+
+## Wi-Fi GRBL без USB/Bluetooth
+
+Если контроллер поднят в сети как TCP-сокет GRBL, вместо `COM6` можно указывать endpoint:
+
+```powershell
+python scripts\grbl_wifi_probe.py --subnet 192.168.1.0/24 --ports 23,8080,2323,8888
+python src\send_grbl_file.py tcp://192.168.1.50:23 115200 ".\job.nc"
+python main.py ".\sheet.pdf" --com tcp://192.168.1.50:23 --sheet-format a4
+```
+
+Подробно: [`config/WIFI_GRBL_CONNECTION.md`](./config/WIFI_GRBL_CONNECTION.md).
 
 ## Тесты
 
