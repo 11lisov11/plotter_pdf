@@ -238,6 +238,12 @@ TECH_TEXT_JOIN_MAX_AREA_MM2 = 42.0
 TECH_TEXT_JOIN_MAX_COMBINED_SPAN_X_MM = 12.0
 TECH_TEXT_JOIN_MAX_COMBINED_SPAN_Y_MM = 10.0
 TECH_TEXT_JOIN_MAX_COMBINED_AREA_MM2 = 80.0
+TECH_TEXT_SINGLELINE_OPT_ENABLE = False
+TECH_TEXT_CLUSTER_STITCH_ENABLE = False
+TECH_TEXT_REORDER_OPT_ENABLE = False
+TECH_TEXT_PENLIFT_OPT_ENABLE = False
+TECH_TEXT_PENLIFT_SHORT_TRAVEL_MM = 0.60
+TECH_TEXT_PENLIFT_SHORT_TRAVEL_FEED = 5000.0
 HANDWRITING_PRESERVE_FILL_OUTLINES = False
 # For text readability on plotter, never fallback to contour-outline for handwriting glyph groups.
 HANDWRITING_FORCE_SINGLE_STROKE_TEXT = True
@@ -8808,11 +8814,18 @@ def apply_penlift(
         stroke_z_jitter_enable=bool(PENCIL_STROKE_Z_JITTER_ENABLED),
         stroke_z_jitter_mm=float(PENCIL_STROKE_Z_JITTER_MM),
         stroke_z_jitter_seed=int(PENCIL_STROKE_Z_JITTER_SEED),
-        # Short-travel merge is intended only for handwriting continuity.
-        # Enabling it for generic pen drawings creates parasitic connector strokes in technical text/tables.
-        merge_short_travel_enable=bool(HANDWRITING_MERGE_SHORT_TRAVEL_ENABLE and handwriting_mode),
-        merge_short_travel_mm=float(HANDWRITING_MERGE_SHORT_TRAVEL_MM),
-        merge_short_travel_feed=float(HANDWRITING_MERGE_SHORT_TRAVEL_FEED),
+        # Technical merge is experimental and off by default; generic drawings
+        # otherwise can get parasitic connector strokes in text/tables.
+        merge_short_travel_enable=bool(
+            (HANDWRITING_MERGE_SHORT_TRAVEL_ENABLE and handwriting_mode)
+            or (TECH_TEXT_PENLIFT_OPT_ENABLE and not handwriting_mode)
+        ),
+        merge_short_travel_mm=float(
+            HANDWRITING_MERGE_SHORT_TRAVEL_MM if handwriting_mode else TECH_TEXT_PENLIFT_SHORT_TRAVEL_MM
+        ),
+        merge_short_travel_feed=float(
+            HANDWRITING_MERGE_SHORT_TRAVEL_FEED if handwriting_mode else TECH_TEXT_PENLIFT_SHORT_TRAVEL_FEED
+        ),
         run_cmd=run_cmd,
     )
 

@@ -113,6 +113,34 @@ class CliEntrypointTests(unittest.TestCase):
         self.assertEqual(rc, 0)
         self.assertTrue(run_calibration.call_args.kwargs["fast"])
 
+    def test_tech_text_opt_cli_sets_experimental_flags(self) -> None:
+        old_values = (
+            backend.TECH_TEXT_SINGLELINE_OPT_ENABLE,
+            backend.TECH_TEXT_CLUSTER_STITCH_ENABLE,
+            backend.TECH_TEXT_REORDER_OPT_ENABLE,
+            backend.TECH_TEXT_PENLIFT_OPT_ENABLE,
+        )
+        try:
+            parser = backend.build_cli_parser()
+            args = parser.parse_args(["--frame", "--dry-run", "--tech-text-opt"])
+            with (
+                mock.patch.object(backend, "load_pencil_profile", return_value={}),
+                mock.patch.object(backend, "apply_pencil_profile"),
+            ):
+                backend._apply_cli_runtime_overrides(args)
+
+            self.assertTrue(backend.TECH_TEXT_SINGLELINE_OPT_ENABLE)
+            self.assertTrue(backend.TECH_TEXT_CLUSTER_STITCH_ENABLE)
+            self.assertTrue(backend.TECH_TEXT_REORDER_OPT_ENABLE)
+            self.assertTrue(backend.TECH_TEXT_PENLIFT_OPT_ENABLE)
+        finally:
+            (
+                backend.TECH_TEXT_SINGLELINE_OPT_ENABLE,
+                backend.TECH_TEXT_CLUSTER_STITCH_ENABLE,
+                backend.TECH_TEXT_REORDER_OPT_ENABLE,
+                backend.TECH_TEXT_PENLIFT_OPT_ENABLE,
+            ) = old_values
+
     def test_main_without_action_returns_usage_error(self) -> None:
         with (
             mock.patch("builtins.print") as print_mock,

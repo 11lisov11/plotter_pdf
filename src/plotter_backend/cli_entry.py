@@ -260,6 +260,16 @@ def build_cli_parser(backend: Any) -> argparse.ArgumentParser:
         default=None,
         help="Raster contour extraction mode: off | word_only | always.",
     )
+    parser.add_argument(
+        "--tech-text-opt",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="Enable/disable all experimental technical text optimization flags.",
+    )
+    parser.add_argument("--tech-text-singleline-opt", action=argparse.BooleanOptionalAction, default=None)
+    parser.add_argument("--tech-text-cluster-stitch", action=argparse.BooleanOptionalAction, default=None)
+    parser.add_argument("--tech-text-reorder-opt", action=argparse.BooleanOptionalAction, default=None)
+    parser.add_argument("--tech-text-penlift-opt", action=argparse.BooleanOptionalAction, default=None)
     return parser
 
 
@@ -336,6 +346,20 @@ def apply_cli_runtime_overrides(backend: Any, args) -> None:
         backend.IMAGE_CONTOUR_MODE = backend.normalize_image_contour_mode(args.image_contours_mode)
         backend.IMAGE_CONTOUR_ENABLED = backend.IMAGE_CONTOUR_MODE != "off"
         backend.IMAGE_CONTOUR_WORD_ONLY = backend.IMAGE_CONTOUR_MODE == "word_only"
+    if args.tech_text_opt is not None:
+        enabled = bool(args.tech_text_opt)
+        backend.TECH_TEXT_SINGLELINE_OPT_ENABLE = enabled
+        backend.TECH_TEXT_CLUSTER_STITCH_ENABLE = enabled
+        backend.TECH_TEXT_REORDER_OPT_ENABLE = enabled
+        backend.TECH_TEXT_PENLIFT_OPT_ENABLE = enabled
+    if args.tech_text_singleline_opt is not None:
+        backend.TECH_TEXT_SINGLELINE_OPT_ENABLE = bool(args.tech_text_singleline_opt)
+    if args.tech_text_cluster_stitch is not None:
+        backend.TECH_TEXT_CLUSTER_STITCH_ENABLE = bool(args.tech_text_cluster_stitch)
+    if args.tech_text_reorder_opt is not None:
+        backend.TECH_TEXT_REORDER_OPT_ENABLE = bool(args.tech_text_reorder_opt)
+    if args.tech_text_penlift_opt is not None:
+        backend.TECH_TEXT_PENLIFT_OPT_ENABLE = bool(args.tech_text_penlift_opt)
 
     pencil_profile_overrides = any(
         v is not None

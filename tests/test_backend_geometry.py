@@ -940,6 +940,47 @@ class BackendGeometryTests(unittest.TestCase):
             backend.SAFE_PEN_TRAVEL_UP = old_safe
             backend.Z_TRAVEL_LIFT_MM = old_lift
 
+    def test_apply_penlift_keeps_technical_short_travel_merge_disabled_by_default(self) -> None:
+        old_enabled = backend.TECH_TEXT_PENLIFT_OPT_ENABLE
+        try:
+            backend.TECH_TEXT_PENLIFT_OPT_ENABLE = False
+            with tempfile.TemporaryDirectory() as td:
+                xy_path = Path(td) / "in.nc"
+                pen_path = Path(td) / "out.nc"
+                xy_path.write_text("G21\nG90\nG0 X0 Y0\n", encoding="utf-8")
+                captured: dict[str, object] = {}
+
+                def _fake_run(*_args, **kwargs):
+                    captured.update(kwargs)
+
+                with mock.patch.object(backend.gcode_penlift_mod, "run_penlift_postprocess", side_effect=_fake_run):
+                    backend.apply_penlift(xy_path, pen_path, z_down=11.9, handwriting_mode=False)
+
+                self.assertFalse(bool(captured["merge_short_travel_enable"]))
+        finally:
+            backend.TECH_TEXT_PENLIFT_OPT_ENABLE = old_enabled
+
+    def test_apply_penlift_uses_technical_short_travel_merge_under_flag(self) -> None:
+        old_enabled = backend.TECH_TEXT_PENLIFT_OPT_ENABLE
+        try:
+            backend.TECH_TEXT_PENLIFT_OPT_ENABLE = True
+            with tempfile.TemporaryDirectory() as td:
+                xy_path = Path(td) / "in.nc"
+                pen_path = Path(td) / "out.nc"
+                xy_path.write_text("G21\nG90\nG0 X0 Y0\n", encoding="utf-8")
+                captured: dict[str, object] = {}
+
+                def _fake_run(*_args, **kwargs):
+                    captured.update(kwargs)
+
+                with mock.patch.object(backend.gcode_penlift_mod, "run_penlift_postprocess", side_effect=_fake_run):
+                    backend.apply_penlift(xy_path, pen_path, z_down=11.9, handwriting_mode=False)
+
+                self.assertTrue(bool(captured["merge_short_travel_enable"]))
+                self.assertAlmostEqual(float(captured["merge_short_travel_mm"]), 0.6, places=6)
+        finally:
+            backend.TECH_TEXT_PENLIFT_OPT_ENABLE = old_enabled
+
     def test_smooth_handwriting_polylines_preserves_endpoints(self) -> None:
         old_enabled = backend.HANDWRITING_SMOOTH_ENABLED
         try:
