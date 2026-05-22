@@ -71,7 +71,7 @@ class DiscoveryModuleTests(unittest.TestCase):
 
             self.assertEqual(result, (0.4, 2, 5))
 
-    def test_detect_com_port_prefers_writable_bluetooth_port(self) -> None:
+    def test_detect_com_port_prefers_wired_default_before_bluetooth(self) -> None:
         ports = [
             _Port("COM6", description="USB Serial Device"),
             _Port("COM11", description="Standard Serial over Bluetooth link", hwid="BTHENUM\\X"),
@@ -86,6 +86,21 @@ class DiscoveryModuleTests(unittest.TestCase):
             default_port="COM6",
             ports=ports,
             serial_factory=serial_factory,
+        )
+
+        self.assertEqual(resolved, "COM6")
+
+    def test_detect_com_port_honors_explicit_bluetooth_preference(self) -> None:
+        ports = [
+            _Port("COM6", description="USB Serial Device"),
+            _Port("COM11", description="Standard Serial over Bluetooth link", hwid="BTHENUM\\X"),
+        ]
+
+        resolved = discovery.detect_com_port(
+            preferred="COM11",
+            default_port="COM6",
+            ports=ports,
+            serial_factory=lambda *_args, **_kwargs: (_Conn()),
         )
 
         self.assertEqual(resolved, "COM11")

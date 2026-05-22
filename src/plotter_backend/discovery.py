@@ -121,6 +121,11 @@ def detect_com_port(
         if selected:
             return selected
 
+    for candidate in ("COM6", "COM5", "COM4", "COM3", "COM7", "COM8", "COM9", "COM10"):
+        selected = available.get(candidate)
+        if selected:
+            return selected
+
     bt_ports = []
     for port in ports:
         text = " ".join(
@@ -136,11 +141,6 @@ def detect_com_port(
     for device in sorted(set(bt_ports), key=_com_num):
         if device and _is_writable(device):
             return device
-
-    for candidate in ("COM6", "COM5", "COM4", "COM3", "COM7", "COM8", "COM9", "COM10"):
-        selected = available.get(candidate)
-        if selected:
-            return selected
 
     devices = sorted((str(getattr(p, "device", "") or "") for p in ports if getattr(p, "device", None)), key=_com_num)
     if devices:

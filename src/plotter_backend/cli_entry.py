@@ -220,6 +220,13 @@ def build_cli_parser(backend: Any) -> argparse.ArgumentParser:
         help="Ready package kind for --draw-ready (default: a4).",
     )
     parser.add_argument(
+        "--ready-item",
+        "--item",
+        dest="ready_item",
+        default=None,
+        help="Ready package item for --draw-ready, e.g. page_01, pass_01 or pass_02.",
+    )
+    parser.add_argument(
         "--ready-sleep",
         action=argparse.BooleanOptionalAction,
         default=True,
@@ -548,7 +555,11 @@ def run_cli_action(backend: Any, args, parser: argparse.ArgumentParser, *, com: 
 
     if args.draw_ready:
         try:
-            selection = find_first_ready_package(Path(args.draw_ready), kind=str(args.ready_kind or "a4"))
+            selection = find_first_ready_package(
+                Path(args.draw_ready),
+                kind=str(args.ready_kind or "a4"),
+                item=args.ready_item,
+            )
         except Exception as exc:
             print(f"Ready package selection failed: {exc}")
             return 1

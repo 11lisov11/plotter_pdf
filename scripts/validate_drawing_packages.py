@@ -262,7 +262,7 @@ def validate_gcode_file(
 
         # G92 sets the current coordinate system; for preflight we treat it as the
         # current machine position because the generated files use it for Z lift.
-        if re.search(r"(^|\s)G92(\s|$)", upper):
+        if _has_gcode_word(upper, "G", 92):
             cur_x = vals.get("X", cur_x)
             cur_y = vals.get("Y", cur_y)
             cur_z = vals.get("Z", cur_z)

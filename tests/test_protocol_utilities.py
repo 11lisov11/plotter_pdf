@@ -50,6 +50,15 @@ class ProtocolUtilitiesTests(unittest.TestCase):
         self.assertEqual(words.get("F"), 1000.0)
         self.assertNotIn("A", words)
 
+    def test_parse_words_handles_compact_grbl_words(self) -> None:
+        words = protocol._parse_words("G1X10.5Y-2.0F1.2e3M3S1000")  # type: ignore[attr-defined]
+        self.assertEqual(words.get("X"), 10.5)
+        self.assertEqual(words.get("Y"), -2.0)
+        self.assertEqual(words.get("F"), 1200.0)
+        self.assertEqual(words.get("S"), 1000.0)
+        self.assertNotIn("G", words)
+        self.assertNotIn("M", words)
+
     def test_arc_points_returns_points_ending_at_target(self) -> None:
         points = protocol._arc_points(  # type: ignore[attr-defined]
             (1.0, 0.0),
@@ -86,6 +95,20 @@ class ProtocolUtilitiesTests(unittest.TestCase):
         self.assertEqual(len(polys), 1)
         self.assertEqual(polys[0][0], (0.0, 0.0))
         self.assertEqual(polys[0][-1], (10.0, 0.0))
+
+    def test_gcode_to_polylines_supports_compact_modal_spindle_gcode(self) -> None:
+        lines = [
+            "G90",
+            "G0X0Y0",
+            "M3S1000",
+            "G1X10Y0",
+            "X10Y5",
+            "M5",
+            "G0X20Y20",
+        ]
+        polys = protocol._gcode_to_polylines(lines, z_up=0.0, z_down=11.9)  # type: ignore[attr-defined]
+        self.assertEqual(len(polys), 1)
+        self.assertEqual(polys[0], [(0.0, 0.0), (10.0, 0.0), (10.0, 5.0)])
 
     def test_gcode_to_polylines_supports_arc_motion(self) -> None:
         lines = [

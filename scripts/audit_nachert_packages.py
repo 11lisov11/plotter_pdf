@@ -192,11 +192,11 @@ def _audit_variant(variant_dir: Path) -> None:
     (variant_dir / "_audit.txt").write_text("\n".join(summary_lines) + "\n", encoding="utf-8")
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Audit prepared Начерт drawing packages.")
     parser.add_argument("--root", default=str(DEFAULT_ROOT), help="Root folder with variant subfolders.")
     parser.add_argument("--only-variant", action="append", default=[], help="Optional substring filter.")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     root = Path(args.root).resolve()
     if not root.exists():
@@ -206,6 +206,12 @@ def main() -> int:
     variant_dirs = _collect_variant_dirs(root)
     if tokens:
         variant_dirs = [p for p in variant_dirs if any(token in p.name.casefold() for token in tokens)]
+    if not variant_dirs:
+        if tokens:
+            print("No prepared Начерт variant dirs match filter.")
+        else:
+            print("No prepared Начерт variant dirs found.")
+        return 2
 
     for variant_dir in variant_dirs:
         print(variant_dir.name)

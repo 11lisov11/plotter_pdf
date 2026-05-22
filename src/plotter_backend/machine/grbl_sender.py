@@ -12,16 +12,28 @@ from typing import Callable, List, Optional, Tuple
 from ..errors import SerialTransportError, ToolDependencyError
 
 
+_TOKEN_RE = re.compile(r"([A-Za-z])\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)")
+
+
+def _values(tokens: list[tuple[str, str]], letter: str) -> list[float]:
+    out: list[float] = []
+    target = letter.upper()
+    for axis, raw in tokens:
+        if axis.upper() != target:
+            continue
+        try:
+            out.append(float(raw))
+        except ValueError:
+            continue
+    return out
+
+
 def find_nearest_g0_xy_line(gcode_file: Path, *, x: float, y: float) -> int:
     # Find nearest G0 XY endpoint to current position. Resume at a travel move
     # to avoid dragging pen/pencil through already drawn geometry.
-    g_re = re.compile(r"\bG0*([0123])(?:\.0*)?\b", flags=re.IGNORECASE)
-    number = r"([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)"
-    x_re = re.compile(r"\bX" + number)
-    y_re = re.compile(r"\bY" + number)
-
     cur_x: Optional[float] = None
     cur_y: Optional[float] = None
+    motion_mode: Optional[int] = None
     best_d = float("inf")
     best_line = 1
 
@@ -30,18 +42,20 @@ def find_nearest_g0_xy_line(gcode_file: Path, *, x: float, y: float) -> int:
             line = raw.split(";", 1)[0].strip()
             if not line or line.startswith(";") or line.startswith("("):
                 continue
-            sx = x_re.search(line.upper())
-            sy = y_re.search(line.upper())
-            if sx:
-                cur_x = float(sx.group(1))
-            if sy:
-                cur_y = float(sy.group(1))
+            tokens = _TOKEN_RE.findall(line)
+            for gval in _values(tokens, "G"):
+                rounded = int(round(gval))
+                if abs(gval - float(rounded)) <= 1e-9 and rounded in {0, 1, 2, 3}:
+                    motion_mode = rounded
 
-            g_match = g_re.search(line)
-            if not g_match or int(g_match.group(1)) != 0:
-                continue
-            line_upper = line.upper()
-            if ("X" not in line_upper) and ("Y" not in line_upper):
+            x_values = _values(tokens, "X")
+            y_values = _values(tokens, "Y")
+            if x_values:
+                cur_x = x_values[-1]
+            if y_values:
+                cur_y = y_values[-1]
+
+            if motion_mode != 0 or not (x_values or y_values):
                 continue
             if cur_x is None or cur_y is None:
                 continue

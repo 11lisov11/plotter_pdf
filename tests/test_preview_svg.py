@@ -36,6 +36,14 @@ class PreviewSvgTests(unittest.TestCase):
             self.assertIn("<path", text)
             self.assertIn("viewBox=", text)
 
+    def test_write_svg_preview_avoids_double_negative_transform(self) -> None:
+        polylines = [[(0.0, 0.0), (10.0, 5.0)]]
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td) / "preview.svg"
+            protocol._write_svg_preview(polylines, out)
+            text = out.read_text(encoding="utf-8")
+            self.assertNotIn("translate(0,--", text)
+
     def test_gcode_to_polylines_ignores_partial_lift_travel(self) -> None:
         lines = [
             "G21",

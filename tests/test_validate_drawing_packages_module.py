@@ -192,6 +192,23 @@ G1 X10 Y-10
     assert any("first XY move happens with pen down" in problem for problem in result.problems)
 
 
+def test_validate_gcode_rejects_first_xy_after_compact_g92_pen_down(tmp_path: Path) -> None:
+    gcode_path = tmp_path / "bad_compact_g92_down.gcode"
+    gcode_path.write_text(
+        """G21
+G90
+G92Z11.9000
+G1X10Y-10
+""",
+        encoding="utf-8",
+    )
+
+    result = mod.validate_gcode_file(gcode_path)
+
+    assert not result.ok
+    assert any("first XY move happens with pen down" in problem for problem in result.problems)
+
+
 def test_validate_gcode_rejects_rapid_xy_while_lifting_pen(tmp_path: Path) -> None:
     gcode_path = tmp_path / "bad_lift_travel.gcode"
     gcode_path.write_text(

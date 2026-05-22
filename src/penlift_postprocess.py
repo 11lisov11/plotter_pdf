@@ -4,6 +4,7 @@ import re
 from pathlib import Path
 
 GCODE_MOVES_WITH_XY = {"G0", "G1", "G2", "G3", "G5", "G80", "G81", "G82", "G83", "G84", "G85", "G86", "G87", "G88", "G89"}
+TOKEN_RE = re.compile(r"([A-Za-z])\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)")
 
 
 def parse_args():
@@ -63,14 +64,22 @@ def split_comment(line: str):
 
 
 def parse_tokens(body: str):
-    return [t for t in body.strip().split() if t]
+    return [f"{letter.upper()}{value}" for letter, value in TOKEN_RE.findall(body)]
 
 
 def first_gcode(tokens):
     for token in tokens:
         up = token.upper()
-        if re.fullmatch(r"G\d+(?:\.\d+)?", up):
-            return up
+        match = re.fullmatch(r"G([+-]?(?:\d+(?:\.\d*)?|\.\d+))", up)
+        if match:
+            try:
+                value = float(match.group(1))
+            except Exception:
+                return up
+            rounded = int(round(value))
+            if abs(value - float(rounded)) <= 1e-9:
+                return f"G{rounded}"
+            return f"G{value:g}"
     return ""
 
 

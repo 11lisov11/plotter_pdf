@@ -9219,7 +9219,7 @@ def make_final_with_preamble(prepared_gcode: Path, final_gcode: Path) -> None:
     rewrite_duplicate_draw_segments_as_penup_travel(final_gcode)
 
 
-_GCODE_TOKEN_RE = re.compile(r"([A-Za-z])\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))")
+_GCODE_TOKEN_RE = re.compile(r"([A-Za-z])\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)")
 
 
 def _gcode_line_without_comment(line: str) -> str:
@@ -9353,13 +9353,13 @@ def rewrite_duplicate_draw_segments_as_penup_travel(
         upper = clean.upper()
         vals = _gcode_line_tokens(clean)
 
-        if "M3" in upper or "M03" in upper:
+        if _gcode_has_word(upper, "M", 3):
             spindle_down = True
-        if "M5" in upper or "M05" in upper:
+        if _gcode_has_word(upper, "M", 5):
             spindle_down = False
 
         modal = _gcode_motion_code(clean, modal)
-        if re.search(r"(^|\s)G92(\s|$)", upper):
+        if _gcode_has_word(upper, "G", 92):
             cur_x = vals.get("X", cur_x)
             cur_y = vals.get("Y", cur_y)
             cur_z = vals.get("Z", cur_z)

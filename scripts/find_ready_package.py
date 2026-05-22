@@ -80,9 +80,12 @@ def _audit_items(variant_dir: Path) -> list[dict[str, Any]]:
 
 
 def _ready_audit_ok(variant_dir: Path) -> bool:
-    payload = _load_json(variant_dir / "_ready_to_plot_audit.json")
+    audit_path = variant_dir / "_ready_to_plot_audit.json"
+    if not audit_path.exists():
+        return False
+    payload = _load_json(audit_path)
     if not payload:
-        return True
+        return False
     return bool(payload.get("ok", False)) and not list(payload.get("failed_packages") or [])
 
 
@@ -106,7 +109,20 @@ def _normalize_kind(kind: str) -> str:
     return aliases.get(value, value)
 
 
-def find_first_ready_package(variant_dir: Path, *, kind: str = "a4") -> ReadyPackageSelection:
+def _normalize_item(item: str | None) -> str:
+    value = str(item or "").strip().lower().replace("-", "_")
+    if not value:
+        return ""
+    if value.isdigit():
+        return f"pass_{int(value):02d}"
+    if value.startswith("pass") and value[4:].isdigit():
+        return f"pass_{int(value[4:]):02d}"
+    if value.startswith("page") and value[4:].isdigit():
+        return f"page_{int(value[4:]):02d}"
+    return value
+
+
+def find_first_ready_package(variant_dir: Path, *, kind: str = "a4", item: str | None = None) -> ReadyPackageSelection:
     variant_dir = Path(variant_dir)
     if not variant_dir.exists():
         raise FileNotFoundError(f"Variant directory not found: {variant_dir}")
@@ -114,6 +130,7 @@ def find_first_ready_package(variant_dir: Path, *, kind: str = "a4") -> ReadyPac
         raise RuntimeError(f"Variant is not ready to plot: {variant_dir / '_ready_to_plot_audit.json'}")
 
     wanted_kind = _normalize_kind(kind)
+    wanted_item = _normalize_item(item)
     for item in _audit_items(variant_dir):
         item = clean_report_value(item)
         item_kind = str(item.get("kind") or "").strip().lower()
@@ -135,8 +152,21 @@ def find_first_ready_package(variant_dir: Path, *, kind: str = "a4") -> ReadyPac
             elif name_dir.exists():
                 package_dir = name_dir
         summary_rows = _csv_rows(package_dir / "summary.csv")
-        row = next((r for r in summary_rows if str(r.get("ok", "")).strip().lower() == "true"), None)
+        if wanted_item:
+            row = next(
+                (
+                    r
+                    for r in summary_rows
+                    if str(r.get("ok", "")).strip().lower() == "true"
+                    and _normalize_item(str(r.get("item") or "")) == wanted_item
+                ),
+                None,
+            )
+        else:
+            row = next((r for r in summary_rows if str(r.get("ok", "")).strip().lower() == "true"), None)
         if row is None:
+            if wanted_item:
+                continue
             row = summary_rows[0] if summary_rows else {}
         row = clean_report_value(row)
         nc = Path(str(row.get("nc") or package_dir / "page_01.nc"))
@@ -178,18 +208,22 @@ def find_first_ready_package(variant_dir: Path, *, kind: str = "a4") -> ReadyPac
             selected_variant=str(item.get("selected_variant") or row.get("selected_variant") or ""),
         )
         return ReadyPackageSelection(**clean_report_value(asdict(selection)))
-    raise RuntimeError(f"No ready package with kind={wanted_kind!r} found in {variant_dir}")
+    detail = f"kind={wanted_kind!r}"
+    if wanted_item:
+        detail += f" item={wanted_item!r}"
+    raise RuntimeError(f"No ready package with {detail} found in {variant_dir}")
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Find the first ready-to-plot package in a prepared variant directory.")
     parser.add_argument("variant_dir", help="Prepared variant directory, e.g. 'Компьютерная графика\\22 вариант'")
     parser.add_argument("--kind", default="a4", help="Package kind to select (default: a4)")
+    parser.add_argument("--item", default=None, help="Optional package item to select, e.g. page_01, pass_01 or pass_02.")
     parser.add_argument("--json", action="store_true", help="Print machine-readable JSON")
     args = parser.parse_args(argv)
 
     try:
-        selection = find_first_ready_package(Path(args.variant_dir), kind=args.kind)
+        selection = find_first_ready_package(Path(args.variant_dir), kind=args.kind, item=args.item)
     except Exception as exc:
         print(f"ERROR: {exc}")
         return 1

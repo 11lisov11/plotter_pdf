@@ -4,10 +4,10 @@ import csv
 import json
 from pathlib import Path
 
-from scripts.find_ready_package import find_first_ready_package, _normalize_kind
+from scripts.find_ready_package import find_first_ready_package, _normalize_item, _normalize_kind
 
 
-def test_find_first_ready_a4_package_uses_audit_order_and_summary(tmp_path: Path) -> None:
+def _write_minimal_ready_variant(tmp_path: Path) -> tuple[Path, Path]:
     variant = tmp_path / "Компьютерная графика" / "22 вариант"
     first = variant / "КНГ.01.20.01 - Маховик_pack"
     second = variant / "МЧ00.60.00.00 Вентиль_pack"
@@ -55,6 +55,11 @@ def test_find_first_ready_a4_package_uses_audit_order_and_summary(tmp_path: Path
         ),
         encoding="utf-8",
     )
+    return variant, nc
+
+
+def test_find_first_ready_a4_package_uses_audit_order_and_summary(tmp_path: Path) -> None:
+    variant, nc = _write_minimal_ready_variant(tmp_path)
 
     selection = find_first_ready_package(variant, kind="a4")
 
@@ -64,7 +69,60 @@ def test_find_first_ready_a4_package_uses_audit_order_and_summary(tmp_path: Path
     assert selection.draw_length_m == 7.197
 
 
+def test_find_first_ready_package_requires_ready_audit(tmp_path: Path) -> None:
+    variant, _nc = _write_minimal_ready_variant(tmp_path)
+    (variant / "_ready_to_plot_audit.json").unlink()
+
+    try:
+        find_first_ready_package(variant, kind="a4")
+    except RuntimeError as exc:
+        assert "_ready_to_plot_audit.json" in str(exc)
+    else:
+        raise AssertionError("missing ready audit must reject ready package selection")
+
+
+def test_find_first_ready_package_selects_requested_a3_item(tmp_path: Path) -> None:
+    variant = tmp_path / "Компьютерная графика" / "22 вариант"
+    package = variant / "МЧ00.60.00.00 СБ Вентиль_pack"
+    package.mkdir(parents=True)
+    pass_01 = package / "pass_01.nc"
+    pass_02 = package / "pass_02.nc"
+    pass_01.write_text("G0 X0 Y0\n", encoding="utf-8")
+    pass_02.write_text("G0 X2 Y2\nG1 X3 Y3\n", encoding="utf-8")
+    with (package / "summary.csv").open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(
+            fh,
+            fieldnames=["item", "ok", "nc", "gcode", "preview_pdf", "preview_svg", "bounds", "draw_length_m"],
+        )
+        writer.writeheader()
+        writer.writerow({"item": "pass_01", "ok": "True", "nc": str(pass_01), "draw_length_m": "6.7"})
+        writer.writerow({"item": "pass_02", "ok": "True", "nc": str(pass_02), "draw_length_m": "6.9"})
+    (variant / "_audit.json").write_text(
+        json.dumps(
+            {"items": [{"task": package.name, "kind": "a3_two_pass", "package_dir": str(package)}]},
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    (variant / "_ready_to_plot_audit.json").write_text(
+        json.dumps({"ok": True, "failed_packages": []}),
+        encoding="utf-8",
+    )
+
+    selection = find_first_ready_package(variant, kind="a3", item="pass_02")
+
+    assert selection.item == "pass_02"
+    assert selection.nc == str(pass_02)
+    assert selection.line_count == 2
+
+
 def test_ready_kind_aliases_match_audit_kind_names() -> None:
     assert _normalize_kind("a3") == "a3_two_pass"
     assert _normalize_kind("a3-two") == "a3_two_pass"
     assert _normalize_kind("first_a4") == "a4"
+
+
+def test_ready_item_aliases_match_summary_item_names() -> None:
+    assert _normalize_item("2") == "pass_02"
+    assert _normalize_item("pass02") == "pass_02"
+    assert _normalize_item("page01") == "page_01"

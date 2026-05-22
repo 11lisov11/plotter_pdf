@@ -207,20 +207,30 @@ def _split_comment(line: str) -> str:
     return s
 
 
-_G_RE = re.compile(r"\bG\d+(?:\.\d+)?\b", re.IGNORECASE)
-_M_RE = re.compile(r"\bM\d+(?:\.\d+)?\b", re.IGNORECASE)
+_TOKEN_RE = re.compile(r"([A-Za-z])\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)")
 
 
 def _parse_words(body: str) -> dict[str, float]:
     out: dict[str, float] = {}
-    for tok in body.split():
-        if not tok:
-            continue
-        k = tok[0].upper()
+    for raw_key, raw_value in _TOKEN_RE.findall(body):
+        k = raw_key.upper()
         if k in {"G", "M"}:
             continue
         try:
-            out[k] = float(tok[1:])
+            out[k] = float(raw_value)
+        except Exception:
+            continue
+    return out
+
+
+def _values(body: str, letter: str) -> list[float]:
+    target = str(letter).upper()
+    out: list[float] = []
+    for raw_key, raw_value in _TOKEN_RE.findall(body):
+        if raw_key.upper() != target:
+            continue
+        try:
+            out.append(float(raw_value))
         except Exception:
             continue
     return out
@@ -895,11 +905,7 @@ def _gcode_to_polylines(lines: list[str], *, z_up: float, z_down: float) -> list
             continue
 
         motion_g: Optional[int] = None
-        for gtok in _G_RE.findall(body):
-            try:
-                gval = float(gtok[1:])
-            except Exception:
-                continue
+        for gval in _values(body, "G"):
             if abs(gval - 90.0) <= 1e-6:
                 abs_mode = True
             elif abs(gval - 91.0) <= 1e-6:
@@ -918,11 +924,13 @@ def _gcode_to_polylines(lines: list[str], *, z_up: float, z_down: float) -> list
                 motion_g = 3
 
         # Support spindle-style pen control (M3/M5) in preview parsing.
-        for mtok in _M_RE.findall(body):
-            m = mtok.upper()
-            if m == "M3":
+        for mval in _values(body, "M"):
+            mint = int(round(mval))
+            if abs(mval - float(mint)) > 1e-6:
+                continue
+            if mint == 3:
                 pen_down = True
-            elif m == "M5":
+            elif mint == 5:
                 pen_down = False
 
         words = _parse_words(body)
@@ -1008,11 +1016,12 @@ def _write_svg_preview(
     vb_w = width + 2.0 * pad
     vb_h = height + 2.0 * pad
     center_y = (y0 + y1) * 0.5
+    translate_y = -(2.0 * center_y)
     parts = [
         '<?xml version="1.0" encoding="UTF-8"?>',
         '<svg xmlns="http://www.w3.org/2000/svg" version="1.1"',
         f'     width="{vb_w:.3f}mm" height="{vb_h:.3f}mm" viewBox="{vb_x:.3f} {vb_y:.3f} {vb_w:.3f} {vb_h:.3f}">',
-        f'  <g fill="none" stroke="#111827" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" transform="scale(1,-1) translate(0,-{2.0 * center_y:.4f})">',
+        f'  <g fill="none" stroke="#111827" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" transform="scale(1,-1) translate(0,{translate_y:.4f})">',
     ]
     for poly in flipped:
         if len(poly) < 2:

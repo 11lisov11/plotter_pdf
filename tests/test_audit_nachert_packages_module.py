@@ -40,3 +40,23 @@ def test_save_package_compare_artifacts_writes_png_and_pdf(tmp_path: Path) -> No
     assert pdf_path.exists()
     assert png_path.name == "source_vs_gcode_compare.png"
     assert pdf_path.name == "source_vs_gcode_compare.pdf"
+
+
+def test_main_returns_error_when_no_prepared_variants_match(tmp_path: Path, capsys) -> None:
+    variant = tmp_path / "1 вариант"
+    variant.mkdir()
+    (variant / "_prepared_summary.csv").write_text("source_pdf\n", encoding="utf-8")
+
+    rc = mod.main(["--root", str(tmp_path), "--only-variant", "missing"])
+
+    assert rc == 2
+    assert "No prepared Начерт variant dirs match filter" in capsys.readouterr().out
+
+
+def test_main_returns_error_when_no_prepared_variants_exist(tmp_path: Path, capsys) -> None:
+    (tmp_path / "noise").mkdir()
+
+    rc = mod.main(["--root", str(tmp_path)])
+
+    assert rc == 2
+    assert "No prepared Начерт variant dirs found" in capsys.readouterr().out

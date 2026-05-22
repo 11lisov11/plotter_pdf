@@ -16,23 +16,31 @@ def _split_comment(line: str) -> str:
     return s
 
 
-_G_RE = re.compile(r"\bG\d+(?:\.\d+)?\b", re.IGNORECASE)
+_TOKEN_RE = re.compile(r"([A-Za-z])\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)")
 
 
 def _parse_words(body: str) -> dict:
     # Returns word map, e.g. {"X": 10.0, "Y": -5.0, "I": 1.2}
     out: dict[str, float] = {}
-    for tok in body.split():
-        if not tok:
-            continue
-        k = tok[0].upper()
-        v = tok[1:]
-        if not v:
-            continue
+    for raw_key, raw_value in _TOKEN_RE.findall(body):
+        k = raw_key.upper()
         if k in {"G", "M"}:
             continue
         try:
-            out[k] = float(v)
+            out[k] = float(raw_value)
+        except Exception:
+            continue
+    return out
+
+
+def _values(body: str, letter: str) -> list[float]:
+    out: list[float] = []
+    target = letter.upper()
+    for raw_key, raw_value in _TOKEN_RE.findall(body):
+        if raw_key.upper() != target:
+            continue
+        try:
+            out.append(float(raw_value))
         except Exception:
             continue
     return out
@@ -98,19 +106,13 @@ def gcode_to_polylines(lines: list[str], *, z_down: float | None = None, z_up: f
         if not body:
             continue
 
-        # Ignore $ commands and non-motion M codes.
+        # Ignore $ commands; M3/M5 are handled as spindle-style pen control below.
         if body.startswith("$"):
-            continue
-        if body[0].upper() == "M":
             continue
 
         # First, handle G modal changes and extract motion command, if any.
         motion_g = None
-        for gtok in _G_RE.findall(body):
-            try:
-                gval = float(gtok[1:])
-            except Exception:
-                continue
+        for gval in _values(body, "G"):
             if abs(gval - 90.0) <= 1e-6:
                 abs_mode = True
             elif abs(gval - 91.0) <= 1e-6:
@@ -127,6 +129,15 @@ def gcode_to_polylines(lines: list[str], *, z_down: float | None = None, z_up: f
                 motion_g = 2
             elif abs(gval - 3.0) <= 1e-6:
                 motion_g = 3
+
+        for mval in _values(body, "M"):
+            mint = int(round(mval))
+            if abs(mval - float(mint)) > 1e-6:
+                continue
+            if mint == 3:
+                pen_down = True
+            elif mint == 5:
+                pen_down = False
 
         words = _parse_words(body)
 
@@ -207,6 +218,7 @@ def write_svg(polylines: list[list[tuple[float, float]]], out_path: Path, *, inv
     vb_y = y0 - pad
     vb_w = w + 2 * pad
     vb_h = h + 2 * pad
+    translate_y = -(y0 + y1)
 
     parts = [
         '<?xml version="1.0" encoding="UTF-8"?>',
@@ -214,7 +226,7 @@ def write_svg(polylines: list[list[tuple[float, float]]], out_path: Path, *, inv
         f'     width="{vb_w:.3f}mm" height="{vb_h:.3f}mm" viewBox="{vb_x:.3f} {vb_y:.3f} {vb_w:.3f} {vb_h:.3f}">',
         # Invert Y by flipping around the midline; keeps text readable while mapping to page-like coords.
         f'  <g fill="none" stroke="#000" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round"'
-        f' transform="scale(1,-1) translate(0,-{(y0 + y1):.4f})">',
+        f' transform="scale(1,-1) translate(0,{translate_y:.4f})">',
     ]
 
     for poly in polylines:

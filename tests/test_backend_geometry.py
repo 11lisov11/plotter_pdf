@@ -804,6 +804,11 @@ class BackendGeometryTests(unittest.TestCase):
             self.assertIn("G0 X0.0000 Y0.0000 F15000.0", text)
             self.assertEqual(text.count("G1 X0 Y0"), 0)
 
+    def test_gcode_word_detection_handles_compact_and_m30(self) -> None:
+        self.assertTrue(backend._gcode_has_word("G92Z11.9000", "G", 92))
+        self.assertTrue(backend._gcode_has_word("M3S1000", "M", 3))
+        self.assertFalse(backend._gcode_has_word("M30", "M", 3))
+
     def test_extract_image_tone_hatch_segments_px_simple(self) -> None:
         if backend.cv2 is None or backend.np is None:
             self.skipTest("opencv/numpy unavailable")
