@@ -58,6 +58,7 @@ def find_nearest_g0_xy_line(gcode_file: Path, *, x: float, y: float) -> int:
     cur_x: Optional[float] = None
     cur_y: Optional[float] = None
     motion_mode: Optional[int] = None
+    abs_mode = True
     best_d = float("inf")
     best_line = 1
 
@@ -68,6 +69,12 @@ def find_nearest_g0_xy_line(gcode_file: Path, *, x: float, y: float) -> int:
                 continue
             tokens = _TOKEN_RE.findall(line)
             for gval in _values(tokens, "G"):
+                if abs(gval - 90.0) <= 1e-9:
+                    abs_mode = True
+                    continue
+                if abs(gval - 91.0) <= 1e-9:
+                    abs_mode = False
+                    continue
                 rounded = int(round(gval))
                 if abs(gval - float(rounded)) <= 1e-9 and rounded in {0, 1, 2, 3}:
                     motion_mode = rounded
@@ -75,9 +82,11 @@ def find_nearest_g0_xy_line(gcode_file: Path, *, x: float, y: float) -> int:
             x_values = _values(tokens, "X")
             y_values = _values(tokens, "Y")
             if x_values:
-                cur_x = x_values[-1]
+                x_raw = x_values[-1]
+                cur_x = x_raw if (abs_mode or cur_x is None) else cur_x + x_raw
             if y_values:
-                cur_y = y_values[-1]
+                y_raw = y_values[-1]
+                cur_y = y_raw if (abs_mode or cur_y is None) else cur_y + y_raw
 
             if motion_mode != 0 or not (x_values or y_values):
                 continue
