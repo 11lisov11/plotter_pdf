@@ -16,6 +16,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 from src.plotter_backend.common_utils import clean_report_value
+from src.plotter_backend.geometry.arc_fit import arc_extents_xy
 
 DEFAULT_WORK_AREA = (0.0, 180.0, -285.0, -5.0)
 A3_TWO_PASS_WORK_AREA = (0.0, 180.0, -285.0, -2.0)
@@ -225,6 +226,7 @@ def validate_gcode_file(
     cur_z: float | None = None
     modal: str | None = None
     abs_mode = True
+    ijk_abs = False
     spindle_down = False
     first_xy_seen = False
     motor_release_seen = False
@@ -235,6 +237,16 @@ def validate_gcode_file(
     segments_seen: set[tuple[tuple[float, float], tuple[float, float]]] = set()
     draw_segments: list[tuple[float, float, float, float]] = []
     duplicate_segments = 0
+
+    def _expand_draw_bounds(x0: float, x1: float, y0: float, y1: float) -> None:
+        nonlocal draw_bounds
+        if draw_bounds is None:
+            draw_bounds = [min(x0, x1), max(x0, x1), min(y0, y1), max(y0, y1)]
+            return
+        draw_bounds[0] = min(draw_bounds[0], x0, x1)
+        draw_bounds[1] = max(draw_bounds[1], x0, x1)
+        draw_bounds[2] = min(draw_bounds[2], y0, y1)
+        draw_bounds[3] = max(draw_bounds[3], y0, y1)
 
     try:
         raw_lines = gcode_path.read_text(encoding="utf-8", errors="replace").splitlines()
@@ -259,6 +271,10 @@ def validate_gcode_file(
                 abs_mode = True
             elif abs(gval - 91.0) <= 1e-9:
                 abs_mode = False
+            elif abs(gval - 90.1) <= 1e-9:
+                ijk_abs = True
+            elif abs(gval - 91.1) <= 1e-9:
+                ijk_abs = False
 
         if _has_gcode_word(upper, "M", 3):
             spindle_down = True
@@ -323,13 +339,22 @@ def validate_gcode_file(
                         else:
                             segments_seen.add(key)
                         draw_segments.append((x0, y0, x1, y1))
-                    if draw_bounds is None:
-                        draw_bounds = [min(x0, x1), max(x0, x1), min(y0, y1), max(y0, y1)]
+                    if modal in {"G2", "G3"} and ("I" in vals or "J" in vals):
+                        i_val = float(vals.get("I", 0.0))
+                        j_val = float(vals.get("J", 0.0))
+                        center = (i_val, j_val) if ijk_abs else (x0 + i_val, y0 + j_val)
+                        try:
+                            if math.hypot(x1 - x0, y1 - y0) <= 1e-6:
+                                radius = math.hypot(x0 - center[0], y0 - center[1])
+                                bx0, bx1 = center[0] - radius, center[0] + radius
+                                by0, by1 = center[1] - radius, center[1] + radius
+                            else:
+                                bx0, bx1, by0, by1 = arc_extents_xy((x0, y0), (x1, y1), center, cw=(modal == "G2"))
+                            _expand_draw_bounds(bx0, bx1, by0, by1)
+                        except Exception:
+                            _expand_draw_bounds(x0, x1, y0, y1)
                     else:
-                        draw_bounds[0] = min(draw_bounds[0], x0, x1)
-                        draw_bounds[1] = max(draw_bounds[1], x0, x1)
-                        draw_bounds[2] = min(draw_bounds[2], y0, y1)
-                        draw_bounds[3] = max(draw_bounds[3], y0, y1)
+                        _expand_draw_bounds(x0, x1, y0, y1)
                 else:
                     travel_moves += 1
 
