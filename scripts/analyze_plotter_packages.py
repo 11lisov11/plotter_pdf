@@ -326,6 +326,16 @@ def _csv_dict_rows(path: Path) -> list[dict[str, str]]:
         return [dict(row) for row in csv.DictReader(fh)]
 
 
+def _ready_audit_allows_variant(variant_dir: Path) -> bool:
+    audit_path = variant_dir / "_ready_to_plot_audit.json"
+    if not audit_path.exists():
+        return True
+    payload = clean_report_value(_load_json_dict(audit_path))
+    if not payload:
+        return False
+    return payload.get("ok") is True and not list(payload.get("failed_packages") or [])
+
+
 def _ready_package_dir(variant_dir: Path, raw: object, task: object = "") -> Path | None:
     raw_text = str(raw or "").strip()
     task_text = str(task or "").strip()
@@ -383,6 +393,8 @@ def collect_ready_package_roots(roots: Iterable[Path]) -> list[Path]:
             add(root)
             continue
         for variant_dir in _variant_dirs_from_root(root):
+            if not _ready_audit_allows_variant(variant_dir):
+                continue
             audit = clean_report_value(_load_json_dict(variant_dir / "_audit.json"))
             items = audit.get("items") if isinstance(audit, dict) else None
             if isinstance(items, list):

@@ -328,6 +328,31 @@ def test_collect_ready_package_roots_accepts_utf8_sig_audit(tmp_path: Path) -> N
     assert roots == [package]
 
 
+def test_collect_ready_package_roots_skips_variant_with_failed_ready_audit(tmp_path: Path) -> None:
+    variant = tmp_path / "Компьютерная графика" / "22 вариант"
+    package = variant / "ready_pack"
+    package.mkdir(parents=True)
+    (package / "summary.csv").write_text("item,ok\npage_01,True\n", encoding="utf-8")
+    with (variant / "_prepared_summary.csv").open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=["package_dir", "task", "item"])
+        writer.writeheader()
+        writer.writerow({"package_dir": str(package), "task": package.name, "item": "page_01"})
+    (variant / "_ready_to_plot_audit.json").write_text(
+        json.dumps(
+            {
+                "ok": False,
+                "failed_packages": [{"package_dir": str(package), "problems": ["unsafe ending"]}],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    roots = analyzer.collect_ready_package_roots([variant])
+
+    assert roots == []
+
+
 def test_main_accepts_positional_gcode_files(tmp_path: Path, capsys) -> None:
     gcode = tmp_path / "job.nc"
     gcode.write_text("G90\nG0 X0 Y0\nG1 X1 Y0\n", encoding="utf-8")
