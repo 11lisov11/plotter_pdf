@@ -207,6 +207,32 @@ def test_analyze_gcode_counts_pen_up_g1_xy_as_travel(tmp_path: Path) -> None:
     assert metrics.travel_to_draw_ratio == 1.0
 
 
+def test_analyze_legacy_xy_only_g0_splits_pen_down_strokes(tmp_path: Path) -> None:
+    gcode = tmp_path / "legacy_xy_only.nc"
+    gcode.write_text(
+        "\n".join(
+            [
+                "G90",
+                "G0 X0 Y0",
+                "G1 X0.1 Y0",
+                "G0 X5 Y0",
+                "G1 X5.1 Y0",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    metrics = analyzer.analyze_gcode_file(gcode)
+
+    assert metrics.draw_moves == 2
+    assert metrics.travel_moves == 1
+    assert metrics.pen_down_strokes == 2
+    assert metrics.tiny_strokes_lt_08_mm == 2
+    assert metrics.point_like_strokes == 2
+    assert metrics.draw_length_mm == 0.2
+
+
 def test_analyze_gcode_treats_short_lift_as_pen_up(tmp_path: Path) -> None:
     gcode = tmp_path / "short_lift.nc"
     gcode.write_text(

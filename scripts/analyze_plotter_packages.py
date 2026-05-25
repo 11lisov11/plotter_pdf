@@ -272,7 +272,7 @@ def analyze_gcode_file(
             else:
                 travel_moves += 1
                 travel_length_mm += seg_len
-                if pen_down:
+                if pen_down or not (ever_saw_z or ever_saw_spindle):
                     close_stroke()
             cur_x, cur_y = next_x, next_y
 
