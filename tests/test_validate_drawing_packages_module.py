@@ -287,6 +287,33 @@ $1=0
     assert result.bounds == (0.0, 10.0, -20.0, -10.0)
 
 
+def test_validate_gcode_respects_relative_xy_mode(tmp_path: Path) -> None:
+    gcode_path = tmp_path / "relative_xy.nc"
+    gcode_path.write_text(
+        """G21
+G90
+G92 Z4
+G0 Z0 F800
+M5
+G0 X0 Y-10
+G1 Z11.9
+G91
+G1 X10 Y0
+G90
+G0 Z0
+G0 X0 Y0
+M5
+$1=0
+""",
+        encoding="utf-8",
+    )
+
+    result = mod.validate_gcode_file(gcode_path)
+
+    assert result.ok, result.problems
+    assert result.bounds == (0.0, 10.0, -10.0, -10.0)
+
+
 def test_validate_gcode_rejects_duplicate_draw_segment(tmp_path: Path) -> None:
     gcode_path = tmp_path / "duplicate.gcode"
     gcode_path.write_text(

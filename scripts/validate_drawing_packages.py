@@ -224,6 +224,7 @@ def validate_gcode_file(
     cur_y: float | None = None
     cur_z: float | None = None
     modal: str | None = None
+    abs_mode = True
     spindle_down = False
     first_xy_seen = False
     motor_release_seen = False
@@ -247,6 +248,17 @@ def validate_gcode_file(
         lines += 1
         upper = line.upper()
         vals = _tokens(line)
+        for axis, value in _TOKEN_RE.findall(line):
+            if axis.upper() != "G":
+                continue
+            try:
+                gval = float(value)
+            except ValueError:
+                continue
+            if abs(gval - 90.0) <= 1e-9:
+                abs_mode = True
+            elif abs(gval - 91.0) <= 1e-9:
+                abs_mode = False
 
         if _has_gcode_word(upper, "M", 3):
             spindle_down = True
@@ -268,9 +280,21 @@ def validate_gcode_file(
             cur_z = vals.get("Z", cur_z)
             continue
 
-        next_x = vals.get("X", cur_x)
-        next_y = vals.get("Y", cur_y)
-        next_z = vals.get("Z", cur_z)
+        if "X" in vals:
+            x_raw = vals["X"]
+            next_x = x_raw if (abs_mode or cur_x is None) else cur_x + x_raw
+        else:
+            next_x = cur_x
+        if "Y" in vals:
+            y_raw = vals["Y"]
+            next_y = y_raw if (abs_mode or cur_y is None) else cur_y + y_raw
+        else:
+            next_y = cur_y
+        if "Z" in vals:
+            z_raw = vals["Z"]
+            next_z = z_raw if (abs_mode or cur_z is None) else cur_z + z_raw
+        else:
+            next_z = cur_z
         has_xy = "X" in vals or "Y" in vals
         has_z = "Z" in vals
 

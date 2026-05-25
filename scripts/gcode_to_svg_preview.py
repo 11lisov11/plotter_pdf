@@ -5,15 +5,19 @@ from pathlib import Path
 
 
 def _split_comment(line: str) -> str:
-    # Keep it simple: drop everything after ';' or '('.
-    s = line.strip()
-    if not s:
-        return ""
-    if ";" in s:
-        s = s.split(";", 1)[0].strip()
-    if "(" in s:
-        s = s.split("(", 1)[0].strip()
-    return s
+    raw = str(line or "").split(";", 1)[0]
+    out: list[str] = []
+    depth = 0
+    for ch in raw:
+        if ch == "(":
+            depth += 1
+            continue
+        if ch == ")" and depth:
+            depth -= 1
+            continue
+        if depth == 0:
+            out.append(ch)
+    return "".join(out).strip()
 
 
 _TOKEN_RE = re.compile(r"([A-Za-z])\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)")

@@ -50,6 +50,14 @@ class ProtocolUtilitiesTests(unittest.TestCase):
         self.assertEqual(words.get("F"), 1000.0)
         self.assertNotIn("A", words)
 
+    def test_split_comment_preserves_words_after_parenthetical_comment(self) -> None:
+        body = protocol._split_comment("G1 X10 (ignore X99) Y-2 ; tail")  # type: ignore[attr-defined]
+
+        words = protocol._parse_words(body)  # type: ignore[attr-defined]
+
+        self.assertEqual(words.get("X"), 10.0)
+        self.assertEqual(words.get("Y"), -2.0)
+
     def test_parse_words_handles_compact_grbl_words(self) -> None:
         words = protocol._parse_words("G1X10.5Y-2.0F1.2e3M3S1000")  # type: ignore[attr-defined]
         self.assertEqual(words.get("X"), 10.5)
@@ -109,6 +117,18 @@ class ProtocolUtilitiesTests(unittest.TestCase):
         polys = protocol._gcode_to_polylines(lines, z_up=0.0, z_down=11.9)  # type: ignore[attr-defined]
         self.assertEqual(len(polys), 1)
         self.assertEqual(polys[0], [(0.0, 0.0), (10.0, 0.0), (10.0, 5.0)])
+
+    def test_gcode_to_polylines_keeps_coordinates_after_parenthetical_comment(self) -> None:
+        lines = [
+            "G90",
+            "G0 X0 Y0",
+            "M3",
+            "G1 X10 (inline note) Y-2",
+            "M5",
+        ]
+        polys = protocol._gcode_to_polylines(lines, z_up=0.0, z_down=11.9)  # type: ignore[attr-defined]
+
+        self.assertEqual(polys, [[(0.0, 0.0), (10.0, -2.0)]])
 
     def test_gcode_to_polylines_supports_arc_motion(self) -> None:
         lines = [

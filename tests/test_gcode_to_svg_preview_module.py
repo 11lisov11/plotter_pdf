@@ -18,6 +18,14 @@ class GcodeToSvgPreviewModuleTests(unittest.TestCase):
         self.assertNotIn("G", words)
         self.assertNotIn("M", words)
 
+    def test_split_comment_preserves_words_after_parenthetical_comment(self) -> None:
+        body = preview._split_comment("G1 X10 (ignore X99) Y-2 ; tail")  # type: ignore[attr-defined]
+
+        words = preview._parse_words(body)  # type: ignore[attr-defined]
+
+        self.assertEqual(words.get("X"), 10.0)
+        self.assertEqual(words.get("Y"), -2.0)
+
     def test_gcode_to_polylines_handles_compact_modal_spindle_gcode(self) -> None:
         lines = [
             "G90",
@@ -32,6 +40,19 @@ class GcodeToSvgPreviewModuleTests(unittest.TestCase):
         polylines = preview.gcode_to_polylines(lines, z_up=0.0, z_down=11.9)
 
         self.assertEqual(polylines, [[(0.0, 0.0), (10.0, 0.0), (10.0, 5.0)]])
+
+    def test_gcode_to_polylines_keeps_coordinates_after_parenthetical_comment(self) -> None:
+        lines = [
+            "G90",
+            "G0 X0 Y0",
+            "M3",
+            "G1 X10 (inline note) Y-2",
+            "M5",
+        ]
+
+        polylines = preview.gcode_to_polylines(lines, z_up=0.0, z_down=11.9)
+
+        self.assertEqual(polylines, [[(0.0, 0.0), (10.0, -2.0)]])
 
     def test_main_writes_svg_for_compact_gcode(self) -> None:
         with tempfile.TemporaryDirectory(prefix="plotter_preview_compact_") as td:
