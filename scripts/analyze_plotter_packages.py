@@ -457,7 +457,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--unique-content",
         action="store_true",
-        help="Analyze one file per identical content hash and report skipped mirror duplicates.",
+        help="Analyze one file per identical content hash and report skipped mirror duplicates. Enabled automatically with --ready-only.",
     )
     args = parser.parse_args(argv)
 
@@ -472,7 +472,8 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     files_seen = len(files)
     duplicate_groups: list[dict[str, object]] = []
-    if args.unique_content:
+    effective_unique_content = bool(args.unique_content or args.ready_only)
+    if effective_unique_content:
         files, duplicate_groups = unique_files_by_content(files)
     metrics = [analyze_gcode_file(path) for path in files]
     duplicate_files_skipped = sum(int(group["count"]) - 1 for group in duplicate_groups)
@@ -481,7 +482,8 @@ def main(argv: list[str] | None = None) -> int:
         "roots": [str(path) for path in roots],
         "scan_roots": [str(path) for path in scan_roots],
         "ready_only": bool(args.ready_only),
-        "unique_content": bool(args.unique_content),
+        "unique_content": bool(effective_unique_content),
+        "unique_content_requested": bool(args.unique_content),
         "files_seen": int(files_seen),
         "files_analyzed": int(len(files)),
         "duplicate_files_skipped": int(duplicate_files_skipped),

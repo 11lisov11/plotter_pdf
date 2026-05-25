@@ -383,6 +383,37 @@ def test_main_ready_only_ignores_loose_variant_outputs(tmp_path: Path, capsys) -
     assert payload["files"][0]["path"] == str(package / "page_01.gcode")
 
 
+def test_main_ready_only_deduplicates_package_mirror_outputs_by_default(tmp_path: Path, capsys) -> None:
+    variant = tmp_path / "Компьютерная графика" / "22 вариант"
+    package = variant / "ready_pack"
+    pages = package / "pages"
+    pages.mkdir(parents=True)
+    gcode = "G90\nG0 X0 Y0\nG1 X1 Y0\n"
+    for path in (
+        package / "page_01.gcode",
+        package / "page_01.nc",
+        pages / "page_01.gcode",
+        pages / "page_01.nc",
+    ):
+        path.write_text(gcode, encoding="utf-8")
+    with (variant / "_prepared_summary.csv").open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=["package_dir", "task", "item"])
+        writer.writeheader()
+        writer.writerow({"package_dir": str(package), "task": package.name, "item": "page_01"})
+
+    rc = analyzer.main([str(variant), "--ready-only", "--no-write"])
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["ready_only"] is True
+    assert payload["unique_content"] is True
+    assert payload["unique_content_requested"] is False
+    assert payload["files_seen"] == 4
+    assert payload["files_analyzed"] == 1
+    assert payload["duplicate_files_skipped"] == 3
+    assert payload["duplicate_content_groups"][0]["count"] == 4
+
+
 def test_main_default_root_is_computer_graphics(tmp_path: Path, monkeypatch, capsys) -> None:
     default_root = tmp_path / "Компьютерная графика"
     default_root.mkdir()
