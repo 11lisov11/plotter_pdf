@@ -9262,24 +9262,32 @@ def cleanup_xy_gcode_overlaps(xy_gcode: Path, logger=print) -> int:
     cur_x: Optional[float] = None
     cur_y: Optional[float] = None
     modal: Optional[str] = None
-    segments: List[Tuple[int, Tuple[float, float], Tuple[float, float]]] = []
+    segment_groups: List[List[Tuple[int, Tuple[float, float], Tuple[float, float]]]] = [[]]
 
     for line_idx, raw_line in enumerate(raw_lines):
         line = _gcode_line_without_comment(raw_line)
         if not line:
             continue
-        modal = _gcode_motion_code(line, modal)
         vals = _gcode_line_tokens(line)
+        if _gcode_has_word(line.upper(), "G", 92):
+            if segment_groups[-1]:
+                segment_groups.append([])
+            cur_x = vals.get("X", cur_x)
+            cur_y = vals.get("Y", cur_y)
+            continue
+        modal = _gcode_motion_code(line, modal)
         old_x, old_y = cur_x, cur_y
         next_x = vals.get("X", cur_x)
         next_y = vals.get("Y", cur_y)
         has_xy = "X" in vals or "Y" in vals
         if has_xy and old_x is not None and old_y is not None and next_x is not None and next_y is not None:
             if modal == "G1" and points_distance((float(old_x), float(old_y)), (float(next_x), float(next_y))) > 1e-6:
-                segments.append((line_idx, (float(old_x), float(old_y)), (float(next_x), float(next_y))))
+                segment_groups[-1].append((line_idx, (float(old_x), float(old_y)), (float(next_x), float(next_y))))
         cur_x, cur_y = next_x, next_y
 
-    dropped = _find_redundant_collinear_segment_keys(segments)
+    dropped: set[int] = set()
+    for segments in segment_groups:
+        dropped.update(_find_redundant_collinear_segment_keys(segments))
     if not dropped:
         return 0
 

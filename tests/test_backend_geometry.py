@@ -1701,6 +1701,31 @@ class BackendGeometryTests(unittest.TestCase):
             lines = gcode.read_text(encoding="utf-8").splitlines()
             self.assertEqual(lines[-1], "G0 X78.0476 Y-124.8534 F12000.0")
 
+    def test_cleanup_xy_gcode_overlaps_treats_g92_as_coordinate_reset(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            gcode = Path(td) / "xy_g92.gcode"
+            gcode.write_text(
+                "\n".join(
+                    [
+                        "G21",
+                        "G90",
+                        "G0 X0 Y0",
+                        "G1 X10 Y0 F12000.0",
+                        "G92 X0 Y0",
+                        "G1 X10 Y0 F12000.0",
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            changed = backend.cleanup_xy_gcode_overlaps(gcode, logger=lambda *_: None)
+
+            self.assertEqual(changed, 0)
+            lines = gcode.read_text(encoding="utf-8").splitlines()
+            self.assertEqual(lines[4], "G92 X0 Y0")
+            self.assertEqual(lines[5], "G1 X10 Y0 F12000.0")
+
     def test_collinear_overlap_dedup_uses_overlap_midpoint_distance(self) -> None:
         polylines = [
             [(125.3321, -61.1424), (48.7960, -61.1424)],
