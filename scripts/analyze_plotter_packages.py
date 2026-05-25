@@ -17,6 +17,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 from src.plotter_backend.common_utils import clean_report_value
+from src.plotter_backend.gcode.bounds import pen_down_from_z_level
 from src.plotter_backend.geometry.arc_fit import arc_center_from_radius
 
 DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "_tmp" / "algorithm_baseline"
@@ -93,7 +94,13 @@ def _arc_length(x0: float, y0: float, x1: float, y1: float, i: float, j: float, 
     return abs(radius * sweep)
 
 
-def analyze_gcode_file(path: Path, *, z_down_threshold: float = 1.0) -> GcodeAlgorithmMetrics:
+def analyze_gcode_file(
+    path: Path,
+    *,
+    z_up: float = 0.0,
+    z_down: float = 11.9,
+    z_down_threshold: float | None = None,
+) -> GcodeAlgorithmMetrics:
     total_lines = 0
     motion_counts = {0: 0, 1: 0, 2: 0, 3: 0}
     draw_moves = 0
@@ -121,6 +128,11 @@ def analyze_gcode_file(path: Path, *, z_down_threshold: float = 1.0) -> GcodeAlg
         if current_stroke_mm > 0.0:
             stroke_lengths.append(current_stroke_mm)
             current_stroke_mm = 0.0
+
+    def is_pen_down_z(z_value: float) -> bool:
+        if z_down_threshold is not None:
+            return float(z_value) > float(z_down_threshold)
+        return pen_down_from_z_level(float(z_value), float(z_up), float(z_down))
 
     with Path(path).open("r", encoding="utf-8", errors="ignore") as fh:
         for raw in fh:
@@ -180,7 +192,7 @@ def analyze_gcode_file(path: Path, *, z_down_threshold: float = 1.0) -> GcodeAlg
                 if z_vals:
                     ever_saw_z = True
                     cur_z = z_vals[-1]
-                    next_pen_down = cur_z > float(z_down_threshold)
+                    next_pen_down = is_pen_down_z(cur_z)
                     if pen_down and not next_pen_down:
                         close_stroke()
                     pen_down = next_pen_down
@@ -190,7 +202,7 @@ def analyze_gcode_file(path: Path, *, z_down_threshold: float = 1.0) -> GcodeAlg
                 ever_saw_z = True
                 z_raw = z_vals[-1]
                 next_z = z_raw if (abs_mode or cur_z is None) else cur_z + z_raw
-                next_pen_down = next_z > float(z_down_threshold)
+                next_pen_down = is_pen_down_z(next_z)
                 if next_pen_down and not pen_down:
                     z_cycles += 1
                 if pen_down and not next_pen_down:

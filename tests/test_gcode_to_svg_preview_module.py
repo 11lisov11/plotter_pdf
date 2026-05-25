@@ -54,6 +54,22 @@ class GcodeToSvgPreviewModuleTests(unittest.TestCase):
 
         self.assertEqual(polylines, [[(0.0, 0.0), (10.0, -2.0)]])
 
+    def test_gcode_to_polylines_treats_short_lift_as_pen_up(self) -> None:
+        lines = [
+            "G90",
+            "G0 X0 Y0",
+            "G1 Z11.9",
+            "G1 X1 Y0",
+            "G1 Z8.4",
+            "G0 X10 Y0",
+            "G1 Z11.9",
+            "G1 X11 Y0",
+        ]
+
+        polylines = preview.gcode_to_polylines(lines, z_up=0.0, z_down=11.9)
+
+        self.assertEqual(polylines, [[(0.0, 0.0), (1.0, 0.0)], [(10.0, 0.0), (11.0, 0.0)]])
+
     def test_gcode_to_polylines_supports_r_word_arc_motion(self) -> None:
         lines = [
             "G90",

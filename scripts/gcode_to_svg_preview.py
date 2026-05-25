@@ -7,6 +7,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
+from src.plotter_backend.gcode.bounds import pen_down_from_z_level
 from src.plotter_backend.geometry.arc_fit import arc_center_from_radius
 
 
@@ -103,11 +104,7 @@ def gcode_to_polylines(lines: list[str], *, z_down: float | None = None, z_up: f
         nonlocal pen_down
         if z_down is None or z_up is None:
             return
-        # A bit tolerant: pick closest.
-        if abs(cur_z - z_down) <= abs(cur_z - z_up):
-            pen_down = True
-        else:
-            pen_down = False
+        pen_down = pen_down_from_z_level(float(cur_z), float(z_up), float(z_down))
 
     _update_pen_state()
 
