@@ -1,7 +1,51 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Callable, Optional, Tuple
+
+
+_TOKEN_RE = re.compile(r"([A-Za-z])\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)")
+
+
+def _strip_gcode_comments(line: str) -> str:
+    raw = str(line or "").split(";", 1)[0]
+    out: list[str] = []
+    depth = 0
+    for ch in raw:
+        if ch == "(":
+            depth += 1
+            continue
+        if ch == ")" and depth:
+            depth -= 1
+            continue
+        if depth == 0:
+            out.append(ch)
+    return "".join(out)
+
+
+def _has_explicit_pen_control(gcode_path: Path) -> bool:
+    try:
+        raw_lines = Path(gcode_path).read_text(encoding="utf-8", errors="ignore").splitlines()
+    except OSError:
+        return True
+    for raw in raw_lines:
+        line = _strip_gcode_comments(raw)
+        tokens = _TOKEN_RE.findall(line)
+        for axis, raw_value in tokens:
+            letter = axis.upper()
+            if letter == "Z":
+                return True
+            if letter != "M":
+                continue
+            try:
+                value = float(raw_value)
+            except ValueError:
+                continue
+            rounded = int(round(value))
+            if abs(value - float(rounded)) <= 1e-9 and rounded in {3, 5}:
+                return True
+    return False
 
 
 def preflight_check_gcode(
@@ -45,9 +89,12 @@ def preflight_check_gcode(
     draw_bounds = None
     try:
         draw_bounds = gcode_draw_bounds(gcode_path, float(z_up), float(z_down))
-    except Exception:
-        draw_bounds = None
-    if draw_bounds is not None:
+    except Exception as exc:
+        return False, f"cannot compute pen-down draw bounds ({type(exc).__name__}: {exc})."
+    if draw_bounds is None:
+        if _has_explicit_pen_control(gcode_path):
+            return False, "no pen-down drawing bounds."
+    else:
         gx0, gx1, gy0, gy1 = draw_bounds
 
     if (

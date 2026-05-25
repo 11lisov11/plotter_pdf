@@ -94,6 +94,75 @@ class GcodePreflightModuleTests(unittest.TestCase):
             self.assertFalse(ok)
             self.assertIn("geometry exceeds active area", msg)
 
+    def test_preflight_fails_when_no_pen_down_bounds_exist(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="plotter_preflight_no_pen_down_") as td:
+            gcode = Path(td) / "sample.nc"
+            gcode.write_text("G90\nG0 Z0\nG1 X10 Y10\n", encoding="utf-8")
+            ok, msg = gcode_preflight.preflight_check_gcode(
+                gcode,
+                lambda *_args: None,
+                preflight_enabled=True,
+                preflight_max_gcode_lines=100,
+                preflight_max_travel_to_draw_ratio=5.0,
+                preflight_bounds_margin_mm=0.0,
+                z_up=0.0,
+                z_down=11.9,
+                bounds=(0.0, 20.0, 0.0, 20.0),
+                work_area_bounds=lambda: (0.0, 20.0, 0.0, 20.0),
+                summarize_gcode_file=lambda _path: (3, 1, 1, (0.0, 10.0, 0.0, 10.0)),
+                gcode_draw_bounds=lambda *_args: None,
+            )
+
+            self.assertFalse(ok)
+            self.assertIn("no pen-down drawing bounds", msg)
+
+    def test_preflight_allows_legacy_xy_only_gcode_without_pen_control(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="plotter_preflight_xy_only_") as td:
+            gcode = Path(td) / "sample.nc"
+            gcode.write_text("G90\nG0 X0 Y0 ; Z0 in comment\nG1 X10 Y10 (M3 note)\n", encoding="utf-8")
+            ok, msg = gcode_preflight.preflight_check_gcode(
+                gcode,
+                lambda *_args: None,
+                preflight_enabled=True,
+                preflight_max_gcode_lines=100,
+                preflight_max_travel_to_draw_ratio=5.0,
+                preflight_bounds_margin_mm=0.0,
+                z_up=0.0,
+                z_down=11.9,
+                bounds=(0.0, 20.0, 0.0, 20.0),
+                work_area_bounds=lambda: (0.0, 20.0, 0.0, 20.0),
+                summarize_gcode_file=lambda _path: (3, 1, 1, (0.0, 10.0, 0.0, 10.0)),
+                gcode_draw_bounds=lambda *_args: None,
+            )
+
+            self.assertTrue(ok, msg)
+
+    def test_preflight_fails_when_draw_bounds_cannot_be_computed(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="plotter_preflight_bounds_error_") as td:
+            gcode = Path(td) / "sample.nc"
+            gcode.write_text("G90\nG1 X10 Y10\n", encoding="utf-8")
+
+            def _raise(*_args):
+                raise ValueError("bad gcode")
+
+            ok, msg = gcode_preflight.preflight_check_gcode(
+                gcode,
+                lambda *_args: None,
+                preflight_enabled=True,
+                preflight_max_gcode_lines=100,
+                preflight_max_travel_to_draw_ratio=5.0,
+                preflight_bounds_margin_mm=0.0,
+                z_up=0.0,
+                z_down=11.9,
+                bounds=(0.0, 20.0, 0.0, 20.0),
+                work_area_bounds=lambda: (0.0, 20.0, 0.0, 20.0),
+                summarize_gcode_file=lambda _path: (2, 1, 0, (10.0, 10.0, 10.0, 10.0)),
+                gcode_draw_bounds=_raise,
+            )
+
+            self.assertFalse(ok)
+            self.assertIn("cannot compute pen-down draw bounds", msg)
+
 
 if __name__ == "__main__":
     unittest.main()
