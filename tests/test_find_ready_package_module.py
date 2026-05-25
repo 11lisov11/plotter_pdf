@@ -148,6 +148,44 @@ def test_find_first_ready_package_replaces_stale_external_nc_with_local_file(tmp
     assert selection.line_count == 3
 
 
+def test_find_first_ready_package_resolves_side_artifacts_from_pages_fallback(tmp_path: Path) -> None:
+    variant, local_nc = _write_minimal_ready_variant(tmp_path)
+    package = local_nc.parent
+    pages_dir = package / "pages"
+    pages_dir.mkdir()
+    page_gcode = pages_dir / "page_01.gcode"
+    page_pdf = pages_dir / "page_01.pdf"
+    page_svg = pages_dir / "page_01.svg"
+    page_gcode.write_text("G0 X0 Y0\n", encoding="utf-8")
+    page_pdf.write_text("%PDF\n", encoding="utf-8")
+    page_svg.write_text("<svg />", encoding="utf-8")
+    stale_dir = tmp_path / "old_root" / package.name / "pages"
+    stale_dir.mkdir(parents=True)
+    with (package / "summary.csv").open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(
+            fh,
+            fieldnames=["item", "ok", "nc", "gcode", "preview_pdf", "preview_svg", "draw_length_m"],
+        )
+        writer.writeheader()
+        writer.writerow(
+            {
+                "item": "page_01",
+                "ok": "True",
+                "nc": str(local_nc),
+                "gcode": str(stale_dir / "page_01.gcode"),
+                "preview_pdf": str(stale_dir / "page_01.pdf"),
+                "preview_svg": str(stale_dir / "page_01.svg"),
+                "draw_length_m": "1.0",
+            }
+        )
+
+    selection = find_first_ready_package(variant, kind="a4")
+
+    assert selection.gcode == str(page_gcode)
+    assert selection.preview_pdf == str(page_pdf)
+    assert selection.preview_svg == str(page_svg)
+
+
 def test_find_first_ready_package_skips_external_nc_without_local_fallback(tmp_path: Path) -> None:
     variant, local_nc = _write_minimal_ready_variant(tmp_path)
     external = tmp_path / "old" / "other.nc"

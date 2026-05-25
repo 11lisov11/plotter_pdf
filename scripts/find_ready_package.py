@@ -57,22 +57,35 @@ def _line_count(path: Path) -> int:
 
 
 def _local_artifact_path(package_dir: Path, raw: str, fallback_name: str) -> str:
-    candidate = Path(str(raw or ""))
-    if not str(raw or "").strip():
-        candidate = package_dir / fallback_name
-    elif not candidate.is_absolute():
-        candidate = package_dir / candidate
-    if candidate.name and (not candidate.exists() or not _is_within(candidate, package_dir)):
-        local = package_dir / candidate.name
-        if local.exists():
-            candidate = local
-        elif not _is_within(candidate, package_dir):
-            candidate = package_dir / fallback_name
-    if not candidate.exists() and fallback_name:
-        local = package_dir / fallback_name
-        if local.exists():
-            candidate = local
-    return str(candidate)
+    raw_text = str(raw or "").strip()
+    candidates: list[Path] = []
+    raw_candidate: Path | None = None
+    if raw_text:
+        raw_candidate = Path(raw_text)
+        candidates.append(raw_candidate if raw_candidate.is_absolute() else package_dir / raw_candidate)
+    if fallback_name:
+        candidates.append(package_dir / fallback_name)
+        candidates.append(package_dir / "pages" / fallback_name)
+    if raw_candidate is not None and raw_candidate.name:
+        candidates.append(package_dir / raw_candidate.name)
+        candidates.append(package_dir / "pages" / raw_candidate.name)
+
+    seen: set[str] = set()
+    for candidate in candidates:
+        key = str(candidate).casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        if candidate.exists() and _is_within(candidate, package_dir):
+            return str(candidate)
+
+    if raw_candidate is not None:
+        resolved_raw = raw_candidate if raw_candidate.is_absolute() else package_dir / raw_candidate
+        if _is_within(resolved_raw, package_dir):
+            return str(resolved_raw)
+    if fallback_name:
+        return str(package_dir / fallback_name)
+    return str(package_dir)
 
 
 def _resolve_ready_nc(package_dir: Path, raw: str, item_name: str) -> Path | None:
