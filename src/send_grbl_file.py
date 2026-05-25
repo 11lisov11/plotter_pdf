@@ -4,6 +4,7 @@ from pathlib import Path
 import argparse
 from collections import deque
 import os
+import re
 import subprocess
 
 try:
@@ -147,6 +148,25 @@ def _clean_gcode_lines(text: str) -> list[str]:
     return out
 
 
+def _command_contains_arg_fragment(command: str, fragment: str) -> bool:
+    needle = str(fragment or "").strip().casefold()
+    if not needle:
+        return True
+    haystack = str(command or "").casefold()
+    variants = {needle, needle.replace("\\", "/"), needle.replace("/", "\\")}
+    for variant in variants:
+        if not variant:
+            continue
+        pattern = re.compile(r"(?<![A-Za-z0-9_.-])" + re.escape(variant) + r"(?![A-Za-z0-9_.-])")
+        if pattern.search(haystack):
+            return True
+    return False
+
+
+def _command_contains_any_arg_fragment(command: str, fragments: list[str]) -> bool:
+    return any(_command_contains_arg_fragment(command, fragment) for fragment in fragments)
+
+
 def _find_conflicting_sender_processes(port: str, file_path: Path) -> list[tuple[int, str]]:
     """Return other running sender processes for the same port/file on Windows."""
     if os.name != "nt":
@@ -160,6 +180,12 @@ def _find_conflicting_sender_processes(port: str, file_path: Path) -> list[tuple
         token = str(item or "").strip().casefold()
         if token and token not in target_file_tokens:
             target_file_tokens.append(token)
+        slash_token = token.replace("\\", "/")
+        if slash_token and slash_token not in target_file_tokens:
+            target_file_tokens.append(slash_token)
+        backslash_token = token.replace("/", "\\")
+        if backslash_token and backslash_token not in target_file_tokens:
+            target_file_tokens.append(backslash_token)
     target_port = str(port or "").casefold()
     ps = (
         "Get-CimInstance Win32_Process -Filter \"name = 'python.exe' or name = 'py.exe'\" | "
@@ -201,9 +227,9 @@ def _find_conflicting_sender_processes(port: str, file_path: Path) -> list[tuple
         cmd_norm = cmd.casefold()
         if "send_grbl_file.py" not in cmd_norm:
             continue
-        if target_port and target_port not in cmd_norm:
+        if target_port and not _command_contains_arg_fragment(cmd_norm, target_port):
             continue
-        if target_file_tokens and not any(token in cmd_norm for token in target_file_tokens):
+        if target_file_tokens and not _command_contains_any_arg_fragment(cmd_norm, target_file_tokens):
             continue
         conflicts.append((pid, cmd))
     return conflicts

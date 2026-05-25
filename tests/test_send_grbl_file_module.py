@@ -107,6 +107,31 @@ class SendGrblFileModuleTests(unittest.TestCase):
 
         self.assertEqual(conflicts, [(123, r"python D:\plotter_pdf\src\send_grbl_file.py COM6 115200 job.nc")])
 
+    def test_find_conflicting_sender_processes_avoids_substring_matches(self) -> None:
+        proc_payload = (
+            "["
+            '{"ProcessId":123,'
+            '"CommandLine":"python D:\\\\plotter_pdf\\\\src\\\\send_grbl_file.py COM60 115200 D:\\\\plotter_pdf\\\\job.nc"},'
+            '{"ProcessId":124,'
+            '"CommandLine":"python D:\\\\plotter_pdf\\\\src\\\\send_grbl_file.py COM6 115200 D:\\\\plotter_pdf\\\\oldjob.nc"},'
+            '{"ProcessId":125,'
+            '"CommandLine":"python D:\\\\plotter_pdf\\\\src\\\\send_grbl_file.py COM6 115200 D:\\\\plotter_pdf\\\\job.nc"}'
+            "]"
+        )
+
+        with (
+            mock.patch.object(send_grbl_file.os, "name", "nt"),
+            mock.patch.object(send_grbl_file.os, "getpid", return_value=999),
+            mock.patch.object(
+                send_grbl_file.subprocess,
+                "run",
+                return_value=SimpleNamespace(returncode=0, stdout=proc_payload),
+            ),
+        ):
+            conflicts = send_grbl_file._find_conflicting_sender_processes("COM6", Path(r"D:\plotter_pdf\job.nc"))
+
+        self.assertEqual(conflicts, [(125, r"python D:\plotter_pdf\src\send_grbl_file.py COM6 115200 D:\plotter_pdf\job.nc")])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 from dataclasses import asdict, dataclass
@@ -34,7 +35,32 @@ def _path_match_tokens(value: str | Path | None) -> list[str]:
         item_norm = str(item or "").strip().casefold()
         if item_norm and item_norm not in tokens:
             tokens.append(item_norm)
+        slash_norm = item_norm.replace("\\", "/")
+        if slash_norm and slash_norm not in tokens:
+            tokens.append(slash_norm)
+        backslash_norm = item_norm.replace("/", "\\")
+        if backslash_norm and backslash_norm not in tokens:
+            tokens.append(backslash_norm)
     return tokens
+
+
+def _command_contains_arg_fragment(command: str, fragment: str) -> bool:
+    needle = str(fragment or "").strip().casefold()
+    if not needle:
+        return True
+    haystack = str(command or "").casefold()
+    variants = {needle, needle.replace("\\", "/"), needle.replace("/", "\\")}
+    for variant in variants:
+        if not variant:
+            continue
+        pattern = re.compile(r"(?<![A-Za-z0-9_.-])" + re.escape(variant) + r"(?![A-Za-z0-9_.-])")
+        if pattern.search(haystack):
+            return True
+    return False
+
+
+def _command_contains_any_arg_fragment(command: str, fragments: Iterable[str]) -> bool:
+    return any(_command_contains_arg_fragment(command, fragment) for fragment in fragments)
 
 
 def _query_python_process_rows(*, run: Callable[..., Any] = subprocess.run) -> list[dict[str, Any]]:
@@ -89,9 +115,9 @@ def find_sender_processes(
         cmd_norm = cmd.casefold()
         if "send_grbl_file.py" not in cmd_norm:
             continue
-        if target_port and target_port not in cmd_norm:
+        if target_port and not _command_contains_arg_fragment(cmd_norm, target_port):
             continue
-        if target_file_tokens and not any(token in cmd_norm for token in target_file_tokens):
+        if target_file_tokens and not _command_contains_any_arg_fragment(cmd_norm, target_file_tokens):
             continue
         matches.append(SenderProcess(pid=pid, command_line=cmd))
     return matches

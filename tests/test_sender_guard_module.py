@@ -46,6 +46,48 @@ class SenderGuardTests(unittest.TestCase):
 
         self.assertEqual([proc.pid for proc in found], [10])
 
+    def test_find_sender_processes_does_not_match_port_or_file_substrings(self) -> None:
+        rows = [
+            {
+                "ProcessId": 10,
+                "CommandLine": r'python D:\plotter_pdf\src\send_grbl_file.py COM60 115200 D:\plotter_pdf\job.nc',
+            },
+            {
+                "ProcessId": 11,
+                "CommandLine": r'python D:\plotter_pdf\src\send_grbl_file.py COM6 115200 D:\plotter_pdf\oldjob.nc',
+            },
+            {
+                "ProcessId": 12,
+                "CommandLine": r'python D:\plotter_pdf\src\send_grbl_file.py COM6 115200 D:\plotter_pdf\job.nc',
+            },
+        ]
+
+        found = sender_guard.find_sender_processes(
+            port="COM6",
+            file_path=r"D:\plotter_pdf\job.nc",
+            process_rows=rows,
+            current_pid=99,
+        )
+
+        self.assertEqual([proc.pid for proc in found], [12])
+
+    def test_find_sender_processes_matches_forward_slash_file_forms(self) -> None:
+        rows = [
+            {
+                "ProcessId": 10,
+                "CommandLine": "python D:/plotter_pdf/src/send_grbl_file.py COM6 115200 D:/plotter_pdf/job.nc",
+            }
+        ]
+
+        found = sender_guard.find_sender_processes(
+            port="COM6",
+            file_path=r"D:\plotter_pdf\job.nc",
+            process_rows=rows,
+            current_pid=99,
+        )
+
+        self.assertEqual([proc.pid for proc in found], [10])
+
     def test_stop_sender_processes_uses_stop_process(self) -> None:
         calls = []
 
