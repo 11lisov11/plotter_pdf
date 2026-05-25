@@ -672,6 +672,52 @@ def test_validate_variant_writes_ready_to_plot_audit(tmp_path: Path) -> None:
     assert (variant_dir / "_ready_to_plot_audit.txt").exists()
 
 
+def test_validate_variant_resolves_relative_package_dir_from_variant(tmp_path: Path) -> None:
+    variant_dir = tmp_path / "variant"
+    package_dir = _write_package(variant_dir)
+    with (variant_dir / "_prepared_summary.csv").open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=["package_dir", "item"])
+        writer.writeheader()
+        writer.writerow({"package_dir": package_dir.name, "item": "page_01"})
+
+    payload = mod.validate_variant(variant_dir, write_reports=False)
+
+    assert payload["ok"] is True
+    assert payload["packages"] == 1
+
+
+def test_validate_variant_rejects_package_dir_outside_variant(tmp_path: Path) -> None:
+    variant_dir = tmp_path / "variant"
+    variant_dir.mkdir()
+    outside_package = _write_package(tmp_path / "outside")
+    with (variant_dir / "_prepared_summary.csv").open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=["package_dir", "item"])
+        writer.writeheader()
+        writer.writerow({"package_dir": str(outside_package), "item": "page_01"})
+
+    payload = mod.validate_variant(variant_dir, write_reports=False)
+
+    assert payload["ok"] is False
+    assert payload["packages"] == 0
+    problems = payload["failed_packages"][0]["problems"]
+    assert any("package_dir outside variant" in problem for problem in problems)
+
+
+def test_validate_variant_remaps_stale_absolute_package_dir_to_local_variant_package(tmp_path: Path) -> None:
+    variant_dir = tmp_path / "variant"
+    package_dir = _write_package(variant_dir)
+    stale_package_dir = tmp_path / "old_root" / "variant" / package_dir.name
+    with (variant_dir / "_prepared_summary.csv").open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=["package_dir", "item"])
+        writer.writeheader()
+        writer.writerow({"package_dir": str(stale_package_dir), "item": "page_01"})
+
+    payload = mod.validate_variant(variant_dir, write_reports=False)
+
+    assert payload["ok"] is True
+    assert payload["packages"] == 1
+
+
 def test_validate_variant_rejects_empty_prepared_summary(tmp_path: Path) -> None:
     variant_dir = tmp_path / "variant"
     variant_dir.mkdir()

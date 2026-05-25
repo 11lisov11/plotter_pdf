@@ -686,23 +686,45 @@ def validate_package(package_dir: Path, rows: list[dict[str, str]]) -> PackageVa
     )
 
 
-def _group_rows_by_package(rows: list[dict[str, str]]) -> dict[Path, list[dict[str, str]]]:
+def _is_within(path: Path, parent: Path) -> bool:
+    try:
+        path.resolve(strict=False).relative_to(parent.resolve(strict=False))
+        return True
+    except Exception:
+        return False
+
+
+def _group_rows_by_package(
+    variant_dir: Path,
+    rows: list[dict[str, str]],
+) -> tuple[dict[Path, list[dict[str, str]]], list[str]]:
     grouped: dict[Path, list[dict[str, str]]] = {}
-    for row in rows:
+    problems: list[str] = []
+    variant_dir = Path(variant_dir)
+    for index, row in enumerate(rows, start=2):
         package_raw = str(row.get("package_dir") or "").strip()
         if not package_raw:
             continue
-        grouped.setdefault(Path(package_raw), []).append(row)
-    return grouped
+        package_dir = Path(package_raw)
+        if not package_dir.is_absolute():
+            package_dir = variant_dir / package_dir
+        if not _is_within(package_dir, variant_dir):
+            local_package_dir = variant_dir / package_dir.name
+            if local_package_dir.exists() and local_package_dir.is_dir():
+                package_dir = local_package_dir
+            else:
+                problems.append(f"_prepared_summary.csv row {index}: package_dir outside variant: {package_raw}")
+                continue
+        grouped.setdefault(package_dir, []).append(row)
+    return grouped, problems
 
 
 def validate_variant(variant_dir: Path, *, write_reports: bool = True) -> dict[str, object]:
     rows = _read_summary_rows(variant_dir)
-    grouped = _group_rows_by_package(rows)
+    grouped, scope_problems = _group_rows_by_package(variant_dir, rows)
     packages = [validate_package(package_dir, package_rows) for package_dir, package_rows in sorted(grouped.items())]
     failed = [pkg for pkg in packages if not pkg.ok]
     warnings = [warning for pkg in packages for warning in pkg.warnings]
-    scope_problems: list[str] = []
     if not packages:
         scope_problems.append("no packages listed in _prepared_summary.csv")
     payload = {
