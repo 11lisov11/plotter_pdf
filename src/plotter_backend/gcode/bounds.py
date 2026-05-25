@@ -24,18 +24,19 @@ def _values(tokens: list[tuple[str, str]], letter: str) -> list[float]:
 
 
 def strip_gcode_comments(line: str) -> str:
-    s = (line or "").strip()
-    if not s:
-        return ""
-    if ";" in s:
-        s = s.split(";", 1)[0].strip()
-    while "(" in s and ")" in s:
-        a = s.find("(")
-        b = s.find(")", a + 1)
-        if b < 0:
-            break
-        s = (s[:a] + " " + s[b + 1 :]).strip()
-    return s
+    raw = str(line or "").split(";", 1)[0]
+    out: list[str] = []
+    depth = 0
+    for ch in raw:
+        if ch == "(":
+            depth += 1
+            continue
+        if ch == ")" and depth:
+            depth -= 1
+            continue
+        if depth == 0:
+            out.append(ch)
+    return "".join(out).strip()
 
 
 def pen_down_from_z_level(cur_z: float, z_up: float, z_down: float) -> bool:

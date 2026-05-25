@@ -13,6 +13,10 @@ class GcodeBoundsModuleTests(unittest.TestCase):
         line = "G1 X10 Y20 ; comment (inner)"
         self.assertEqual(gcode_bounds.strip_gcode_comments(line), "G1 X10 Y20")
 
+    def test_strip_gcode_comments_drops_unclosed_parenthesis_tail(self) -> None:
+        line = "G1 X10 Y20 (broken comment G1 X999 Y999"
+        self.assertEqual(gcode_bounds.strip_gcode_comments(line), "G1 X10 Y20")
+
     def test_pen_down_from_z_level_handles_normal_z_direction(self) -> None:
         self.assertTrue(gcode_bounds.pen_down_from_z_level(11.8, 0.0, 11.9))
         self.assertFalse(gcode_bounds.pen_down_from_z_level(0.2, 0.0, 11.9))

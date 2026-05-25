@@ -76,10 +76,18 @@ def _has_gcode_word(line: str, letter: str, number: int) -> bool:
 
 
 def _motion_code(line: str, previous: str | None) -> str | None:
-    for number, canonical in ((0, "G0"), (1, "G1"), (2, "G2"), (3, "G3")):
-        if _has_gcode_word(line, "G", number):
-            return canonical
-    return previous
+    motion = previous
+    for axis, value in _TOKEN_RE.findall(str(line or "")):
+        if axis.upper() != "G":
+            continue
+        try:
+            gval = float(value)
+        except ValueError:
+            continue
+        rounded = int(round(gval))
+        if abs(gval - float(rounded)) <= 1e-9 and rounded in {0, 1, 2, 3}:
+            motion = f"G{rounded}"
+    return motion
 
 
 def _is_pen_down(z: float | None, z_up: float, z_down: float, spindle_down: bool) -> bool:

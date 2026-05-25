@@ -261,6 +261,12 @@ def test_validate_gcode_does_not_treat_m30_as_pen_down(tmp_path: Path) -> None:
     assert result.ok
 
 
+def test_validate_motion_code_uses_last_motion_word_on_line() -> None:
+    assert mod._motion_code("G0 G1 X10", None) == "G1"
+    assert mod._motion_code("G1 G0 X10", None) == "G0"
+    assert mod._motion_code("G90.1 X10", "G1") == "G1"
+
+
 def test_validate_gcode_parses_exponent_coordinates(tmp_path: Path) -> None:
     gcode_path = tmp_path / "exp.nc"
     gcode_path.write_text(
