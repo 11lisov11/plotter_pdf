@@ -295,10 +295,11 @@ def validate_gcode_file(
         modal = _motion_code(line, modal)
 
         # G92 sets the current coordinate system; for preflight we treat it as the
-        # current machine position because the generated files use it for Z lift.
+        # current Z position because generated files use it for protective Z lift.
+        # X/Y G92 can spoof a return-home check without physically moving axes.
         if _has_gcode_word(upper, "G", 92):
-            cur_x = vals.get("X", cur_x)
-            cur_y = vals.get("Y", cur_y)
+            if "X" in vals or "Y" in vals:
+                problems.append(f"{gcode_path.name}: line {lines}: G92 X/Y coordinate reset is not allowed")
             cur_z = vals.get("Z", cur_z)
             continue
 

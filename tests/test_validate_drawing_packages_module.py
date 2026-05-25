@@ -93,6 +93,31 @@ M5
     assert any("missing motor release" in problem for problem in result.problems)
 
 
+def test_validate_gcode_rejects_g92_xy_home_spoof(tmp_path: Path) -> None:
+    gcode_path = tmp_path / "g92_xy_home_spoof.gcode"
+    gcode_path.write_text(
+        """G21
+G90
+G92 Z4
+G0 Z0
+G0 X10 Y-10
+G1 Z11.9
+G1 X20 Y-10
+G0 Z0
+G92 X0 Y0
+M5
+$1=0
+""",
+        encoding="utf-8",
+    )
+
+    result = mod.validate_gcode_file(gcode_path)
+
+    assert not result.ok
+    assert any("G92 X/Y coordinate reset is not allowed" in problem for problem in result.problems)
+    assert any("does not return home" in problem for problem in result.problems)
+
+
 def test_validate_gcode_rejects_file_ending_with_pen_down(tmp_path: Path) -> None:
     gcode_path = tmp_path / "pen_down_end.gcode"
     gcode_path.write_text(
