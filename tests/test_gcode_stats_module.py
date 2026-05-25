@@ -106,6 +106,33 @@ class GcodeStatsModuleTests(unittest.TestCase):
             self.assertEqual(travel, 1)
             self.assertEqual(bounds, (10.0, 13.0, 7.0, 10.0))
 
+    def test_summarize_gcode_file_treats_g92_as_coordinate_reset_not_motion(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="plotter_gcode_stats_g92_") as td:
+            gcode = Path(td) / "g92.nc"
+            gcode.write_text(
+                "\n".join(
+                    [
+                        "G90",
+                        "G0 X10 Y0",
+                        "G1 X20 Y0",
+                        "G92 X0 Y100",
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            total, draw, travel, bounds = gcode_stats.summarize_gcode_file(
+                gcode,
+                points_distance=lambda _a, _b: 1.0,
+                arc_extents_xy=lambda *_args, **_kwargs: (0.0, 0.0, 0.0, 0.0),
+            )
+
+            self.assertEqual(total, 4)
+            self.assertEqual(draw, 1)
+            self.assertEqual(travel, 1)
+            self.assertEqual(bounds, (10.0, 20.0, 0.0, 0.0))
+
     def test_summarize_gcode_file_uses_arc_extents_for_arc_moves(self) -> None:
         with tempfile.TemporaryDirectory(prefix="plotter_gcode_stats_arc_") as td:
             gcode = Path(td) / "arc.nc"

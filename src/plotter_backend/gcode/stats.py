@@ -72,6 +72,7 @@ def summarize_gcode_file(
             tokens = _TOKEN_RE.findall(line)
             g_values = _values(tokens, "G")
             code = last_motion
+            has_g92 = False
             for gval in g_values:
                 if abs(gval - 90.0) <= 1e-9:
                     abs_mode = True
@@ -91,12 +92,21 @@ def summarize_gcode_file(
                 if rounded in {0, 1, 2, 3}:
                     code = rounded
                     last_motion = rounded
+                elif rounded == 92:
+                    has_g92 = True
 
             x_values = _values(tokens, "X")
             y_values = _values(tokens, "Y")
             i_values = _values(tokens, "I")
             j_values = _values(tokens, "J")
             r_values = _values(tokens, "R")
+            if has_g92:
+                if x_values:
+                    cur_x = x_values[-1]
+                if y_values:
+                    cur_y = y_values[-1]
+                continue
+
             x = x_values[-1] if x_values else None
             y = y_values[-1] if y_values else None
             has_xy = bool(x_values or y_values)

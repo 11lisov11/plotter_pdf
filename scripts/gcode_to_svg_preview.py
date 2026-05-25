@@ -122,6 +122,7 @@ def gcode_to_polylines(lines: list[str], *, z_down: float | None = None, z_up: f
 
         # First, handle G modal changes and extract motion command, if any.
         motion_g = None
+        has_g92 = False
         for gval in _values(body, "G"):
             if abs(gval - 90.0) <= 1e-6:
                 abs_mode = True
@@ -139,6 +140,8 @@ def gcode_to_polylines(lines: list[str], *, z_down: float | None = None, z_up: f
                 motion_g = 2
             elif abs(gval - 3.0) <= 1e-6:
                 motion_g = 3
+            elif abs(gval - 92.0) <= 1e-6:
+                has_g92 = True
 
         for mval in _values(body, "M"):
             mint = int(round(mval))
@@ -150,6 +153,19 @@ def gcode_to_polylines(lines: list[str], *, z_down: float | None = None, z_up: f
                 pen_down = False
 
         words = _parse_words(body)
+
+        if has_g92:
+            if cur_poly and len(cur_poly) >= 2:
+                out.append(cur_poly)
+            cur_poly = []
+            if "X" in words:
+                cur_x = float(words["X"])
+            if "Y" in words:
+                cur_y = float(words["Y"])
+            if "Z" in words:
+                cur_z = float(words["Z"])
+                _update_pen_state()
+            continue
 
         # Track Z even on non-draw.
         if "Z" in words:

@@ -918,6 +918,7 @@ def _gcode_to_polylines(lines: list[str], *, z_up: float, z_down: float) -> list
             continue
 
         motion_g: Optional[int] = None
+        has_g92 = False
         for gval in _values(body, "G"):
             if abs(gval - 90.0) <= 1e-6:
                 abs_mode = True
@@ -935,6 +936,8 @@ def _gcode_to_polylines(lines: list[str], *, z_up: float, z_down: float) -> list
                 motion_g = 2
             elif abs(gval - 3.0) <= 1e-6:
                 motion_g = 3
+            elif abs(gval - 92.0) <= 1e-6:
+                has_g92 = True
 
         # Support spindle-style pen control (M3/M5) in preview parsing.
         for mval in _values(body, "M"):
@@ -947,6 +950,18 @@ def _gcode_to_polylines(lines: list[str], *, z_up: float, z_down: float) -> list
                 pen_down = False
 
         words = _parse_words(body)
+        if has_g92:
+            if len(cur_poly) >= 2:
+                out.append(cur_poly)
+            cur_poly = []
+            if "X" in words:
+                cur_x = float(words["X"])
+            if "Y" in words:
+                cur_y = float(words["Y"])
+            if "Z" in words:
+                cur_z = float(words["Z"])
+                _update_pen()
+            continue
         if "Z" in words:
             z = float(words["Z"])
             cur_z = z if abs_mode else (cur_z + z)

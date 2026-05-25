@@ -105,6 +105,7 @@ def gcode_draw_bounds(
                 motion = last_motion
             else:
                 last_motion = motion
+            has_g92 = any(abs(gval - 92.0) <= 1e-9 for gval in _values(tokens, "G"))
 
             for mval_raw in _values(tokens, "M"):
                 mval = int(round(mval_raw))
@@ -116,13 +117,23 @@ def gcode_draw_bounds(
                     pen_down = False
 
             z_values = _values(tokens, "Z")
+            x_values = _values(tokens, "X")
+            y_values = _values(tokens, "Y")
+            if has_g92:
+                if x_values:
+                    cur_x = x_values[-1]
+                if y_values:
+                    cur_y = y_values[-1]
+                if z_values:
+                    cur_z = z_values[-1]
+                    pen_down = pen_down_from_z_level(cur_z, z_up, z_down)
+                continue
+
             if z_values:
                 z_val = z_values[-1]
                 cur_z = z_val if abs_mode else (cur_z + z_val)
                 pen_down = pen_down_from_z_level(cur_z, z_up, z_down)
 
-            x_values = _values(tokens, "X")
-            y_values = _values(tokens, "Y")
             i_values = _values(tokens, "I")
             j_values = _values(tokens, "J")
             r_values = _values(tokens, "R")

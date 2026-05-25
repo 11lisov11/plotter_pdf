@@ -182,6 +182,34 @@ def test_analyze_gcode_counts_pen_up_g1_xy_as_travel(tmp_path: Path) -> None:
     assert metrics.travel_to_draw_ratio == 1.0
 
 
+def test_analyze_gcode_treats_g92_as_coordinate_reset_not_motion(tmp_path: Path) -> None:
+    gcode = tmp_path / "g92_reset.nc"
+    gcode.write_text(
+        "\n".join(
+            [
+                "G21",
+                "G90",
+                "G0 X10 Y0",
+                "G1 Z11.9",
+                "G1 X20 Y0",
+                "G92 X0 Y0",
+                "G1 X5 Y0",
+                "G1 Z0",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    metrics = analyzer.analyze_gcode_file(gcode)
+
+    assert metrics.g1_moves == 2
+    assert metrics.draw_moves == 2
+    assert metrics.travel_moves == 0
+    assert metrics.draw_length_mm == 15.0
+    assert metrics.z_cycles == 1
+
+
 def test_collect_gcode_files_uses_only_nc_and_gcode(tmp_path: Path) -> None:
     keep_nc = tmp_path / "a.nc"
     keep_gcode = tmp_path / "nested" / "b.gcode"

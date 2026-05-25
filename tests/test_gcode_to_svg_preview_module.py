@@ -71,6 +71,35 @@ class GcodeToSvgPreviewModuleTests(unittest.TestCase):
         self.assertAlmostEqual(polylines[0][-1][0], 0.0, places=6)
         self.assertAlmostEqual(polylines[0][-1][1], 10.0, places=6)
 
+    def test_gcode_to_polylines_treats_g92_as_coordinate_reset_not_motion(self) -> None:
+        lines = [
+            "G90",
+            "G0 X10 Y0",
+            "M3",
+            "G1 X20 Y0",
+            "G92 X0 Y100",
+            "M5",
+        ]
+
+        polylines = preview.gcode_to_polylines(lines, z_up=0.0, z_down=11.9)
+
+        self.assertEqual(polylines, [[(10.0, 0.0), (20.0, 0.0)]])
+
+    def test_gcode_to_polylines_splits_polyline_after_g92_coordinate_reset(self) -> None:
+        lines = [
+            "G90",
+            "G0 X10 Y0",
+            "M3",
+            "G1 X20 Y0",
+            "G92 X0 Y0",
+            "G1 X5 Y0",
+            "M5",
+        ]
+
+        polylines = preview.gcode_to_polylines(lines, z_up=0.0, z_down=11.9)
+
+        self.assertEqual(polylines, [[(10.0, 0.0), (20.0, 0.0)], [(0.0, 0.0), (5.0, 0.0)]])
+
     def test_main_writes_svg_for_compact_gcode(self) -> None:
         with tempfile.TemporaryDirectory(prefix="plotter_preview_compact_") as td:
             root = Path(td)

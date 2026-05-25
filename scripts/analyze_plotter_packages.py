@@ -157,6 +157,7 @@ def analyze_gcode_file(path: Path, *, z_down_threshold: float = 1.0) -> GcodeAlg
             i_vals = values(tokens, "I")
             j_vals = values(tokens, "J")
             r_vals = values(tokens, "R")
+            has_g92 = any(abs(gval - 92.0) <= 1e-9 for gval in values(tokens, "G"))
 
             for mval in m_vals:
                 rounded = int(round(mval))
@@ -170,6 +171,20 @@ def analyze_gcode_file(path: Path, *, z_down_threshold: float = 1.0) -> GcodeAlg
                     if pen_down:
                         close_stroke()
                     pen_down = False
+
+            if has_g92:
+                if x_vals:
+                    cur_x = x_vals[-1]
+                if y_vals:
+                    cur_y = y_vals[-1]
+                if z_vals:
+                    ever_saw_z = True
+                    cur_z = z_vals[-1]
+                    next_pen_down = cur_z > float(z_down_threshold)
+                    if pen_down and not next_pen_down:
+                        close_stroke()
+                    pen_down = next_pen_down
+                continue
 
             if z_vals:
                 ever_saw_z = True
