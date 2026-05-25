@@ -9373,16 +9373,13 @@ def rewrite_duplicate_draw_segments_as_penup_travel(
     seen: set[Tuple[Tuple[float, float], Tuple[float, float]]] = set()
     rewritten: List[str] = []
     dropped = 0
-    z_threshold = (float(z_up) + float(z_down)) / 2.0
 
     def _down(z_value: Optional[float]) -> bool:
         if spindle_down:
             return True
         if z_value is None:
             return False
-        if float(z_down) >= float(z_up):
-            return float(z_value) > z_threshold
-        return float(z_value) < z_threshold
+        return _pen_down_from_z_level(float(z_value), float(z_up), float(z_down))
 
     for raw_line in original:
         clean = _gcode_line_without_comment(raw_line)

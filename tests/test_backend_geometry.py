@@ -870,6 +870,34 @@ class BackendGeometryTests(unittest.TestCase):
             self.assertIn("G90\nG1 Z0.0000 F8000.0\nG0 X0.0000 Y0.0000 F15000.0", text)
             self.assertIn("G1 Z11.9000 F8000.0\nG91", text)
 
+    def test_rewrite_duplicate_draw_segments_treats_short_lift_as_pen_up(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "short_lift_dup.nc"
+            original = "\n".join(
+                [
+                    "G21",
+                    "G90",
+                    "G0 X0 Y0",
+                    "G1 Z11.9",
+                    "G1 X10 Y0 F12000",
+                    "G1 Z8.4",
+                    "G1 X0 Y0 F12000",
+                    "G1 Z0.0",
+                ]
+            ) + "\n"
+            path.write_text(original, encoding="utf-8")
+
+            changed = backend.rewrite_duplicate_draw_segments_as_penup_travel(
+                path,
+                z_up=0.0,
+                z_down=11.9,
+                feed_travel=15000.0,
+                z_feed=8000.0,
+            )
+
+            self.assertEqual(changed, 0)
+            self.assertEqual(path.read_text(encoding="utf-8"), original)
+
     def test_gcode_word_detection_handles_compact_and_m30(self) -> None:
         self.assertTrue(backend._gcode_has_word("G92Z11.9000", "G", 92))
         self.assertTrue(backend._gcode_has_word("M3S1000", "M", 3))
