@@ -718,6 +718,23 @@ def test_validate_variant_remaps_stale_absolute_package_dir_to_local_variant_pac
     assert payload["packages"] == 1
 
 
+def test_validate_variant_does_not_remap_outside_package_with_wrong_variant_parent(tmp_path: Path) -> None:
+    variant_dir = tmp_path / "variant"
+    package_dir = _write_package(variant_dir)
+    stale_package_dir = tmp_path / "old_root" / "other_variant" / package_dir.name
+    with (variant_dir / "_prepared_summary.csv").open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=["package_dir", "item"])
+        writer.writeheader()
+        writer.writerow({"package_dir": str(stale_package_dir), "item": "page_01"})
+
+    payload = mod.validate_variant(variant_dir, write_reports=False)
+
+    assert payload["ok"] is False
+    assert payload["packages"] == 0
+    problems = payload["failed_packages"][0]["problems"]
+    assert any("package_dir outside variant" in problem for problem in problems)
+
+
 def test_validate_variant_rejects_empty_prepared_summary(tmp_path: Path) -> None:
     variant_dir = tmp_path / "variant"
     variant_dir.mkdir()

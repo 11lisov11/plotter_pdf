@@ -710,7 +710,8 @@ def _group_rows_by_package(
             package_dir = variant_dir / package_dir
         if not _is_within(package_dir, variant_dir):
             local_package_dir = variant_dir / package_dir.name
-            if local_package_dir.exists() and local_package_dir.is_dir():
+            parent_matches_variant = package_dir.parent.name.casefold() == variant_dir.name.casefold()
+            if parent_matches_variant and local_package_dir.exists() and local_package_dir.is_dir():
                 package_dir = local_package_dir
             else:
                 problems.append(f"_prepared_summary.csv row {index}: package_dir outside variant: {package_raw}")
