@@ -220,6 +220,48 @@ class PenliftPostprocessTests(unittest.TestCase):
         self.assertEqual(len(z_vals), 1)
         self.assertTrue(any(line.strip().startswith("G1 X10.15 Y0.10 F2000.0") for line in out))
 
+    def test_dynamic_z_uses_absolute_ijk_arc_length(self) -> None:
+        src = [
+            "G21",
+            "G90",
+            "G90.1",
+            "G0 X10 Y0",
+            "G3 X0 Y10 I0 J0 F800",
+            "G0 X20 Y0",
+            "G1 X21 Y0 F800",
+        ]
+
+        out = pp.touch_pen_down(
+            src,
+            z_down=10.0,
+            delay_down=0.0,
+            z_up=0.0,
+            mode="z",
+            spindle_speed=1000.0,
+            delay_up=0.0,
+            z_feed_down_approach=700.0,
+            z_feed_down_touch=123.0,
+            z_feed_up=700.0,
+            z_feed_up_final=220.0,
+            z_soft_down_mm=0.8,
+            z_soft_up_mm=0.5,
+            z_travel_lift_mm=3.0,
+            dynamic_z_enable=True,
+            dynamic_base_z_down=10.0,
+            dynamic_initial_wear_mm=0.0,
+            dynamic_wear_mm_per_m=100.0,
+            dynamic_z_comp_per_wear=1.0,
+            dynamic_z_max_comp_mm=10.0,
+            stroke_z_jitter_enable=False,
+            stroke_z_jitter_mm=0.0,
+            stroke_z_jitter_seed=7,
+        )
+
+        z_vals = self._touchdown_z(out, 123.0)
+        self.assertGreaterEqual(len(z_vals), 2)
+        self.assertAlmostEqual(z_vals[0], 10.0, places=4)
+        self.assertAlmostEqual(z_vals[1], 11.5708, places=4)
+
 
 if __name__ == "__main__":
     unittest.main()

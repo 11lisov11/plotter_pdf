@@ -161,6 +161,7 @@ def touch_pen_down(
     current_x = None
     current_y = None
     abs_mode = True
+    ijk_abs = False
     drawn_length_mm = 0.0
     if delay_up is None:
         delay_up = delay_down
@@ -301,6 +302,14 @@ def touch_pen_down(
             abs_mode = False
             out.append(raw)
             continue
+        if code == "G90.1":
+            ijk_abs = True
+            out.append(raw)
+            continue
+        if code == "G91.1":
+            ijk_abs = False
+            out.append(raw)
+            continue
 
         xy_move = (code in GCODE_MOVES_WITH_XY) and (has_axis(tokens, "X") or has_axis(tokens, "Y"))
         z_move_only = (code in GCODE_MOVES_WITH_XY) and has_axis(tokens, "Z") and not (has_axis(tokens, "X") or has_axis(tokens, "Y"))
@@ -388,7 +397,9 @@ def touch_pen_down(
             out.append(raw)
             if x0 is not None and y0 is not None and x1 is not None and y1 is not None:
                 if i_tok is not None and j_tok is not None:
-                    drawn_length_mm += max(0.0, arc_length_xy(x0, y0, x1, y1, i_tok, j_tok, cw=(code == "G2")))
+                    arc_i = i_tok - x0 if ijk_abs else i_tok
+                    arc_j = j_tok - y0 if ijk_abs else j_tok
+                    drawn_length_mm += max(0.0, arc_length_xy(x0, y0, x1, y1, arc_i, arc_j, cw=(code == "G2")))
                 else:
                     drawn_length_mm += max(0.0, math.hypot(x1 - x0, y1 - y0))
             current_x, current_y = x1, y1
