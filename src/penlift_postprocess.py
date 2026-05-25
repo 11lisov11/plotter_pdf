@@ -65,12 +65,13 @@ def split_comment(line: str):
     raw = str(line or "").rstrip("\n")
     if ";" in raw:
         body_src, semicolon_comment = raw.split(";", 1)
-        comments = [";" + semicolon_comment]
+        semicolon_part = ";" + semicolon_comment
     else:
         body_src = raw
-        comments = []
+        semicolon_part = ""
 
     body: list[str] = []
+    comments: list[str] = []
     paren_comment: list[str] = []
     depth = 0
     for ch in body_src:
@@ -86,12 +87,14 @@ def split_comment(line: str):
             if ch == ")":
                 depth -= 1
                 if depth == 0:
-                    comments.insert(0, "".join(paren_comment))
+                    comments.append("".join(paren_comment))
                     paren_comment = []
             continue
         body.append(ch)
     if paren_comment:
-        comments.insert(0, "".join(paren_comment))
+        comments.append("".join(paren_comment))
+    if semicolon_part:
+        comments.append(semicolon_part)
     return "".join(body).rstrip(), " ".join(part for part in comments if part)
 
 

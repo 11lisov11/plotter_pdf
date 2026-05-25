@@ -24,6 +24,12 @@ class PenliftPostprocessTests(unittest.TestCase):
         self.assertEqual(body, "G0 X10 Y0")
         self.assertEqual(comment, "(ignore X999 Y999) ; keep")
 
+    def test_split_comment_preserves_multiple_parentheses_order(self) -> None:
+        body, comment = pp.split_comment("G0 X10 (first) Y0 (second) ; third")
+
+        self.assertEqual(body, "G0 X10  Y0")
+        self.assertEqual(comment, "(first) (second) ; third")
+
     def test_stroke_z_jitter_is_deterministic_and_varies_between_strokes(self) -> None:
         src = [
             "G21",
