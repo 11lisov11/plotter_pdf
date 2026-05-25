@@ -66,11 +66,42 @@ def _local_artifact_path(package_dir: Path, raw: str, fallback_name: str) -> str
         local = package_dir / candidate.name
         if local.exists():
             candidate = local
+        elif not _is_within(candidate, package_dir):
+            candidate = package_dir / fallback_name
     if not candidate.exists() and fallback_name:
         local = package_dir / fallback_name
         if local.exists():
             candidate = local
     return str(candidate)
+
+
+def _resolve_ready_nc(package_dir: Path, raw: str, item_name: str) -> Path | None:
+    item_name = str(item_name or "page_01").strip() or "page_01"
+    fallback_names = [f"{item_name}.nc"]
+    if item_name != "page_01":
+        fallback_names.append("page_01.nc")
+
+    raw_text = str(raw or "").strip()
+    candidates: list[Path] = []
+    if raw_text:
+        candidate = Path(raw_text)
+        candidates.append(candidate if candidate.is_absolute() else package_dir / candidate)
+    candidates.extend(package_dir / name for name in fallback_names)
+    candidates.extend(package_dir / "pages" / name for name in fallback_names)
+
+    seen: set[str] = set()
+    for candidate in candidates:
+        key = str(candidate).casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        if candidate.exists() and _is_within(candidate, package_dir):
+            return candidate
+        if candidate.name:
+            local = package_dir / candidate.name
+            if local.exists():
+                return local
+    return None
 
 
 def _audit_items(variant_dir: Path) -> list[dict[str, Any]]:
@@ -169,18 +200,9 @@ def find_first_ready_package(variant_dir: Path, *, kind: str = "a4", item: str |
                 continue
             row = summary_rows[0] if summary_rows else {}
         row = clean_report_value(row)
-        nc = Path(str(row.get("nc") or package_dir / "page_01.nc"))
-        if not nc.is_absolute():
-            nc = package_dir / nc
-        if nc.name and (not nc.exists() or not _is_within(nc, package_dir)):
-            local_nc = package_dir / nc.name
-            if local_nc.exists():
-                nc = local_nc
-        if not nc.exists():
-            pages_nc = package_dir / "pages" / "page_01.nc"
-            if pages_nc.exists():
-                nc = pages_nc
-        if not nc.exists():
+        item_name = _normalize_item(str(row.get("item") or "")) or "page_01"
+        nc = _resolve_ready_nc(package_dir, str(row.get("nc") or ""), item_name)
+        if nc is None:
             continue
         draw_length_raw = row.get("draw_length_m")
         layout_raw = item.get("layout_similarity")
@@ -198,9 +220,9 @@ def find_first_ready_package(variant_dir: Path, *, kind: str = "a4", item: str |
             kind=item_kind,
             item=str(row.get("item") or "page_01"),
             nc=str(nc),
-            gcode=_local_artifact_path(package_dir, str(row.get("gcode") or ""), "page_01.gcode"),
-            preview_pdf=_local_artifact_path(package_dir, str(row.get("preview_pdf") or ""), "page_01.pdf"),
-            preview_svg=_local_artifact_path(package_dir, str(row.get("preview_svg") or ""), "page_01.svg"),
+            gcode=_local_artifact_path(package_dir, str(row.get("gcode") or ""), f"{item_name}.gcode"),
+            preview_pdf=_local_artifact_path(package_dir, str(row.get("preview_pdf") or ""), f"{item_name}.pdf"),
+            preview_svg=_local_artifact_path(package_dir, str(row.get("preview_svg") or ""), f"{item_name}.svg"),
             bounds=str(row.get("bounds") or ""),
             line_count=_line_count(nc),
             draw_length_m=draw_length_m,

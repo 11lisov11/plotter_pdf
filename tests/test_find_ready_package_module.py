@@ -116,6 +116,67 @@ def test_find_first_ready_package_selects_requested_a3_item(tmp_path: Path) -> N
     assert selection.line_count == 2
 
 
+def test_find_first_ready_package_replaces_stale_external_nc_with_local_file(tmp_path: Path) -> None:
+    variant, local_nc = _write_minimal_ready_variant(tmp_path)
+    external = tmp_path / "old" / "page_01.nc"
+    external.parent.mkdir()
+    external.write_text("G0 X99 Y99\n", encoding="utf-8")
+    package = local_nc.parent
+    with (package / "summary.csv").open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=["item", "ok", "nc", "draw_length_m"])
+        writer.writeheader()
+        writer.writerow({"item": "page_01", "ok": "True", "nc": str(external), "draw_length_m": "1.0"})
+
+    selection = find_first_ready_package(variant, kind="a4")
+
+    assert selection.nc == str(local_nc)
+    assert selection.line_count == 3
+
+
+def test_find_first_ready_package_skips_external_nc_without_local_fallback(tmp_path: Path) -> None:
+    variant, local_nc = _write_minimal_ready_variant(tmp_path)
+    external = tmp_path / "old" / "other.nc"
+    external.parent.mkdir()
+    external.write_text("G0 X99 Y99\n", encoding="utf-8")
+    package = local_nc.parent
+    local_nc.unlink()
+    with (package / "summary.csv").open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=["item", "ok", "nc", "draw_length_m"])
+        writer.writeheader()
+        writer.writerow({"item": "page_01", "ok": "True", "nc": str(external), "draw_length_m": "1.0"})
+
+    try:
+        find_first_ready_package(variant, kind="a4")
+    except RuntimeError as exc:
+        assert "No ready package" in str(exc)
+    else:
+        raise AssertionError("external nc without local fallback must not be selected")
+
+
+def test_find_first_ready_package_falls_back_to_requested_item_nc(tmp_path: Path) -> None:
+    variant = tmp_path / "cg" / "22"
+    package = variant / "a3_pack"
+    package.mkdir(parents=True)
+    (package / "pass_01.nc").write_text("G0 X0 Y0\n", encoding="utf-8")
+    pass_02 = package / "pass_02.nc"
+    pass_02.write_text("G0 X2 Y2\nG1 X3 Y3\n", encoding="utf-8")
+    with (package / "summary.csv").open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=["item", "ok", "draw_length_m"])
+        writer.writeheader()
+        writer.writerow({"item": "pass_01", "ok": "True", "draw_length_m": "6.7"})
+        writer.writerow({"item": "pass_02", "ok": "True", "draw_length_m": "6.9"})
+    (variant / "_audit.json").write_text(
+        json.dumps({"items": [{"task": package.name, "kind": "a3_two_pass", "package_dir": str(package)}]}),
+        encoding="utf-8",
+    )
+    (variant / "_ready_to_plot_audit.json").write_text(json.dumps({"ok": True, "failed_packages": []}), encoding="utf-8")
+
+    selection = find_first_ready_package(variant, kind="a3", item="pass_02")
+
+    assert selection.nc == str(pass_02)
+    assert selection.item == "pass_02"
+
+
 def test_ready_kind_aliases_match_audit_kind_names() -> None:
     assert _normalize_kind("a3") == "a3_two_pass"
     assert _normalize_kind("a3-two") == "a3_two_pass"
