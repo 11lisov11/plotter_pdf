@@ -3850,6 +3850,12 @@ class BackendBridge:
                         first_pdf = page_pdf
                         first_nc = page_nc
                     ctx.check_canceled()
+                    preflight = getattr(backend, "preflight_check_gcode", None)
+                    if callable(preflight):
+                        pf_ok, pf_msg = preflight(page_nc, logger=log)
+                        if not pf_ok:
+                            return False, f"Method3 page {page_no} preflight failed: {pf_msg}"
+                        log(f"Method3 page {page_no} preflight: {pf_msg}")
                     with self._track_backend_subprocess(ctx):
                         plot_time_s = backend.send_to_grbl(
                             page_nc,
