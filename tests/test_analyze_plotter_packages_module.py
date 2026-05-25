@@ -114,6 +114,27 @@ def test_collect_gcode_files_uses_only_nc_and_gcode(tmp_path: Path) -> None:
     assert found == [keep_nc, keep_gcode]
 
 
+def test_unique_files_by_content_reports_skipped_mirror_duplicates(tmp_path: Path) -> None:
+    keep_nc = tmp_path / "a.nc"
+    mirror_gcode = tmp_path / "pages" / "a.gcode"
+    other_nc = tmp_path / "b.nc"
+    mirror_gcode.parent.mkdir()
+    keep_nc.write_text("G90\nG0 X0 Y0\n", encoding="utf-8")
+    mirror_gcode.write_text("G90\nG0 X0 Y0\n", encoding="utf-8")
+    other_nc.write_text("G90\nG0 X1 Y1\n", encoding="utf-8")
+
+    unique, groups = analyzer.unique_files_by_content([keep_nc, mirror_gcode, other_nc])
+
+    assert unique == [keep_nc, other_nc]
+    assert groups == [
+        {
+            "kept": str(keep_nc),
+            "duplicates": [str(mirror_gcode)],
+            "count": 2,
+        }
+    ]
+
+
 def test_main_accepts_positional_gcode_files(tmp_path: Path, capsys) -> None:
     gcode = tmp_path / "job.nc"
     gcode.write_text("G90\nG0 X0 Y0\nG1 X1 Y0\n", encoding="utf-8")
@@ -124,6 +145,26 @@ def test_main_accepts_positional_gcode_files(tmp_path: Path, capsys) -> None:
     payload = json.loads(capsys.readouterr().out)
     assert payload["roots"] == [str(gcode)]
     assert payload["summary"]["files"] == 1
+
+
+def test_main_unique_content_mode_summarizes_only_unique_files(tmp_path: Path, capsys) -> None:
+    keep_nc = tmp_path / "a.nc"
+    mirror_gcode = tmp_path / "pages" / "a.gcode"
+    other_nc = tmp_path / "b.nc"
+    mirror_gcode.parent.mkdir()
+    keep_nc.write_text("G90\nG0 X0 Y0\nG1 X1 Y0\n", encoding="utf-8")
+    mirror_gcode.write_text("G90\nG0 X0 Y0\nG1 X1 Y0\n", encoding="utf-8")
+    other_nc.write_text("G90\nG0 X0 Y0\nG1 X2 Y0\n", encoding="utf-8")
+
+    rc = analyzer.main([str(tmp_path), "--unique-content", "--no-write"])
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["unique_content"] is True
+    assert payload["files_seen"] == 3
+    assert payload["files_analyzed"] == 2
+    assert payload["duplicate_files_skipped"] == 1
+    assert payload["summary"]["files"] == 2
 
 
 def test_main_default_root_is_computer_graphics(tmp_path: Path, monkeypatch, capsys) -> None:

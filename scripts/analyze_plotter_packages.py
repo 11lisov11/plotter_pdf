@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import re
@@ -249,6 +250,34 @@ def collect_gcode_files(roots: Iterable[Path]) -> list[Path]:
     return sorted(set(found), key=lambda p: str(p).casefold())
 
 
+def unique_files_by_content(files: Iterable[Path]) -> tuple[list[Path], list[dict[str, object]]]:
+    unique: list[Path] = []
+    groups: dict[str, list[Path]] = {}
+    for path in files:
+        try:
+            digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        except OSError:
+            unique.append(path)
+            continue
+        group = groups.setdefault(digest, [])
+        group.append(path)
+        if len(group) == 1:
+            unique.append(path)
+
+    duplicate_groups: list[dict[str, object]] = []
+    for group in groups.values():
+        if len(group) <= 1:
+            continue
+        duplicate_groups.append(
+            {
+                "kept": str(group[0]),
+                "duplicates": [str(path) for path in group[1:]],
+                "count": len(group),
+            }
+        )
+    return unique, duplicate_groups
+
+
 def summarize(metrics: list[GcodeAlgorithmMetrics]) -> dict[str, object]:
     return {
         "files": len(metrics),
@@ -269,6 +298,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--root", action="append", default=[], help="Variant/package directory or .nc/.gcode file.")
     parser.add_argument("--output", default=None, help="Output JSON path. Defaults to _tmp/algorithm_baseline/<timestamp>.json.")
     parser.add_argument("--no-write", action="store_true", help="Print JSON only; do not write a report file.")
+    parser.add_argument(
+        "--unique-content",
+        action="store_true",
+        help="Analyze one file per identical content hash and report skipped mirror duplicates.",
+    )
     args = parser.parse_args(argv)
 
     roots = [Path(item) for item in [*args.root, *args.paths]] if (args.root or args.paths) else [PROJECT_ROOT / "Компьютерная графика"]
@@ -279,10 +313,20 @@ def main(argv: list[str] | None = None) -> int:
             + ", ".join(str(path) for path in roots)
         )
         return 2
+    files_seen = len(files)
+    duplicate_groups: list[dict[str, object]] = []
+    if args.unique_content:
+        files, duplicate_groups = unique_files_by_content(files)
     metrics = [analyze_gcode_file(path) for path in files]
+    duplicate_files_skipped = sum(int(group["count"]) - 1 for group in duplicate_groups)
     payload = {
         "generated_at_unix": int(time.time()),
         "roots": [str(path) for path in roots],
+        "unique_content": bool(args.unique_content),
+        "files_seen": int(files_seen),
+        "files_analyzed": int(len(files)),
+        "duplicate_files_skipped": int(duplicate_files_skipped),
+        "duplicate_content_groups": duplicate_groups,
         "summary": summarize(metrics),
         "files": [asdict(item) for item in metrics],
     }
