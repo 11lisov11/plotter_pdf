@@ -760,6 +760,23 @@ def test_validate_variant_resolves_relative_package_dir_from_variant(tmp_path: P
     assert payload["packages"] == 1
 
 
+def test_validate_variant_repairs_mojibake_package_dir_from_summary(tmp_path: Path) -> None:
+    variant_dir = tmp_path / "Компьютерная графика" / "22 вариант"
+    package_dir = _write_package(variant_dir)
+    package_dir.rename(variant_dir / "КНГ.01.20.01 - Маховик_pack")
+    package_dir = variant_dir / "КНГ.01.20.01 - Маховик_pack"
+    with (variant_dir / "_prepared_summary.csv").open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=["package_dir", "item"])
+        writer.writeheader()
+        writer.writerow({"package_dir": "РљРќР“.01.20.01 - РњР°С…РѕРІРёРє_pack", "item": "page_01"})
+
+    payload = mod.validate_variant(variant_dir, write_reports=False)
+
+    assert payload["ok"] is True
+    assert payload["packages"] == 1
+    assert payload["failed_packages"] == []
+
+
 def test_validate_variant_rejects_package_dir_outside_variant(tmp_path: Path) -> None:
     variant_dir = tmp_path / "variant"
     variant_dir.mkdir()

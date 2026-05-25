@@ -439,7 +439,7 @@ def collect_variant_dirs(roots: Iterable[Path]) -> list[Path]:
 def _read_summary_rows(variant_dir: Path) -> list[dict[str, str]]:
     summary_path = variant_dir / "_prepared_summary.csv"
     with summary_path.open(encoding="utf-8-sig", newline="") as fh:
-        return list(csv.DictReader(fh))
+        return [clean_report_value(dict(row)) for row in csv.DictReader(fh)]
 
 
 def _selected_item(report: dict[str, object]) -> dict[str, object] | None:
