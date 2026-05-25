@@ -9937,7 +9937,7 @@ def run_pipeline_with_corner_calibration(
             return False, msg
 
         if not skip_confirmation:
-            if not _ask_confirmation_in_console("РљР°Р»РёР±СЂРѕРІРєР° 4-С… СѓРіР»РѕРІ РІС‹РїРѕР»РЅРµРЅР°. Р’СЃС‘ Р»Рё РїСЂР°РІРёР»СЊРЅРѕ? РџСЂРѕРґРѕР»Р¶Р°С‚СЊ СЂРёСЃРѕРІР°РЅРёРµ?"):
+            if not _ask_confirmation_in_console("Калибровка 4-х углов выполнена. Всё ли правильно? Продолжать рисование?"):
                 return False, "Canceled by user before drawing."
 
     return run_pipeline(

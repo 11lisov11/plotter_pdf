@@ -113,6 +113,26 @@ class CliEntrypointTests(unittest.TestCase):
         self.assertEqual(rc, 0)
         self.assertTrue(run_calibration.call_args.kwargs["fast"])
 
+    def test_corner_calibration_confirmation_prompt_is_readable(self) -> None:
+        with (
+            mock.patch.object(backend, "run_corner_calibration_pipeline", return_value=(True, "ok")),
+            mock.patch.object(backend, "_ask_confirmation_in_console", return_value=False) as ask_confirmation,
+            mock.patch.object(backend, "run_pipeline") as run_pipeline,
+        ):
+            ok, msg = backend.run_pipeline_with_corner_calibration(
+                Path("input.pdf"),
+                lambda *_args: None,
+                send_to_plotter=True,
+                skip_confirmation=False,
+            )
+
+        self.assertFalse(ok)
+        self.assertEqual(msg, "Canceled by user before drawing.")
+        run_pipeline.assert_not_called()
+        prompt = ask_confirmation.call_args.args[0]
+        self.assertIn("Калибровка 4-х углов выполнена", prompt)
+        self.assertNotIn("Рљ", prompt)
+
     def test_tech_text_opt_cli_sets_experimental_flags(self) -> None:
         old_values = (
             backend.TECH_TEXT_SINGLELINE_OPT_ENABLE,
