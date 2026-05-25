@@ -436,6 +436,23 @@ def test_main_unique_content_mode_summarizes_only_unique_files(tmp_path: Path, c
     assert payload["summary"]["files"] == 2
 
 
+def test_main_reports_hotspots_with_configurable_limit(tmp_path: Path, capsys) -> None:
+    first = tmp_path / "first.nc"
+    second = tmp_path / "second.nc"
+    first.write_text("G90\nG0 X0 Y0\nG1 X1 Y0\n", encoding="utf-8")
+    second.write_text("G90\nG0 X0 Y0\nG1 X0.1 Y0\nG0 X10 Y0\nG1 X10.1 Y0\n", encoding="utf-8")
+
+    rc = analyzer.main([str(tmp_path), "--unique-content", "--hotspot-limit", "1", "--no-write"])
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    hotspots = payload["hotspots"]
+    assert len(hotspots["highest_travel_to_draw_ratio"]) == 1
+    assert len(hotspots["most_tiny_strokes"]) == 1
+    assert hotspots["highest_travel_to_draw_ratio"][0]["path"] == str(second)
+    assert hotspots["most_tiny_strokes"][0]["path"] == str(second)
+
+
 def test_main_ready_only_ignores_loose_variant_outputs(tmp_path: Path, capsys) -> None:
     variant = tmp_path / "Компьютерная графика" / "22 вариант"
     package = variant / "ready_pack"

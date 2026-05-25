@@ -468,6 +468,42 @@ def summarize(metrics: list[GcodeAlgorithmMetrics]) -> dict[str, object]:
     }
 
 
+def _metric_row(item: GcodeAlgorithmMetrics) -> dict[str, object]:
+    return {
+        "path": item.path,
+        "travel_to_draw_ratio": item.travel_to_draw_ratio,
+        "pen_down_strokes": item.pen_down_strokes,
+        "z_cycles": item.z_cycles,
+        "short_segments_lt_035_mm": item.short_segments_lt_035_mm,
+        "tiny_strokes_lt_08_mm": item.tiny_strokes_lt_08_mm,
+        "point_like_strokes": item.point_like_strokes,
+        "draw_length_mm": item.draw_length_mm,
+        "travel_length_mm": item.travel_length_mm,
+    }
+
+
+def hotspot_summary(metrics: list[GcodeAlgorithmMetrics], *, limit: int = 10) -> dict[str, list[dict[str, object]]]:
+    limit = max(1, int(limit))
+    return {
+        "highest_travel_to_draw_ratio": [
+            _metric_row(item)
+            for item in sorted(metrics, key=lambda item: item.travel_to_draw_ratio, reverse=True)[:limit]
+        ],
+        "most_pen_down_strokes": [
+            _metric_row(item)
+            for item in sorted(metrics, key=lambda item: item.pen_down_strokes, reverse=True)[:limit]
+        ],
+        "most_short_segments": [
+            _metric_row(item)
+            for item in sorted(metrics, key=lambda item: item.short_segments_lt_035_mm, reverse=True)[:limit]
+        ],
+        "most_tiny_strokes": [
+            _metric_row(item)
+            for item in sorted(metrics, key=lambda item: item.tiny_strokes_lt_08_mm, reverse=True)[:limit]
+        ],
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Measure plotter G-code topology without modifying packages.")
     parser.add_argument("paths", nargs="*", help="Variant/package directories or .nc/.gcode files.")
@@ -484,6 +520,7 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Analyze one file per identical content hash and report skipped mirror duplicates. Enabled automatically with --ready-only.",
     )
+    parser.add_argument("--hotspot-limit", type=int, default=10, help="How many files to include in each hotspot list.")
     args = parser.parse_args(argv)
 
     roots = [Path(item) for item in [*args.root, *args.paths]] if (args.root or args.paths) else [PROJECT_ROOT / "Компьютерная графика"]
@@ -514,6 +551,7 @@ def main(argv: list[str] | None = None) -> int:
         "duplicate_files_skipped": int(duplicate_files_skipped),
         "duplicate_content_groups": duplicate_groups,
         "summary": summarize(metrics),
+        "hotspots": hotspot_summary(metrics, limit=int(args.hotspot_limit)),
         "files": [asdict(item) for item in metrics],
     }
     text = json.dumps(payload, ensure_ascii=False, indent=2)
