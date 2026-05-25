@@ -463,6 +463,16 @@ def test_validate_package_checks_optional_nc_alias(tmp_path: Path) -> None:
     assert any("page_01.nc: line" in problem and "first XY move happens with pen down" in problem for problem in result.problems)
 
 
+def test_validate_package_accepts_utf8_sig_report_json(tmp_path: Path) -> None:
+    package_dir = _write_package(tmp_path)
+    report_path = package_dir / "report.json"
+    report_path.write_text("\ufeff" + report_path.read_text(encoding="utf-8"), encoding="utf-8")
+
+    result = mod.validate_package(package_dir, [{"package_dir": str(package_dir), "item": "page_01"}])
+
+    assert result.ok, result.problems
+
+
 def test_validate_package_rejects_stale_valid_nc_alias(tmp_path: Path) -> None:
     package_dir = _write_package(tmp_path)
     (package_dir / "page_01.nc").write_text(VALID_GCODE.replace("X2.0000", "X3.0000"), encoding="utf-8")

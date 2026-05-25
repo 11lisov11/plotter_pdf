@@ -268,7 +268,7 @@ def _load_json_dict(path: Path) -> dict[str, object]:
     if not path.exists():
         return {}
     try:
-        payload = json.loads(path.read_text(encoding="utf-8", errors="replace"))
+        payload = json.loads(path.read_text(encoding="utf-8-sig", errors="replace"))
     except Exception:
         return {}
     return payload if isinstance(payload, dict) else {}

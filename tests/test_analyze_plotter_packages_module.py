@@ -155,6 +155,25 @@ def test_collect_ready_package_roots_uses_variant_summary_and_skips_loose_dirs(t
     assert roots == [package]
 
 
+def test_collect_ready_package_roots_accepts_utf8_sig_audit(tmp_path: Path) -> None:
+    variant = tmp_path / "Компьютерная графика" / "22 вариант"
+    package = variant / "ready_pack"
+    package.mkdir(parents=True)
+    (package / "summary.csv").write_text("item,ok\npage_01,True\n", encoding="utf-8")
+    (variant / "_audit.json").write_text(
+        "\ufeff"
+        + json.dumps(
+            {"items": [{"kind": "a4", "task": package.name, "package_dir": str(package)}]},
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    roots = analyzer.collect_ready_package_roots([variant])
+
+    assert roots == [package]
+
+
 def test_main_accepts_positional_gcode_files(tmp_path: Path, capsys) -> None:
     gcode = tmp_path / "job.nc"
     gcode.write_text("G90\nG0 X0 Y0\nG1 X1 Y0\n", encoding="utf-8")

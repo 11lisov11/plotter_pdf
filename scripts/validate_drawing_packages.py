@@ -611,7 +611,7 @@ def validate_package(package_dir: Path, rows: list[dict[str, str]]) -> PackageVa
     report: dict[str, object] = {}
     if report_path.exists():
         try:
-            report = json.loads(report_path.read_text(encoding="utf-8"))
+            report = json.loads(report_path.read_text(encoding="utf-8-sig"))
         except json.JSONDecodeError as exc:
             problems.append(f"invalid report.json: {exc}")
 
