@@ -16,6 +16,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 from src.plotter_backend.common_utils import clean_report_value
+from src.plotter_backend.gcode.bounds import pen_down_from_z_level
 from src.plotter_backend.geometry.arc_fit import arc_center_from_radius, arc_extents_xy
 
 DEFAULT_WORK_AREA = (0.0, 180.0, -285.0, -5.0)
@@ -95,10 +96,7 @@ def _is_pen_down(z: float | None, z_up: float, z_down: float, spindle_down: bool
         return True
     if z is None:
         return False
-    threshold = (float(z_up) + float(z_down)) / 2.0
-    if z_down >= z_up:
-        return float(z) > threshold
-    return float(z) < threshold
+    return pen_down_from_z_level(float(z), float(z_up), float(z_down))
 
 
 def _segment_key(x0: float, y0: float, x1: float, y1: float, *, decimals: int = 2) -> tuple[tuple[float, float], tuple[float, float]]:

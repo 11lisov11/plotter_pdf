@@ -320,6 +320,37 @@ $1=0
     assert result.bounds == (0.0, 10.0, -10.0, -10.0)
 
 
+def test_validate_gcode_treats_short_lift_as_pen_up(tmp_path: Path) -> None:
+    gcode_path = tmp_path / "short_lift.nc"
+    gcode_path.write_text(
+        """G21
+G90
+G92 Z4
+G0 Z0 F800
+M5
+G0 X0 Y-10
+G1 Z11.9
+G1 X1 Y-10
+G1 Z8.4
+G0 X10 Y-10
+G1 Z11.9
+G1 X11 Y-10
+G0 Z0
+G0 X0 Y0
+M5
+$1=0
+""",
+        encoding="utf-8",
+    )
+
+    result = mod.validate_gcode_file(gcode_path)
+
+    assert result.ok, result.problems
+    assert result.draw_moves == 2
+    assert result.travel_moves >= 1
+    assert not any("rapid XY travel with pen down" in problem for problem in result.problems)
+
+
 def test_validate_gcode_rejects_absolute_ijk_arc_bulge_outside_work_area(tmp_path: Path) -> None:
     gcode_path = tmp_path / "arc_bulge.nc"
     gcode_path.write_text(
