@@ -45,7 +45,26 @@ class BackendErrorMappingTests(unittest.TestCase):
                 Path(pen).write_text("G0 Z0\nG0 X0 Y0\n", encoding="utf-8")
 
             def _fake_finalize(_prepared, final):
-                Path(final).write_text("G0 Z0\n", encoding="utf-8")
+                Path(final).write_text(
+                    "\n".join(
+                        [
+                            "$X",
+                            "G21",
+                            "G90",
+                            "G92 Z4",
+                            "G0 Z0",
+                            "G0 X0 Y-10",
+                            "G1 Z11.9",
+                            "G1 X1 Y-10",
+                            "G0 Z0",
+                            "G0 X0 Y0",
+                            "M5",
+                            "$1=0",
+                        ]
+                    )
+                    + "\n",
+                    encoding="utf-8",
+                )
 
             with (
                 mock.patch.object(backend, "ensure_local_tmp_root", return_value=root),
@@ -58,6 +77,34 @@ class BackendErrorMappingTests(unittest.TestCase):
                 ok, msg = backend.run_corner_calibration_pipeline(lambda *_args: None, send_to_plotter=False)
             self.assertTrue(ok, msg)
             self.assertTrue(bool(captured.get("force_full_lift")))
+
+    def test_run_corner_calibration_pipeline_rejects_failed_preflight(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="plotter_err_map_cal_preflight_") as td:
+            root = Path(td)
+
+            def _fake_write_xy(path, _polys, _ft, _fd):
+                Path(path).write_text("G21\nG90\nG0 X0 Y0\nG1 X1 Y0\n", encoding="utf-8")
+
+            def _fake_penlift(_xy, pen, **_kwargs):
+                Path(pen).write_text("G0 Z0\nG1 X1 Y0\n", encoding="utf-8")
+
+            def _fake_finalize(_prepared, final):
+                Path(final).write_text("G90\nG0 Z0\nG1 X10 Y10\n", encoding="utf-8")
+
+            with (
+                mock.patch.object(backend, "ensure_local_tmp_root", return_value=root),
+                mock.patch.object(backend, "build_area_corner_mark_polylines", return_value=[[(0.0, 0.0), (1.0, 0.0)]]),
+                mock.patch.object(backend, "clip_polylines_to_work_area", side_effect=lambda polys, logger=None: polys),
+                mock.patch.object(backend, "write_xy_gcode", side_effect=_fake_write_xy),
+                mock.patch.object(backend, "apply_penlift", side_effect=_fake_penlift),
+                mock.patch.object(backend, "make_final_with_preamble", side_effect=_fake_finalize),
+                mock.patch.object(backend, "send_to_grbl") as send_to_grbl,
+            ):
+                ok, msg = backend.run_corner_calibration_pipeline(lambda *_args: None, send_to_plotter=True)
+
+            self.assertFalse(ok)
+            self.assertIn("Calibration preflight failed", msg)
+            send_to_grbl.assert_not_called()
 
     def test_run_pipeline_surfaces_conversion_error_class(self) -> None:
         with tempfile.TemporaryDirectory(prefix="plotter_err_map_conv_") as td:

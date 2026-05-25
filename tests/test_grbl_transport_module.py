@@ -12,3 +12,11 @@ def test_parse_tcp_endpoint_accepts_scheme_and_host_port() -> None:
 def test_parse_tcp_endpoint_leaves_com_ports_as_serial() -> None:
     assert grbl_transport.parse_tcp_endpoint("COM6") is None
     assert not grbl_transport.is_tcp_endpoint("COM11")
+
+
+def test_parse_tcp_endpoint_rejects_invalid_ports_without_raising() -> None:
+    assert grbl_transport.parse_tcp_endpoint("tcp://plotter.local:bad") is None
+    assert grbl_transport.parse_tcp_endpoint("tcp://plotter.local:99999") is None
+    assert grbl_transport.parse_tcp_endpoint("plotter.local:0") is None
+    assert grbl_transport.parse_tcp_endpoint(":23") is None
+    assert not grbl_transport.is_tcp_endpoint("tcp://plotter.local:bad")

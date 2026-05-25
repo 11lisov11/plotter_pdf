@@ -10030,12 +10030,21 @@ def run_corner_calibration_pipeline(
             apply_penlift(xy_path, pen_path, force_full_lift=not bool(fast))
             make_final_with_preamble(pen_path, final_path)
             gcode_lines, gcode_draw, gcode_travel, gcode_bounds = summarize_gcode_file(final_path)
+            draw_bounds = _gcode_draw_bounds(final_path, z_up=float(Z_UP), z_down=float(Z_DOWN))
             log(
                 f"Calibration G-code stats: lines={gcode_lines}, draw={gcode_draw}, travel={gcode_travel}, "
                 f"bounds={gcode_bounds[0]:.3f}..{gcode_bounds[1]:.3f} x, "
                 f"{gcode_bounds[2]:.3f}..{gcode_bounds[3]:.3f} y, "
                 f"feed_xy=travel {FEED_TRAVEL:.1f}/draw {FEED_DRAW:.1f}, z_down={Z_DOWN:.3f}"
             )
+            if draw_bounds is not None:
+                log(
+                    f"Calibration pen-down bounds: x({draw_bounds[0]:.3f},{draw_bounds[1]:.3f}) "
+                    f"y({draw_bounds[2]:.3f},{draw_bounds[3]:.3f})"
+                )
+            pf_ok, pf_msg = preflight_check_gcode(final_path, logger=log)
+            if not pf_ok:
+                return False, f"Calibration preflight failed: {pf_msg}"
 
             if send_to_plotter:
                 send_to_grbl(final_path, com, baud, log, sleep_after=True)

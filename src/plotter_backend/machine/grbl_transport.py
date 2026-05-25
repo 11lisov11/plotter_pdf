@@ -25,15 +25,27 @@ def parse_tcp_endpoint(value: str, *, default_port: int = 23) -> Optional[TcpEnd
         parsed = urlparse(raw)
         if not parsed.hostname:
             return None
-        return TcpEndpoint(parsed.hostname, int(parsed.port or default_port))
+        try:
+            port = int(parsed.port or default_port)
+        except (TypeError, ValueError):
+            return None
+        if port <= 0 or port > 65535:
+            return None
+        return TcpEndpoint(parsed.hostname, port)
     if raw.lower().startswith("COM".lower()):
         return None
     if ":" in raw and "\\" not in raw and "/" not in raw:
         host, port_text = raw.rsplit(":", 1)
+        host = host.strip()
+        if not host:
+            return None
         try:
-            return TcpEndpoint(host.strip(), int(port_text.strip()))
+            port = int(port_text.strip())
         except Exception:
             return None
+        if port <= 0 or port > 65535:
+            return None
+        return TcpEndpoint(host, port)
     return None
 
 
