@@ -184,15 +184,20 @@ def find_first_ready_package(variant_dir: Path, *, kind: str = "a4", item: str |
         task_name = str(item.get("task") or package_dir.name)
         task_dir = variant_dir / task_name
         name_dir = variant_dir / package_dir.name
-        if task_dir.exists() and not _is_within(package_dir, variant_dir):
-            package_dir = task_dir
-        elif name_dir.exists() and not _is_within(package_dir, variant_dir):
-            package_dir = name_dir
+        if not _is_within(package_dir, variant_dir):
+            if task_dir.exists():
+                package_dir = task_dir
+            elif name_dir.exists():
+                package_dir = name_dir
+            else:
+                continue
         elif not package_dir.exists():
             if task_dir.exists():
                 package_dir = task_dir
             elif name_dir.exists():
                 package_dir = name_dir
+        if not package_dir.exists() or not _is_within(package_dir, variant_dir):
+            continue
         summary_rows = _csv_rows(package_dir / "summary.csv")
         if wanted_item:
             row = next(

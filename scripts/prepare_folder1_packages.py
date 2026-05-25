@@ -408,8 +408,6 @@ def _needs_variant20_22_a4_titleblock_direct_candidate(source_pdf: Path) -> bool
 
 def _prefer_direct_fit_full_for_nachert_a4(source_pdf: Path) -> bool:
     return False
-    parts = [str(part).lower() for part in source_pdf.parts]
-    return "РЅР°С‡РµСЂС‚" in parts and "4 РІР°СЂРёРЅС‚" in parts
 
 
 def _preserve_nachert_header_source_for_variant(source_pdf: Path) -> bool:

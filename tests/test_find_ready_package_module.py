@@ -167,6 +167,57 @@ def test_find_first_ready_package_replaces_stale_external_nc_with_local_file(tmp
     assert selection.line_count == 3
 
 
+def test_find_first_ready_package_rejects_external_package_dir_without_local_copy(tmp_path: Path) -> None:
+    variant = tmp_path / "cg" / "22"
+    external_package = tmp_path / "old_root" / "stale_pack"
+    external_package.mkdir(parents=True)
+    external_nc = external_package / "page_01.nc"
+    external_nc.write_text("G0 X99 Y99\n", encoding="utf-8")
+    with (external_package / "summary.csv").open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=["item", "ok", "nc", "draw_length_m"])
+        writer.writeheader()
+        writer.writerow({"item": "page_01", "ok": "True", "nc": str(external_nc), "draw_length_m": "1.0"})
+    variant.mkdir(parents=True)
+    (variant / "_audit.json").write_text(
+        json.dumps({"items": [{"task": "stale_pack", "kind": "a4", "package_dir": str(external_package)}]}),
+        encoding="utf-8",
+    )
+    (variant / "_ready_to_plot_audit.json").write_text(json.dumps({"ok": True, "failed_packages": []}), encoding="utf-8")
+
+    try:
+        find_first_ready_package(variant, kind="a4")
+    except RuntimeError as exc:
+        assert "No ready package" in str(exc)
+    else:
+        raise AssertionError("external package_dir without local copy must not be selected")
+
+
+def test_find_first_ready_package_remaps_stale_external_package_dir_to_local_task(tmp_path: Path) -> None:
+    variant = tmp_path / "cg" / "22"
+    local_package = variant / "stale_pack"
+    local_package.mkdir(parents=True)
+    local_nc = local_package / "page_01.nc"
+    local_nc.write_text("G0 X0 Y0\nG1 X1 Y1\n", encoding="utf-8")
+    with (local_package / "summary.csv").open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=["item", "ok", "nc", "draw_length_m"])
+        writer.writeheader()
+        writer.writerow({"item": "page_01", "ok": "True", "nc": str(local_nc), "draw_length_m": "2.0"})
+    external_package = tmp_path / "old_root" / "stale_pack"
+    external_package.mkdir(parents=True)
+    (external_package / "page_01.nc").write_text("G0 X99 Y99\n", encoding="utf-8")
+    (variant / "_audit.json").write_text(
+        json.dumps({"items": [{"task": "stale_pack", "kind": "a4", "package_dir": str(external_package)}]}),
+        encoding="utf-8",
+    )
+    (variant / "_ready_to_plot_audit.json").write_text(json.dumps({"ok": True, "failed_packages": []}), encoding="utf-8")
+
+    selection = find_first_ready_package(variant, kind="a4")
+
+    assert selection.package_dir == str(local_package)
+    assert selection.nc == str(local_nc)
+    assert selection.line_count == 2
+
+
 def test_find_first_ready_package_resolves_side_artifacts_from_pages_fallback(tmp_path: Path) -> None:
     variant, local_nc = _write_minimal_ready_variant(tmp_path)
     package = local_nc.parent
