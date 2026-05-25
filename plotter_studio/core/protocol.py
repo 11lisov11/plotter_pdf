@@ -36,6 +36,14 @@ except Exception:  # pragma: no cover - fallback for non-package layouts
             return ""
 
 try:
+    from src.plotter_backend.geometry.arc_fit import arc_center_from_radius
+except Exception:  # pragma: no cover - fallback for non-package layouts
+    try:
+        from plotter_backend.geometry.arc_fit import arc_center_from_radius  # type: ignore
+    except Exception:  # pragma: no cover - defensive fallback
+        arc_center_from_radius = None  # type: ignore[assignment]
+
+try:
     import fitz  # type: ignore
 except Exception:
     fitz = None
@@ -962,11 +970,19 @@ def _gcode_to_polylines(lines: list[str], *, z_up: float, z_down: float) -> list
         if is_draw:
             if not cur_poly:
                 cur_poly = [start]
-            if motion_g in (2, 3) and (("I" in words) or ("J" in words)):
-                i = float(words.get("I", 0.0))
-                j = float(words.get("J", 0.0))
-                center = (i, j) if ijk_abs else (cur_x + i, cur_y + j)
-                cur_poly.extend(_arc_points(start, end, center, cw=(motion_g == 2)))
+            if motion_g in (2, 3) and (("I" in words) or ("J" in words) or ("R" in words)):
+                if ("I" in words) or ("J" in words):
+                    i = float(words.get("I", 0.0))
+                    j = float(words.get("J", 0.0))
+                    center = (i, j) if ijk_abs else (cur_x + i, cur_y + j)
+                elif arc_center_from_radius is not None:
+                    center = arc_center_from_radius(start, end, float(words["R"]), cw=(motion_g == 2))
+                else:
+                    center = None
+                if center is None:
+                    cur_poly.append(end)
+                else:
+                    cur_poly.extend(_arc_points(start, end, center, cw=(motion_g == 2)))
             else:
                 cur_poly.append(end)
         else:

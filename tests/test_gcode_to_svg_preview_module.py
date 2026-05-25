@@ -54,6 +54,23 @@ class GcodeToSvgPreviewModuleTests(unittest.TestCase):
 
         self.assertEqual(polylines, [[(0.0, 0.0), (10.0, -2.0)]])
 
+    def test_gcode_to_polylines_supports_r_word_arc_motion(self) -> None:
+        lines = [
+            "G90",
+            "G0 X10 Y0",
+            "M3",
+            "G3 X0 Y10 R10",
+            "M5",
+        ]
+
+        polylines = preview.gcode_to_polylines(lines, z_up=0.0, z_down=11.9)
+
+        self.assertEqual(len(polylines), 1)
+        self.assertGreater(len(polylines[0]), 2)
+        self.assertAlmostEqual(polylines[0][0][0], 10.0, places=6)
+        self.assertAlmostEqual(polylines[0][-1][0], 0.0, places=6)
+        self.assertAlmostEqual(polylines[0][-1][1], 10.0, places=6)
+
     def test_main_writes_svg_for_compact_gcode(self) -> None:
         with tempfile.TemporaryDirectory(prefix="plotter_preview_compact_") as td:
             root = Path(td)

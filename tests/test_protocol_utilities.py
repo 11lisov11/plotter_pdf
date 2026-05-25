@@ -144,6 +144,21 @@ class ProtocolUtilitiesTests(unittest.TestCase):
         self.assertAlmostEqual(polys[0][-1][0], 0.0, places=6)
         self.assertAlmostEqual(polys[0][-1][1], -1.0, places=6)
 
+    def test_gcode_to_polylines_supports_r_word_arc_motion(self) -> None:
+        lines = [
+            "G90",
+            "M3",
+            "G0 X10 Y0",
+            "G3 X0 Y10 R10",
+            "M5",
+        ]
+        polys = protocol._gcode_to_polylines(lines, z_up=0.0, z_down=11.9)  # type: ignore[attr-defined]
+        self.assertEqual(len(polys), 1)
+        self.assertGreater(len(polys[0]), 2)
+        self.assertAlmostEqual(polys[0][0][0], 10.0, places=6)
+        self.assertAlmostEqual(polys[0][-1][0], 0.0, places=6)
+        self.assertAlmostEqual(polys[0][-1][1], 10.0, places=6)
+
 
 if __name__ == "__main__":
     unittest.main()

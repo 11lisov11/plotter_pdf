@@ -1,7 +1,13 @@
 import argparse
 import math
 import re
+import sys
 from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+from src.plotter_backend.geometry.arc_fit import arc_center_from_radius
 
 
 def _split_comment(line: str) -> str:
@@ -179,12 +185,18 @@ def gcode_to_polylines(lines: list[str], *, z_down: float | None = None, z_up: f
         if is_pen_down_now:
             if not cur_poly:
                 cur_poly = [start]
-            if g in (2, 3) and (("I" in words) or ("J" in words)):
-                i = float(words.get("I", 0.0))
-                j = float(words.get("J", 0.0))
-                center = (i, j) if ijk_abs else (cur_x + i, cur_y + j)
-                pts = _arc_points(start, end, center, cw=(g == 2))
-                cur_poly.extend(pts)
+            if g in (2, 3) and (("I" in words) or ("J" in words) or ("R" in words)):
+                if ("I" in words) or ("J" in words):
+                    i = float(words.get("I", 0.0))
+                    j = float(words.get("J", 0.0))
+                    center = (i, j) if ijk_abs else (cur_x + i, cur_y + j)
+                else:
+                    center = arc_center_from_radius(start, end, float(words["R"]), cw=(g == 2))
+                if center is None:
+                    cur_poly.append(end)
+                else:
+                    pts = _arc_points(start, end, center, cw=(g == 2))
+                    cur_poly.extend(pts)
             else:
                 cur_poly.append(end)
         else:
