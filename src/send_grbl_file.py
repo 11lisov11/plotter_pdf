@@ -139,13 +139,27 @@ def open_grbl(port: str, baud: int):
 def _clean_gcode_lines(text: str) -> list[str]:
     out: list[str] = []
     for raw_line in text.splitlines():
-        line = raw_line.lstrip("\ufeff").strip()
+        line = _strip_inline_gcode_comment(raw_line.lstrip("\ufeff")).strip()
         if not line:
-            continue
-        if line.startswith(";") or line.startswith("("):
             continue
         out.append(line)
     return out
+
+
+def _strip_inline_gcode_comment(line: str) -> str:
+    raw = str(line or "").split(";", 1)[0]
+    out: list[str] = []
+    depth = 0
+    for ch in raw:
+        if ch == "(":
+            depth += 1
+            continue
+        if ch == ")" and depth:
+            depth -= 1
+            continue
+        if depth == 0:
+            out.append(ch)
+    return "".join(out)
 
 
 def _command_contains_arg_fragment(command: str, fragment: str) -> bool:

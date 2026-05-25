@@ -40,6 +40,17 @@ class _FakeIdleSerial(_FakeSerial):
 
 
 class SendGrblFileModuleTests(unittest.TestCase):
+    def test_clean_gcode_lines_strips_inline_comments_before_streaming(self) -> None:
+        lines = send_grbl_file._clean_gcode_lines(
+            "\ufeffG1 X1 Y1 ; long sender-only note\n"
+            "G0 X2 (ignore X999 Y999) Y3\n"
+            "; full-line comment\n"
+            "(full-line parenthetical)\n"
+            "$1=0 ; release motors\n"
+        )
+
+        self.assertEqual(lines, ["G1 X1 Y1", "G0 X2  Y3", "$1=0"])
+
     def test_release_axes_forces_pen_up_before_motor_release(self) -> None:
         ser = _FakeSerial()
 
