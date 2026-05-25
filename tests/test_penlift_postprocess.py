@@ -18,6 +18,12 @@ class PenliftPostprocessTests(unittest.TestCase):
             out.append(float(m.group(1)))
         return out
 
+    def test_split_comment_strips_parentheses_before_semicolon(self) -> None:
+        body, comment = pp.split_comment("G0 X10 Y0 (ignore X999 Y999) ; keep")
+
+        self.assertEqual(body, "G0 X10 Y0")
+        self.assertEqual(comment, "(ignore X999 Y999) ; keep")
+
     def test_stroke_z_jitter_is_deterministic_and_varies_between_strokes(self) -> None:
         src = [
             "G21",
@@ -333,6 +339,47 @@ class PenliftPostprocessTests(unittest.TestCase):
         z_vals = self._touchdown_z(out, 123.0)
         self.assertEqual(len(z_vals), 1)
         self.assertTrue(any(line.strip().startswith("G1 X10.15 Y0.10 F2000.0") for line in out))
+
+    def test_merge_short_travel_ignores_parenthesized_coordinates_before_semicolon(self) -> None:
+        src = [
+            "G21",
+            "G90",
+            "G0 X0 Y0",
+            "G1 X10 Y0 F800",
+            "G0 X10.15 Y0.10 (comment X999 Y999) ; keep",
+            "G1 X20 Y0 F800",
+        ]
+        out = pp.touch_pen_down(
+            src,
+            z_down=10.0,
+            delay_down=0.0,
+            z_up=0.0,
+            mode="z",
+            spindle_speed=1000.0,
+            delay_up=0.0,
+            z_feed_down_approach=700.0,
+            z_feed_down_touch=123.0,
+            z_feed_up=700.0,
+            z_feed_up_final=220.0,
+            z_soft_down_mm=0.8,
+            z_soft_up_mm=0.5,
+            dynamic_z_enable=False,
+            dynamic_base_z_down=10.0,
+            dynamic_initial_wear_mm=0.0,
+            dynamic_wear_mm_per_m=0.01,
+            dynamic_z_comp_per_wear=1.0,
+            dynamic_z_max_comp_mm=0.8,
+            stroke_z_jitter_enable=False,
+            stroke_z_jitter_mm=0.0,
+            stroke_z_jitter_seed=7,
+            merge_short_travel_enable=True,
+            merge_short_travel_mm=0.3,
+            merge_short_travel_feed=2000.0,
+        )
+
+        z_vals = self._touchdown_z(out, 123.0)
+        self.assertEqual(len(z_vals), 1)
+        self.assertTrue(any(line.strip() == "G1 X10.15 Y0.10 F2000.0 (comment X999 Y999) ; keep" for line in out))
 
     def test_dynamic_z_uses_absolute_ijk_arc_length(self) -> None:
         src = [

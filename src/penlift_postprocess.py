@@ -62,13 +62,37 @@ def parse_args():
 
 
 def split_comment(line: str):
-    if ";" in line:
-        body, comment = line.split(";", 1)
-        return body.rstrip(), ";" + comment
-    if "(" in line:
-        idx = line.find("(")
-        return line[:idx].rstrip(), line[idx:]
-    return line.rstrip("\n"), ""
+    raw = str(line or "").rstrip("\n")
+    if ";" in raw:
+        body_src, semicolon_comment = raw.split(";", 1)
+        comments = [";" + semicolon_comment]
+    else:
+        body_src = raw
+        comments = []
+
+    body: list[str] = []
+    paren_comment: list[str] = []
+    depth = 0
+    for ch in body_src:
+        if ch == "(":
+            if depth == 0:
+                paren_comment = ["("]
+            else:
+                paren_comment.append(ch)
+            depth += 1
+            continue
+        if depth:
+            paren_comment.append(ch)
+            if ch == ")":
+                depth -= 1
+                if depth == 0:
+                    comments.insert(0, "".join(paren_comment))
+                    paren_comment = []
+            continue
+        body.append(ch)
+    if paren_comment:
+        comments.insert(0, "".join(paren_comment))
+    return "".join(body).rstrip(), " ".join(part for part in comments if part)
 
 
 def parse_tokens(body: str):
