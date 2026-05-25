@@ -84,7 +84,7 @@ class SendGrblFileModuleTests(unittest.TestCase):
         self.assertLess(cmds.index("G0 X0.0000 Y0.0000 F900.0"), cmds.index("?"))
         self.assertLess(cmds.index("?"), cmds.index("$1=0"))
 
-    def test_main_refuses_duplicate_sender_for_same_port_and_file(self) -> None:
+    def test_main_refuses_duplicate_sender_for_same_port(self) -> None:
         with (
             mock.patch.object(Path, "exists", return_value=True),
             mock.patch.object(
@@ -118,7 +118,7 @@ class SendGrblFileModuleTests(unittest.TestCase):
 
         self.assertEqual(conflicts, [(123, r"python D:\plotter_pdf\src\send_grbl_file.py COM6 115200 job.nc")])
 
-    def test_find_conflicting_sender_processes_avoids_substring_matches(self) -> None:
+    def test_find_conflicting_sender_processes_blocks_any_sender_on_same_port(self) -> None:
         proc_payload = (
             "["
             '{"ProcessId":123,'
@@ -141,7 +141,13 @@ class SendGrblFileModuleTests(unittest.TestCase):
         ):
             conflicts = send_grbl_file._find_conflicting_sender_processes("COM6", Path(r"D:\plotter_pdf\job.nc"))
 
-        self.assertEqual(conflicts, [(125, r"python D:\plotter_pdf\src\send_grbl_file.py COM6 115200 D:\plotter_pdf\job.nc")])
+        self.assertEqual(
+            conflicts,
+            [
+                (124, r"python D:\plotter_pdf\src\send_grbl_file.py COM6 115200 D:\plotter_pdf\oldjob.nc"),
+                (125, r"python D:\plotter_pdf\src\send_grbl_file.py COM6 115200 D:\plotter_pdf\job.nc"),
+            ],
+        )
 
 
 if __name__ == "__main__":

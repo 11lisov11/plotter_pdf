@@ -182,7 +182,7 @@ def _command_contains_any_arg_fragment(command: str, fragments: list[str]) -> bo
 
 
 def _find_conflicting_sender_processes(port: str, file_path: Path) -> list[tuple[int, str]]:
-    """Return other running sender processes for the same port/file on Windows."""
+    """Return other running sender processes for the same port on Windows."""
     if os.name != "nt":
         return []
     try:
@@ -243,7 +243,7 @@ def _find_conflicting_sender_processes(port: str, file_path: Path) -> list[tuple
             continue
         if target_port and not _command_contains_arg_fragment(cmd_norm, target_port):
             continue
-        if target_file_tokens and not _command_contains_any_arg_fragment(cmd_norm, target_file_tokens):
+        if not target_port and target_file_tokens and not _command_contains_any_arg_fragment(cmd_norm, target_file_tokens):
             continue
         conflicts.append((pid, cmd))
     return conflicts
@@ -492,7 +492,7 @@ def main(argv):
 
     conflicts = _find_conflicting_sender_processes(port, file_path)
     if conflicts:
-        _safe_print("Refusing to start: another send_grbl_file.py is already streaming this file/port.")
+        _safe_print("Refusing to start: another send_grbl_file.py is already streaming on this port.")
         for pid, cmd in conflicts[:5]:
             _safe_print(f"  PID {pid}: {cmd}")
         _safe_print("Stop the old sender first, then rerun this command.")
