@@ -130,6 +130,34 @@ class BackendErrorMappingTests(unittest.TestCase):
             self.assertTrue(frame_out.exists())
             self.assertTrue(corner_out.exists())
 
+    def test_corner_calibration_fast_profile_uses_short_inter_mark_lift(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="plotter_corner_cal_profiles_") as td:
+            root = Path(td)
+            safe_out = root / "safe.nc"
+            fast_out = root / "fast.nc"
+
+            safe_ok, safe_msg = backend.run_corner_calibration_pipeline(
+                lambda *_args: None,
+                send_to_plotter=False,
+                output_path=safe_out,
+                fast=False,
+            )
+            fast_ok, fast_msg = backend.run_corner_calibration_pipeline(
+                lambda *_args: None,
+                send_to_plotter=False,
+                output_path=fast_out,
+                fast=True,
+            )
+
+            self.assertTrue(safe_ok, safe_msg)
+            self.assertTrue(fast_ok, fast_msg)
+            safe_text = safe_out.read_text(encoding="utf-8")
+            fast_text = fast_out.read_text(encoding="utf-8")
+            short_lift = backend.Z_DOWN - backend.Z_TRAVEL_LIFT_MM
+            self.assertIn(f"G1 Z{short_lift:.4f} F{backend.PEN_FAST_Z_FEED_UP_FINAL:.1f}", fast_text)
+            self.assertNotIn(f"G1 Z{short_lift:.4f} F{backend.PEN_FAST_Z_FEED_UP_FINAL:.1f}", safe_text)
+            self.assertGreater(safe_text.count(f"G1 Z{backend.Z_UP:.4f} F{backend.PEN_FAST_Z_FEED_UP_FINAL:.1f}"), 1)
+
     def test_run_pipeline_surfaces_conversion_error_class(self) -> None:
         with tempfile.TemporaryDirectory(prefix="plotter_err_map_conv_") as td:
             root = Path(td)
