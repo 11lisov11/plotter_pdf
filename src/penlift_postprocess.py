@@ -321,8 +321,27 @@ def touch_pen_down(
                 out.append(f"G4 P{delay_down:.2f}")
             pen_down = True
 
-    for line in lines:
-        raw = line.rstrip("\n")
+    raw_lines = [str(line).rstrip("\n") for line in lines]
+
+    def _next_xy_motion_is_draw(start_index: int, current_motion: str) -> bool:
+        look_motion = current_motion
+        for future in raw_lines[start_index + 1 :]:
+            body, _comment = split_comment(future)
+            if not body.strip() or body.lstrip().startswith("("):
+                continue
+            tokens = parse_tokens(body)
+            if not tokens:
+                continue
+            motion_codes = [gcode for gcode in g_codes(tokens) if gcode in GCODE_MOVES_WITH_XY]
+            if motion_codes:
+                look_motion = motion_codes[-1]
+            if has_axis(tokens, "Z"):
+                return False
+            if has_axis(tokens, "X") or has_axis(tokens, "Y"):
+                return look_motion in {"G1", "G2", "G3"}
+        return False
+
+    for line_index, raw in enumerate(raw_lines):
         body, comment = split_comment(raw)
 
         if not body.strip() or body.lstrip().startswith("("):
@@ -405,6 +424,7 @@ def touch_pen_down(
                     and y0 is not None
                     and x1 is not None
                     and y1 is not None
+                    and _next_xy_motion_is_draw(line_index, code)
                 ):
                     dxy = math.hypot(x1 - x0, y1 - y0)
                     short_merge = dxy <= merge_short_travel_mm
