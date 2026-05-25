@@ -155,6 +155,21 @@ def test_collect_ready_package_roots_uses_variant_summary_and_skips_loose_dirs(t
     assert roots == [package]
 
 
+def test_collect_ready_package_roots_finds_variants_from_project_root(tmp_path: Path) -> None:
+    variant = tmp_path / "Компьютерная графика" / "22 вариант"
+    package = variant / "ready_pack"
+    package.mkdir(parents=True)
+    (package / "summary.csv").write_text("item,ok\npage_01,True\n", encoding="utf-8")
+    with (variant / "_prepared_summary.csv").open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=["package_dir", "task", "item"])
+        writer.writeheader()
+        writer.writerow({"package_dir": str(package), "task": package.name, "item": "page_01"})
+
+    roots = analyzer.collect_ready_package_roots([tmp_path])
+
+    assert roots == [package]
+
+
 def test_collect_ready_package_roots_accepts_utf8_sig_audit(tmp_path: Path) -> None:
     variant = tmp_path / "Компьютерная графика" / "22 вариант"
     package = variant / "ready_pack"

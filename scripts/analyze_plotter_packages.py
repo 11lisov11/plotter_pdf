@@ -310,11 +310,12 @@ def _variant_dirs_from_root(root: Path) -> list[Path]:
         return [root]
     if not root.exists() or not root.is_dir():
         return []
-    variants: list[Path] = []
-    for child in sorted(root.iterdir(), key=lambda p: p.name.casefold()):
-        if child.is_dir() and ((child / "_audit.json").exists() or (child / "_prepared_summary.csv").exists()):
-            variants.append(child)
-    return variants
+    variants: dict[str, Path] = {}
+    for marker in ("_prepared_summary.csv", "_audit.json"):
+        for marker_path in root.rglob(marker):
+            variant_dir = marker_path.parent
+            variants[str(variant_dir.resolve(strict=False)).casefold()] = variant_dir
+    return sorted(variants.values(), key=lambda p: str(p).casefold())
 
 
 def collect_ready_package_roots(roots: Iterable[Path]) -> list[Path]:
