@@ -209,9 +209,7 @@ def find_first_ready_package(variant_dir: Path, *, kind: str = "a4", item: str |
         else:
             row = next((r for r in summary_rows if str(r.get("ok", "")).strip().lower() == "true"), None)
         if row is None:
-            if wanted_item:
-                continue
-            row = summary_rows[0] if summary_rows else {}
+            continue
         row = clean_report_value(row)
         item_name = _normalize_item(str(row.get("item") or "")) or "page_01"
         nc = _resolve_ready_nc(package_dir, str(row.get("nc") or ""), item_name)

@@ -206,6 +206,37 @@ def test_find_first_ready_package_skips_external_nc_without_local_fallback(tmp_p
         raise AssertionError("external nc without local fallback must not be selected")
 
 
+def test_find_first_ready_package_skips_package_without_ok_summary_rows(tmp_path: Path) -> None:
+    variant, local_nc = _write_minimal_ready_variant(tmp_path)
+    package = local_nc.parent
+    with (package / "summary.csv").open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=["item", "ok", "nc", "draw_length_m"])
+        writer.writeheader()
+        writer.writerow({"item": "page_01", "ok": "False", "nc": str(local_nc), "draw_length_m": "1.0"})
+
+    try:
+        find_first_ready_package(variant, kind="a4")
+    except RuntimeError as exc:
+        assert "No ready package" in str(exc)
+    else:
+        raise AssertionError("summary rows without ok=True must not be selected")
+
+
+def test_find_first_ready_package_skips_empty_summary_even_if_fallback_nc_exists(tmp_path: Path) -> None:
+    variant, local_nc = _write_minimal_ready_variant(tmp_path)
+    package = local_nc.parent
+    with (package / "summary.csv").open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=["item", "ok", "nc", "draw_length_m"])
+        writer.writeheader()
+
+    try:
+        find_first_ready_package(variant, kind="a4")
+    except RuntimeError as exc:
+        assert "No ready package" in str(exc)
+    else:
+        raise AssertionError("empty summary must not be selected via fallback nc")
+
+
 def test_find_first_ready_package_falls_back_to_requested_item_nc(tmp_path: Path) -> None:
     variant = tmp_path / "cg" / "22"
     package = variant / "a3_pack"
