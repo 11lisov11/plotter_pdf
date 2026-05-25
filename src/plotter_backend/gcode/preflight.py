@@ -48,6 +48,34 @@ def _has_explicit_pen_control(gcode_path: Path) -> bool:
     return False
 
 
+def _g92_xy_reset_line(gcode_path: Path) -> int | None:
+    try:
+        raw_lines = Path(gcode_path).read_text(encoding="utf-8", errors="ignore").splitlines()
+    except OSError:
+        return None
+    for line_no, raw in enumerate(raw_lines, 1):
+        line = _strip_gcode_comments(raw)
+        tokens = _TOKEN_RE.findall(line)
+        has_g92 = False
+        has_xy = False
+        for axis, raw_value in tokens:
+            letter = axis.upper()
+            if letter in {"X", "Y"}:
+                has_xy = True
+                continue
+            if letter != "G":
+                continue
+            try:
+                value = float(raw_value)
+            except ValueError:
+                continue
+            if abs(value - 92.0) <= 1e-9:
+                has_g92 = True
+        if has_g92 and has_xy:
+            return line_no
+    return None
+
+
 def preflight_check_gcode(
     gcode_path: Path,
     logger,
@@ -65,6 +93,10 @@ def preflight_check_gcode(
 ) -> Tuple[bool, str]:
     if not bool(preflight_enabled):
         return True, "disabled"
+
+    g92_xy_line = _g92_xy_reset_line(gcode_path)
+    if g92_xy_line is not None:
+        return False, f"G92 X/Y coordinate reset is not allowed (line {g92_xy_line})."
 
     lines, draw_moves, travel_moves, g_bounds = summarize_gcode_file(gcode_path)
     if lines <= 0:
