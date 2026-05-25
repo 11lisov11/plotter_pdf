@@ -22,6 +22,18 @@ def optional_path_arg(value: Optional[str]) -> Optional[Path]:
     return Path(raw)
 
 
+def ready_package_preflight_bounds(backend: Any, selection) -> Tuple[float, float, float, float]:
+    try:
+        min_x, max_x, min_y, max_y = backend.base_work_area_bounds()
+    except Exception:
+        min_x, max_x, min_y, max_y = backend.work_area_bounds()
+    kind = str(getattr(selection, "kind", "") or "").strip().lower()
+    item = str(getattr(selection, "item", "") or "").strip().lower()
+    if kind == "a3_two_pass" or item.startswith("pass_"):
+        max_y = float(max_y) + 3.0
+    return float(min_x), float(max_x), float(min_y), float(max_y)
+
+
 def should_exit_after_pencil_maintenance(args, *, did_pencil_command: bool) -> bool:
     return bool(
         did_pencil_command
@@ -573,6 +585,15 @@ def run_cli_action(backend: Any, args, parser: argparse.ArgumentParser, *, com: 
         if args.dry_run or args.preview:
             print("Dry run: ready package selected, not sent.")
             return 0
+        pf_ok, pf_msg = backend.preflight_check_gcode(
+            nc_path,
+            logger=print,
+            bounds=ready_package_preflight_bounds(backend, selection),
+        )
+        if not pf_ok:
+            print(f"Ready package preflight failed: {pf_msg}")
+            return 1
+        print(f"Ready package preflight: {pf_msg}")
         try:
             plot_time_s = backend.send_to_grbl(
                 nc_path,
