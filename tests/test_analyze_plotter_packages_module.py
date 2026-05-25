@@ -42,6 +42,39 @@ def test_analyze_gcode_counts_draw_travel_and_z_cycles(tmp_path: Path) -> None:
     assert metrics.travel_length_mm == 3.0
 
 
+def test_analyze_gcode_respects_spindle_pen_control(tmp_path: Path) -> None:
+    gcode = tmp_path / "spindle.nc"
+    gcode.write_text(
+        "\n".join(
+            [
+                "G21",
+                "G90",
+                "G0 X0 Y0",
+                "M3S1000",
+                "G1X10Y0",
+                "M5",
+                "G1 X20 Y0",
+                "M3",
+                "G1 X20.1 Y0",
+                "M5",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    metrics = analyzer.analyze_gcode_file(gcode)
+
+    assert metrics.g1_moves == 3
+    assert metrics.draw_moves == 2
+    assert metrics.pen_down_strokes == 2
+    assert metrics.z_cycles == 0
+    assert metrics.short_segments_lt_035_mm == 1
+    assert metrics.tiny_strokes_lt_08_mm == 1
+    assert metrics.point_like_strokes == 1
+    assert metrics.draw_length_mm == 10.1
+
+
 def test_collect_gcode_files_uses_only_nc_and_gcode(tmp_path: Path) -> None:
     keep_nc = tmp_path / "a.nc"
     keep_gcode = tmp_path / "nested" / "b.gcode"

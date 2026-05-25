@@ -105,6 +105,7 @@ def analyze_gcode_file(path: Path, *, z_down_threshold: float = 1.0) -> GcodeAlg
     abs_mode = True
     pen_down = False
     ever_saw_z = False
+    ever_saw_spindle = False
 
     def close_stroke() -> None:
         nonlocal current_stroke_mm
@@ -137,8 +138,22 @@ def analyze_gcode_file(path: Path, *, z_down_threshold: float = 1.0) -> GcodeAlg
             x_vals = values(tokens, "X")
             y_vals = values(tokens, "Y")
             z_vals = values(tokens, "Z")
+            m_vals = values(tokens, "M")
             i_vals = values(tokens, "I")
             j_vals = values(tokens, "J")
+
+            for mval in m_vals:
+                rounded = int(round(mval))
+                if abs(mval - float(rounded)) > 1e-9:
+                    continue
+                if rounded == 3:
+                    ever_saw_spindle = True
+                    pen_down = True
+                elif rounded == 5:
+                    ever_saw_spindle = True
+                    if pen_down:
+                        close_stroke()
+                    pen_down = False
 
             if z_vals:
                 ever_saw_z = True
@@ -171,7 +186,7 @@ def analyze_gcode_file(path: Path, *, z_down_threshold: float = 1.0) -> GcodeAlg
             else:
                 seg_len = math.hypot(next_x - cur_x, next_y - cur_y)
 
-            is_draw = code in {1, 2, 3} and (pen_down or not ever_saw_z)
+            is_draw = code in {1, 2, 3} and (pen_down or not (ever_saw_z or ever_saw_spindle))
             if is_draw:
                 draw_moves += 1
                 draw_length_mm += seg_len
