@@ -582,9 +582,6 @@ def run_cli_action(backend: Any, args, parser: argparse.ArgumentParser, *, com: 
         print(f"  lines={selection.line_count} draw_length_m={selection.draw_length_m}")
         print(f"  bounds={selection.bounds}")
         print(f"  preview_pdf={selection.preview_pdf}")
-        if args.dry_run or args.preview:
-            print("Dry run: ready package selected, not sent.")
-            return 0
         pf_ok, pf_msg = backend.preflight_check_gcode(
             nc_path,
             logger=print,
@@ -594,6 +591,9 @@ def run_cli_action(backend: Any, args, parser: argparse.ArgumentParser, *, com: 
             print(f"Ready package preflight failed: {pf_msg}")
             return 1
         print(f"Ready package preflight: {pf_msg}")
+        if args.dry_run or args.preview:
+            print("Dry run: ready package selected and preflight passed; not sent.")
+            return 0
         try:
             plot_time_s = backend.send_to_grbl(
                 nc_path,

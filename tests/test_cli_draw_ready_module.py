@@ -100,6 +100,25 @@ def test_main_draw_ready_dry_run_selects_package_without_sender(tmp_path: Path) 
     send_to_grbl.assert_not_called()
 
 
+def test_main_draw_ready_dry_run_rejects_failed_preflight(tmp_path: Path) -> None:
+    variant = _write_bad_ready_variant(tmp_path)
+    with (
+        mock.patch.object(backend, "load_pencil_profile", return_value={}),
+        mock.patch.object(backend, "apply_pencil_profile"),
+        mock.patch.object(backend, "configure_active_work_area"),
+        mock.patch.object(backend, "resolve_sheet_size_mm", return_value=(210.0, 297.0)),
+        mock.patch.object(backend, "detect_com_port", return_value="COM6"),
+        mock.patch.object(backend, "apply_quality_profile"),
+        mock.patch.object(backend, "quality_state", return_value="mock-profile"),
+        mock.patch.object(backend, "send_to_grbl") as send_to_grbl,
+        mock.patch("builtins.print"),
+    ):
+        rc = backend.main(["--draw-ready", str(variant), "--kind", "a4", "--dry-run", "--com", "COM6"])
+
+    assert rc == 1
+    send_to_grbl.assert_not_called()
+
+
 def test_main_draw_ready_sends_selected_nc(tmp_path: Path) -> None:
     variant = _write_ready_variant(tmp_path)
     with (
