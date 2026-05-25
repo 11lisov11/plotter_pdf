@@ -9368,6 +9368,8 @@ def rewrite_duplicate_draw_segments_as_penup_travel(
 
         modal = _gcode_motion_code(clean, modal)
         if _gcode_has_word(upper, "G", 92):
+            if "X" in vals or "Y" in vals:
+                seen.clear()
             cur_x = vals.get("X", cur_x)
             cur_y = vals.get("Y", cur_y)
             cur_z = vals.get("Z", cur_z)
