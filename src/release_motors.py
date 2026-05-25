@@ -105,8 +105,8 @@ def main(argv: list[str]) -> int:
         except Exception:
             pass
 
-        # Best-effort safe teardown: force pen up, stop spindle/servo, release steppers.
-        for cmd in (*_safe_pen_up_commands(), "$1=0"):
+        # Best-effort safe teardown: force pen up, return home, release steppers.
+        for cmd in (*_safe_pen_up_commands(), "G0 X0.0000 Y0.0000 F900.0", "$1=0"):
             try:
                 ser.write((cmd + "\n").encode("ascii"))
                 ser.flush()
