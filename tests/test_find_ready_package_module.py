@@ -280,6 +280,29 @@ def test_find_first_ready_package_falls_back_to_requested_item_nc(tmp_path: Path
     assert selection.item == "pass_02"
 
 
+def test_find_first_ready_package_does_not_fall_back_to_page_for_pass_item(tmp_path: Path) -> None:
+    variant = tmp_path / "cg" / "22"
+    package = variant / "a3_pack"
+    package.mkdir(parents=True)
+    (package / "page_01.nc").write_text("G0 X99 Y99\n", encoding="utf-8")
+    with (package / "summary.csv").open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=["item", "ok", "draw_length_m"])
+        writer.writeheader()
+        writer.writerow({"item": "pass_02", "ok": "True", "draw_length_m": "6.9"})
+    (variant / "_audit.json").write_text(
+        json.dumps({"items": [{"task": package.name, "kind": "a3_two_pass", "package_dir": str(package)}]}),
+        encoding="utf-8",
+    )
+    (variant / "_ready_to_plot_audit.json").write_text(json.dumps({"ok": True, "failed_packages": []}), encoding="utf-8")
+
+    try:
+        find_first_ready_package(variant, kind="a3", item="pass_02")
+    except RuntimeError as exc:
+        assert "No ready package" in str(exc)
+    else:
+        raise AssertionError("requested pass_02 must not fall back to page_01.nc")
+
+
 def test_ready_kind_aliases_match_audit_kind_names() -> None:
     assert _normalize_kind("a3") == "a3_two_pass"
     assert _normalize_kind("a3-two") == "a3_two_pass"

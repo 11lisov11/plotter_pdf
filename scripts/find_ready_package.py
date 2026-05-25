@@ -91,8 +91,6 @@ def _local_artifact_path(package_dir: Path, raw: str, fallback_name: str) -> str
 def _resolve_ready_nc(package_dir: Path, raw: str, item_name: str) -> Path | None:
     item_name = str(item_name or "page_01").strip() or "page_01"
     fallback_names = [f"{item_name}.nc"]
-    if item_name != "page_01":
-        fallback_names.append("page_01.nc")
 
     raw_text = str(raw or "").strip()
     candidates: list[Path] = []
