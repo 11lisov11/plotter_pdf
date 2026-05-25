@@ -10028,6 +10028,9 @@ def run_frame_pipeline(
             log("Applying pen-up / pen-down ...")
             apply_penlift(xy_path, pen_path, force_full_lift=True)
             make_final_with_preamble(pen_path, final_path)
+            pf_ok, pf_msg = preflight_check_gcode(final_path, logger=log)
+            if not pf_ok:
+                return False, f"Frame preflight failed: {pf_msg}"
             if send_to_plotter:
                 send_to_grbl(final_path, com, baud, log, sleep_after=True)
                 return_msg = "Done: work area frame sent."
@@ -10186,9 +10189,6 @@ def run_pencil_wear_test_pipeline(
                 for st in stage_stats
             ],
         }
-        save_last_wear_test_report(report)
-        log(f"Saved wear-test report: {PENCIL_WEAR_TEST_LAST_PATH}")
-
         effective_z_down = Z_DOWN
         pencil_state = None
         dynamic_wear_start = 0.0
@@ -10236,6 +10236,9 @@ def run_pencil_wear_test_pipeline(
                 f"bounds={gcode_bounds[0]:.3f}..{gcode_bounds[1]:.3f} x, "
                 f"{gcode_bounds[2]:.3f}..{gcode_bounds[3]:.3f} y"
             )
+            pf_ok, pf_msg = preflight_check_gcode(final_path, logger=log)
+            if not pf_ok:
+                return False, f"Pencil wear-test preflight failed: {pf_msg}"
 
             if send_to_plotter:
                 plot_time_s = send_to_grbl(
@@ -10247,6 +10250,8 @@ def run_pencil_wear_test_pipeline(
                     auto_resume=bool(auto_resume),
                     max_resume_attempts=1,
                 )
+                save_last_wear_test_report(report)
+                log(f"Saved wear-test report: {PENCIL_WEAR_TEST_LAST_PATH}")
                 if TOOL_MODE == "pencil" and pencil_state is not None:
                     pencil_state = apply_pencil_wear_update(pencil_state, draw_length_mm)
                     save_pencil_state(pencil_state)
@@ -10280,6 +10285,7 @@ def run_pencil_wear_test_pipeline(
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(final_path.read_text(encoding="utf-8"), encoding="utf-8")
             log(f"Saved: {target}")
+            log("Dry run: wear-test report was not saved as the last physical pencil test.")
             return True, f"Done: pencil wear-test saved to {target} (draw={draw_length_mm / 1000.0:.2f} m)."
     except Exception as exc:
         return False, _format_backend_exception(exc)

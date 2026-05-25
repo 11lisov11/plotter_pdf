@@ -106,6 +106,113 @@ class BackendErrorMappingTests(unittest.TestCase):
             self.assertIn("Calibration preflight failed", msg)
             send_to_grbl.assert_not_called()
 
+    def test_run_frame_pipeline_rejects_failed_preflight(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="plotter_err_map_frame_preflight_") as td:
+            root = Path(td)
+
+            def _fake_write_xy(path, _polys, _ft, _fd):
+                Path(path).write_text("G21\nG90\nG0 X0 Y0\nG1 X1 Y0\n", encoding="utf-8")
+
+            def _fake_penlift(_xy, pen, **_kwargs):
+                Path(pen).write_text("G0 Z0\nG1 X1 Y0\n", encoding="utf-8")
+
+            def _fake_finalize(_prepared, final):
+                Path(final).write_text("G90\nG92 Z11.9\nG1 X10 Y-10\n", encoding="utf-8")
+
+            with (
+                mock.patch.object(backend, "ensure_local_tmp_root", return_value=root),
+                mock.patch.object(backend, "build_area_frame_polylines", return_value=[[(0.0, -10.0), (1.0, -10.0)]]),
+                mock.patch.object(backend, "clip_polylines_to_work_area", side_effect=lambda polys, logger=None: polys),
+                mock.patch.object(backend, "write_xy_gcode", side_effect=_fake_write_xy),
+                mock.patch.object(backend, "apply_penlift", side_effect=_fake_penlift),
+                mock.patch.object(backend, "make_final_with_preamble", side_effect=_fake_finalize),
+                mock.patch.object(backend, "send_to_grbl") as send_to_grbl,
+            ):
+                ok, msg = backend.run_frame_pipeline(lambda *_args: None, send_to_plotter=True)
+
+            self.assertFalse(ok)
+            self.assertIn("Frame preflight failed", msg)
+            send_to_grbl.assert_not_called()
+
+    def test_run_pencil_wear_test_pipeline_rejects_failed_preflight(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="plotter_err_map_wear_preflight_") as td:
+            root = Path(td)
+            stage = {"stage": 1, "row": 1, "col": 1, "draw_mm": 1.0, "cum_mm": 1.0, "bbox": (0.0, 1.0, -11.0, -10.0)}
+
+            def _fake_write_xy(path, _polys, _ft, _fd):
+                Path(path).write_text("G21\nG90\nG0 X0 Y-10\nG1 X1 Y-10\n", encoding="utf-8")
+
+            def _fake_penlift(_xy, pen, **_kwargs):
+                Path(pen).write_text("G0 Z0\nG1 X1 Y-10\n", encoding="utf-8")
+
+            def _fake_finalize(_prepared, final):
+                Path(final).write_text("G90\nG92 Z11.9\nG1 X10 Y-10\n", encoding="utf-8")
+
+            with (
+                mock.patch.object(backend, "ensure_local_tmp_root", return_value=root),
+                mock.patch.object(backend, "build_pencil_wear_test_polylines", return_value=([[(0.0, -10.0), (1.0, -10.0)]], [stage])),
+                mock.patch.object(backend, "clip_polylines_to_work_area", side_effect=lambda polys, logger=None: polys),
+                mock.patch.object(backend, "save_last_wear_test_report") as save_report,
+                mock.patch.object(backend, "write_xy_gcode", side_effect=_fake_write_xy),
+                mock.patch.object(backend, "apply_penlift", side_effect=_fake_penlift),
+                mock.patch.object(backend, "make_final_with_preamble", side_effect=_fake_finalize),
+                mock.patch.object(backend, "send_to_grbl") as send_to_grbl,
+            ):
+                ok, msg = backend.run_pencil_wear_test_pipeline(lambda *_args: None, send_to_plotter=True)
+
+            self.assertFalse(ok)
+            self.assertIn("Pencil wear-test preflight failed", msg)
+            send_to_grbl.assert_not_called()
+            save_report.assert_not_called()
+
+    def test_pencil_wear_test_dry_run_does_not_overwrite_last_physical_report(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="plotter_wear_dry_report_") as td:
+            root = Path(td)
+            out = root / "wear.nc"
+            stage = {"stage": 1, "row": 1, "col": 1, "draw_mm": 1.0, "cum_mm": 1.0, "bbox": (0.0, 1.0, -11.0, -10.0)}
+            final_text = "\n".join(
+                [
+                    "$X",
+                    "G21",
+                    "G90",
+                    "G92 Z4",
+                    "G0 Z0",
+                    "G0 X0 Y-10",
+                    "G1 Z11.9",
+                    "G1 X1 Y-10",
+                    "G0 Z0",
+                    "G0 X0 Y0",
+                    "M5",
+                    "$1=0",
+                ]
+            ) + "\n"
+
+            def _fake_write_xy(path, _polys, _ft, _fd):
+                Path(path).write_text("G21\nG90\nG0 X0 Y-10\nG1 X1 Y-10\n", encoding="utf-8")
+
+            def _fake_penlift(_xy, pen, **_kwargs):
+                Path(pen).write_text("G0 Z0\nG1 X1 Y-10\n", encoding="utf-8")
+
+            def _fake_finalize(_prepared, final):
+                Path(final).write_text(final_text, encoding="utf-8")
+
+            with (
+                mock.patch.object(backend, "ensure_local_tmp_root", return_value=root),
+                mock.patch.object(backend, "build_pencil_wear_test_polylines", return_value=([[(0.0, -10.0), (1.0, -10.0)]], [stage])),
+                mock.patch.object(backend, "clip_polylines_to_work_area", side_effect=lambda polys, logger=None: polys),
+                mock.patch.object(backend, "save_last_wear_test_report") as save_report,
+                mock.patch.object(backend, "write_xy_gcode", side_effect=_fake_write_xy),
+                mock.patch.object(backend, "apply_penlift", side_effect=_fake_penlift),
+                mock.patch.object(backend, "make_final_with_preamble", side_effect=_fake_finalize),
+                mock.patch.object(backend, "send_to_grbl") as send_to_grbl,
+            ):
+                ok, msg = backend.run_pencil_wear_test_pipeline(lambda *_args: None, send_to_plotter=False, output_path=out)
+
+            self.assertTrue(ok, msg)
+            self.assertTrue(out.exists())
+            send_to_grbl.assert_not_called()
+            save_report.assert_not_called()
+
     def test_frame_and_corner_dry_run_create_output_parent_dirs(self) -> None:
         with tempfile.TemporaryDirectory(prefix="plotter_dry_output_parent_") as td:
             root = Path(td)
