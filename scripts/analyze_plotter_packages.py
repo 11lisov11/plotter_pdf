@@ -122,12 +122,20 @@ def analyze_gcode_file(
     pen_down = False
     ever_saw_z = False
     ever_saw_spindle = False
+    stroke_active = False
 
     def close_stroke() -> None:
-        nonlocal current_stroke_mm
-        if current_stroke_mm > 0.0:
+        nonlocal current_stroke_mm, stroke_active
+        if stroke_active:
             stroke_lengths.append(current_stroke_mm)
             current_stroke_mm = 0.0
+            stroke_active = False
+
+    def open_stroke() -> None:
+        nonlocal pen_down_strokes, stroke_active
+        if not stroke_active:
+            pen_down_strokes += 1
+            stroke_active = True
 
     def is_pen_down_z(z_value: float) -> bool:
         if z_down_threshold is not None:
@@ -177,6 +185,8 @@ def analyze_gcode_file(
                     continue
                 if rounded == 3:
                     ever_saw_spindle = True
+                    if not pen_down:
+                        open_stroke()
                     pen_down = True
                 elif rounded == 5:
                     ever_saw_spindle = True
@@ -195,6 +205,8 @@ def analyze_gcode_file(
                     next_pen_down = is_pen_down_z(cur_z)
                     if pen_down and not next_pen_down:
                         close_stroke()
+                    elif next_pen_down and not pen_down:
+                        open_stroke()
                     pen_down = next_pen_down
                 continue
 
@@ -205,6 +217,7 @@ def analyze_gcode_file(
                 next_pen_down = is_pen_down_z(next_z)
                 if next_pen_down and not pen_down:
                     z_cycles += 1
+                    open_stroke()
                 if pen_down and not next_pen_down:
                     close_stroke()
                 pen_down = next_pen_down
@@ -249,13 +262,13 @@ def analyze_gcode_file(
 
             is_draw = code in {1, 2, 3} and (pen_down or not (ever_saw_z or ever_saw_spindle))
             if is_draw:
+                if pen_down or not (ever_saw_z or ever_saw_spindle):
+                    open_stroke()
                 draw_moves += 1
                 draw_length_mm += seg_len
                 current_stroke_mm += seg_len
                 if seg_len < 0.35 and seg_len > 1e-9:
                     short_segments += 1
-                if current_stroke_mm == seg_len:
-                    pen_down_strokes += 1
             else:
                 travel_moves += 1
                 travel_length_mm += seg_len
@@ -264,8 +277,8 @@ def analyze_gcode_file(
             cur_x, cur_y = next_x, next_y
 
     close_stroke()
-    tiny_strokes = sum(1 for length in stroke_lengths if 0.0 < length < 0.8)
-    point_like = sum(1 for length in stroke_lengths if 0.0 < length < 0.15)
+    tiny_strokes = sum(1 for length in stroke_lengths if length < 0.8)
+    point_like = sum(1 for length in stroke_lengths if length < 0.15)
     ratio = travel_length_mm / draw_length_mm if draw_length_mm > 1e-9 else 0.0
     return GcodeAlgorithmMetrics(
         path=str(Path(path)),

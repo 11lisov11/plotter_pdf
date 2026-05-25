@@ -78,6 +78,31 @@ def test_analyze_gcode_respects_spindle_pen_control(tmp_path: Path) -> None:
     assert metrics.travel_length_mm == 10.0
 
 
+def test_analyze_gcode_counts_zero_length_pen_dot_as_point_like_stroke(tmp_path: Path) -> None:
+    gcode = tmp_path / "dot.nc"
+    gcode.write_text(
+        "\n".join(
+            [
+                "G21",
+                "G90",
+                "G0 X10 Y10",
+                "G1 Z11.9",
+                "G1 Z0",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    metrics = analyzer.analyze_gcode_file(gcode)
+
+    assert metrics.z_cycles == 1
+    assert metrics.pen_down_strokes == 1
+    assert metrics.tiny_strokes_lt_08_mm == 1
+    assert metrics.point_like_strokes == 1
+    assert metrics.draw_length_mm == 0.0
+
+
 def test_analyze_gcode_respects_absolute_ijk_arc_mode(tmp_path: Path) -> None:
     gcode = tmp_path / "abs_ijk_arc.nc"
     gcode.write_text(
