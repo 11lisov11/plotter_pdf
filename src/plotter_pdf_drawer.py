@@ -9247,10 +9247,34 @@ def _gcode_has_word(line: str, letter: str, number: int) -> bool:
 
 
 def _gcode_motion_code(line: str, previous: Optional[str]) -> Optional[str]:
-    for number, canonical in ((0, "G0"), (1, "G1"), (2, "G2"), (3, "G3")):
-        if _gcode_has_word(line, "G", number):
-            return canonical
-    return previous
+    motion = previous
+    for axis, value in _GCODE_TOKEN_RE.findall(str(line or "")):
+        if axis.upper() != "G":
+            continue
+        try:
+            gval = float(value)
+        except Exception:
+            continue
+        rounded = int(round(gval))
+        if abs(gval - float(rounded)) <= 1e-9 and rounded in {0, 1, 2, 3}:
+            motion = f"G{rounded}"
+    return motion
+
+
+def _gcode_abs_mode(line: str, previous: bool) -> bool:
+    abs_mode = bool(previous)
+    for axis, value in _GCODE_TOKEN_RE.findall(str(line or "")):
+        if axis.upper() != "G":
+            continue
+        try:
+            gval = float(value)
+        except Exception:
+            continue
+        if abs(gval - 90.0) <= 1e-9:
+            abs_mode = True
+        elif abs(gval - 91.0) <= 1e-9:
+            abs_mode = False
+    return abs_mode
 
 
 def cleanup_xy_gcode_overlaps(xy_gcode: Path, logger=print) -> int:
@@ -9262,6 +9286,7 @@ def cleanup_xy_gcode_overlaps(xy_gcode: Path, logger=print) -> int:
     cur_x: Optional[float] = None
     cur_y: Optional[float] = None
     modal: Optional[str] = None
+    abs_mode = True
     segment_groups: List[List[Tuple[int, Tuple[float, float], Tuple[float, float]]]] = [[]]
 
     for line_idx, raw_line in enumerate(raw_lines):
@@ -9269,6 +9294,7 @@ def cleanup_xy_gcode_overlaps(xy_gcode: Path, logger=print) -> int:
         if not line:
             continue
         vals = _gcode_line_tokens(line)
+        abs_mode = _gcode_abs_mode(line, abs_mode)
         if _gcode_has_word(line.upper(), "G", 92):
             if segment_groups[-1]:
                 segment_groups.append([])
@@ -9277,8 +9303,12 @@ def cleanup_xy_gcode_overlaps(xy_gcode: Path, logger=print) -> int:
             continue
         modal = _gcode_motion_code(line, modal)
         old_x, old_y = cur_x, cur_y
-        next_x = vals.get("X", cur_x)
-        next_y = vals.get("Y", cur_y)
+        next_x = cur_x
+        next_y = cur_y
+        if "X" in vals:
+            next_x = vals["X"] if abs_mode or cur_x is None else cur_x + vals["X"]
+        if "Y" in vals:
+            next_y = vals["Y"] if abs_mode or cur_y is None else cur_y + vals["Y"]
         has_xy = "X" in vals or "Y" in vals
         if has_xy and old_x is not None and old_y is not None and next_x is not None and next_y is not None:
             if modal == "G1" and points_distance((float(old_x), float(old_y)), (float(next_x), float(next_y))) > 1e-6:
@@ -9338,6 +9368,7 @@ def rewrite_duplicate_draw_segments_as_penup_travel(
     cur_y: Optional[float] = None
     cur_z: Optional[float] = None
     modal: Optional[str] = None
+    abs_mode = True
     spindle_down = False
     seen: set[Tuple[Tuple[float, float], Tuple[float, float]]] = set()
     rewritten: List[str] = []
@@ -9360,6 +9391,7 @@ def rewrite_duplicate_draw_segments_as_penup_travel(
             continue
         upper = clean.upper()
         vals = _gcode_line_tokens(clean)
+        abs_mode = _gcode_abs_mode(clean, abs_mode)
 
         if _gcode_has_word(upper, "M", 3):
             spindle_down = True
@@ -9376,9 +9408,15 @@ def rewrite_duplicate_draw_segments_as_penup_travel(
             rewritten.append(raw_line)
             continue
 
-        next_x = vals.get("X", cur_x)
-        next_y = vals.get("Y", cur_y)
-        next_z = vals.get("Z", cur_z)
+        next_x = cur_x
+        next_y = cur_y
+        next_z = cur_z
+        if "X" in vals:
+            next_x = vals["X"] if abs_mode or cur_x is None else cur_x + vals["X"]
+        if "Y" in vals:
+            next_y = vals["Y"] if abs_mode or cur_y is None else cur_y + vals["Y"]
+        if "Z" in vals:
+            next_z = vals["Z"] if abs_mode or cur_z is None else cur_z + vals["Z"]
         has_xy = "X" in vals or "Y" in vals
         is_draw_xy = (
             has_xy
@@ -9394,13 +9432,21 @@ def rewrite_duplicate_draw_segments_as_penup_travel(
         if is_draw_xy:
             key = _gcode_segment_key(float(cur_x), float(cur_y), float(next_x), float(next_y))
             if key in seen:
-                rewritten.extend(
-                    [
+                if abs_mode:
+                    replacement = [
                         f"G1 Z{float(z_up):.4f} F{float(z_feed):.1f}",
                         f"G0 X{float(next_x):.4f} Y{float(next_y):.4f} F{float(feed_travel):.1f}",
                         f"G1 Z{float(z_down):.4f} F{float(z_feed):.1f}",
                     ]
-                )
+                else:
+                    replacement = [
+                        "G90",
+                        f"G1 Z{float(z_up):.4f} F{float(z_feed):.1f}",
+                        f"G0 X{float(next_x):.4f} Y{float(next_y):.4f} F{float(feed_travel):.1f}",
+                        f"G1 Z{float(z_down):.4f} F{float(z_feed):.1f}",
+                        "G91",
+                    ]
+                rewritten.extend(replacement)
                 cur_x, cur_y, cur_z = float(next_x), float(next_y), float(z_down)
                 dropped += 1
                 continue

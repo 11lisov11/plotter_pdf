@@ -837,10 +837,53 @@ class BackendGeometryTests(unittest.TestCase):
             self.assertIn("G92 X0 Y0", text)
             self.assertEqual(text.count("G1 X10 Y0 F12000"), 2)
 
+    def test_rewrite_duplicate_draw_segments_respects_relative_xy_mode(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "relative_dup.nc"
+            path.write_text(
+                "\n".join(
+                    [
+                        "G21",
+                        "G90",
+                        "G0 Z0",
+                        "G0 X0 Y0",
+                        "G1 Z11.9",
+                        "G91",
+                        "G1 X10 Y0 F12000",
+                        "G1 X-10 Y0 F12000",
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            changed = backend.rewrite_duplicate_draw_segments_as_penup_travel(
+                path,
+                z_up=0.0,
+                z_down=11.9,
+                feed_travel=15000.0,
+                z_feed=8000.0,
+            )
+
+            text = path.read_text(encoding="utf-8")
+            self.assertEqual(changed, 1)
+            self.assertIn("G90\nG1 Z0.0000 F8000.0\nG0 X0.0000 Y0.0000 F15000.0", text)
+            self.assertIn("G1 Z11.9000 F8000.0\nG91", text)
+
     def test_gcode_word_detection_handles_compact_and_m30(self) -> None:
         self.assertTrue(backend._gcode_has_word("G92Z11.9000", "G", 92))
         self.assertTrue(backend._gcode_has_word("M3S1000", "M", 3))
         self.assertFalse(backend._gcode_has_word("M30", "M", 3))
+
+    def test_gcode_motion_code_uses_last_motion_word_on_line(self) -> None:
+        self.assertEqual(backend._gcode_motion_code("G0 G1 X10", None), "G1")
+        self.assertEqual(backend._gcode_motion_code("G1 G0 X10", None), "G0")
+        self.assertEqual(backend._gcode_motion_code("G90.1 X10", "G1"), "G1")
+
+    def test_gcode_abs_mode_uses_last_distance_mode_word_on_line(self) -> None:
+        self.assertFalse(backend._gcode_abs_mode("G90 G91 X10", True))
+        self.assertTrue(backend._gcode_abs_mode("G91 G90 X10", False))
+        self.assertFalse(backend._gcode_abs_mode("G90.1 X10", False))
 
     def test_extract_image_tone_hatch_segments_px_simple(self) -> None:
         if backend.cv2 is None or backend.np is None:
@@ -1758,6 +1801,30 @@ class BackendGeometryTests(unittest.TestCase):
             lines = gcode.read_text(encoding="utf-8").splitlines()
             self.assertEqual(lines[4], "G92 X0 Y0")
             self.assertEqual(lines[5], "G1 X10 Y0 F12000.0")
+
+    def test_cleanup_xy_gcode_overlaps_respects_relative_xy_mode(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            gcode = Path(td) / "xy_relative.gcode"
+            gcode.write_text(
+                "\n".join(
+                    [
+                        "G21",
+                        "G90",
+                        "G0 X0 Y0",
+                        "G91",
+                        "G1 X10 Y0 F12000.0",
+                        "G1 X-10 Y0 F12000.0",
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            changed = backend.cleanup_xy_gcode_overlaps(gcode, logger=lambda *_: None)
+
+            self.assertEqual(changed, 1)
+            lines = gcode.read_text(encoding="utf-8").splitlines()
+            self.assertEqual(lines[-1], "G0 X-10 Y0 F12000.0")
 
     def test_collinear_overlap_dedup_uses_overlap_midpoint_distance(self) -> None:
         polylines = [

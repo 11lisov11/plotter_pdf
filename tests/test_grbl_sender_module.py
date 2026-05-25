@@ -197,6 +197,71 @@ class GrblSenderModuleTests(unittest.TestCase):
             self.assertIn("G0 X1 Y1", lines)
             self.assertIn("G1 X2 Y2", lines)
 
+    def test_write_resume_file_restores_relative_distance_mode_before_payload(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="plotter_grbl_sender_resume_g91_") as td:
+            root = Path(td)
+            src = root / "source.nc"
+            dst = root / "resume.nc"
+            src.write_text(
+                "\n".join(
+                    [
+                        "G21",
+                        "G90",
+                        "G0 X0 Y0",
+                        "G91",
+                        "G0 X10 Y0",
+                        "G1 X1 Y0",
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            grbl_sender.write_resume_file(
+                src,
+                dst,
+                start_line=5,
+                z_up=0.0,
+                safe_lift_feed=900.0,
+                z_delay_up=0.05,
+            )
+
+            lines = dst.read_text(encoding="utf-8").splitlines()
+            self.assertLess(lines.index("G91"), lines.index("; AUTO-RESUME from line 5 of source.nc"))
+            self.assertLess(lines.index("; AUTO-RESUME from line 5 of source.nc"), lines.index("G0 X10 Y0"))
+
+    def test_write_resume_file_restores_absolute_ijk_mode_before_arc_payload(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="plotter_grbl_sender_resume_g901_") as td:
+            root = Path(td)
+            src = root / "source.nc"
+            dst = root / "resume.nc"
+            src.write_text(
+                "\n".join(
+                    [
+                        "G21",
+                        "G90",
+                        "G90.1",
+                        "G0 X0 Y0",
+                        "G2 X10 Y0 I5 J0",
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            grbl_sender.write_resume_file(
+                src,
+                dst,
+                start_line=5,
+                z_up=0.0,
+                safe_lift_feed=900.0,
+                z_delay_up=0.05,
+            )
+
+            lines = dst.read_text(encoding="utf-8").splitlines()
+            self.assertLess(lines.index("G90.1"), lines.index("; AUTO-RESUME from line 5 of source.nc"))
+            self.assertLess(lines.index("; AUTO-RESUME from line 5 of source.nc"), lines.index("G2 X10 Y0 I5 J0"))
+
     def test_find_nearest_g0_xy_line_ignores_coordinates_inside_parentheses(self) -> None:
         with tempfile.TemporaryDirectory(prefix="plotter_grbl_sender_find_comment_") as td:
             root = Path(td)
