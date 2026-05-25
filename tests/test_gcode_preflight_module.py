@@ -138,6 +138,72 @@ class GcodePreflightModuleTests(unittest.TestCase):
             self.assertFalse(ok)
             self.assertIn("G92 X/Y coordinate reset is not allowed", msg)
 
+    def test_preflight_rejects_first_xy_with_pen_down(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="plotter_preflight_first_xy_down_") as td:
+            gcode = Path(td) / "sample.nc"
+            gcode.write_text("G90\nG92 Z11.9\nG1 X10 Y10\nG0 Z0\n", encoding="utf-8")
+            ok, msg = gcode_preflight.preflight_check_gcode(
+                gcode,
+                lambda *_args: None,
+                preflight_enabled=True,
+                preflight_max_gcode_lines=100,
+                preflight_max_travel_to_draw_ratio=5.0,
+                preflight_bounds_margin_mm=0.0,
+                z_up=0.0,
+                z_down=11.9,
+                bounds=(0.0, 20.0, 0.0, 20.0),
+                work_area_bounds=lambda: (0.0, 20.0, 0.0, 20.0),
+                summarize_gcode_file=lambda _path: (4, 1, 0, (0.0, 10.0, 0.0, 10.0)),
+                gcode_draw_bounds=lambda *_args: (0.0, 10.0, 0.0, 10.0),
+            )
+
+            self.assertFalse(ok)
+            self.assertIn("first XY move happens with pen down", msg)
+
+    def test_preflight_rejects_rapid_xy_with_pen_down(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="plotter_preflight_rapid_down_") as td:
+            gcode = Path(td) / "sample.nc"
+            gcode.write_text("G90\nG0 X0 Y0\nG1 Z11.9\nG0 X10 Y10\nG0 Z0\n", encoding="utf-8")
+            ok, msg = gcode_preflight.preflight_check_gcode(
+                gcode,
+                lambda *_args: None,
+                preflight_enabled=True,
+                preflight_max_gcode_lines=100,
+                preflight_max_travel_to_draw_ratio=5.0,
+                preflight_bounds_margin_mm=0.0,
+                z_up=0.0,
+                z_down=11.9,
+                bounds=(0.0, 20.0, 0.0, 20.0),
+                work_area_bounds=lambda: (0.0, 20.0, 0.0, 20.0),
+                summarize_gcode_file=lambda _path: (5, 1, 1, (0.0, 10.0, 0.0, 10.0)),
+                gcode_draw_bounds=lambda *_args: (0.0, 10.0, 0.0, 10.0),
+            )
+
+            self.assertFalse(ok)
+            self.assertIn("rapid XY travel with pen down", msg)
+
+    def test_preflight_rejects_file_ending_with_pen_down(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="plotter_preflight_end_down_") as td:
+            gcode = Path(td) / "sample.nc"
+            gcode.write_text("G90\nG0 X0 Y0\nG1 Z11.9\nG1 X10 Y10\n", encoding="utf-8")
+            ok, msg = gcode_preflight.preflight_check_gcode(
+                gcode,
+                lambda *_args: None,
+                preflight_enabled=True,
+                preflight_max_gcode_lines=100,
+                preflight_max_travel_to_draw_ratio=5.0,
+                preflight_bounds_margin_mm=0.0,
+                z_up=0.0,
+                z_down=11.9,
+                bounds=(0.0, 20.0, 0.0, 20.0),
+                work_area_bounds=lambda: (0.0, 20.0, 0.0, 20.0),
+                summarize_gcode_file=lambda _path: (4, 1, 1, (0.0, 10.0, 0.0, 10.0)),
+                gcode_draw_bounds=lambda *_args: (0.0, 10.0, 0.0, 10.0),
+            )
+
+            self.assertFalse(ok)
+            self.assertIn("file ends with pen down", msg)
+
     def test_preflight_allows_legacy_xy_only_gcode_without_pen_control(self) -> None:
         with tempfile.TemporaryDirectory(prefix="plotter_preflight_xy_only_") as td:
             gcode = Path(td) / "sample.nc"
