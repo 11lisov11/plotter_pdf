@@ -211,7 +211,7 @@ def analyze_gcode_file(path: Path, *, z_down_threshold: float = 1.0) -> GcodeAlg
                     short_segments += 1
                 if current_stroke_mm == seg_len:
                     pen_down_strokes += 1
-            elif code == 0:
+            else:
                 travel_moves += 1
                 travel_length_mm += seg_len
                 if pen_down:

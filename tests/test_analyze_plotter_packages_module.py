@@ -74,6 +74,8 @@ def test_analyze_gcode_respects_spindle_pen_control(tmp_path: Path) -> None:
     assert metrics.tiny_strokes_lt_08_mm == 1
     assert metrics.point_like_strokes == 1
     assert metrics.draw_length_mm == 10.1
+    assert metrics.travel_moves == 1
+    assert metrics.travel_length_mm == 10.0
 
 
 def test_analyze_gcode_respects_absolute_ijk_arc_mode(tmp_path: Path) -> None:
@@ -99,6 +101,37 @@ def test_analyze_gcode_respects_absolute_ijk_arc_mode(tmp_path: Path) -> None:
     assert metrics.g3_moves == 1
     assert metrics.draw_moves == 1
     assert metrics.draw_length_mm == 15.708
+
+
+def test_analyze_gcode_counts_pen_up_g1_xy_as_travel(tmp_path: Path) -> None:
+    gcode = tmp_path / "pen_up_g1_travel.nc"
+    gcode.write_text(
+        "\n".join(
+            [
+                "G21",
+                "G90",
+                "G0 X0 Y0",
+                "G1 Z11.9",
+                "G1 X1 Y0",
+                "G1 Z0",
+                "G1 X4 Y0",
+                "G1 Z11.9",
+                "G1 X4 Y2",
+                "G1 Z0",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    metrics = analyzer.analyze_gcode_file(gcode)
+
+    assert metrics.g1_moves == 3
+    assert metrics.draw_moves == 2
+    assert metrics.travel_moves == 1
+    assert metrics.draw_length_mm == 3.0
+    assert metrics.travel_length_mm == 3.0
+    assert metrics.travel_to_draw_ratio == 1.0
 
 
 def test_collect_gcode_files_uses_only_nc_and_gcode(tmp_path: Path) -> None:
