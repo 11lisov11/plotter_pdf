@@ -3,6 +3,14 @@ import math
 import re
 from pathlib import Path
 
+try:
+    from src.plotter_backend.geometry.arc_fit import arc_center_from_radius
+except Exception:  # pragma: no cover - fallback when run as src/penlift_postprocess.py
+    try:
+        from plotter_backend.geometry.arc_fit import arc_center_from_radius  # type: ignore
+    except Exception:  # pragma: no cover - defensive fallback
+        arc_center_from_radius = None  # type: ignore[assignment]
+
 GCODE_MOVES_WITH_XY = {"G0", "G1", "G2", "G3", "G5", "G80", "G81", "G82", "G83", "G84", "G85", "G86", "G87", "G88", "G89"}
 TOKEN_RE = re.compile(r"([A-Za-z])\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)")
 
@@ -101,14 +109,15 @@ def has_axis(tokens, axis):
 
 def axis_value(tokens, axis):
     ax = axis.upper()
+    value = None
     for token in tokens:
         up = token.upper()
         if up.startswith(ax):
             try:
-                return float(up[1:])
+                value = float(up[1:])
             except Exception:
-                return None
-    return None
+                continue
+    return value
 
 
 def arc_length_xy(x0, y0, x1, y1, i, j, cw):
@@ -170,6 +179,7 @@ def touch_pen_down(
     current_y = None
     abs_mode = True
     ijk_abs = False
+    last_motion = ""
     drawn_length_mm = 0.0
     if delay_up is None:
         delay_up = delay_down
@@ -298,10 +308,6 @@ def touch_pen_down(
             continue
 
         codes = g_codes(tokens)
-        if not codes:
-            out.append(raw)
-            continue
-
         for gcode in codes:
             if gcode == "G90":
                 abs_mode = True
@@ -312,8 +318,27 @@ def touch_pen_down(
             elif gcode == "G91.1":
                 ijk_abs = False
 
+        if "G92" in codes:
+            x_tok = axis_value(tokens, "X")
+            y_tok = axis_value(tokens, "Y")
+            z_tok = axis_value(tokens, "Z")
+            if x_tok is not None:
+                current_x = x_tok
+            if y_tok is not None:
+                current_y = y_tok
+            if z_tok is not None:
+                current_z = z_tok
+                if abs(z_tok - z_up) < 1e-6:
+                    pen_down = False
+                elif abs(z_tok - z_down) < 1e-6:
+                    pen_down = True
+            out.append(raw)
+            continue
+
         motion_codes = [gcode for gcode in codes if gcode in GCODE_MOVES_WITH_XY]
-        code = motion_codes[-1] if motion_codes else ""
+        if motion_codes:
+            last_motion = motion_codes[-1]
+        code = motion_codes[-1] if motion_codes else last_motion
         if not code:
             out.append(raw)
             continue
@@ -329,10 +354,10 @@ def touch_pen_down(
                     value = _safe_float(up[1:])
                     if value is None:
                         continue
-                    current_z = float(value)
-                    if abs(value - z_up) < 1e-6:
+                    current_z = float(value) if abs_mode else (current_z + float(value))
+                    if abs(current_z - z_up) < 1e-6:
                         pen_down = False
-                    elif abs(value - z_down) < 1e-6:
+                    elif abs(current_z - z_down) < 1e-6:
                         pen_down = True
                     break
             out.append(raw)
@@ -398,15 +423,35 @@ def touch_pen_down(
             y_tok = axis_value(tokens, "Y")
             i_tok = axis_value(tokens, "I")
             j_tok = axis_value(tokens, "J")
+            r_tok = axis_value(tokens, "R")
             x1 = x_tok if (x_tok is not None and (abs_mode or current_x is None)) else (current_x + x_tok if x_tok is not None and current_x is not None else current_x)
             y1 = y_tok if (y_tok is not None and (abs_mode or current_y is None)) else (current_y + y_tok if y_tok is not None and current_y is not None else current_y)
             add_pen_down(drawn_length_mm)
             out.append(raw)
             if x0 is not None and y0 is not None and x1 is not None and y1 is not None:
-                if i_tok is not None and j_tok is not None:
+                if i_tok is not None or j_tok is not None:
+                    i_tok = 0.0 if i_tok is None else i_tok
+                    j_tok = 0.0 if j_tok is None else j_tok
                     arc_i = i_tok - x0 if ijk_abs else i_tok
                     arc_j = j_tok - y0 if ijk_abs else j_tok
                     drawn_length_mm += max(0.0, arc_length_xy(x0, y0, x1, y1, arc_i, arc_j, cw=(code == "G2")))
+                elif r_tok is not None and arc_center_from_radius is not None:
+                    center = arc_center_from_radius((x0, y0), (x1, y1), r_tok, cw=(code == "G2"))
+                    if center is None:
+                        drawn_length_mm += max(0.0, math.hypot(x1 - x0, y1 - y0))
+                    else:
+                        drawn_length_mm += max(
+                            0.0,
+                            arc_length_xy(
+                                x0,
+                                y0,
+                                x1,
+                                y1,
+                                center[0] - x0,
+                                center[1] - y0,
+                                cw=(code == "G2"),
+                            ),
+                        )
                 else:
                     drawn_length_mm += max(0.0, math.hypot(x1 - x0, y1 - y0))
             current_x, current_y = x1, y1
