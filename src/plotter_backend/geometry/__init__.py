@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .arc_fit import arc_extents_xy, fit_circle_kasa, polyline_fit_arc, polyline_is_near_line, solve_3x3, unwrap_angles
+from .arc_fit import arc_center_from_radius, arc_extents_xy, fit_circle_kasa, polyline_fit_arc, polyline_is_near_line, solve_3x3, unwrap_angles
 from .clipping import clip_polylines_to_rect, clip_segment_to_rect, clamp_to_rect, point_in_rect
 from .fitting import fit_polylines_to_area
 from .hatching import (
@@ -42,6 +42,7 @@ __all__ = [
     "clip_path_items_to_rect",
     "clip_to_content_area",
     "arc_extents_xy",
+    "arc_center_from_radius",
     "fit_circle_kasa",
     "fit_polylines_to_area",
     "clip_polylines_to_rect",

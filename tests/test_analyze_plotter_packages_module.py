@@ -127,6 +127,30 @@ def test_analyze_gcode_treats_missing_arc_center_axis_as_zero_offset(tmp_path: P
     assert metrics.draw_length_mm == 15.708
 
 
+def test_analyze_gcode_uses_r_word_arc_length(tmp_path: Path) -> None:
+    gcode = tmp_path / "r_arc.nc"
+    gcode.write_text(
+        "\n".join(
+            [
+                "G21",
+                "G90",
+                "G0 X10 Y0",
+                "M3",
+                "G3 X0 Y10 R10",
+                "M5",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    metrics = analyzer.analyze_gcode_file(gcode)
+
+    assert metrics.g3_moves == 1
+    assert metrics.draw_moves == 1
+    assert metrics.draw_length_mm == 15.708
+
+
 def test_analyze_gcode_counts_pen_up_g1_xy_as_travel(tmp_path: Path) -> None:
     gcode = tmp_path / "pen_up_g1_travel.nc"
     gcode.write_text(

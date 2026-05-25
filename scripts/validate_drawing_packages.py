@@ -16,7 +16,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 from src.plotter_backend.common_utils import clean_report_value
-from src.plotter_backend.geometry.arc_fit import arc_extents_xy
+from src.plotter_backend.geometry.arc_fit import arc_center_from_radius, arc_extents_xy
 
 DEFAULT_WORK_AREA = (0.0, 180.0, -285.0, -5.0)
 A3_TWO_PASS_WORK_AREA = (0.0, 180.0, -285.0, -2.0)
@@ -339,18 +339,24 @@ def validate_gcode_file(
                         else:
                             segments_seen.add(key)
                         draw_segments.append((x0, y0, x1, y1))
-                    if modal in {"G2", "G3"} and ("I" in vals or "J" in vals):
-                        i_val = float(vals.get("I", 0.0))
-                        j_val = float(vals.get("J", 0.0))
-                        center = (i_val, j_val) if ijk_abs else (x0 + i_val, y0 + j_val)
+                    if modal in {"G2", "G3"} and (("I" in vals or "J" in vals) or "R" in vals):
+                        if "I" in vals or "J" in vals:
+                            i_val = float(vals.get("I", 0.0))
+                            j_val = float(vals.get("J", 0.0))
+                            center = (i_val, j_val) if ijk_abs else (x0 + i_val, y0 + j_val)
+                        else:
+                            center = arc_center_from_radius((x0, y0), (x1, y1), float(vals["R"]), cw=(modal == "G2"))
                         try:
-                            if math.hypot(x1 - x0, y1 - y0) <= 1e-6:
+                            if center is None:
+                                _expand_draw_bounds(x0, x1, y0, y1)
+                            elif math.hypot(x1 - x0, y1 - y0) <= 1e-6:
                                 radius = math.hypot(x0 - center[0], y0 - center[1])
                                 bx0, bx1 = center[0] - radius, center[0] + radius
                                 by0, by1 = center[1] - radius, center[1] + radius
+                                _expand_draw_bounds(bx0, bx1, by0, by1)
                             else:
                                 bx0, bx1, by0, by1 = arc_extents_xy((x0, y0), (x1, y1), center, cw=(modal == "G2"))
-                            _expand_draw_bounds(bx0, bx1, by0, by1)
+                                _expand_draw_bounds(bx0, bx1, by0, by1)
                         except Exception:
                             _expand_draw_bounds(x0, x1, y0, y1)
                     else:

@@ -134,6 +134,34 @@ class GcodeStatsModuleTests(unittest.TestCase):
             self.assertEqual(bounds, (-1.0, 11.0, -2.0, 2.0))
             arc_extents.assert_called_once()
 
+    def test_summarize_gcode_file_uses_arc_extents_for_r_word_arc_moves(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="plotter_gcode_stats_r_arc_") as td:
+            gcode = Path(td) / "r_arc.nc"
+            gcode.write_text(
+                "\n".join(
+                    [
+                        "G90",
+                        "G0 X10 Y0",
+                        "G3 X0 Y10 R10",
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            arc_extents = mock.Mock(return_value=(0.0, 10.0, 0.0, 10.0))
+            total, draw, travel, bounds = gcode_stats.summarize_gcode_file(
+                gcode,
+                points_distance=lambda _a, _b: 1.0,
+                arc_extents_xy=arc_extents,
+            )
+
+            self.assertEqual(total, 3)
+            self.assertEqual(draw, 1)
+            self.assertEqual(travel, 1)
+            self.assertEqual(bounds, (0.0, 10.0, 0.0, 10.0))
+            arc_extents.assert_called_once()
+
     def test_summarize_gcode_file_handles_full_circle_arc(self) -> None:
         with tempfile.TemporaryDirectory(prefix="plotter_gcode_stats_circle_") as td:
             gcode = Path(td) / "circle.nc"

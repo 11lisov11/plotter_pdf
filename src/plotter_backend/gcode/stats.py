@@ -5,6 +5,7 @@ import re
 from pathlib import Path
 from typing import Callable, Tuple
 
+from src.plotter_backend.geometry.arc_fit import arc_center_from_radius
 
 _TOKEN_RE = re.compile(r"([A-Za-z])\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)")
 
@@ -95,10 +96,9 @@ def summarize_gcode_file(
             y_values = _values(tokens, "Y")
             i_values = _values(tokens, "I")
             j_values = _values(tokens, "J")
+            r_values = _values(tokens, "R")
             x = x_values[-1] if x_values else None
             y = y_values[-1] if y_values else None
-            i = i_values[-1] if i_values else None
-            j = j_values[-1] if j_values else None
             has_xy = bool(x_values or y_values)
             if cur_x is None:
                 tx = x
@@ -114,11 +114,18 @@ def summarize_gcode_file(
                 ty = y if abs_mode else (cur_y + y)
 
             # Update bounds. For G2/G3, include arc bulge (not just endpoints).
-            if code in {2, 3} and cur_x is not None and cur_y is not None and tx is not None and ty is not None and i is not None and j is not None:
+            if code in {2, 3} and cur_x is not None and cur_y is not None and tx is not None and ty is not None and (i_values or j_values or r_values):
                 start = (cur_x, cur_y)
                 end = (tx, ty)
-                center = (i, j) if ijk_abs else (cur_x + i, cur_y + j)
-                if points_distance(start, end) <= 1e-6:
+                if i_values or j_values:
+                    i = i_values[-1] if i_values else 0.0
+                    j = j_values[-1] if j_values else 0.0
+                    center = (i, j) if ijk_abs else (cur_x + i, cur_y + j)
+                else:
+                    center = arc_center_from_radius(start, end, r_values[-1], cw=(code == 2))
+                if center is None:
+                    ax0, ax1, ay0, ay1 = min(cur_x, tx), max(cur_x, tx), min(cur_y, ty), max(cur_y, ty)
+                elif points_distance(start, end) <= 1e-6:
                     r = math.hypot(start[0] - center[0], start[1] - center[1])
                     ax0, ax1, ay0, ay1 = (center[0] - r, center[0] + r, center[1] - r, center[1] + r)
                 else:

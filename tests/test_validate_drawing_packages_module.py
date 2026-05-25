@@ -342,6 +342,33 @@ $1=0
     assert any("outside work area" in problem for problem in result.problems)
 
 
+def test_validate_gcode_rejects_r_word_arc_bulge_outside_work_area(tmp_path: Path) -> None:
+    gcode_path = tmp_path / "r_arc_bulge.nc"
+    gcode_path.write_text(
+        """G21
+G90
+G92 Z4
+G0 Z0 F800
+M5
+G0 X9 Y-10
+G1 Z11.9
+G2 X21 Y-10 R6
+G0 Z0
+G0 X0 Y0
+M5
+$1=0
+""",
+        encoding="utf-8",
+    )
+
+    result = mod.validate_gcode_file(gcode_path)
+
+    assert not result.ok
+    assert result.bounds is not None
+    assert tuple(round(value, 3) for value in result.bounds) == (9.0, 21.0, -10.0, -4.0)
+    assert any("outside work area" in problem for problem in result.problems)
+
+
 def test_validate_gcode_rejects_duplicate_draw_segment(tmp_path: Path) -> None:
     gcode_path = tmp_path / "duplicate.gcode"
     gcode_path.write_text(

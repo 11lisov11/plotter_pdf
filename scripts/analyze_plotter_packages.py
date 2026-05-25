@@ -17,6 +17,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 from src.plotter_backend.common_utils import clean_report_value
+from src.plotter_backend.geometry.arc_fit import arc_center_from_radius
 
 DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "_tmp" / "algorithm_baseline"
 TOKEN_RE = re.compile(r"([A-Za-z])\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)")
@@ -155,6 +156,7 @@ def analyze_gcode_file(path: Path, *, z_down_threshold: float = 1.0) -> GcodeAlg
             m_vals = values(tokens, "M")
             i_vals = values(tokens, "I")
             j_vals = values(tokens, "J")
+            r_vals = values(tokens, "R")
 
             for mval in m_vals:
                 rounded = int(round(mval))
@@ -201,6 +203,20 @@ def analyze_gcode_file(path: Path, *, z_down_threshold: float = 1.0) -> GcodeAlg
                 arc_i = arc_i_raw - cur_x if ijk_abs else arc_i_raw
                 arc_j = arc_j_raw - cur_y if ijk_abs else arc_j_raw
                 seg_len = _arc_length(cur_x, cur_y, next_x, next_y, arc_i, arc_j, cw=(code == 2))
+            elif code in {2, 3} and r_vals:
+                center = arc_center_from_radius((cur_x, cur_y), (next_x, next_y), r_vals[-1], cw=(code == 2))
+                if center is None:
+                    seg_len = math.hypot(next_x - cur_x, next_y - cur_y)
+                else:
+                    seg_len = _arc_length(
+                        cur_x,
+                        cur_y,
+                        next_x,
+                        next_y,
+                        center[0] - cur_x,
+                        center[1] - cur_y,
+                        cw=(code == 2),
+                    )
             else:
                 seg_len = math.hypot(next_x - cur_x, next_y - cur_y)
 

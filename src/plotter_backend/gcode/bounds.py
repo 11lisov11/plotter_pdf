@@ -5,6 +5,7 @@ import re
 from pathlib import Path
 from typing import Callable, Optional, Tuple
 
+from src.plotter_backend.geometry.arc_fit import arc_center_from_radius
 
 _TOKEN_RE = re.compile(r"([A-Za-z])\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)")
 
@@ -124,6 +125,7 @@ def gcode_draw_bounds(
             y_values = _values(tokens, "Y")
             i_values = _values(tokens, "I")
             j_values = _values(tokens, "J")
+            r_values = _values(tokens, "R")
             has_xy = bool(x_values or y_values)
             tx = cur_x
             ty = cur_y
@@ -136,12 +138,17 @@ def gcode_draw_bounds(
 
             if pen_down and has_xy and motion in {1, 2, 3}:
                 if motion in {2, 3}:
-                    if i_values and j_values:
+                    if i_values or j_values or r_values:
                         try:
-                            i_val = i_values[-1]
-                            j_val = j_values[-1]
-                            center = (i_val, j_val) if ijk_abs else (cur_x + i_val, cur_y + j_val)
-                            if points_distance((cur_x, cur_y), (tx, ty)) <= 1e-6:
+                            if i_values or j_values:
+                                i_val = i_values[-1] if i_values else 0.0
+                                j_val = j_values[-1] if j_values else 0.0
+                                center = (i_val, j_val) if ijk_abs else (cur_x + i_val, cur_y + j_val)
+                            else:
+                                center = arc_center_from_radius((cur_x, cur_y), (tx, ty), r_values[-1], cw=(motion == 2))
+                            if center is None:
+                                _expand(min(cur_x, tx), max(cur_x, tx), min(cur_y, ty), max(cur_y, ty))
+                            elif points_distance((cur_x, cur_y), (tx, ty)) <= 1e-6:
                                 r = math.hypot(cur_x - center[0], cur_y - center[1])
                                 _expand(center[0] - r, center[0] + r, center[1] - r, center[1] + r)
                             else:
