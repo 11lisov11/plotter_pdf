@@ -35,7 +35,7 @@ def _load_json(path: Path) -> dict[str, Any]:
     if not path.exists():
         return {}
     try:
-        payload = json.loads(path.read_text(encoding="utf-8", errors="replace"))
+        payload = json.loads(path.read_text(encoding="utf-8-sig", errors="replace"))
     except Exception:
         return {}
     return payload if isinstance(payload, dict) else {}
@@ -44,7 +44,7 @@ def _load_json(path: Path) -> dict[str, Any]:
 def _csv_rows(path: Path) -> list[dict[str, str]]:
     if not path.exists():
         return []
-    with path.open("r", encoding="utf-8", errors="replace", newline="") as fh:
+    with path.open("r", encoding="utf-8-sig", errors="replace", newline="") as fh:
         return [dict(row) for row in csv.DictReader(fh)]
 
 

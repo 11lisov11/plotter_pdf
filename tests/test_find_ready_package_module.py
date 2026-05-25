@@ -69,6 +69,25 @@ def test_find_first_ready_a4_package_uses_audit_order_and_summary(tmp_path: Path
     assert selection.draw_length_m == 7.197
 
 
+def test_find_first_ready_package_accepts_utf8_sig_reports(tmp_path: Path) -> None:
+    variant, nc = _write_minimal_ready_variant(tmp_path)
+    package = nc.parent
+    (package / "summary.csv").write_text(
+        "\ufeffitem,ok,nc,draw_length_m\n"
+        f"page_01,True,{nc},7.197\n",
+        encoding="utf-8",
+    )
+    audit_text = (variant / "_audit.json").read_text(encoding="utf-8")
+    (variant / "_audit.json").write_text("\ufeff" + audit_text, encoding="utf-8")
+    ready_text = (variant / "_ready_to_plot_audit.json").read_text(encoding="utf-8")
+    (variant / "_ready_to_plot_audit.json").write_text("\ufeff" + ready_text, encoding="utf-8")
+
+    selection = find_first_ready_package(variant, kind="a4")
+
+    assert selection.nc == str(nc)
+    assert selection.draw_length_m == 7.197
+
+
 def test_find_first_ready_package_requires_ready_audit(tmp_path: Path) -> None:
     variant, _nc = _write_minimal_ready_variant(tmp_path)
     (variant / "_ready_to_plot_audit.json").unlink()
