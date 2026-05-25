@@ -68,6 +68,12 @@ def parse_tokens(body: str):
 
 
 def first_gcode(tokens):
+    codes = g_codes(tokens)
+    return codes[0] if codes else ""
+
+
+def g_codes(tokens):
+    out = []
     for token in tokens:
         up = token.upper()
         match = re.fullmatch(r"G([+-]?(?:\d+(?:\.\d*)?|\.\d+))", up)
@@ -75,12 +81,14 @@ def first_gcode(tokens):
             try:
                 value = float(match.group(1))
             except Exception:
-                return up
+                out.append(up)
+                continue
             rounded = int(round(value))
             if abs(value - float(rounded)) <= 1e-9:
-                return f"G{rounded}"
-            return f"G{value:g}"
-    return ""
+                out.append(f"G{rounded}")
+            else:
+                out.append(f"G{value:g}")
+    return out
 
 
 def has_axis(tokens, axis):
@@ -289,25 +297,24 @@ def touch_pen_down(
             out.append(raw)
             continue
 
-        code = first_gcode(tokens)
-        if not code:
+        codes = g_codes(tokens)
+        if not codes:
             out.append(raw)
             continue
 
-        if code == "G90":
-            abs_mode = True
-            out.append(raw)
-            continue
-        if code == "G91":
-            abs_mode = False
-            out.append(raw)
-            continue
-        if code == "G90.1":
-            ijk_abs = True
-            out.append(raw)
-            continue
-        if code == "G91.1":
-            ijk_abs = False
+        for gcode in codes:
+            if gcode == "G90":
+                abs_mode = True
+            elif gcode == "G91":
+                abs_mode = False
+            elif gcode == "G90.1":
+                ijk_abs = True
+            elif gcode == "G91.1":
+                ijk_abs = False
+
+        motion_codes = [gcode for gcode in codes if gcode in GCODE_MOVES_WITH_XY]
+        code = motion_codes[-1] if motion_codes else ""
+        if not code:
             out.append(raw)
             continue
 

@@ -179,6 +179,33 @@ class PenliftPostprocessTests(unittest.TestCase):
 
         self.assertIn("G1 Z10.0000 F123.0", out)
 
+    def test_modal_and_motion_gcodes_on_same_line_are_both_processed(self) -> None:
+        src = [
+            "G21",
+            "G90 G0 X0 Y0",
+            "G90 G1 X10 Y0 F800",
+        ]
+
+        out = pp.touch_pen_down(
+            src,
+            z_down=10.0,
+            delay_down=0.0,
+            z_up=0.0,
+            mode="z",
+            spindle_speed=1000.0,
+            delay_up=0.0,
+            z_feed_down_approach=700.0,
+            z_feed_down_touch=123.0,
+            z_feed_up=700.0,
+            z_feed_up_final=220.0,
+            z_soft_down_mm=0.8,
+            z_soft_up_mm=0.5,
+            z_travel_lift_mm=3.0,
+        )
+
+        self.assertIn("G1 Z10.0000 F123.0", out)
+        self.assertTrue(any(line.strip() == "G90 G1 X10 Y0 F800" for line in out))
+
     def test_merge_short_travel_keeps_single_stroke(self) -> None:
         src = [
             "G21",
