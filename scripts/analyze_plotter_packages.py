@@ -103,6 +103,7 @@ def analyze_gcode_file(path: Path, *, z_down_threshold: float = 1.0) -> GcodeAlg
     cur_z: float | None = None
     last_motion: int | None = None
     abs_mode = True
+    ijk_abs = False
     pen_down = False
     ever_saw_z = False
     ever_saw_spindle = False
@@ -129,6 +130,12 @@ def analyze_gcode_file(path: Path, *, z_down_threshold: float = 1.0) -> GcodeAlg
                     continue
                 if abs(gval - 91.0) <= 1e-9:
                     abs_mode = False
+                    continue
+                if abs(gval - 90.1) <= 1e-9:
+                    ijk_abs = True
+                    continue
+                if abs(gval - 91.1) <= 1e-9:
+                    ijk_abs = False
                     continue
                 rounded = int(round(gval))
                 if abs(gval - rounded) <= 1e-9 and rounded in {0, 1, 2, 3}:
@@ -182,7 +189,9 @@ def analyze_gcode_file(path: Path, *, z_down_threshold: float = 1.0) -> GcodeAlg
                 continue
 
             if code in {2, 3} and i_vals and j_vals:
-                seg_len = _arc_length(cur_x, cur_y, next_x, next_y, i_vals[-1], j_vals[-1], cw=(code == 2))
+                arc_i = i_vals[-1] - cur_x if ijk_abs else i_vals[-1]
+                arc_j = j_vals[-1] - cur_y if ijk_abs else j_vals[-1]
+                seg_len = _arc_length(cur_x, cur_y, next_x, next_y, arc_i, arc_j, cw=(code == 2))
             else:
                 seg_len = math.hypot(next_x - cur_x, next_y - cur_y)
 

@@ -81,6 +81,21 @@ def test_find_first_ready_package_requires_ready_audit(tmp_path: Path) -> None:
         raise AssertionError("missing ready audit must reject ready package selection")
 
 
+def test_find_first_ready_package_rejects_string_false_ready_audit(tmp_path: Path) -> None:
+    variant, _nc = _write_minimal_ready_variant(tmp_path)
+    (variant / "_ready_to_plot_audit.json").write_text(
+        json.dumps({"ok": "false", "failed_packages": []}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+    try:
+        find_first_ready_package(variant, kind="a4")
+    except RuntimeError as exc:
+        assert "_ready_to_plot_audit.json" in str(exc)
+    else:
+        raise AssertionError("string false ready audit must reject ready package selection")
+
+
 def test_find_first_ready_package_selects_requested_a3_item(tmp_path: Path) -> None:
     variant = tmp_path / "Компьютерная графика" / "22 вариант"
     package = variant / "МЧ00.60.00.00 СБ Вентиль_pack"

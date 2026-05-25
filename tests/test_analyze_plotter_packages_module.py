@@ -75,6 +75,31 @@ def test_analyze_gcode_respects_spindle_pen_control(tmp_path: Path) -> None:
     assert metrics.draw_length_mm == 10.1
 
 
+def test_analyze_gcode_respects_absolute_ijk_arc_mode(tmp_path: Path) -> None:
+    gcode = tmp_path / "abs_ijk_arc.nc"
+    gcode.write_text(
+        "\n".join(
+            [
+                "G21",
+                "G90",
+                "G90.1",
+                "G0 X10 Y0",
+                "M3",
+                "G3 X0 Y10 I0 J0",
+                "M5",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    metrics = analyzer.analyze_gcode_file(gcode)
+
+    assert metrics.g3_moves == 1
+    assert metrics.draw_moves == 1
+    assert metrics.draw_length_mm == 15.708
+
+
 def test_collect_gcode_files_uses_only_nc_and_gcode(tmp_path: Path) -> None:
     keep_nc = tmp_path / "a.nc"
     keep_gcode = tmp_path / "nested" / "b.gcode"

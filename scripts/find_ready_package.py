@@ -117,7 +117,7 @@ def _ready_audit_ok(variant_dir: Path) -> bool:
     payload = _load_json(audit_path)
     if not payload:
         return False
-    return bool(payload.get("ok", False)) and not list(payload.get("failed_packages") or [])
+    return payload.get("ok") is True and not list(payload.get("failed_packages") or [])
 
 
 def _is_within(path: Path, parent: Path) -> bool:
