@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import csv
 from pathlib import Path
 
 from scripts import analyze_plotter_packages as analyzer
@@ -135,6 +136,25 @@ def test_unique_files_by_content_reports_skipped_mirror_duplicates(tmp_path: Pat
     ]
 
 
+def test_collect_ready_package_roots_uses_variant_summary_and_skips_loose_dirs(tmp_path: Path) -> None:
+    variant = tmp_path / "Компьютерная графика" / "22 вариант"
+    package = variant / "ready_pack"
+    loose = variant / "old_loose"
+    package.mkdir(parents=True)
+    loose.mkdir()
+    (package / "summary.csv").write_text("item,ok\npage_01,True\n", encoding="utf-8")
+    (loose / "page_01.gcode").write_text("G90\nG0 X0 Y0\n", encoding="utf-8")
+    stale_package_dir = tmp_path / "old_root" / variant.name / package.name
+    with (variant / "_prepared_summary.csv").open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=["package_dir", "task", "item"])
+        writer.writeheader()
+        writer.writerow({"package_dir": str(stale_package_dir), "task": package.name, "item": "page_01"})
+
+    roots = analyzer.collect_ready_package_roots([variant])
+
+    assert roots == [package]
+
+
 def test_main_accepts_positional_gcode_files(tmp_path: Path, capsys) -> None:
     gcode = tmp_path / "job.nc"
     gcode.write_text("G90\nG0 X0 Y0\nG1 X1 Y0\n", encoding="utf-8")
@@ -165,6 +185,29 @@ def test_main_unique_content_mode_summarizes_only_unique_files(tmp_path: Path, c
     assert payload["files_analyzed"] == 2
     assert payload["duplicate_files_skipped"] == 1
     assert payload["summary"]["files"] == 2
+
+
+def test_main_ready_only_ignores_loose_variant_outputs(tmp_path: Path, capsys) -> None:
+    variant = tmp_path / "Компьютерная графика" / "22 вариант"
+    package = variant / "ready_pack"
+    loose = variant / "old_loose"
+    package.mkdir(parents=True)
+    loose.mkdir()
+    (package / "page_01.gcode").write_text("G90\nG0 X0 Y0\nG1 X1 Y0\n", encoding="utf-8")
+    (loose / "page_01.gcode").write_text("G90\nG0 X0 Y0\nG1 X99 Y0\n", encoding="utf-8")
+    with (variant / "_prepared_summary.csv").open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=["package_dir", "task", "item"])
+        writer.writeheader()
+        writer.writerow({"package_dir": str(package), "task": package.name, "item": "page_01"})
+
+    rc = analyzer.main([str(variant), "--ready-only", "--no-write"])
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["ready_only"] is True
+    assert payload["scan_roots"] == [str(package)]
+    assert payload["files_seen"] == 1
+    assert payload["files"][0]["path"] == str(package / "page_01.gcode")
 
 
 def test_main_default_root_is_computer_graphics(tmp_path: Path, monkeypatch, capsys) -> None:

@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import hashlib
 import json
 import math
 import re
+import sys
 import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -12,6 +14,10 @@ from typing import Iterable
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+from src.plotter_backend.common_utils import clean_report_value
+
 DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "_tmp" / "algorithm_baseline"
 TOKEN_RE = re.compile(r"([A-Za-z])\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)")
 
@@ -250,6 +256,105 @@ def collect_gcode_files(roots: Iterable[Path]) -> list[Path]:
     return sorted(set(found), key=lambda p: str(p).casefold())
 
 
+def _is_within(path: Path, parent: Path) -> bool:
+    try:
+        path.resolve(strict=False).relative_to(parent.resolve(strict=False))
+        return True
+    except Exception:
+        return False
+
+
+def _load_json_dict(path: Path) -> dict[str, object]:
+    if not path.exists():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8", errors="replace"))
+    except Exception:
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def _csv_dict_rows(path: Path) -> list[dict[str, str]]:
+    if not path.exists():
+        return []
+    with path.open("r", encoding="utf-8-sig", errors="replace", newline="") as fh:
+        return [dict(row) for row in csv.DictReader(fh)]
+
+
+def _ready_package_dir(variant_dir: Path, raw: object, task: object = "") -> Path | None:
+    raw_text = str(raw or "").strip()
+    task_text = str(task or "").strip()
+    if raw_text:
+        package_dir = Path(raw_text)
+        if not package_dir.is_absolute():
+            package_dir = variant_dir / package_dir
+    elif task_text:
+        package_dir = variant_dir / task_text
+    else:
+        return None
+
+    candidates = [package_dir]
+    if package_dir.name:
+        candidates.append(variant_dir / package_dir.name)
+    if task_text:
+        candidates.append(variant_dir / task_text)
+
+    for candidate in candidates:
+        if candidate.exists() and candidate.is_dir() and _is_within(candidate, variant_dir):
+            return candidate
+    return None
+
+
+def _variant_dirs_from_root(root: Path) -> list[Path]:
+    if (root / "_audit.json").exists() or (root / "_prepared_summary.csv").exists():
+        return [root]
+    if not root.exists() or not root.is_dir():
+        return []
+    variants: list[Path] = []
+    for child in sorted(root.iterdir(), key=lambda p: p.name.casefold()):
+        if child.is_dir() and ((child / "_audit.json").exists() or (child / "_prepared_summary.csv").exists()):
+            variants.append(child)
+    return variants
+
+
+def collect_ready_package_roots(roots: Iterable[Path]) -> list[Path]:
+    found: list[Path] = []
+    seen: set[Path] = set()
+
+    def add(path: Path) -> None:
+        key = path.resolve(strict=False)
+        if key in seen:
+            return
+        seen.add(key)
+        found.append(path)
+
+    for root in roots:
+        root = Path(root)
+        if root.is_file() and root.suffix.lower() in {".nc", ".gcode"}:
+            add(root)
+            continue
+        if root.is_dir() and (root / "summary.csv").exists():
+            add(root)
+            continue
+        for variant_dir in _variant_dirs_from_root(root):
+            audit = clean_report_value(_load_json_dict(variant_dir / "_audit.json"))
+            items = audit.get("items") if isinstance(audit, dict) else None
+            if isinstance(items, list):
+                for item in items:
+                    if not isinstance(item, dict):
+                        continue
+                    package_dir = _ready_package_dir(variant_dir, item.get("package_dir"), item.get("task"))
+                    if package_dir is not None:
+                        add(package_dir)
+            for row in _csv_dict_rows(variant_dir / "_prepared_summary.csv"):
+                row = clean_report_value(row)
+                package_dir = _ready_package_dir(variant_dir, row.get("package_dir"), row.get("task"))
+                if package_dir is not None:
+                    add(package_dir)
+
+    return sorted(found, key=lambda p: str(p).casefold())
+
+
 def unique_files_by_content(files: Iterable[Path]) -> tuple[list[Path], list[dict[str, object]]]:
     unique: list[Path] = []
     groups: dict[str, list[Path]] = {}
@@ -299,6 +404,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--output", default=None, help="Output JSON path. Defaults to _tmp/algorithm_baseline/<timestamp>.json.")
     parser.add_argument("--no-write", action="store_true", help="Print JSON only; do not write a report file.")
     parser.add_argument(
+        "--ready-only",
+        action="store_true",
+        help="When a variant root is given, analyze only ready package directories from audit/summary metadata.",
+    )
+    parser.add_argument(
         "--unique-content",
         action="store_true",
         help="Analyze one file per identical content hash and report skipped mirror duplicates.",
@@ -306,11 +416,12 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     roots = [Path(item) for item in [*args.root, *args.paths]] if (args.root or args.paths) else [PROJECT_ROOT / "Компьютерная графика"]
-    files = collect_gcode_files(roots)
+    scan_roots = collect_ready_package_roots(roots) if args.ready_only else roots
+    files = collect_gcode_files(scan_roots)
     if not files:
         print(
             "No .nc/.gcode files found under: "
-            + ", ".join(str(path) for path in roots)
+            + ", ".join(str(path) for path in scan_roots)
         )
         return 2
     files_seen = len(files)
@@ -322,6 +433,8 @@ def main(argv: list[str] | None = None) -> int:
     payload = {
         "generated_at_unix": int(time.time()),
         "roots": [str(path) for path in roots],
+        "scan_roots": [str(path) for path in scan_roots],
+        "ready_only": bool(args.ready_only),
         "unique_content": bool(args.unique_content),
         "files_seen": int(files_seen),
         "files_analyzed": int(len(files)),
