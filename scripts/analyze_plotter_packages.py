@@ -195,9 +195,11 @@ def analyze_gcode_file(path: Path, *, z_down_threshold: float = 1.0) -> GcodeAlg
                 cur_x, cur_y = next_x, next_y
                 continue
 
-            if code in {2, 3} and i_vals and j_vals:
-                arc_i = i_vals[-1] - cur_x if ijk_abs else i_vals[-1]
-                arc_j = j_vals[-1] - cur_y if ijk_abs else j_vals[-1]
+            if code in {2, 3} and (i_vals or j_vals):
+                arc_i_raw = i_vals[-1] if i_vals else 0.0
+                arc_j_raw = j_vals[-1] if j_vals else 0.0
+                arc_i = arc_i_raw - cur_x if ijk_abs else arc_i_raw
+                arc_j = arc_j_raw - cur_y if ijk_abs else arc_j_raw
                 seg_len = _arc_length(cur_x, cur_y, next_x, next_y, arc_i, arc_j, cw=(code == 2))
             else:
                 seg_len = math.hypot(next_x - cur_x, next_y - cur_y)
