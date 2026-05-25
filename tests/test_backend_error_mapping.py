@@ -106,6 +106,30 @@ class BackendErrorMappingTests(unittest.TestCase):
             self.assertIn("Calibration preflight failed", msg)
             send_to_grbl.assert_not_called()
 
+    def test_frame_and_corner_dry_run_create_output_parent_dirs(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="plotter_dry_output_parent_") as td:
+            root = Path(td)
+            frame_out = root / "nested" / "frame" / "frame.nc"
+            corner_out = root / "nested" / "corner" / "corner.nc"
+            logs: list[str] = []
+
+            frame_ok, frame_msg = backend.run_frame_pipeline(
+                logs.append,
+                send_to_plotter=False,
+                output_path=frame_out,
+            )
+            corner_ok, corner_msg = backend.run_corner_calibration_pipeline(
+                logs.append,
+                send_to_plotter=False,
+                output_path=corner_out,
+                fast=True,
+            )
+
+            self.assertTrue(frame_ok, frame_msg)
+            self.assertTrue(corner_ok, corner_msg)
+            self.assertTrue(frame_out.exists())
+            self.assertTrue(corner_out.exists())
+
     def test_run_pipeline_surfaces_conversion_error_class(self) -> None:
         with tempfile.TemporaryDirectory(prefix="plotter_err_map_conv_") as td:
             root = Path(td)

@@ -28,6 +28,30 @@ def _values(tokens: list[tuple[str, str]], letter: str) -> list[float]:
     return out
 
 
+def _strip_comment(line: str) -> str:
+    raw = str(line or "").split(";", 1)[0]
+    out: list[str] = []
+    depth = 0
+    for ch in raw:
+        if ch == "(":
+            depth += 1
+            continue
+        if ch == ")" and depth:
+            depth -= 1
+            continue
+        if depth == 0:
+            out.append(ch)
+    return "".join(out).strip()
+
+
+def _line_has_g92(line: str) -> bool:
+    tokens = _TOKEN_RE.findall(_strip_comment(line))
+    for gval in _values(tokens, "G"):
+        if abs(float(gval) - 92.0) <= 1e-9:
+            return True
+    return False
+
+
 def find_nearest_g0_xy_line(gcode_file: Path, *, x: float, y: float) -> int:
     # Find nearest G0 XY endpoint to current position. Resume at a travel move
     # to avoid dragging pen/pencil through already drawn geometry.
@@ -39,7 +63,7 @@ def find_nearest_g0_xy_line(gcode_file: Path, *, x: float, y: float) -> int:
 
     with gcode_file.open("r", encoding="utf-8", errors="ignore") as fh:
         for ln, raw in enumerate(fh, 1):
-            line = raw.split(";", 1)[0].strip()
+            line = _strip_comment(raw)
             if not line or line.startswith(";") or line.startswith("("):
                 continue
             tokens = _TOKEN_RE.findall(line)
@@ -79,7 +103,7 @@ def write_resume_file(
     # Resume file must NOT include G92 (it would shift coordinates). We only
     # restore modal state and force pen up before continuing.
     src_lines = src_gcode.read_text(encoding="utf-8", errors="ignore").splitlines()
-    payload = src_lines[max(0, int(start_line) - 1) :]
+    payload = [line for line in src_lines[max(0, int(start_line) - 1) :] if not _line_has_g92(line)]
     pre = [
         "$X",
         "$1=255",

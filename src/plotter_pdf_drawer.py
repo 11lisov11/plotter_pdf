@@ -9980,6 +9980,7 @@ def run_frame_pipeline(
                 return_msg = "Done: work area frame sent."
             else:
                 target = output_path or Path("work_area_frame_prepared.nc")
+                target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_text(final_path.read_text(encoding="utf-8"), encoding="utf-8")
                 log(f"Saved: {target}")
                 return_msg = f"Done: work area frame saved to {target}"
@@ -10051,6 +10052,7 @@ def run_corner_calibration_pipeline(
                 return_msg = "Done: 4-corner calibration sent."
             else:
                 target = output_path or Path("corner_calibration_prepared.nc")
+                target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_text(final_path.read_text(encoding="utf-8"), encoding="utf-8")
                 log(f"Saved: {target}")
                 return_msg = f"Done: calibration file saved to {target}"

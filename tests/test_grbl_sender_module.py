@@ -117,6 +117,65 @@ class GrblSenderModuleTests(unittest.TestCase):
             self.assertIn("G0 X1 Y1", text)
             self.assertIn("G1 X2 Y2", text)
 
+    def test_write_resume_file_strips_g92_from_payload(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="plotter_grbl_sender_resume_g92_") as td:
+            root = Path(td)
+            src = root / "source.nc"
+            dst = root / "resume.nc"
+            src.write_text(
+                "\n".join(
+                    [
+                        "G21",
+                        "G92 Z4.0000",
+                        "G0 Z0",
+                        "G92Z0.0000 ; compact reset must not be resumed",
+                        "G0 X1 Y1",
+                        "G1 X2 Y2",
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            grbl_sender.write_resume_file(
+                src,
+                dst,
+                start_line=1,
+                z_up=0.0,
+                safe_lift_feed=900.0,
+                z_delay_up=0.05,
+            )
+
+            lines = [
+                line
+                for line in dst.read_text(encoding="utf-8").splitlines()
+                if line.strip() and not line.startswith("; AUTO-RESUME")
+            ]
+            self.assertFalse(any("G92" in line.replace(" ", "").upper() for line in lines))
+            self.assertIn("G0 X1 Y1", lines)
+            self.assertIn("G1 X2 Y2", lines)
+
+    def test_find_nearest_g0_xy_line_ignores_coordinates_inside_parentheses(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="plotter_grbl_sender_find_comment_") as td:
+            root = Path(td)
+            gcode = root / "test.nc"
+            gcode.write_text(
+                "\n".join(
+                    [
+                        "G21",
+                        "G90",
+                        "G0 X0 Y0",
+                        "G1 X10 Y0",
+                        "G0 X20 Y20 (X5 Y5 old position)",
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            line = grbl_sender.find_nearest_g0_xy_line(gcode, x=5.0, y=5.0)
+            self.assertEqual(line, 3)
+
     def test_send_to_grbl_returns_sender_plot_time_from_stdout(self) -> None:
         with tempfile.TemporaryDirectory(prefix="plotter_grbl_sender_ok_") as td:
             root = Path(td)
