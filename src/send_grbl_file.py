@@ -304,9 +304,9 @@ def release_axes(ser, *, sleep: bool = False, wait: bool = True):
     if wait:
         try:
             wait_for_idle(ser, timeout_s=45.0)
-        except Exception:
-            # Teardown must still release motors even if status polling fails.
-            pass
+        except Exception as exc:
+            _safe_print(f"Cannot confirm Idle after return-home move; motors were not released: {exc}")
+            return
     _send_no_throw("G0 Z0.0000 F800.0")
     # GRBL-friendly motor release.
     _send_no_throw("$1=0")

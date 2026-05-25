@@ -84,6 +84,17 @@ class SendGrblFileModuleTests(unittest.TestCase):
         self.assertLess(cmds.index("G0 X0.0000 Y0.0000 F900.0"), cmds.index("?"))
         self.assertLess(cmds.index("?"), cmds.index("$1=0"))
 
+    def test_release_axes_does_not_release_when_home_idle_wait_fails(self) -> None:
+        ser = _FakeSerial()
+
+        with mock.patch.object(send_grbl_file, "wait_for_idle", side_effect=RuntimeError("timeout")):
+            send_grbl_file.release_axes(ser, sleep=True, wait=True)
+
+        cmds = [raw.decode("ascii").strip() for raw in ser.writes]
+        self.assertIn("G0 X0.0000 Y0.0000 F900.0", cmds)
+        self.assertNotIn("$1=0", cmds)
+        self.assertNotIn("$SLP", cmds)
+
     def test_main_refuses_duplicate_sender_for_same_port(self) -> None:
         with (
             mock.patch.object(Path, "exists", return_value=True),
