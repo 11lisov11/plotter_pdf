@@ -5,7 +5,6 @@ import re
 from pathlib import Path
 from typing import Callable, Optional, Tuple
 
-from src.plotter_backend.geometry.arc_fit import arc_center_from_radius
 
 _TOKEN_RE = re.compile(r"([A-Za-z])\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)")
 
@@ -24,19 +23,18 @@ def _values(tokens: list[tuple[str, str]], letter: str) -> list[float]:
 
 
 def strip_gcode_comments(line: str) -> str:
-    raw = str(line or "").split(";", 1)[0]
-    out: list[str] = []
-    depth = 0
-    for ch in raw:
-        if ch == "(":
-            depth += 1
-            continue
-        if ch == ")" and depth:
-            depth -= 1
-            continue
-        if depth == 0:
-            out.append(ch)
-    return "".join(out).strip()
+    s = (line or "").strip()
+    if not s:
+        return ""
+    if ";" in s:
+        s = s.split(";", 1)[0].strip()
+    while "(" in s and ")" in s:
+        a = s.find("(")
+        b = s.find(")", a + 1)
+        if b < 0:
+            break
+        s = (s[:a] + " " + s[b + 1 :]).strip()
+    return s
 
 
 def pen_down_from_z_level(cur_z: float, z_up: float, z_down: float) -> bool:
@@ -106,7 +104,6 @@ def gcode_draw_bounds(
                 motion = last_motion
             else:
                 last_motion = motion
-            has_g92 = any(abs(gval - 92.0) <= 1e-9 for gval in _values(tokens, "G"))
 
             for mval_raw in _values(tokens, "M"):
                 mval = int(round(mval_raw))
@@ -118,26 +115,15 @@ def gcode_draw_bounds(
                     pen_down = False
 
             z_values = _values(tokens, "Z")
-            x_values = _values(tokens, "X")
-            y_values = _values(tokens, "Y")
-            if has_g92:
-                if x_values:
-                    cur_x = x_values[-1]
-                if y_values:
-                    cur_y = y_values[-1]
-                if z_values:
-                    cur_z = z_values[-1]
-                    pen_down = pen_down_from_z_level(cur_z, z_up, z_down)
-                continue
-
             if z_values:
                 z_val = z_values[-1]
                 cur_z = z_val if abs_mode else (cur_z + z_val)
                 pen_down = pen_down_from_z_level(cur_z, z_up, z_down)
 
+            x_values = _values(tokens, "X")
+            y_values = _values(tokens, "Y")
             i_values = _values(tokens, "I")
             j_values = _values(tokens, "J")
-            r_values = _values(tokens, "R")
             has_xy = bool(x_values or y_values)
             tx = cur_x
             ty = cur_y
@@ -150,17 +136,12 @@ def gcode_draw_bounds(
 
             if pen_down and has_xy and motion in {1, 2, 3}:
                 if motion in {2, 3}:
-                    if i_values or j_values or r_values:
+                    if i_values and j_values:
                         try:
-                            if i_values or j_values:
-                                i_val = i_values[-1] if i_values else 0.0
-                                j_val = j_values[-1] if j_values else 0.0
-                                center = (i_val, j_val) if ijk_abs else (cur_x + i_val, cur_y + j_val)
-                            else:
-                                center = arc_center_from_radius((cur_x, cur_y), (tx, ty), r_values[-1], cw=(motion == 2))
-                            if center is None:
-                                _expand(min(cur_x, tx), max(cur_x, tx), min(cur_y, ty), max(cur_y, ty))
-                            elif points_distance((cur_x, cur_y), (tx, ty)) <= 1e-6:
+                            i_val = i_values[-1]
+                            j_val = j_values[-1]
+                            center = (i_val, j_val) if ijk_abs else (cur_x + i_val, cur_y + j_val)
+                            if points_distance((cur_x, cur_y), (tx, ty)) <= 1e-6:
                                 r = math.hypot(cur_x - center[0], cur_y - center[1])
                                 _expand(center[0] - r, center[0] + r, center[1] - r, center[1] + r)
                             else:

@@ -10,9 +10,6 @@ class _BackendProxy:
     def __getattr__(self, name: str):
         return getattr(backend, name)
 
-    def __setattr__(self, name: str, value) -> None:
-        setattr(backend, name, value)
-
 
 CLI_BACKEND = _BackendProxy()
 

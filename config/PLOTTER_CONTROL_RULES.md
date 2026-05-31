@@ -148,16 +148,9 @@ $1=0
 
 - Working wired fallback: `COM6`
 - Typical wireless port: `COM11` (`BtWriter` / `ESP32SPP`)
-- Preferred no-cable/no-Bluetooth target: GRBL-over-Wi-Fi TCP endpoint, formatted as `tcp://HOST:PORT`.
-- Wi-Fi discovery command:
-  - `python scripts\grbl_wifi_probe.py --subnet 192.168.1.0/24 --ports 23,8080,2323,8888`
-- Wi-Fi send example:
-  - `python src\send_grbl_file.py tcp://192.168.1.50:23 115200 job.nc`
 - Fast diagnostic command:
   - `python scripts\bt_spp_recovery.py --preferred-port COM11`
 - Detailed recovery guide:
   - `config\BLUETOOTH_SPP_RECOVERY.md`
-- Wi-Fi guide:
-  - `config\WIFI_GRBL_CONNECTION.md`
 - If Windows drops the Bluetooth serial port, do not keep retrying the dead COM blindly.
   - Run the diagnostic command, confirm whether `RFCOMM Code 10` or ghost `COM11/COM12` is present, then recover or switch to USB.

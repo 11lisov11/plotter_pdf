@@ -1,4 +1,4 @@
-variant=D:\plotter_pdf\Компьютерная графика\22 вариант
+variant=C:\plotter_pdf\Компьютерная графика\22 вариант
 ok=True
 packages=13
 failed=0

@@ -126,23 +126,6 @@ class MachineManualCommandsModuleTests(unittest.TestCase):
         self.assertIn("ToolDependencyError", msg)
         self.assertIn("pyserial not available", msg)
 
-    def test_grbl_send_manual_commands_uses_tcp_transport_for_wifi_endpoint(self) -> None:
-        fake = _FakeSerial()
-        with mock.patch(
-            "src.plotter_backend.machine.grbl_transport.open_grbl_transport",
-            return_value=fake,
-        ) as open_transport:
-            ok, msg = manual_commands.grbl_send_manual_commands(
-                "tcp://192.168.1.50:23",
-                "115200",
-                ["?"],
-                default_baud="115200",
-            )
-
-        self.assertTrue(ok)
-        self.assertIn("ok", msg)
-        open_transport.assert_called_once()
-
 
 if __name__ == "__main__":
     unittest.main()

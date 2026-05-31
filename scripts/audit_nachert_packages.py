@@ -3,17 +3,13 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-import sys
 from pathlib import Path
 
 import fitz
 from PIL import Image, ImageDraw
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
-from src.plotter_backend.common_utils import clean_report_value
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_ROOT = PROJECT_ROOT / "Начерт"
 
 
@@ -171,7 +167,7 @@ def _audit_variant(variant_dir: Path) -> None:
         contact.save(variant_dir / "_audit_contact.png")
 
     (variant_dir / "_audit.json").write_text(
-        json.dumps(clean_report_value({"variant_dir": str(variant_dir), "items": audit_rows}), ensure_ascii=False, indent=2),
+        json.dumps({"variant_dir": str(variant_dir), "items": audit_rows}, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
     ranked_rows: list[tuple[float, str]] = []
@@ -192,11 +188,11 @@ def _audit_variant(variant_dir: Path) -> None:
     (variant_dir / "_audit.txt").write_text("\n".join(summary_lines) + "\n", encoding="utf-8")
 
 
-def main(argv: list[str] | None = None) -> int:
+def main() -> int:
     parser = argparse.ArgumentParser(description="Audit prepared Начерт drawing packages.")
     parser.add_argument("--root", default=str(DEFAULT_ROOT), help="Root folder with variant subfolders.")
     parser.add_argument("--only-variant", action="append", default=[], help="Optional substring filter.")
-    args = parser.parse_args(argv)
+    args = parser.parse_args()
 
     root = Path(args.root).resolve()
     if not root.exists():
@@ -206,12 +202,6 @@ def main(argv: list[str] | None = None) -> int:
     variant_dirs = _collect_variant_dirs(root)
     if tokens:
         variant_dirs = [p for p in variant_dirs if any(token in p.name.casefold() for token in tokens)]
-    if not variant_dirs:
-        if tokens:
-            print("No prepared Начерт variant dirs match filter.")
-        else:
-            print("No prepared Начерт variant dirs found.")
-        return 2
 
     for variant_dir in variant_dirs:
         print(variant_dir.name)

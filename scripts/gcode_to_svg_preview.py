@@ -1,57 +1,38 @@
 import argparse
 import math
 import re
-import sys
 from pathlib import Path
-
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
-from src.plotter_backend.gcode.bounds import pen_down_from_z_level
-from src.plotter_backend.geometry.arc_fit import arc_center_from_radius
 
 
 def _split_comment(line: str) -> str:
-    raw = str(line or "").split(";", 1)[0]
-    out: list[str] = []
-    depth = 0
-    for ch in raw:
-        if ch == "(":
-            depth += 1
-            continue
-        if ch == ")" and depth:
-            depth -= 1
-            continue
-        if depth == 0:
-            out.append(ch)
-    return "".join(out).strip()
+    # Keep it simple: drop everything after ';' or '('.
+    s = line.strip()
+    if not s:
+        return ""
+    if ";" in s:
+        s = s.split(";", 1)[0].strip()
+    if "(" in s:
+        s = s.split("(", 1)[0].strip()
+    return s
 
 
-_TOKEN_RE = re.compile(r"([A-Za-z])\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)")
+_G_RE = re.compile(r"\bG\d+(?:\.\d+)?\b", re.IGNORECASE)
 
 
 def _parse_words(body: str) -> dict:
     # Returns word map, e.g. {"X": 10.0, "Y": -5.0, "I": 1.2}
     out: dict[str, float] = {}
-    for raw_key, raw_value in _TOKEN_RE.findall(body):
-        k = raw_key.upper()
+    for tok in body.split():
+        if not tok:
+            continue
+        k = tok[0].upper()
+        v = tok[1:]
+        if not v:
+            continue
         if k in {"G", "M"}:
             continue
         try:
-            out[k] = float(raw_value)
-        except Exception:
-            continue
-    return out
-
-
-def _values(body: str, letter: str) -> list[float]:
-    out: list[float] = []
-    target = letter.upper()
-    for raw_key, raw_value in _TOKEN_RE.findall(body):
-        if raw_key.upper() != target:
-            continue
-        try:
-            out.append(float(raw_value))
+            out[k] = float(v)
         except Exception:
             continue
     return out
@@ -104,7 +85,11 @@ def gcode_to_polylines(lines: list[str], *, z_down: float | None = None, z_up: f
         nonlocal pen_down
         if z_down is None or z_up is None:
             return
-        pen_down = pen_down_from_z_level(float(cur_z), float(z_up), float(z_down))
+        # A bit tolerant: pick closest.
+        if abs(cur_z - z_down) <= abs(cur_z - z_up):
+            pen_down = True
+        else:
+            pen_down = False
 
     _update_pen_state()
 
@@ -113,14 +98,19 @@ def gcode_to_polylines(lines: list[str], *, z_down: float | None = None, z_up: f
         if not body:
             continue
 
-        # Ignore $ commands; M3/M5 are handled as spindle-style pen control below.
+        # Ignore $ commands and non-motion M codes.
         if body.startswith("$"):
+            continue
+        if body[0].upper() == "M":
             continue
 
         # First, handle G modal changes and extract motion command, if any.
         motion_g = None
-        has_g92 = False
-        for gval in _values(body, "G"):
+        for gtok in _G_RE.findall(body):
+            try:
+                gval = float(gtok[1:])
+            except Exception:
+                continue
             if abs(gval - 90.0) <= 1e-6:
                 abs_mode = True
             elif abs(gval - 91.0) <= 1e-6:
@@ -137,32 +127,8 @@ def gcode_to_polylines(lines: list[str], *, z_down: float | None = None, z_up: f
                 motion_g = 2
             elif abs(gval - 3.0) <= 1e-6:
                 motion_g = 3
-            elif abs(gval - 92.0) <= 1e-6:
-                has_g92 = True
-
-        for mval in _values(body, "M"):
-            mint = int(round(mval))
-            if abs(mval - float(mint)) > 1e-6:
-                continue
-            if mint == 3:
-                pen_down = True
-            elif mint == 5:
-                pen_down = False
 
         words = _parse_words(body)
-
-        if has_g92:
-            if cur_poly and len(cur_poly) >= 2:
-                out.append(cur_poly)
-            cur_poly = []
-            if "X" in words:
-                cur_x = float(words["X"])
-            if "Y" in words:
-                cur_y = float(words["Y"])
-            if "Z" in words:
-                cur_z = float(words["Z"])
-                _update_pen_state()
-            continue
 
         # Track Z even on non-draw.
         if "Z" in words:
@@ -198,18 +164,12 @@ def gcode_to_polylines(lines: list[str], *, z_down: float | None = None, z_up: f
         if is_pen_down_now:
             if not cur_poly:
                 cur_poly = [start]
-            if g in (2, 3) and (("I" in words) or ("J" in words) or ("R" in words)):
-                if ("I" in words) or ("J" in words):
-                    i = float(words.get("I", 0.0))
-                    j = float(words.get("J", 0.0))
-                    center = (i, j) if ijk_abs else (cur_x + i, cur_y + j)
-                else:
-                    center = arc_center_from_radius(start, end, float(words["R"]), cw=(g == 2))
-                if center is None:
-                    cur_poly.append(end)
-                else:
-                    pts = _arc_points(start, end, center, cw=(g == 2))
-                    cur_poly.extend(pts)
+            if g in (2, 3) and (("I" in words) or ("J" in words)):
+                i = float(words.get("I", 0.0))
+                j = float(words.get("J", 0.0))
+                center = (i, j) if ijk_abs else (cur_x + i, cur_y + j)
+                pts = _arc_points(start, end, center, cw=(g == 2))
+                cur_poly.extend(pts)
             else:
                 cur_poly.append(end)
         else:
@@ -247,7 +207,6 @@ def write_svg(polylines: list[list[tuple[float, float]]], out_path: Path, *, inv
     vb_y = y0 - pad
     vb_w = w + 2 * pad
     vb_h = h + 2 * pad
-    translate_y = -(y0 + y1)
 
     parts = [
         '<?xml version="1.0" encoding="UTF-8"?>',
@@ -255,7 +214,7 @@ def write_svg(polylines: list[list[tuple[float, float]]], out_path: Path, *, inv
         f'     width="{vb_w:.3f}mm" height="{vb_h:.3f}mm" viewBox="{vb_x:.3f} {vb_y:.3f} {vb_w:.3f} {vb_h:.3f}">',
         # Invert Y by flipping around the midline; keeps text readable while mapping to page-like coords.
         f'  <g fill="none" stroke="#000" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round"'
-        f' transform="scale(1,-1) translate(0,{translate_y:.4f})">',
+        f' transform="scale(1,-1) translate(0,-{(y0 + y1):.4f})">',
     ]
 
     for poly in polylines:

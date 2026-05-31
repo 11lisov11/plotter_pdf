@@ -39,7 +39,6 @@ from plotter_studio.core.protocol import (
 )
 from plotter_studio.core.serial_worker import OperationContext
 from src.plotter_backend import text_content_routing, toe_font_policy
-from src.plotter_backend.common_utils import clean_report_value
 from src.plotter_backend.geometry.sheet_tiling import plan_tiled_passes_for_sheet
 from src import plotter_pdf_drawer as backend
 
@@ -200,11 +199,11 @@ def _ensure_clean_dir(path: Path) -> None:
 
 
 def _write_json(path: Path, payload: dict[str, Any]) -> None:
-    path.write_text(json.dumps(clean_report_value(payload), ensure_ascii=False, indent=2), encoding="utf-8")
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def _write_text(path: Path, text: str) -> None:
-    path.write_text(str(clean_report_value(text)), encoding="utf-8")
+    path.write_text(text, encoding="utf-8")
 
 
 def _write_csv(path: Path, rows: list[ArtifactRow]) -> None:
@@ -212,7 +211,7 @@ def _write_csv(path: Path, rows: list[ArtifactRow]) -> None:
         writer = csv.DictWriter(fh, fieldnames=list(asdict(rows[0]).keys()) if rows else list(ArtifactRow.__annotations__.keys()))
         writer.writeheader()
         for row in rows:
-            writer.writerow(clean_report_value(asdict(row)))
+            writer.writerow(asdict(row))
 
 
 def _read_rows_from_csv(path: Path) -> list[ArtifactRow]:
@@ -408,6 +407,8 @@ def _needs_variant20_22_a4_titleblock_direct_candidate(source_pdf: Path) -> bool
 
 def _prefer_direct_fit_full_for_nachert_a4(source_pdf: Path) -> bool:
     return False
+    parts = [str(part).lower() for part in source_pdf.parts]
+    return "РЅР°С‡РµСЂС‚" in parts and "4 РІР°СЂРёРЅС‚" in parts
 
 
 def _preserve_nachert_header_source_for_variant(source_pdf: Path) -> bool:

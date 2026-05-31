@@ -12,110 +12,32 @@ from typing import Callable, List, Optional, Tuple
 from ..errors import SerialTransportError, ToolDependencyError
 
 
-_TOKEN_RE = re.compile(r"([A-Za-z])\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)")
-
-
-def _values(tokens: list[tuple[str, str]], letter: str) -> list[float]:
-    out: list[float] = []
-    target = letter.upper()
-    for axis, raw in tokens:
-        if axis.upper() != target:
-            continue
-        try:
-            out.append(float(raw))
-        except ValueError:
-            continue
-    return out
-
-
-def _strip_comment(line: str) -> str:
-    raw = str(line or "").split(";", 1)[0]
-    out: list[str] = []
-    depth = 0
-    for ch in raw:
-        if ch == "(":
-            depth += 1
-            continue
-        if ch == ")" and depth:
-            depth -= 1
-            continue
-        if depth == 0:
-            out.append(ch)
-    return "".join(out).strip()
-
-
-def _line_has_g92(line: str) -> bool:
-    tokens = _TOKEN_RE.findall(_strip_comment(line))
-    for gval in _values(tokens, "G"):
-        if abs(float(gval) - 92.0) <= 1e-9:
-            return True
-    return False
-
-
-def _modal_state_before_line(lines: list[str], start_line: int) -> tuple[bool, bool]:
-    abs_mode = True
-    ijk_abs = False
-    stop = max(0, int(start_line) - 1)
-    for raw in lines[:stop]:
-        tokens = _TOKEN_RE.findall(_strip_comment(raw))
-        for gval in _values(tokens, "G"):
-            if abs(gval - 90.0) <= 1e-9:
-                abs_mode = True
-            elif abs(gval - 91.0) <= 1e-9:
-                abs_mode = False
-            elif abs(gval - 90.1) <= 1e-9:
-                ijk_abs = True
-            elif abs(gval - 91.1) <= 1e-9:
-                ijk_abs = False
-    return abs_mode, ijk_abs
-
-
 def find_nearest_g0_xy_line(gcode_file: Path, *, x: float, y: float) -> int:
     # Find nearest G0 XY endpoint to current position. Resume at a travel move
     # to avoid dragging pen/pencil through already drawn geometry.
+    x_re = re.compile(r"\bX(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)")
+    y_re = re.compile(r"\bY(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)")
+
     cur_x: Optional[float] = None
     cur_y: Optional[float] = None
-    motion_mode: Optional[int] = None
-    abs_mode = True
     best_d = float("inf")
     best_line = 1
 
     with gcode_file.open("r", encoding="utf-8", errors="ignore") as fh:
         for ln, raw in enumerate(fh, 1):
-            line = _strip_comment(raw)
+            line = raw.strip()
             if not line or line.startswith(";") or line.startswith("("):
                 continue
-            tokens = _TOKEN_RE.findall(line)
-            has_g92 = False
-            for gval in _values(tokens, "G"):
-                if abs(gval - 90.0) <= 1e-9:
-                    abs_mode = True
-                    continue
-                if abs(gval - 91.0) <= 1e-9:
-                    abs_mode = False
-                    continue
-                rounded = int(round(gval))
-                if abs(gval - float(rounded)) <= 1e-9 and rounded in {0, 1, 2, 3}:
-                    motion_mode = rounded
-                elif abs(gval - 92.0) <= 1e-9:
-                    has_g92 = True
+            sx = x_re.search(line)
+            sy = y_re.search(line)
+            if sx:
+                cur_x = float(sx.group(1))
+            if sy:
+                cur_y = float(sy.group(1))
 
-            x_values = _values(tokens, "X")
-            y_values = _values(tokens, "Y")
-            if has_g92:
-                if x_values:
-                    cur_x = x_values[-1]
-                if y_values:
-                    cur_y = y_values[-1]
+            if not line.startswith("G0"):
                 continue
-            if x_values:
-                x_raw = x_values[-1]
-                cur_x = x_raw if (abs_mode or cur_x is None) else cur_x + x_raw
-            if y_values:
-                y_raw = y_values[-1]
-                cur_y = y_raw if (abs_mode or cur_y is None) else cur_y + y_raw
-
-            if motion_mode != 0 or not (x_values or y_values):
+            if ("X" not in line) and ("Y" not in line):
                 continue
             if cur_x is None or cur_y is None:
                 continue
@@ -139,8 +61,7 @@ def write_resume_file(
     # Resume file must NOT include G92 (it would shift coordinates). We only
     # restore modal state and force pen up before continuing.
     src_lines = src_gcode.read_text(encoding="utf-8", errors="ignore").splitlines()
-    abs_mode, ijk_abs = _modal_state_before_line(src_lines, int(start_line))
-    payload = [line for line in src_lines[max(0, int(start_line) - 1) :] if not _line_has_g92(line)]
+    payload = src_lines[max(0, int(start_line) - 1) :]
     pre = [
         "$X",
         "$1=255",
@@ -150,8 +71,6 @@ def write_resume_file(
         "G91.1",
         f"G0 Z{float(z_up):.4f} F{float(safe_lift_feed):.1f}",
         f"G4 P{float(z_delay_up):.2f}",
-        "G90" if abs_mode else "G91",
-        "G90.1" if ijk_abs else "G91.1",
         f"; AUTO-RESUME from line {int(start_line)} of {src_gcode.name}",
         "",
     ]

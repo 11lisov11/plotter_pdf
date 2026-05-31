@@ -1,9 +1,6 @@
 from __future__ import annotations
 
 import unittest
-from pathlib import Path
-from types import SimpleNamespace
-from unittest import mock
 
 from src import send_grbl_file
 
@@ -40,17 +37,6 @@ class _FakeIdleSerial(_FakeSerial):
 
 
 class SendGrblFileModuleTests(unittest.TestCase):
-    def test_clean_gcode_lines_strips_inline_comments_before_streaming(self) -> None:
-        lines = send_grbl_file._clean_gcode_lines(
-            "\ufeffG1 X1 Y1 ; long sender-only note\n"
-            "G0 X2 (ignore X999 Y999) Y3\n"
-            "; full-line comment\n"
-            "(full-line parenthetical)\n"
-            "$1=0 ; release motors\n"
-        )
-
-        self.assertEqual(lines, ["G1 X1 Y1", "G0 X2  Y3", "$1=0"])
-
     def test_release_axes_forces_pen_up_before_motor_release(self) -> None:
         ser = _FakeSerial()
 
@@ -83,82 +69,6 @@ class SendGrblFileModuleTests(unittest.TestCase):
         self.assertIn("?", cmds)
         self.assertLess(cmds.index("G0 X0.0000 Y0.0000 F900.0"), cmds.index("?"))
         self.assertLess(cmds.index("?"), cmds.index("$1=0"))
-
-    def test_release_axes_does_not_release_when_home_idle_wait_fails(self) -> None:
-        ser = _FakeSerial()
-
-        with mock.patch.object(send_grbl_file, "wait_for_idle", side_effect=RuntimeError("timeout")):
-            send_grbl_file.release_axes(ser, sleep=True, wait=True)
-
-        cmds = [raw.decode("ascii").strip() for raw in ser.writes]
-        self.assertIn("G0 X0.0000 Y0.0000 F900.0", cmds)
-        self.assertNotIn("$1=0", cmds)
-        self.assertNotIn("$SLP", cmds)
-
-    def test_main_refuses_duplicate_sender_for_same_port(self) -> None:
-        with (
-            mock.patch.object(Path, "exists", return_value=True),
-            mock.patch.object(
-                send_grbl_file,
-                "_find_conflicting_sender_processes",
-                return_value=[(123, "python src\\send_grbl_file.py COM6 115200 D:\\job.nc")],
-            ),
-            mock.patch.object(send_grbl_file, "open_grbl") as open_grbl,
-        ):
-            rc = send_grbl_file.main(["send_grbl_file.py", "COM6", "115200", "D:\\job.nc"])
-
-        self.assertEqual(rc, 4)
-        open_grbl.assert_not_called()
-
-    def test_find_conflicting_sender_processes_matches_relative_file_command(self) -> None:
-        proc_payload = (
-            '[{"ProcessId":123,'
-            '"CommandLine":"python D:\\\\plotter_pdf\\\\src\\\\send_grbl_file.py COM6 115200 job.nc"}]'
-        )
-
-        with (
-            mock.patch.object(send_grbl_file.os, "name", "nt"),
-            mock.patch.object(send_grbl_file.os, "getpid", return_value=999),
-            mock.patch.object(
-                send_grbl_file.subprocess,
-                "run",
-                return_value=SimpleNamespace(returncode=0, stdout=proc_payload),
-            ),
-        ):
-            conflicts = send_grbl_file._find_conflicting_sender_processes("COM6", Path(r"D:\plotter_pdf\job.nc"))
-
-        self.assertEqual(conflicts, [(123, r"python D:\plotter_pdf\src\send_grbl_file.py COM6 115200 job.nc")])
-
-    def test_find_conflicting_sender_processes_blocks_any_sender_on_same_port(self) -> None:
-        proc_payload = (
-            "["
-            '{"ProcessId":123,'
-            '"CommandLine":"python D:\\\\plotter_pdf\\\\src\\\\send_grbl_file.py COM60 115200 D:\\\\plotter_pdf\\\\job.nc"},'
-            '{"ProcessId":124,'
-            '"CommandLine":"python D:\\\\plotter_pdf\\\\src\\\\send_grbl_file.py COM6 115200 D:\\\\plotter_pdf\\\\oldjob.nc"},'
-            '{"ProcessId":125,'
-            '"CommandLine":"python D:\\\\plotter_pdf\\\\src\\\\send_grbl_file.py COM6 115200 D:\\\\plotter_pdf\\\\job.nc"}'
-            "]"
-        )
-
-        with (
-            mock.patch.object(send_grbl_file.os, "name", "nt"),
-            mock.patch.object(send_grbl_file.os, "getpid", return_value=999),
-            mock.patch.object(
-                send_grbl_file.subprocess,
-                "run",
-                return_value=SimpleNamespace(returncode=0, stdout=proc_payload),
-            ),
-        ):
-            conflicts = send_grbl_file._find_conflicting_sender_processes("COM6", Path(r"D:\plotter_pdf\job.nc"))
-
-        self.assertEqual(
-            conflicts,
-            [
-                (124, r"python D:\plotter_pdf\src\send_grbl_file.py COM6 115200 D:\plotter_pdf\oldjob.nc"),
-                (125, r"python D:\plotter_pdf\src\send_grbl_file.py COM6 115200 D:\plotter_pdf\job.nc"),
-            ],
-        )
 
 
 if __name__ == "__main__":

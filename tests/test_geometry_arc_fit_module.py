@@ -76,32 +76,6 @@ class GeometryArcFitModuleTests(unittest.TestCase):
         self.assertAlmostEqual(y_min, 0.0, places=6)
         self.assertAlmostEqual(y_max, 1.0, places=6)
 
-    def test_arc_center_from_positive_radius_selects_minor_arc(self) -> None:
-        center = arc_fit_mod.arc_center_from_radius(
-            start=(10.0, 0.0),
-            end=(0.0, 10.0),
-            radius_word=10.0,
-            cw=False,
-        )
-
-        self.assertIsNotNone(center)
-        cx, cy = center or (999.0, 999.0)
-        self.assertAlmostEqual(cx, 0.0, places=6)
-        self.assertAlmostEqual(cy, 0.0, places=6)
-
-    def test_arc_center_from_negative_radius_selects_major_arc(self) -> None:
-        center = arc_fit_mod.arc_center_from_radius(
-            start=(10.0, 0.0),
-            end=(0.0, 10.0),
-            radius_word=-10.0,
-            cw=False,
-        )
-
-        self.assertIsNotNone(center)
-        cx, cy = center or (999.0, 999.0)
-        self.assertAlmostEqual(cx, 10.0, places=6)
-        self.assertAlmostEqual(cy, 10.0, places=6)
-
 
 if __name__ == "__main__":
     unittest.main()

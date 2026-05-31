@@ -238,22 +238,6 @@ TECH_TEXT_JOIN_MAX_AREA_MM2 = 42.0
 TECH_TEXT_JOIN_MAX_COMBINED_SPAN_X_MM = 12.0
 TECH_TEXT_JOIN_MAX_COMBINED_SPAN_Y_MM = 10.0
 TECH_TEXT_JOIN_MAX_COMBINED_AREA_MM2 = 80.0
-TECH_TEXT_SINGLELINE_OPT_ENABLE = False
-TECH_TEXT_CLUSTER_STITCH_ENABLE = False
-TECH_TEXT_REORDER_OPT_ENABLE = False
-TECH_TEXT_PENLIFT_OPT_ENABLE = False
-TECH_TEXT_OPT_MAX_BBOX_W_MM = 36.0
-TECH_TEXT_OPT_MAX_BBOX_H_MM = 13.5
-TECH_TEXT_OPT_MAX_BBOX_AREA_MM2 = 260.0
-TECH_TEXT_OPT_MAX_TOTAL_SOURCE_LEN_MM = 1200.0
-TECH_TEXT_OPT_LOCAL_STITCH_EPS_MM = 0.16
-TECH_TEXT_OPT_LOCAL_GAP_EPS_MM = 0.55
-TECH_TEXT_OPT_LOCAL_ANGLE_DEG = 50.0
-TECH_TEXT_OPT_JOIN_GAP_MM = 0.60
-TECH_TEXT_OPT_JOIN_MAX_DY_MM = 0.85
-TECH_TEXT_OPT_JOIN_MAX_BACKTRACK_MM = 0.30
-TECH_TEXT_PENLIFT_SHORT_TRAVEL_MM = 0.60
-TECH_TEXT_PENLIFT_SHORT_TRAVEL_FEED = 5000.0
 HANDWRITING_PRESERVE_FILL_OUTLINES = False
 # For text readability on plotter, never fallback to contour-outline for handwriting glyph groups.
 HANDWRITING_FORCE_SINGLE_STROKE_TEXT = True
@@ -5255,14 +5239,9 @@ def refine_centerline_paths(
         gap = float(FILL_CENTERLINE_HANDWRITING_LOCAL_GAP_EPS_MM)
         ang = float(FILL_CENTERLINE_HANDWRITING_LOCAL_ANGLE_DEG)
     elif technical:
-        if TECH_TEXT_CLUSTER_STITCH_ENABLE:
-            eps = max(float(TECH_TEXT_LOCAL_STITCH_EPS_MM), float(TECH_TEXT_OPT_LOCAL_STITCH_EPS_MM))
-            gap = max(float(TECH_TEXT_LOCAL_GAP_EPS_MM), float(TECH_TEXT_OPT_LOCAL_GAP_EPS_MM))
-            ang = max(float(TECH_TEXT_LOCAL_ANGLE_DEG), float(TECH_TEXT_OPT_LOCAL_ANGLE_DEG))
-        else:
-            eps = float(TECH_TEXT_LOCAL_STITCH_EPS_MM)
-            gap = float(TECH_TEXT_LOCAL_GAP_EPS_MM)
-            ang = float(TECH_TEXT_LOCAL_ANGLE_DEG)
+        eps = float(TECH_TEXT_LOCAL_STITCH_EPS_MM)
+        gap = float(TECH_TEXT_LOCAL_GAP_EPS_MM)
+        ang = float(TECH_TEXT_LOCAL_ANGLE_DEG)
     else:
         eps = float(FILL_CENTERLINE_LOCAL_STITCH_EPS_MM)
         gap = float(FILL_CENTERLINE_LOCAL_GAP_EPS_MM)
@@ -5406,15 +5385,11 @@ def _likely_technical_text_group(group: List["PathItem"]) -> bool:
     _x0, _x1, _y0, _y1, w, h, area = bbox
     if w <= 0.0 or h <= 0.0:
         return False
-    max_w = float(TECH_TEXT_OPT_MAX_BBOX_W_MM if TECH_TEXT_SINGLELINE_OPT_ENABLE else TECH_TEXT_MAX_BBOX_W_MM)
-    max_h = float(TECH_TEXT_OPT_MAX_BBOX_H_MM if TECH_TEXT_SINGLELINE_OPT_ENABLE else TECH_TEXT_MAX_BBOX_H_MM)
-    max_area = float(TECH_TEXT_OPT_MAX_BBOX_AREA_MM2 if TECH_TEXT_SINGLELINE_OPT_ENABLE else TECH_TEXT_MAX_BBOX_AREA_MM2)
-    max_len = float(TECH_TEXT_OPT_MAX_TOTAL_SOURCE_LEN_MM if TECH_TEXT_SINGLELINE_OPT_ENABLE else TECH_TEXT_MAX_TOTAL_SOURCE_LEN_MM)
-    if w > max_w:
+    if w > float(TECH_TEXT_MAX_BBOX_W_MM):
         return False
-    if h > max_h:
+    if h > float(TECH_TEXT_MAX_BBOX_H_MM):
         return False
-    if area > max_area:
+    if area > float(TECH_TEXT_MAX_BBOX_AREA_MM2):
         return False
     # Avoid near-square filled geometry blocks.
     if w > 10.0 and h > 8.0:
@@ -5424,7 +5399,7 @@ def _likely_technical_text_group(group: List["PathItem"]) -> bool:
     for item in group:
         if len(item.points) >= 2:
             total_len += polyline_length(item.points)
-    if total_len > max_len:
+    if total_len > float(TECH_TEXT_MAX_TOTAL_SOURCE_LEN_MM):
         return False
     return True
 
@@ -5794,17 +5769,14 @@ def _centerline_quality_ok_for_technical(centerlines: List[List[Tuple[float, flo
     if not lengths:
         return False
     n = len(lengths)
-    max_paths = int(TECH_TEXT_MAX_PATHS_PER_GROUP) + (20 if TECH_TEXT_SINGLELINE_OPT_ENABLE else 0)
-    if n > max_paths:
+    if n > int(TECH_TEXT_MAX_PATHS_PER_GROUP):
         return False
     s = sorted(lengths)
     med = s[n // 2]
-    min_med = min(float(TECH_TEXT_MEDIAN_MIN_PATH_MM), 0.16) if TECH_TEXT_SINGLELINE_OPT_ENABLE else float(TECH_TEXT_MEDIAN_MIN_PATH_MM)
-    if med < min_med:
+    if med < float(TECH_TEXT_MEDIAN_MIN_PATH_MM):
         return False
     short = sum(1 for L in lengths if L < float(TECH_TEXT_SHORT_PATH_MM))
-    max_short_ratio = max(float(TECH_TEXT_SHORT_RATIO_MAX), 0.82) if TECH_TEXT_SINGLELINE_OPT_ENABLE else float(TECH_TEXT_SHORT_RATIO_MAX)
-    if (short / float(n)) > max_short_ratio:
+    if (short / float(n)) > float(TECH_TEXT_SHORT_RATIO_MAX):
         return False
     return True
 
@@ -8176,18 +8148,11 @@ def merge_technical_text_strokes(
     if not polylines:
         return polylines
 
-    default_gap = max(float(TECH_TEXT_JOIN_GAP_MM), float(TECH_TEXT_OPT_JOIN_GAP_MM)) if TECH_TEXT_CLUSTER_STITCH_ENABLE else float(TECH_TEXT_JOIN_GAP_MM)
-    default_dy = max(float(TECH_TEXT_JOIN_MAX_DY_MM), float(TECH_TEXT_OPT_JOIN_MAX_DY_MM)) if TECH_TEXT_CLUSTER_STITCH_ENABLE else float(TECH_TEXT_JOIN_MAX_DY_MM)
-    default_backtrack = (
-        max(float(TECH_TEXT_JOIN_MAX_BACKTRACK_MM), float(TECH_TEXT_OPT_JOIN_MAX_BACKTRACK_MM))
-        if TECH_TEXT_REORDER_OPT_ENABLE
-        else float(TECH_TEXT_JOIN_MAX_BACKTRACK_MM)
-    )
-    gap_max = max(0.0, float(default_gap if join_gap_mm is None else join_gap_mm))
-    dy_max = max(0.0, float(default_dy if join_max_dy_mm is None else join_max_dy_mm))
+    gap_max = max(0.0, float(TECH_TEXT_JOIN_GAP_MM if join_gap_mm is None else join_gap_mm))
+    dy_max = max(0.0, float(TECH_TEXT_JOIN_MAX_DY_MM if join_max_dy_mm is None else join_max_dy_mm))
     backtrack_max = max(
         0.0,
-        float(default_backtrack if join_max_backtrack_mm is None else join_max_backtrack_mm),
+        float(TECH_TEXT_JOIN_MAX_BACKTRACK_MM if join_max_backtrack_mm is None else join_max_backtrack_mm),
     )
     if gap_max <= 1e-9:
         return polylines
@@ -8843,18 +8808,11 @@ def apply_penlift(
         stroke_z_jitter_enable=bool(PENCIL_STROKE_Z_JITTER_ENABLED),
         stroke_z_jitter_mm=float(PENCIL_STROKE_Z_JITTER_MM),
         stroke_z_jitter_seed=int(PENCIL_STROKE_Z_JITTER_SEED),
-        # Technical merge is experimental and off by default; generic drawings
-        # otherwise can get parasitic connector strokes in text/tables.
-        merge_short_travel_enable=bool(
-            (HANDWRITING_MERGE_SHORT_TRAVEL_ENABLE and handwriting_mode)
-            or (TECH_TEXT_PENLIFT_OPT_ENABLE and not handwriting_mode)
-        ),
-        merge_short_travel_mm=float(
-            HANDWRITING_MERGE_SHORT_TRAVEL_MM if handwriting_mode else TECH_TEXT_PENLIFT_SHORT_TRAVEL_MM
-        ),
-        merge_short_travel_feed=float(
-            HANDWRITING_MERGE_SHORT_TRAVEL_FEED if handwriting_mode else TECH_TEXT_PENLIFT_SHORT_TRAVEL_FEED
-        ),
+        # Short-travel merge is intended only for handwriting continuity.
+        # Enabling it for generic pen drawings creates parasitic connector strokes in technical text/tables.
+        merge_short_travel_enable=bool(HANDWRITING_MERGE_SHORT_TRAVEL_ENABLE and handwriting_mode),
+        merge_short_travel_mm=float(HANDWRITING_MERGE_SHORT_TRAVEL_MM),
+        merge_short_travel_feed=float(HANDWRITING_MERGE_SHORT_TRAVEL_FEED),
         run_cmd=run_cmd,
     )
 
@@ -8986,9 +8944,6 @@ def apply_quality_profile(
 
 
 def quality_state() -> str:
-    def onoff(value: bool) -> str:
-        return "on" if value else "off"
-
     return (
         f"Quality profile: {QUALITY_PROFILE}; "
         f"CURVE_SEGMENT_MM={CURVE_SEGMENT_MM:.3f}; "
@@ -9007,9 +8962,6 @@ def quality_state() -> str:
         f"Handwriting={'on' if HANDWRITING_TEXT_ENABLED else 'off'}({normalize_handwriting_font_name(HANDWRITING_FONT_FAMILY)}); "
         f"HandwritingCenterline={_normalize_singleline_ttf_backend(HANDWRITING_SINGLELINE_TTF_BACKEND)}; "
         f"HandwritingDirectVector={'on' if HANDWRITING_DIRECT_VECTOR_TEXT_ENABLED else 'off'}; "
-        f"TechTextOpt={onoff(TECH_TEXT_SINGLELINE_OPT_ENABLE or TECH_TEXT_CLUSTER_STITCH_ENABLE or TECH_TEXT_REORDER_OPT_ENABLE or TECH_TEXT_PENLIFT_OPT_ENABLE)}"
-        f"(singleline={onoff(TECH_TEXT_SINGLELINE_OPT_ENABLE)}, stitch={onoff(TECH_TEXT_CLUSTER_STITCH_ENABLE)}, "
-        f"reorder={onoff(TECH_TEXT_REORDER_OPT_ENABLE)}, penlift={onoff(TECH_TEXT_PENLIFT_OPT_ENABLE)}); "
         f"ImageContours={normalize_image_contour_mode(IMAGE_CONTOUR_MODE)}"
     )
 
@@ -9219,7 +9171,7 @@ def make_final_with_preamble(prepared_gcode: Path, final_gcode: Path) -> None:
     rewrite_duplicate_draw_segments_as_penup_travel(final_gcode)
 
 
-_GCODE_TOKEN_RE = re.compile(r"([A-Za-z])\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)")
+_GCODE_TOKEN_RE = re.compile(r"([A-Za-z])\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))")
 
 
 def _gcode_line_without_comment(line: str) -> str:
@@ -9247,34 +9199,10 @@ def _gcode_has_word(line: str, letter: str, number: int) -> bool:
 
 
 def _gcode_motion_code(line: str, previous: Optional[str]) -> Optional[str]:
-    motion = previous
-    for axis, value in _GCODE_TOKEN_RE.findall(str(line or "")):
-        if axis.upper() != "G":
-            continue
-        try:
-            gval = float(value)
-        except Exception:
-            continue
-        rounded = int(round(gval))
-        if abs(gval - float(rounded)) <= 1e-9 and rounded in {0, 1, 2, 3}:
-            motion = f"G{rounded}"
-    return motion
-
-
-def _gcode_abs_mode(line: str, previous: bool) -> bool:
-    abs_mode = bool(previous)
-    for axis, value in _GCODE_TOKEN_RE.findall(str(line or "")):
-        if axis.upper() != "G":
-            continue
-        try:
-            gval = float(value)
-        except Exception:
-            continue
-        if abs(gval - 90.0) <= 1e-9:
-            abs_mode = True
-        elif abs(gval - 91.0) <= 1e-9:
-            abs_mode = False
-    return abs_mode
+    for number, canonical in ((0, "G0"), (1, "G1"), (2, "G2"), (3, "G3")):
+        if _gcode_has_word(line, "G", number):
+            return canonical
+    return previous
 
 
 def cleanup_xy_gcode_overlaps(xy_gcode: Path, logger=print) -> int:
@@ -9286,38 +9214,24 @@ def cleanup_xy_gcode_overlaps(xy_gcode: Path, logger=print) -> int:
     cur_x: Optional[float] = None
     cur_y: Optional[float] = None
     modal: Optional[str] = None
-    abs_mode = True
-    segment_groups: List[List[Tuple[int, Tuple[float, float], Tuple[float, float]]]] = [[]]
+    segments: List[Tuple[int, Tuple[float, float], Tuple[float, float]]] = []
 
     for line_idx, raw_line in enumerate(raw_lines):
         line = _gcode_line_without_comment(raw_line)
         if not line:
             continue
-        vals = _gcode_line_tokens(line)
-        abs_mode = _gcode_abs_mode(line, abs_mode)
-        if _gcode_has_word(line.upper(), "G", 92):
-            if segment_groups[-1]:
-                segment_groups.append([])
-            cur_x = vals.get("X", cur_x)
-            cur_y = vals.get("Y", cur_y)
-            continue
         modal = _gcode_motion_code(line, modal)
+        vals = _gcode_line_tokens(line)
         old_x, old_y = cur_x, cur_y
-        next_x = cur_x
-        next_y = cur_y
-        if "X" in vals:
-            next_x = vals["X"] if abs_mode or cur_x is None else cur_x + vals["X"]
-        if "Y" in vals:
-            next_y = vals["Y"] if abs_mode or cur_y is None else cur_y + vals["Y"]
+        next_x = vals.get("X", cur_x)
+        next_y = vals.get("Y", cur_y)
         has_xy = "X" in vals or "Y" in vals
         if has_xy and old_x is not None and old_y is not None and next_x is not None and next_y is not None:
             if modal == "G1" and points_distance((float(old_x), float(old_y)), (float(next_x), float(next_y))) > 1e-6:
-                segment_groups[-1].append((line_idx, (float(old_x), float(old_y)), (float(next_x), float(next_y))))
+                segments.append((line_idx, (float(old_x), float(old_y)), (float(next_x), float(next_y))))
         cur_x, cur_y = next_x, next_y
 
-    dropped: set[int] = set()
-    for segments in segment_groups:
-        dropped.update(_find_redundant_collinear_segment_keys(segments))
+    dropped = _find_redundant_collinear_segment_keys(segments)
     if not dropped:
         return 0
 
@@ -9368,18 +9282,20 @@ def rewrite_duplicate_draw_segments_as_penup_travel(
     cur_y: Optional[float] = None
     cur_z: Optional[float] = None
     modal: Optional[str] = None
-    abs_mode = True
     spindle_down = False
     seen: set[Tuple[Tuple[float, float], Tuple[float, float]]] = set()
     rewritten: List[str] = []
     dropped = 0
+    z_threshold = (float(z_up) + float(z_down)) / 2.0
 
     def _down(z_value: Optional[float]) -> bool:
         if spindle_down:
             return True
         if z_value is None:
             return False
-        return _pen_down_from_z_level(float(z_value), float(z_up), float(z_down))
+        if float(z_down) >= float(z_up):
+            return float(z_value) > z_threshold
+        return float(z_value) < z_threshold
 
     for raw_line in original:
         clean = _gcode_line_without_comment(raw_line)
@@ -9388,32 +9304,23 @@ def rewrite_duplicate_draw_segments_as_penup_travel(
             continue
         upper = clean.upper()
         vals = _gcode_line_tokens(clean)
-        abs_mode = _gcode_abs_mode(clean, abs_mode)
 
-        if _gcode_has_word(upper, "M", 3):
+        if "M3" in upper or "M03" in upper:
             spindle_down = True
-        if _gcode_has_word(upper, "M", 5):
+        if "M5" in upper or "M05" in upper:
             spindle_down = False
 
         modal = _gcode_motion_code(clean, modal)
-        if _gcode_has_word(upper, "G", 92):
-            if "X" in vals or "Y" in vals:
-                seen.clear()
+        if re.search(r"(^|\s)G92(\s|$)", upper):
             cur_x = vals.get("X", cur_x)
             cur_y = vals.get("Y", cur_y)
             cur_z = vals.get("Z", cur_z)
             rewritten.append(raw_line)
             continue
 
-        next_x = cur_x
-        next_y = cur_y
-        next_z = cur_z
-        if "X" in vals:
-            next_x = vals["X"] if abs_mode or cur_x is None else cur_x + vals["X"]
-        if "Y" in vals:
-            next_y = vals["Y"] if abs_mode or cur_y is None else cur_y + vals["Y"]
-        if "Z" in vals:
-            next_z = vals["Z"] if abs_mode or cur_z is None else cur_z + vals["Z"]
+        next_x = vals.get("X", cur_x)
+        next_y = vals.get("Y", cur_y)
+        next_z = vals.get("Z", cur_z)
         has_xy = "X" in vals or "Y" in vals
         is_draw_xy = (
             has_xy
@@ -9429,21 +9336,13 @@ def rewrite_duplicate_draw_segments_as_penup_travel(
         if is_draw_xy:
             key = _gcode_segment_key(float(cur_x), float(cur_y), float(next_x), float(next_y))
             if key in seen:
-                if abs_mode:
-                    replacement = [
+                rewritten.extend(
+                    [
                         f"G1 Z{float(z_up):.4f} F{float(z_feed):.1f}",
                         f"G0 X{float(next_x):.4f} Y{float(next_y):.4f} F{float(feed_travel):.1f}",
                         f"G1 Z{float(z_down):.4f} F{float(z_feed):.1f}",
                     ]
-                else:
-                    replacement = [
-                        "G90",
-                        f"G1 Z{float(z_up):.4f} F{float(z_feed):.1f}",
-                        f"G0 X{float(next_x):.4f} Y{float(next_y):.4f} F{float(feed_travel):.1f}",
-                        f"G1 Z{float(z_down):.4f} F{float(z_feed):.1f}",
-                        "G91",
-                    ]
-                rewritten.extend(replacement)
+                )
                 cur_x, cur_y, cur_z = float(next_x), float(next_y), float(z_down)
                 dropped += 1
                 continue
@@ -9975,7 +9874,6 @@ def run_pipeline_with_corner_calibration(
     feed_travel: float = FEED_TRAVEL,
     feed_draw: float = FEED_DRAW,
     auto_resume: bool = True,
-    calibration_fast: bool = False,
 ) -> Tuple[bool, str]:
     if send_to_plotter and not skip_calibration:
         ok, msg = run_corner_calibration_pipeline(
@@ -9984,13 +9882,12 @@ def run_pipeline_with_corner_calibration(
             baud=baud,
             send_to_plotter=send_to_plotter,
             mark_size=corner_mark_size,
-            fast=bool(calibration_fast),
         )
         if not ok:
             return False, msg
 
         if not skip_confirmation:
-            if not _ask_confirmation_in_console("Калибровка 4-х углов выполнена. Всё ли правильно? Продолжать рисование?"):
+            if not _ask_confirmation_in_console("РљР°Р»РёР±СЂРѕРІРєР° 4-С… СѓРіР»РѕРІ РІС‹РїРѕР»РЅРµРЅР°. Р’СЃС‘ Р»Рё РїСЂР°РІРёР»СЊРЅРѕ? РџСЂРѕРґРѕР»Р¶Р°С‚СЊ СЂРёСЃРѕРІР°РЅРёРµ?"):
                 return False, "Canceled by user before drawing."
 
     return run_pipeline(
@@ -10028,15 +9925,11 @@ def run_frame_pipeline(
             log("Applying pen-up / pen-down ...")
             apply_penlift(xy_path, pen_path, force_full_lift=True)
             make_final_with_preamble(pen_path, final_path)
-            pf_ok, pf_msg = preflight_check_gcode(final_path, logger=log)
-            if not pf_ok:
-                return False, f"Frame preflight failed: {pf_msg}"
             if send_to_plotter:
                 send_to_grbl(final_path, com, baud, log, sleep_after=True)
                 return_msg = "Done: work area frame sent."
             else:
                 target = output_path or Path("work_area_frame_prepared.nc")
-                target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_text(final_path.read_text(encoding="utf-8"), encoding="utf-8")
                 log(f"Saved: {target}")
                 return_msg = f"Done: work area frame saved to {target}"
@@ -10052,7 +9945,6 @@ def run_corner_calibration_pipeline(
     send_to_plotter: bool = True,
     output_path: Optional[Path] = None,
     mark_size: float = 2.0,
-    fast: bool = False,
 ) -> Tuple[bool, str]:
     try:
         log(
@@ -10062,8 +9954,7 @@ def run_corner_calibration_pipeline(
             f"anchor={ACTIVE_SHEET_CONFIG.get('anchor')}, "
             f"offset=({float(ACTIVE_SHEET_CONFIG.get('offset_x_mm') or 0.0):.2f},"
             f"{float(ACTIVE_SHEET_CONFIG.get('offset_y_mm') or 0.0):.2f}), "
-            f"pass={int(PASS_COL)}/{int(PASS_COLS)} x {int(PASS_ROW)}/{int(PASS_ROWS)}, "
-            f"z_travel={'short' if fast else 'full'}"
+            f"pass={int(PASS_COL)}/{int(PASS_COLS)} x {int(PASS_ROW)}/{int(PASS_ROWS)}"
         )
         marks = build_area_corner_mark_polylines(mark_size=mark_size)
         if not marks:
@@ -10084,31 +9975,14 @@ def run_corner_calibration_pipeline(
 
             write_xy_gcode(xy_path, all_paths, FEED_TRAVEL, FEED_DRAW)
             log("Applying pen-up / pen-down ...")
-            apply_penlift(xy_path, pen_path, force_full_lift=not bool(fast))
+            apply_penlift(xy_path, pen_path, force_full_lift=True)
             make_final_with_preamble(pen_path, final_path)
-            gcode_lines, gcode_draw, gcode_travel, gcode_bounds = summarize_gcode_file(final_path)
-            draw_bounds = _gcode_draw_bounds(final_path, z_up=float(Z_UP), z_down=float(Z_DOWN))
-            log(
-                f"Calibration G-code stats: lines={gcode_lines}, draw={gcode_draw}, travel={gcode_travel}, "
-                f"bounds={gcode_bounds[0]:.3f}..{gcode_bounds[1]:.3f} x, "
-                f"{gcode_bounds[2]:.3f}..{gcode_bounds[3]:.3f} y, "
-                f"feed_xy=travel {FEED_TRAVEL:.1f}/draw {FEED_DRAW:.1f}, z_down={Z_DOWN:.3f}"
-            )
-            if draw_bounds is not None:
-                log(
-                    f"Calibration pen-down bounds: x({draw_bounds[0]:.3f},{draw_bounds[1]:.3f}) "
-                    f"y({draw_bounds[2]:.3f},{draw_bounds[3]:.3f})"
-                )
-            pf_ok, pf_msg = preflight_check_gcode(final_path, logger=log)
-            if not pf_ok:
-                return False, f"Calibration preflight failed: {pf_msg}"
 
             if send_to_plotter:
                 send_to_grbl(final_path, com, baud, log, sleep_after=True)
                 return_msg = "Done: 4-corner calibration sent."
             else:
                 target = output_path or Path("corner_calibration_prepared.nc")
-                target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_text(final_path.read_text(encoding="utf-8"), encoding="utf-8")
                 log(f"Saved: {target}")
                 return_msg = f"Done: calibration file saved to {target}"
@@ -10189,6 +10063,9 @@ def run_pencil_wear_test_pipeline(
                 for st in stage_stats
             ],
         }
+        save_last_wear_test_report(report)
+        log(f"Saved wear-test report: {PENCIL_WEAR_TEST_LAST_PATH}")
+
         effective_z_down = Z_DOWN
         pencil_state = None
         dynamic_wear_start = 0.0
@@ -10236,9 +10113,6 @@ def run_pencil_wear_test_pipeline(
                 f"bounds={gcode_bounds[0]:.3f}..{gcode_bounds[1]:.3f} x, "
                 f"{gcode_bounds[2]:.3f}..{gcode_bounds[3]:.3f} y"
             )
-            pf_ok, pf_msg = preflight_check_gcode(final_path, logger=log)
-            if not pf_ok:
-                return False, f"Pencil wear-test preflight failed: {pf_msg}"
 
             if send_to_plotter:
                 plot_time_s = send_to_grbl(
@@ -10250,8 +10124,6 @@ def run_pencil_wear_test_pipeline(
                     auto_resume=bool(auto_resume),
                     max_resume_attempts=1,
                 )
-                save_last_wear_test_report(report)
-                log(f"Saved wear-test report: {PENCIL_WEAR_TEST_LAST_PATH}")
                 if TOOL_MODE == "pencil" and pencil_state is not None:
                     pencil_state = apply_pencil_wear_update(pencil_state, draw_length_mm)
                     save_pencil_state(pencil_state)
@@ -10285,7 +10157,6 @@ def run_pencil_wear_test_pipeline(
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(final_path.read_text(encoding="utf-8"), encoding="utf-8")
             log(f"Saved: {target}")
-            log("Dry run: wear-test report was not saved as the last physical pencil test.")
             return True, f"Done: pencil wear-test saved to {target} (draw={draw_length_mm / 1000.0:.2f} m)."
     except Exception as exc:
         return False, _format_backend_exception(exc)

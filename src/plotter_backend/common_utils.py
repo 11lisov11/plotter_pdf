@@ -44,40 +44,6 @@ def safe_log_text(value: object) -> str:
             return "<log-encode-error>"
 
 
-def repair_mojibake_text(text: str) -> str:
-    """Repair common UTF-8 bytes decoded as cp1251, leaving normal text unchanged."""
-    if not text:
-        return ""
-    s = str(text)
-    markers = ("Р", "С", "Ð", "Ñ", "В°", "в„", "вЂ")
-    if not any(marker in s for marker in markers):
-        return s
-    candidates: list[str] = []
-    for src_encoding in ("cp1251", "latin1"):
-        try:
-            candidates.append(s.encode(src_encoding, errors="strict").decode("utf-8", errors="strict"))
-        except Exception:
-            continue
-
-    def _badness(value: str) -> int:
-        return sum(value.count(marker) for marker in markers) + value.count("\ufffd") * 4
-
-    best = min(candidates + [s], key=_badness)
-    return best if _badness(best) < _badness(s) else s
-
-
-def clean_report_value(value: Any) -> Any:
-    if isinstance(value, str):
-        return repair_mojibake_text(strip_unpaired_surrogates(value, replacement="?"))
-    if isinstance(value, list):
-        return [clean_report_value(item) for item in value]
-    if isinstance(value, tuple):
-        return tuple(clean_report_value(item) for item in value)
-    if isinstance(value, dict):
-        return {clean_report_value(key): clean_report_value(item) for key, item in value.items()}
-    return value
-
-
 def safe_logger(logger):
     if not callable(logger):
         return lambda _msg: None

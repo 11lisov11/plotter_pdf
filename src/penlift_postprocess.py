@@ -3,16 +3,7 @@ import math
 import re
 from pathlib import Path
 
-try:
-    from src.plotter_backend.geometry.arc_fit import arc_center_from_radius
-except Exception:  # pragma: no cover - fallback when run as src/penlift_postprocess.py
-    try:
-        from plotter_backend.geometry.arc_fit import arc_center_from_radius  # type: ignore
-    except Exception:  # pragma: no cover - defensive fallback
-        arc_center_from_radius = None  # type: ignore[assignment]
-
 GCODE_MOVES_WITH_XY = {"G0", "G1", "G2", "G3", "G5", "G80", "G81", "G82", "G83", "G84", "G85", "G86", "G87", "G88", "G89"}
-TOKEN_RE = re.compile(r"([A-Za-z])\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)")
 
 
 def parse_args():
@@ -62,68 +53,25 @@ def parse_args():
 
 
 def split_comment(line: str):
-    raw = str(line or "").rstrip("\n")
-    if ";" in raw:
-        body_src, semicolon_comment = raw.split(";", 1)
-        semicolon_part = ";" + semicolon_comment
-    else:
-        body_src = raw
-        semicolon_part = ""
-
-    body: list[str] = []
-    comments: list[str] = []
-    paren_comment: list[str] = []
-    depth = 0
-    for ch in body_src:
-        if ch == "(":
-            if depth == 0:
-                paren_comment = ["("]
-            else:
-                paren_comment.append(ch)
-            depth += 1
-            continue
-        if depth:
-            paren_comment.append(ch)
-            if ch == ")":
-                depth -= 1
-                if depth == 0:
-                    comments.append("".join(paren_comment))
-                    paren_comment = []
-            continue
-        body.append(ch)
-    if paren_comment:
-        comments.append("".join(paren_comment))
-    if semicolon_part:
-        comments.append(semicolon_part)
-    return "".join(body).rstrip(), " ".join(part for part in comments if part)
+    if ";" in line:
+        body, comment = line.split(";", 1)
+        return body.rstrip(), ";" + comment
+    if "(" in line:
+        idx = line.find("(")
+        return line[:idx].rstrip(), line[idx:]
+    return line.rstrip("\n"), ""
 
 
 def parse_tokens(body: str):
-    return [f"{letter.upper()}{value}" for letter, value in TOKEN_RE.findall(body)]
+    return [t for t in body.strip().split() if t]
 
 
 def first_gcode(tokens):
-    codes = g_codes(tokens)
-    return codes[0] if codes else ""
-
-
-def g_codes(tokens):
-    out = []
     for token in tokens:
         up = token.upper()
-        match = re.fullmatch(r"G([+-]?(?:\d+(?:\.\d*)?|\.\d+))", up)
-        if match:
-            try:
-                value = float(match.group(1))
-            except Exception:
-                out.append(up)
-                continue
-            rounded = int(round(value))
-            if abs(value - float(rounded)) <= 1e-9:
-                out.append(f"G{rounded}")
-            else:
-                out.append(f"G{value:g}")
-    return out
+        if re.fullmatch(r"G\d+(?:\.\d+)?", up):
+            return up
+    return ""
 
 
 def has_axis(tokens, axis):
@@ -136,15 +84,14 @@ def has_axis(tokens, axis):
 
 def axis_value(tokens, axis):
     ax = axis.upper()
-    value = None
     for token in tokens:
         up = token.upper()
         if up.startswith(ax):
             try:
-                value = float(up[1:])
+                return float(up[1:])
             except Exception:
-                continue
-    return value
+                return None
+    return None
 
 
 def arc_length_xy(x0, y0, x1, y1, i, j, cw):
@@ -205,8 +152,6 @@ def touch_pen_down(
     current_x = None
     current_y = None
     abs_mode = True
-    ijk_abs = False
-    last_motion = ""
     drawn_length_mm = 0.0
     if delay_up is None:
         delay_up = delay_down
@@ -321,27 +266,8 @@ def touch_pen_down(
                 out.append(f"G4 P{delay_down:.2f}")
             pen_down = True
 
-    raw_lines = [str(line).rstrip("\n") for line in lines]
-
-    def _next_xy_motion_is_draw(start_index: int, current_motion: str) -> bool:
-        look_motion = current_motion
-        for future in raw_lines[start_index + 1 :]:
-            body, _comment = split_comment(future)
-            if not body.strip() or body.lstrip().startswith("("):
-                continue
-            tokens = parse_tokens(body)
-            if not tokens:
-                continue
-            motion_codes = [gcode for gcode in g_codes(tokens) if gcode in GCODE_MOVES_WITH_XY]
-            if motion_codes:
-                look_motion = motion_codes[-1]
-            if has_axis(tokens, "Z"):
-                return False
-            if has_axis(tokens, "X") or has_axis(tokens, "Y"):
-                return look_motion in {"G1", "G2", "G3"}
-        return False
-
-    for line_index, raw in enumerate(raw_lines):
+    for line in lines:
+        raw = line.rstrip("\n")
         body, comment = split_comment(raw)
 
         if not body.strip() or body.lstrip().startswith("("):
@@ -353,39 +279,17 @@ def touch_pen_down(
             out.append(raw)
             continue
 
-        codes = g_codes(tokens)
-        for gcode in codes:
-            if gcode == "G90":
-                abs_mode = True
-            elif gcode == "G91":
-                abs_mode = False
-            elif gcode == "G90.1":
-                ijk_abs = True
-            elif gcode == "G91.1":
-                ijk_abs = False
-
-        if "G92" in codes:
-            x_tok = axis_value(tokens, "X")
-            y_tok = axis_value(tokens, "Y")
-            z_tok = axis_value(tokens, "Z")
-            if x_tok is not None:
-                current_x = x_tok
-            if y_tok is not None:
-                current_y = y_tok
-            if z_tok is not None:
-                current_z = z_tok
-                if abs(z_tok - z_up) < 1e-6:
-                    pen_down = False
-                elif abs(z_tok - z_down) < 1e-6:
-                    pen_down = True
+        code = first_gcode(tokens)
+        if not code:
             out.append(raw)
             continue
 
-        motion_codes = [gcode for gcode in codes if gcode in GCODE_MOVES_WITH_XY]
-        if motion_codes:
-            last_motion = motion_codes[-1]
-        code = motion_codes[-1] if motion_codes else last_motion
-        if not code:
+        if code == "G90":
+            abs_mode = True
+            out.append(raw)
+            continue
+        if code == "G91":
+            abs_mode = False
             out.append(raw)
             continue
 
@@ -400,10 +304,10 @@ def touch_pen_down(
                     value = _safe_float(up[1:])
                     if value is None:
                         continue
-                    current_z = float(value) if abs_mode else (current_z + float(value))
-                    if abs(current_z - z_up) < 1e-6:
+                    current_z = float(value)
+                    if abs(value - z_up) < 1e-6:
                         pen_down = False
-                    elif abs(current_z - z_down) < 1e-6:
+                    elif abs(value - z_down) < 1e-6:
                         pen_down = True
                     break
             out.append(raw)
@@ -424,7 +328,6 @@ def touch_pen_down(
                     and y0 is not None
                     and x1 is not None
                     and y1 is not None
-                    and _next_xy_motion_is_draw(line_index, code)
                 ):
                     dxy = math.hypot(x1 - x0, y1 - y0)
                     short_merge = dxy <= merge_short_travel_mm
@@ -470,35 +373,13 @@ def touch_pen_down(
             y_tok = axis_value(tokens, "Y")
             i_tok = axis_value(tokens, "I")
             j_tok = axis_value(tokens, "J")
-            r_tok = axis_value(tokens, "R")
             x1 = x_tok if (x_tok is not None and (abs_mode or current_x is None)) else (current_x + x_tok if x_tok is not None and current_x is not None else current_x)
             y1 = y_tok if (y_tok is not None and (abs_mode or current_y is None)) else (current_y + y_tok if y_tok is not None and current_y is not None else current_y)
             add_pen_down(drawn_length_mm)
             out.append(raw)
             if x0 is not None and y0 is not None and x1 is not None and y1 is not None:
-                if i_tok is not None or j_tok is not None:
-                    i_tok = 0.0 if i_tok is None else i_tok
-                    j_tok = 0.0 if j_tok is None else j_tok
-                    arc_i = i_tok - x0 if ijk_abs else i_tok
-                    arc_j = j_tok - y0 if ijk_abs else j_tok
-                    drawn_length_mm += max(0.0, arc_length_xy(x0, y0, x1, y1, arc_i, arc_j, cw=(code == "G2")))
-                elif r_tok is not None and arc_center_from_radius is not None:
-                    center = arc_center_from_radius((x0, y0), (x1, y1), r_tok, cw=(code == "G2"))
-                    if center is None:
-                        drawn_length_mm += max(0.0, math.hypot(x1 - x0, y1 - y0))
-                    else:
-                        drawn_length_mm += max(
-                            0.0,
-                            arc_length_xy(
-                                x0,
-                                y0,
-                                x1,
-                                y1,
-                                center[0] - x0,
-                                center[1] - y0,
-                                cw=(code == "G2"),
-                            ),
-                        )
+                if i_tok is not None and j_tok is not None:
+                    drawn_length_mm += max(0.0, arc_length_xy(x0, y0, x1, y1, i_tok, j_tok, cw=(code == "G2")))
                 else:
                     drawn_length_mm += max(0.0, math.hypot(x1 - x0, y1 - y0))
             current_x, current_y = x1, y1

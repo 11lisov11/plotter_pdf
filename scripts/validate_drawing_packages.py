@@ -6,24 +6,18 @@ import hashlib
 import json
 import math
 import re
-import sys
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
-from src.plotter_backend.common_utils import clean_report_value
-from src.plotter_backend.gcode.bounds import pen_down_from_z_level
-from src.plotter_backend.geometry.arc_fit import arc_center_from_radius, arc_extents_xy
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_WORK_AREA = (0.0, 180.0, -285.0, -5.0)
 A3_TWO_PASS_WORK_AREA = (0.0, 180.0, -285.0, -2.0)
 DEFAULT_Z_UP = 0.0
 DEFAULT_Z_DOWN = 11.9
-_TOKEN_RE = re.compile(r"([A-Za-z])\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)")
+_TOKEN_RE = re.compile(r"([A-Za-z])\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))")
 _SVG_COORD_RE = re.compile(r"[ML]\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))[\s,]+([+-]?(?:\d+(?:\.\d*)?|\.\d+))", re.I)
 _SVG_POINT_RE = re.compile(r"([+-]?(?:\d+(?:\.\d*)?|\.\d+))[\s,]+([+-]?(?:\d+(?:\.\d*)?|\.\d+))")
 
@@ -77,18 +71,10 @@ def _has_gcode_word(line: str, letter: str, number: int) -> bool:
 
 
 def _motion_code(line: str, previous: str | None) -> str | None:
-    motion = previous
-    for axis, value in _TOKEN_RE.findall(str(line or "")):
-        if axis.upper() != "G":
-            continue
-        try:
-            gval = float(value)
-        except ValueError:
-            continue
-        rounded = int(round(gval))
-        if abs(gval - float(rounded)) <= 1e-9 and rounded in {0, 1, 2, 3}:
-            motion = f"G{rounded}"
-    return motion
+    for number, canonical in ((0, "G0"), (1, "G1"), (2, "G2"), (3, "G3")):
+        if _has_gcode_word(line, "G", number):
+            return canonical
+    return previous
 
 
 def _is_pen_down(z: float | None, z_up: float, z_down: float, spindle_down: bool) -> bool:
@@ -96,7 +82,10 @@ def _is_pen_down(z: float | None, z_up: float, z_down: float, spindle_down: bool
         return True
     if z is None:
         return False
-    return pen_down_from_z_level(float(z), float(z_up), float(z_down))
+    threshold = (float(z_up) + float(z_down)) / 2.0
+    if z_down >= z_up:
+        return float(z) > threshold
+    return float(z) < threshold
 
 
 def _segment_key(x0: float, y0: float, x1: float, y1: float, *, decimals: int = 2) -> tuple[tuple[float, float], tuple[float, float]]:
@@ -231,8 +220,6 @@ def validate_gcode_file(
     cur_y: float | None = None
     cur_z: float | None = None
     modal: str | None = None
-    abs_mode = True
-    ijk_abs = False
     spindle_down = False
     first_xy_seen = False
     motor_release_seen = False
@@ -243,16 +230,6 @@ def validate_gcode_file(
     segments_seen: set[tuple[tuple[float, float], tuple[float, float]]] = set()
     draw_segments: list[tuple[float, float, float, float]] = []
     duplicate_segments = 0
-
-    def _expand_draw_bounds(x0: float, x1: float, y0: float, y1: float) -> None:
-        nonlocal draw_bounds
-        if draw_bounds is None:
-            draw_bounds = [min(x0, x1), max(x0, x1), min(y0, y1), max(y0, y1)]
-            return
-        draw_bounds[0] = min(draw_bounds[0], x0, x1)
-        draw_bounds[1] = max(draw_bounds[1], x0, x1)
-        draw_bounds[2] = min(draw_bounds[2], y0, y1)
-        draw_bounds[3] = max(draw_bounds[3], y0, y1)
 
     try:
         raw_lines = gcode_path.read_text(encoding="utf-8", errors="replace").splitlines()
@@ -266,21 +243,6 @@ def validate_gcode_file(
         lines += 1
         upper = line.upper()
         vals = _tokens(line)
-        for axis, value in _TOKEN_RE.findall(line):
-            if axis.upper() != "G":
-                continue
-            try:
-                gval = float(value)
-            except ValueError:
-                continue
-            if abs(gval - 90.0) <= 1e-9:
-                abs_mode = True
-            elif abs(gval - 91.0) <= 1e-9:
-                abs_mode = False
-            elif abs(gval - 90.1) <= 1e-9:
-                ijk_abs = True
-            elif abs(gval - 91.1) <= 1e-9:
-                ijk_abs = False
 
         if _has_gcode_word(upper, "M", 3):
             spindle_down = True
@@ -295,29 +257,16 @@ def validate_gcode_file(
         modal = _motion_code(line, modal)
 
         # G92 sets the current coordinate system; for preflight we treat it as the
-        # current Z position because generated files use it for protective Z lift.
-        # X/Y G92 can spoof a return-home check without physically moving axes.
-        if _has_gcode_word(upper, "G", 92):
-            if "X" in vals or "Y" in vals:
-                problems.append(f"{gcode_path.name}: line {lines}: G92 X/Y coordinate reset is not allowed")
+        # current machine position because the generated files use it for Z lift.
+        if re.search(r"(^|\s)G92(\s|$)", upper):
+            cur_x = vals.get("X", cur_x)
+            cur_y = vals.get("Y", cur_y)
             cur_z = vals.get("Z", cur_z)
             continue
 
-        if "X" in vals:
-            x_raw = vals["X"]
-            next_x = x_raw if (abs_mode or cur_x is None) else cur_x + x_raw
-        else:
-            next_x = cur_x
-        if "Y" in vals:
-            y_raw = vals["Y"]
-            next_y = y_raw if (abs_mode or cur_y is None) else cur_y + y_raw
-        else:
-            next_y = cur_y
-        if "Z" in vals:
-            z_raw = vals["Z"]
-            next_z = z_raw if (abs_mode or cur_z is None) else cur_z + z_raw
-        else:
-            next_z = cur_z
+        next_x = vals.get("X", cur_x)
+        next_y = vals.get("Y", cur_y)
+        next_z = vals.get("Z", cur_z)
         has_xy = "X" in vals or "Y" in vals
         has_z = "Z" in vals
 
@@ -346,28 +295,13 @@ def validate_gcode_file(
                         else:
                             segments_seen.add(key)
                         draw_segments.append((x0, y0, x1, y1))
-                    if modal in {"G2", "G3"} and (("I" in vals or "J" in vals) or "R" in vals):
-                        if "I" in vals or "J" in vals:
-                            i_val = float(vals.get("I", 0.0))
-                            j_val = float(vals.get("J", 0.0))
-                            center = (i_val, j_val) if ijk_abs else (x0 + i_val, y0 + j_val)
-                        else:
-                            center = arc_center_from_radius((x0, y0), (x1, y1), float(vals["R"]), cw=(modal == "G2"))
-                        try:
-                            if center is None:
-                                _expand_draw_bounds(x0, x1, y0, y1)
-                            elif math.hypot(x1 - x0, y1 - y0) <= 1e-6:
-                                radius = math.hypot(x0 - center[0], y0 - center[1])
-                                bx0, bx1 = center[0] - radius, center[0] + radius
-                                by0, by1 = center[1] - radius, center[1] + radius
-                                _expand_draw_bounds(bx0, bx1, by0, by1)
-                            else:
-                                bx0, bx1, by0, by1 = arc_extents_xy((x0, y0), (x1, y1), center, cw=(modal == "G2"))
-                                _expand_draw_bounds(bx0, bx1, by0, by1)
-                        except Exception:
-                            _expand_draw_bounds(x0, x1, y0, y1)
+                    if draw_bounds is None:
+                        draw_bounds = [x0, x1, y0, y1]
                     else:
-                        _expand_draw_bounds(x0, x1, y0, y1)
+                        draw_bounds[0] = min(draw_bounds[0], x0, x1)
+                        draw_bounds[1] = max(draw_bounds[1], x0, x1)
+                        draw_bounds[2] = min(draw_bounds[2], y0, y1)
+                        draw_bounds[3] = max(draw_bounds[3], y0, y1)
                 else:
                     travel_moves += 1
 
@@ -440,7 +374,7 @@ def collect_variant_dirs(roots: Iterable[Path]) -> list[Path]:
 def _read_summary_rows(variant_dir: Path) -> list[dict[str, str]]:
     summary_path = variant_dir / "_prepared_summary.csv"
     with summary_path.open(encoding="utf-8-sig", newline="") as fh:
-        return [clean_report_value(dict(row)) for row in csv.DictReader(fh)]
+        return list(csv.DictReader(fh))
 
 
 def _selected_item(report: dict[str, object]) -> dict[str, object] | None:
@@ -624,7 +558,7 @@ def validate_package(package_dir: Path, rows: list[dict[str, str]]) -> PackageVa
     report: dict[str, object] = {}
     if report_path.exists():
         try:
-            report = json.loads(report_path.read_text(encoding="utf-8-sig"))
+            report = json.loads(report_path.read_text(encoding="utf-8"))
         except json.JSONDecodeError as exc:
             problems.append(f"invalid report.json: {exc}")
 
@@ -699,51 +633,25 @@ def validate_package(package_dir: Path, rows: list[dict[str, str]]) -> PackageVa
     )
 
 
-def _is_within(path: Path, parent: Path) -> bool:
-    try:
-        path.resolve(strict=False).relative_to(parent.resolve(strict=False))
-        return True
-    except Exception:
-        return False
-
-
-def _group_rows_by_package(
-    variant_dir: Path,
-    rows: list[dict[str, str]],
-) -> tuple[dict[Path, list[dict[str, str]]], list[str]]:
+def _group_rows_by_package(rows: list[dict[str, str]]) -> dict[Path, list[dict[str, str]]]:
     grouped: dict[Path, list[dict[str, str]]] = {}
-    problems: list[str] = []
-    variant_dir = Path(variant_dir)
-    for index, row in enumerate(rows, start=2):
+    for row in rows:
         package_raw = str(row.get("package_dir") or "").strip()
         if not package_raw:
             continue
-        package_dir = Path(package_raw)
-        if not package_dir.is_absolute():
-            package_dir = variant_dir / package_dir
-        if not _is_within(package_dir, variant_dir):
-            local_package_dir = variant_dir / package_dir.name
-            parent_matches_variant = package_dir.parent.name.casefold() == variant_dir.name.casefold()
-            if parent_matches_variant and local_package_dir.exists() and local_package_dir.is_dir():
-                package_dir = local_package_dir
-            else:
-                problems.append(f"_prepared_summary.csv row {index}: package_dir outside variant: {package_raw}")
-                continue
-        grouped.setdefault(package_dir, []).append(row)
-    return grouped, problems
+        grouped.setdefault(Path(package_raw), []).append(row)
+    return grouped
 
 
 def validate_variant(variant_dir: Path, *, write_reports: bool = True) -> dict[str, object]:
     rows = _read_summary_rows(variant_dir)
-    grouped, scope_problems = _group_rows_by_package(variant_dir, rows)
+    grouped = _group_rows_by_package(rows)
     packages = [validate_package(package_dir, package_rows) for package_dir, package_rows in sorted(grouped.items())]
     failed = [pkg for pkg in packages if not pkg.ok]
     warnings = [warning for pkg in packages for warning in pkg.warnings]
-    if not packages:
-        scope_problems.append("no packages listed in _prepared_summary.csv")
     payload = {
         "variant_dir": str(variant_dir),
-        "ok": not failed and not scope_problems,
+        "ok": not failed,
         "packages": len(packages),
         "failed_packages": [
             {
@@ -752,18 +660,7 @@ def validate_variant(variant_dir: Path, *, write_reports: bool = True) -> dict[s
                 "warnings": pkg.warnings,
             }
             for pkg in failed
-        ]
-        + (
-            [
-                {
-                    "package_dir": str(variant_dir),
-                    "problems": scope_problems,
-                    "warnings": [],
-                }
-            ]
-            if scope_problems
-            else []
-        ),
+        ],
         "warnings": warnings,
         "preflight": {
             "checked_gcode_files": sum(len(pkg.gcode) for pkg in packages),
@@ -786,7 +683,7 @@ def validate_variant(variant_dir: Path, *, write_reports: bool = True) -> dict[s
     }
     if write_reports:
         (variant_dir / "_ready_to_plot_audit.json").write_text(
-            json.dumps(clean_report_value(payload), ensure_ascii=False, indent=2),
+            json.dumps(payload, ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
         lines = [

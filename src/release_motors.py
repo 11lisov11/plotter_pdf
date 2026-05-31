@@ -51,55 +51,6 @@ def _safe_pen_up_commands() -> tuple[str, ...]:
     )
 
 
-def _parse_status_state(line: str) -> str:
-    if not line.startswith("<") or "|" not in line:
-        return ""
-    try:
-        return line[1 : line.index("|")]
-    except Exception:
-        return ""
-
-
-def _query_status(ser) -> str:
-    try:
-        ser.write(b"?")
-        ser.flush()
-    except Exception:
-        return ""
-
-    t0 = time.time()
-    while time.time() - t0 < 0.6:
-        try:
-            raw = ser.readline()
-        except Exception:
-            break
-        if not raw:
-            continue
-        line = raw.decode("ascii", errors="replace").strip()
-        if line.startswith("<") and line.endswith(">"):
-            return line
-    return ""
-
-
-def _wait_for_idle(ser, *, timeout_s: float = 45.0) -> bool:
-    t0 = time.time()
-    while time.time() - t0 <= timeout_s:
-        state = _parse_status_state(_query_status(ser))
-        if state == "Idle":
-            return True
-        time.sleep(0.25)
-    return False
-
-
-def _send_no_throw(ser, cmd: str, *, delay_s: float = 0.12) -> None:
-    try:
-        ser.write((cmd + "\n").encode("ascii"))
-        ser.flush()
-        time.sleep(delay_s)
-    except Exception:
-        pass
-
-
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("port", nargs="?")
@@ -154,17 +105,22 @@ def main(argv: list[str]) -> int:
         except Exception:
             pass
 
-        # Best-effort safe teardown: force pen up, return home, release steppers.
-        for cmd in _safe_pen_up_commands():
-            _send_no_throw(ser, cmd)
-        _send_no_throw(ser, "G0 X0.0000 Y0.0000 F900.0")
-        if not _wait_for_idle(ser):
-            print("Cannot confirm Idle after return-home move; motors were not released.")
-            return 1
-        _send_no_throw(ser, "$1=0")
+        # Best-effort safe teardown: force pen up, stop spindle/servo, release steppers.
+        for cmd in (*_safe_pen_up_commands(), "$1=0"):
+            try:
+                ser.write((cmd + "\n").encode("ascii"))
+                ser.flush()
+                time.sleep(0.12)
+            except Exception:
+                pass
 
         if ns.sleep:
-            _send_no_throw(ser, "$SLP")
+            try:
+                ser.write(b"$SLP\n")
+                ser.flush()
+                time.sleep(0.12)
+            except Exception:
+                pass
 
         if ns.sleep:
             print("Motors released ($1=0, $SLP).")

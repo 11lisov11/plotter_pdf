@@ -54,37 +54,17 @@ def grbl_send_manual_commands(
     try:
         if serial_factory is not None:
             ser = serial_factory()
-            try:
-                ser.port = port
-                ser.baudrate = baud_i
-                ser.timeout = timeout_s
-            except Exception:
-                pass
-            try:
-                ser.dtr = False
-                ser.rts = False
-            except Exception:
-                pass
-            try:
-                ser.open()
-            except Exception:
-                pass
         else:
-            from .grbl_transport import is_tcp_endpoint, open_grbl_transport
-
-            if is_tcp_endpoint(port):
-                ser = open_grbl_transport(port, baud_i, timeout_s=timeout_s)
-            else:
-                ser = serial_module.Serial()
-                ser.port = port
-                ser.baudrate = baud_i
-                ser.timeout = timeout_s
-                try:
-                    ser.dtr = False
-                    ser.rts = False
-                except Exception:
-                    pass
-                ser.open()
+            ser = serial_module.Serial()
+        ser.port = port
+        ser.baudrate = baud_i
+        ser.timeout = timeout_s
+        try:
+            ser.dtr = False
+            ser.rts = False
+        except Exception:
+            pass
+        ser.open()
 
         # Wake channel.
         ser.write(b"\r\n")

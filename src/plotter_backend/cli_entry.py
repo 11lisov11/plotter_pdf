@@ -4,15 +4,8 @@ import argparse
 from pathlib import Path
 from typing import Any, Optional, Tuple
 
-from scripts.find_ready_package import find_first_ready_package
-
 
 SUPPORTED_INPUT_EXTENSIONS = {".pdf", ".svg", ".frw", ".cdw", ".doc", ".docx"}
-
-
-def _arg_value(args, name: str, default=None):
-    values = vars(args) if hasattr(args, "__dict__") else {}
-    return values.get(name, default)
 
 
 def optional_path_arg(value: Optional[str]) -> Optional[Path]:
@@ -22,41 +15,27 @@ def optional_path_arg(value: Optional[str]) -> Optional[Path]:
     return Path(raw)
 
 
-def ready_package_preflight_bounds(backend: Any, selection) -> Tuple[float, float, float, float]:
-    try:
-        min_x, max_x, min_y, max_y = backend.base_work_area_bounds()
-    except Exception:
-        min_x, max_x, min_y, max_y = backend.work_area_bounds()
-    kind = str(getattr(selection, "kind", "") or "").strip().lower()
-    item = str(getattr(selection, "item", "") or "").strip().lower()
-    if kind == "a3_two_pass" or item.startswith("pass_"):
-        max_y = float(max_y) + 3.0
-    return float(min_x), float(max_x), float(min_y), float(max_y)
-
-
 def should_exit_after_pencil_maintenance(args, *, did_pencil_command: bool) -> bool:
     return bool(
         did_pencil_command
-        and not _arg_value(args, "frame", False)
-        and not _arg_value(args, "calibrate_corners", False)
-        and not _arg_value(args, "pencil_wear_test", False)
-        and not _arg_value(args, "draw_ready", None)
-        and not _arg_value(args, "input", None)
-        and not _arg_value(args, "plan_sheet", False)
+        and not args.frame
+        and not args.calibrate_corners
+        and not args.pencil_wear_test
+        and not args.input
+        and not args.plan_sheet
     )
 
 
 def has_cli_action(args) -> bool:
     return bool(
-        _arg_value(args, "frame", False)
-        or _arg_value(args, "calibrate_corners", False)
-        or _arg_value(args, "pencil_wear_test", False)
-        or _arg_value(args, "draw_ready", None)
-        or _arg_value(args, "input", None)
-        or _arg_value(args, "plan_sheet", False)
-        or _arg_value(args, "pencil_sharpened", False)
-        or _arg_value(args, "pencil_status", False)
-        or _arg_value(args, "pencil_calibrate_from_last_test_stage", None) is not None
+        args.frame
+        or args.calibrate_corners
+        or args.pencil_wear_test
+        or args.input
+        or args.plan_sheet
+        or args.pencil_sharpened
+        or args.pencil_status
+        or args.pencil_calibrate_from_last_test_stage is not None
     )
 
 
@@ -122,12 +101,6 @@ def build_cli_parser(backend: Any) -> argparse.ArgumentParser:
         help="Auto-resume from current position if the sender aborts (best effort).",
     )
     parser.add_argument("--corner-mark-size", type=float, default=2.0, help="Corner mark size in mm")
-    parser.add_argument(
-        "--calibration-profile",
-        choices=["safe", "fast"],
-        default="safe",
-        help="Corner calibration Z-travel profile: safe uses full lifts, fast uses short travel lifts.",
-    )
     parser.add_argument(
         "--quality",
         default=backend.DEFAULT_QUALITY_PROFILE,
@@ -220,31 +193,6 @@ def build_cli_parser(backend: Any) -> argparse.ArgumentParser:
     parser.add_argument("--pencil-wear-test-margin-mm", type=float, default=8.0, help="Wear-test margin from active area borders (mm).")
     parser.add_argument("--pencil-wear-test-gap-mm", type=float, default=6.0, help="Wear-test gap between blocks (mm).")
     parser.add_argument(
-        "--draw-ready",
-        default=None,
-        help="Select and draw the first ready package from a prepared variant directory.",
-    )
-    parser.add_argument(
-        "--ready-kind",
-        "--kind",
-        dest="ready_kind",
-        default="a4",
-        help="Ready package kind for --draw-ready (default: a4).",
-    )
-    parser.add_argument(
-        "--ready-item",
-        "--item",
-        dest="ready_item",
-        default=None,
-        help="Ready package item for --draw-ready, e.g. page_01, pass_01 or pass_02.",
-    )
-    parser.add_argument(
-        "--ready-sleep",
-        action=argparse.BooleanOptionalAction,
-        default=True,
-        help="Send $SLP after drawing a ready package (default: true).",
-    )
-    parser.add_argument(
         "--force-text-to-path",
         action="store_true",
         default=None,
@@ -279,16 +227,6 @@ def build_cli_parser(backend: Any) -> argparse.ArgumentParser:
         default=None,
         help="Raster contour extraction mode: off | word_only | always.",
     )
-    parser.add_argument(
-        "--tech-text-opt",
-        action=argparse.BooleanOptionalAction,
-        default=None,
-        help="Enable/disable all experimental technical text optimization flags.",
-    )
-    parser.add_argument("--tech-text-singleline-opt", action=argparse.BooleanOptionalAction, default=None)
-    parser.add_argument("--tech-text-cluster-stitch", action=argparse.BooleanOptionalAction, default=None)
-    parser.add_argument("--tech-text-reorder-opt", action=argparse.BooleanOptionalAction, default=None)
-    parser.add_argument("--tech-text-penlift-opt", action=argparse.BooleanOptionalAction, default=None)
     return parser
 
 
@@ -365,20 +303,6 @@ def apply_cli_runtime_overrides(backend: Any, args) -> None:
         backend.IMAGE_CONTOUR_MODE = backend.normalize_image_contour_mode(args.image_contours_mode)
         backend.IMAGE_CONTOUR_ENABLED = backend.IMAGE_CONTOUR_MODE != "off"
         backend.IMAGE_CONTOUR_WORD_ONLY = backend.IMAGE_CONTOUR_MODE == "word_only"
-    if args.tech_text_opt is not None:
-        enabled = bool(args.tech_text_opt)
-        backend.TECH_TEXT_SINGLELINE_OPT_ENABLE = enabled
-        backend.TECH_TEXT_CLUSTER_STITCH_ENABLE = enabled
-        backend.TECH_TEXT_REORDER_OPT_ENABLE = enabled
-        backend.TECH_TEXT_PENLIFT_OPT_ENABLE = enabled
-    if args.tech_text_singleline_opt is not None:
-        backend.TECH_TEXT_SINGLELINE_OPT_ENABLE = bool(args.tech_text_singleline_opt)
-    if args.tech_text_cluster_stitch is not None:
-        backend.TECH_TEXT_CLUSTER_STITCH_ENABLE = bool(args.tech_text_cluster_stitch)
-    if args.tech_text_reorder_opt is not None:
-        backend.TECH_TEXT_REORDER_OPT_ENABLE = bool(args.tech_text_reorder_opt)
-    if args.tech_text_penlift_opt is not None:
-        backend.TECH_TEXT_PENLIFT_OPT_ENABLE = bool(args.tech_text_penlift_opt)
 
     pencil_profile_overrides = any(
         v is not None
@@ -511,14 +435,7 @@ def apply_cli_quality_profile(backend: Any, args) -> Optional[int]:
 def run_cli_action(backend: Any, args, parser: argparse.ArgumentParser, *, com: str) -> int:
     output_path = optional_path_arg(args.output)
 
-    if (
-        args.plan_sheet
-        and not args.frame
-        and not args.calibrate_corners
-        and not args.pencil_wear_test
-        and not args.draw_ready
-        and not args.input
-    ):
+    if args.plan_sheet and not args.frame and not args.calibrate_corners and not args.pencil_wear_test and not args.input:
         return 0
 
     if args.frame:
@@ -540,7 +457,6 @@ def run_cli_action(backend: Any, args, parser: argparse.ArgumentParser, *, com: 
             send_to_plotter=not args.dry_run,
             output_path=output_path,
             mark_size=args.corner_mark_size,
-            fast=args.calibration_profile == "fast",
         )
         print(msg)
         return 0 if ok else 1
@@ -565,54 +481,6 @@ def run_cli_action(backend: Any, args, parser: argparse.ArgumentParser, *, com: 
         print(msg)
         return 0 if ok else 1
 
-    if args.draw_ready:
-        try:
-            selection = find_first_ready_package(
-                Path(args.draw_ready),
-                kind=str(args.ready_kind or "a4"),
-                item=args.ready_item,
-            )
-        except Exception as exc:
-            print(f"Ready package selection failed: {exc}")
-            return 1
-        nc_path = Path(selection.nc)
-        print(f"Ready package: {selection.task}")
-        print(f"  kind={selection.kind} item={selection.item}")
-        print(f"  nc={nc_path}")
-        print(f"  lines={selection.line_count} draw_length_m={selection.draw_length_m}")
-        print(f"  bounds={selection.bounds}")
-        print(f"  preview_pdf={selection.preview_pdf}")
-        pf_ok, pf_msg = backend.preflight_check_gcode(
-            nc_path,
-            logger=print,
-            bounds=ready_package_preflight_bounds(backend, selection),
-        )
-        if not pf_ok:
-            print(f"Ready package preflight failed: {pf_msg}")
-            return 1
-        print(f"Ready package preflight: {pf_msg}")
-        if args.dry_run or args.preview:
-            print("Dry run: ready package selected and preflight passed; not sent.")
-            return 0
-        try:
-            plot_time_s = backend.send_to_grbl(
-                nc_path,
-                com,
-                args.baud,
-                print,
-                sleep_after=bool(args.ready_sleep),
-                auto_resume=bool(args.auto_resume),
-                max_resume_attempts=1,
-            )
-        except Exception as exc:
-            print(backend._format_backend_exception(exc))
-            return 1
-        print(
-            "Done: ready package sent. "
-            f"Plot time: {backend.format_duration_hms(plot_time_s)} ({plot_time_s:.1f}s)."
-        )
-        return 0
-
     if args.input:
         input_path = Path(args.input)
         if not input_path.exists():
@@ -636,7 +504,6 @@ def run_cli_action(backend: Any, args, parser: argparse.ArgumentParser, *, com: 
             feed_travel=args.feed_travel,
             feed_draw=args.feed_draw,
             auto_resume=bool(args.auto_resume),
-            calibration_fast=args.calibration_profile == "fast",
         )
         if ok and args.preview:
             output_guess = output_path or input_path.with_name(f"{input_path.stem}_prepared.nc")

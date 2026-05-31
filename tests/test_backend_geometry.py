@@ -804,115 +804,6 @@ class BackendGeometryTests(unittest.TestCase):
             self.assertIn("G0 X0.0000 Y0.0000 F15000.0", text)
             self.assertEqual(text.count("G1 X0 Y0"), 0)
 
-    def test_rewrite_duplicate_draw_segments_respects_g92_xy_reset(self) -> None:
-        with tempfile.TemporaryDirectory() as td:
-            path = Path(td) / "g92_dup.nc"
-            path.write_text(
-                "\n".join(
-                    [
-                        "G21",
-                        "G90",
-                        "G0 Z0",
-                        "G0 X0 Y0",
-                        "G1 Z11.9",
-                        "G1 X10 Y0 F12000",
-                        "G92 X0 Y0",
-                        "G1 X10 Y0 F12000",
-                    ]
-                )
-                + "\n",
-                encoding="utf-8",
-            )
-
-            changed = backend.rewrite_duplicate_draw_segments_as_penup_travel(
-                path,
-                z_up=0.0,
-                z_down=11.9,
-                feed_travel=15000.0,
-                z_feed=8000.0,
-            )
-
-            text = path.read_text(encoding="utf-8")
-            self.assertEqual(changed, 0)
-            self.assertIn("G92 X0 Y0", text)
-            self.assertEqual(text.count("G1 X10 Y0 F12000"), 2)
-
-    def test_rewrite_duplicate_draw_segments_respects_relative_xy_mode(self) -> None:
-        with tempfile.TemporaryDirectory() as td:
-            path = Path(td) / "relative_dup.nc"
-            path.write_text(
-                "\n".join(
-                    [
-                        "G21",
-                        "G90",
-                        "G0 Z0",
-                        "G0 X0 Y0",
-                        "G1 Z11.9",
-                        "G91",
-                        "G1 X10 Y0 F12000",
-                        "G1 X-10 Y0 F12000",
-                    ]
-                )
-                + "\n",
-                encoding="utf-8",
-            )
-
-            changed = backend.rewrite_duplicate_draw_segments_as_penup_travel(
-                path,
-                z_up=0.0,
-                z_down=11.9,
-                feed_travel=15000.0,
-                z_feed=8000.0,
-            )
-
-            text = path.read_text(encoding="utf-8")
-            self.assertEqual(changed, 1)
-            self.assertIn("G90\nG1 Z0.0000 F8000.0\nG0 X0.0000 Y0.0000 F15000.0", text)
-            self.assertIn("G1 Z11.9000 F8000.0\nG91", text)
-
-    def test_rewrite_duplicate_draw_segments_treats_short_lift_as_pen_up(self) -> None:
-        with tempfile.TemporaryDirectory() as td:
-            path = Path(td) / "short_lift_dup.nc"
-            original = "\n".join(
-                [
-                    "G21",
-                    "G90",
-                    "G0 X0 Y0",
-                    "G1 Z11.9",
-                    "G1 X10 Y0 F12000",
-                    "G1 Z8.4",
-                    "G1 X0 Y0 F12000",
-                    "G1 Z0.0",
-                ]
-            ) + "\n"
-            path.write_text(original, encoding="utf-8")
-
-            changed = backend.rewrite_duplicate_draw_segments_as_penup_travel(
-                path,
-                z_up=0.0,
-                z_down=11.9,
-                feed_travel=15000.0,
-                z_feed=8000.0,
-            )
-
-            self.assertEqual(changed, 0)
-            self.assertEqual(path.read_text(encoding="utf-8"), original)
-
-    def test_gcode_word_detection_handles_compact_and_m30(self) -> None:
-        self.assertTrue(backend._gcode_has_word("G92Z11.9000", "G", 92))
-        self.assertTrue(backend._gcode_has_word("M3S1000", "M", 3))
-        self.assertFalse(backend._gcode_has_word("M30", "M", 3))
-
-    def test_gcode_motion_code_uses_last_motion_word_on_line(self) -> None:
-        self.assertEqual(backend._gcode_motion_code("G0 G1 X10", None), "G1")
-        self.assertEqual(backend._gcode_motion_code("G1 G0 X10", None), "G0")
-        self.assertEqual(backend._gcode_motion_code("G90.1 X10", "G1"), "G1")
-
-    def test_gcode_abs_mode_uses_last_distance_mode_word_on_line(self) -> None:
-        self.assertFalse(backend._gcode_abs_mode("G90 G91 X10", True))
-        self.assertTrue(backend._gcode_abs_mode("G91 G90 X10", False))
-        self.assertFalse(backend._gcode_abs_mode("G90.1 X10", False))
-
     def test_extract_image_tone_hatch_segments_px_simple(self) -> None:
         if backend.cv2 is None or backend.np is None:
             self.skipTest("opencv/numpy unavailable")
@@ -1049,47 +940,6 @@ class BackendGeometryTests(unittest.TestCase):
             backend.SAFE_PEN_TRAVEL_UP = old_safe
             backend.Z_TRAVEL_LIFT_MM = old_lift
 
-    def test_apply_penlift_keeps_technical_short_travel_merge_disabled_by_default(self) -> None:
-        old_enabled = backend.TECH_TEXT_PENLIFT_OPT_ENABLE
-        try:
-            backend.TECH_TEXT_PENLIFT_OPT_ENABLE = False
-            with tempfile.TemporaryDirectory() as td:
-                xy_path = Path(td) / "in.nc"
-                pen_path = Path(td) / "out.nc"
-                xy_path.write_text("G21\nG90\nG0 X0 Y0\n", encoding="utf-8")
-                captured: dict[str, object] = {}
-
-                def _fake_run(*_args, **kwargs):
-                    captured.update(kwargs)
-
-                with mock.patch.object(backend.gcode_penlift_mod, "run_penlift_postprocess", side_effect=_fake_run):
-                    backend.apply_penlift(xy_path, pen_path, z_down=11.9, handwriting_mode=False)
-
-                self.assertFalse(bool(captured["merge_short_travel_enable"]))
-        finally:
-            backend.TECH_TEXT_PENLIFT_OPT_ENABLE = old_enabled
-
-    def test_apply_penlift_uses_technical_short_travel_merge_under_flag(self) -> None:
-        old_enabled = backend.TECH_TEXT_PENLIFT_OPT_ENABLE
-        try:
-            backend.TECH_TEXT_PENLIFT_OPT_ENABLE = True
-            with tempfile.TemporaryDirectory() as td:
-                xy_path = Path(td) / "in.nc"
-                pen_path = Path(td) / "out.nc"
-                xy_path.write_text("G21\nG90\nG0 X0 Y0\n", encoding="utf-8")
-                captured: dict[str, object] = {}
-
-                def _fake_run(*_args, **kwargs):
-                    captured.update(kwargs)
-
-                with mock.patch.object(backend.gcode_penlift_mod, "run_penlift_postprocess", side_effect=_fake_run):
-                    backend.apply_penlift(xy_path, pen_path, z_down=11.9, handwriting_mode=False)
-
-                self.assertTrue(bool(captured["merge_short_travel_enable"]))
-                self.assertAlmostEqual(float(captured["merge_short_travel_mm"]), 0.6, places=6)
-        finally:
-            backend.TECH_TEXT_PENLIFT_OPT_ENABLE = old_enabled
-
     def test_smooth_handwriting_polylines_preserves_endpoints(self) -> None:
         old_enabled = backend.HANDWRITING_SMOOTH_ENABLED
         try:
@@ -1183,39 +1033,6 @@ class BackendGeometryTests(unittest.TestCase):
             self.assertTrue(backend._likely_technical_text_group(group))
         finally:
             backend.HANDWRITING_TEXT_ENABLED = old_hw
-
-    def test_technical_singleline_opt_relaxes_small_text_bbox_but_rejects_frame(self) -> None:
-        old_hw = backend.HANDWRITING_TEXT_ENABLED
-        old_flag = backend.TECH_TEXT_SINGLELINE_OPT_ENABLE
-        try:
-            backend.HANDWRITING_TEXT_ENABLED = False
-            relaxed_group = [
-                backend.PathItem(
-                    points=self._rect(0.0, 0.0, 34.0, 6.0),
-                    closed=True,
-                    is_fill=True,
-                    is_stroke=False,
-                    source_id=121,
-                )
-            ]
-            frame_like = [
-                backend.PathItem(
-                    points=self._rect(0.0, 0.0, 120.0, 80.0),
-                    closed=True,
-                    is_fill=True,
-                    is_stroke=False,
-                    source_id=122,
-                )
-            ]
-
-            backend.TECH_TEXT_SINGLELINE_OPT_ENABLE = False
-            self.assertFalse(backend._likely_technical_text_group(relaxed_group))
-            backend.TECH_TEXT_SINGLELINE_OPT_ENABLE = True
-            self.assertTrue(backend._likely_technical_text_group(relaxed_group))
-            self.assertFalse(backend._likely_technical_text_group(frame_like))
-        finally:
-            backend.HANDWRITING_TEXT_ENABLED = old_hw
-            backend.TECH_TEXT_SINGLELINE_OPT_ENABLE = old_flag
 
     def test_centerline_fill_group_ignores_open_polylines(self) -> None:
         if backend.np is None or backend.cv2 is None:
@@ -1429,24 +1246,6 @@ class BackendGeometryTests(unittest.TestCase):
         self.assertEqual(out[0][0], polys[0][0])
         self.assertEqual(out[0][-1], polys[1][-1])
         self.assertEqual(out[1], polys[2])
-
-    def test_technical_cluster_stitch_flag_relaxes_default_gap_only_under_flag(self) -> None:
-        old_flag = backend.TECH_TEXT_CLUSTER_STITCH_ENABLE
-        try:
-            polys = [
-                [(0.0, 0.0), (0.7, 0.0)],
-                [(1.28, 0.05), (1.8, 0.05)],
-            ]
-
-            backend.TECH_TEXT_CLUSTER_STITCH_ENABLE = False
-            base = backend.merge_technical_text_strokes(polys, logger=lambda *_: None)
-            backend.TECH_TEXT_CLUSTER_STITCH_ENABLE = True
-            opt = backend.merge_technical_text_strokes(polys, logger=lambda *_: None)
-
-            self.assertEqual(len(base), 2)
-            self.assertEqual(len(opt), 1)
-        finally:
-            backend.TECH_TEXT_CLUSTER_STITCH_ENABLE = old_flag
 
     def test_merge_technical_text_strokes_merges_close_tiny_strokes_out_of_order(self) -> None:
         polys = [
@@ -1804,55 +1603,6 @@ class BackendGeometryTests(unittest.TestCase):
             self.assertEqual(changed, 1)
             lines = gcode.read_text(encoding="utf-8").splitlines()
             self.assertEqual(lines[-1], "G0 X78.0476 Y-124.8534 F12000.0")
-
-    def test_cleanup_xy_gcode_overlaps_treats_g92_as_coordinate_reset(self) -> None:
-        with tempfile.TemporaryDirectory() as td:
-            gcode = Path(td) / "xy_g92.gcode"
-            gcode.write_text(
-                "\n".join(
-                    [
-                        "G21",
-                        "G90",
-                        "G0 X0 Y0",
-                        "G1 X10 Y0 F12000.0",
-                        "G92 X0 Y0",
-                        "G1 X10 Y0 F12000.0",
-                    ]
-                )
-                + "\n",
-                encoding="utf-8",
-            )
-
-            changed = backend.cleanup_xy_gcode_overlaps(gcode, logger=lambda *_: None)
-
-            self.assertEqual(changed, 0)
-            lines = gcode.read_text(encoding="utf-8").splitlines()
-            self.assertEqual(lines[4], "G92 X0 Y0")
-            self.assertEqual(lines[5], "G1 X10 Y0 F12000.0")
-
-    def test_cleanup_xy_gcode_overlaps_respects_relative_xy_mode(self) -> None:
-        with tempfile.TemporaryDirectory() as td:
-            gcode = Path(td) / "xy_relative.gcode"
-            gcode.write_text(
-                "\n".join(
-                    [
-                        "G21",
-                        "G90",
-                        "G0 X0 Y0",
-                        "G91",
-                        "G1 X10 Y0 F12000.0",
-                        "G1 X-10 Y0 F12000.0",
-                    ]
-                )
-                + "\n",
-                encoding="utf-8",
-            )
-
-            changed = backend.cleanup_xy_gcode_overlaps(gcode, logger=lambda *_: None)
-
-            self.assertEqual(changed, 1)
-            lines = gcode.read_text(encoding="utf-8").splitlines()
-            self.assertEqual(lines[-1], "G0 X-10 Y0 F12000.0")
 
     def test_collinear_overlap_dedup_uses_overlap_midpoint_distance(self) -> None:
         polylines = [

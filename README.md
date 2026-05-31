@@ -9,11 +9,10 @@
 - Sheet-aware режимы `A4`, `A3`, `notebook`, `custom`.
 - Логика двухпроходного `A3`, включая:
   - поворот второй части на `180°`;
-  - пост-сдвиг второй части на `Y +3.0 мм`;
+  - пост-сдвиг второй части на `Y +4.0 мм`;
   - логи о применённом pass transform.
 - Handwriting / Method3 pipeline для конспектов и текстовых страниц.
 - Диагностика и восстановление Bluetooth SPP / RFCOMM.
-- Wi-Fi/TCP отправка на GRBL без USB/Bluetooth после настройки IP-эндпоинта.
 - Пакетная подготовка документов из папки `1/`.
 
 ## Что убрано
@@ -181,7 +180,7 @@ python src\plotter_pdf_drawer.py ...
 
 1. `pass_01` рисуется как первая половина листа.
 2. `pass_02` после подготовки автоматически разворачивается на `180°`.
-3. После поворота `pass_02` дополнительно сдвигается на `Y +3.0 мм`.
+3. После поворота `pass_02` дополнительно сдвигается на `Y +4.0 мм`.
 4. Эта логика применяется внутри backend, а не вручную в G-code после генерации.
 
 Актуальные правила описаны также в [`config/PLOTTER_CONTROL_RULES.md`](./config/PLOTTER_CONTROL_RULES.md).
@@ -302,7 +301,7 @@ python scripts\gcode_to_svg_preview.py .\job.nc -o .\job.svg
 - ищет исходные PDF в `1/`;
 - различает техчертежи и TOE-конспекты;
 - для техчертежей готовит A4/A3 раскладку;
-- для `A3 pass_02` применяет встроенный flip + `Y +3 мм`;
+- для `A3 pass_02` применяет встроенный flip + `Y +4 мм`;
 - для TOE формирует рукописный layout по страницам;
 - кладёт рядом финальные `.pdf`, `.nc`, `.gcode`, `summary.csv`, `report.json`.
 
@@ -360,7 +359,7 @@ python scripts\bt_spp_recovery.py --preferred-port COM11 --attempt-soft-repair
 - `*_pack\report.json`
 - `*_pack\summary.csv`
 
-Логи pass-transform особенно важны для `A3 pass_02`: по ним видно, что был применён поворот на `180°` и дополнительный подъём на `3 мм`.
+Логи pass-transform особенно важны для `A3 pass_02`: по ним видно, что был применён поворот на `180°` и дополнительный подъём на `4 мм`.
 
 ## Bluetooth и COM
 
@@ -379,19 +378,7 @@ python scripts\bt_spp_recovery.py --preferred-port COM11 --attempt-soft-repair
 ```
 
 3. Если Bluetooth SPP снова умер, но USB жив:
-    продолжайте работу через USB COM-порт, пока не восстановите RFCOMM.
-
-## Wi-Fi GRBL без USB/Bluetooth
-
-Если контроллер поднят в сети как TCP-сокет GRBL, вместо `COM6` можно указывать endpoint:
-
-```powershell
-python scripts\grbl_wifi_probe.py --subnet 192.168.1.0/24 --ports 23,8080,2323,8888
-python src\send_grbl_file.py tcp://192.168.1.50:23 115200 ".\job.nc"
-python main.py ".\sheet.pdf" --com tcp://192.168.1.50:23 --sheet-format a4
-```
-
-Подробно: [`config/WIFI_GRBL_CONNECTION.md`](./config/WIFI_GRBL_CONNECTION.md).
+   продолжайте работу через USB COM-порт, пока не восстановите RFCOMM.
 
 ## Тесты
 
@@ -407,7 +394,7 @@ python -m pytest -q
 
 - Основной интерфейс — CLI.
 - Preview должен существовать рядом с итоговым G-code.
-- Геометрические инварианты вроде `A3 pass_02 rotate 180 + Y+3 mm` фиксируются в backend и в документации.
+- Геометрические инварианты вроде `A3 pass_02 rotate 180 + Y+4 mm` фиксируются в backend и в документации.
 - Новые автоматизации должны идти через `scripts/` и `src/`, без возврата к отдельному desktop UI.
 
 ## TOE Font-First Pipeline

@@ -36,14 +36,6 @@ except Exception:  # pragma: no cover - fallback for non-package layouts
             return ""
 
 try:
-    from src.plotter_backend.geometry.arc_fit import arc_center_from_radius
-except Exception:  # pragma: no cover - fallback for non-package layouts
-    try:
-        from plotter_backend.geometry.arc_fit import arc_center_from_radius  # type: ignore
-    except Exception:  # pragma: no cover - defensive fallback
-        arc_center_from_radius = None  # type: ignore[assignment]
-
-try:
     import fitz  # type: ignore
 except Exception:
     fitz = None
@@ -205,45 +197,30 @@ def _resolve_formula_font(backend, requested_font: str, log: Optional[LogFn] = N
 
 
 def _split_comment(line: str) -> str:
-    raw = str(line or "").split(";", 1)[0]
-    out: list[str] = []
-    depth = 0
-    for ch in raw:
-        if ch == "(":
-            depth += 1
-            continue
-        if ch == ")" and depth:
-            depth -= 1
-            continue
-        if depth == 0:
-            out.append(ch)
-    return "".join(out).strip()
+    s = (line or "").strip()
+    if not s:
+        return ""
+    if ";" in s:
+        s = s.split(";", 1)[0].strip()
+    if "(" in s:
+        s = s.split("(", 1)[0].strip()
+    return s
 
 
-_TOKEN_RE = re.compile(r"([A-Za-z])\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)")
+_G_RE = re.compile(r"\bG\d+(?:\.\d+)?\b", re.IGNORECASE)
+_M_RE = re.compile(r"\bM\d+(?:\.\d+)?\b", re.IGNORECASE)
 
 
 def _parse_words(body: str) -> dict[str, float]:
     out: dict[str, float] = {}
-    for raw_key, raw_value in _TOKEN_RE.findall(body):
-        k = raw_key.upper()
+    for tok in body.split():
+        if not tok:
+            continue
+        k = tok[0].upper()
         if k in {"G", "M"}:
             continue
         try:
-            out[k] = float(raw_value)
-        except Exception:
-            continue
-    return out
-
-
-def _values(body: str, letter: str) -> list[float]:
-    target = str(letter).upper()
-    out: list[float] = []
-    for raw_key, raw_value in _TOKEN_RE.findall(body):
-        if raw_key.upper() != target:
-            continue
-        try:
-            out.append(float(raw_value))
+            out[k] = float(tok[1:])
         except Exception:
             continue
     return out
@@ -918,8 +895,11 @@ def _gcode_to_polylines(lines: list[str], *, z_up: float, z_down: float) -> list
             continue
 
         motion_g: Optional[int] = None
-        has_g92 = False
-        for gval in _values(body, "G"):
+        for gtok in _G_RE.findall(body):
+            try:
+                gval = float(gtok[1:])
+            except Exception:
+                continue
             if abs(gval - 90.0) <= 1e-6:
                 abs_mode = True
             elif abs(gval - 91.0) <= 1e-6:
@@ -936,32 +916,16 @@ def _gcode_to_polylines(lines: list[str], *, z_up: float, z_down: float) -> list
                 motion_g = 2
             elif abs(gval - 3.0) <= 1e-6:
                 motion_g = 3
-            elif abs(gval - 92.0) <= 1e-6:
-                has_g92 = True
 
         # Support spindle-style pen control (M3/M5) in preview parsing.
-        for mval in _values(body, "M"):
-            mint = int(round(mval))
-            if abs(mval - float(mint)) > 1e-6:
-                continue
-            if mint == 3:
+        for mtok in _M_RE.findall(body):
+            m = mtok.upper()
+            if m == "M3":
                 pen_down = True
-            elif mint == 5:
+            elif m == "M5":
                 pen_down = False
 
         words = _parse_words(body)
-        if has_g92:
-            if len(cur_poly) >= 2:
-                out.append(cur_poly)
-            cur_poly = []
-            if "X" in words:
-                cur_x = float(words["X"])
-            if "Y" in words:
-                cur_y = float(words["Y"])
-            if "Z" in words:
-                cur_z = float(words["Z"])
-                _update_pen()
-            continue
         if "Z" in words:
             z = float(words["Z"])
             cur_z = z if abs_mode else (cur_z + z)
@@ -985,19 +949,11 @@ def _gcode_to_polylines(lines: list[str], *, z_up: float, z_down: float) -> list
         if is_draw:
             if not cur_poly:
                 cur_poly = [start]
-            if motion_g in (2, 3) and (("I" in words) or ("J" in words) or ("R" in words)):
-                if ("I" in words) or ("J" in words):
-                    i = float(words.get("I", 0.0))
-                    j = float(words.get("J", 0.0))
-                    center = (i, j) if ijk_abs else (cur_x + i, cur_y + j)
-                elif arc_center_from_radius is not None:
-                    center = arc_center_from_radius(start, end, float(words["R"]), cw=(motion_g == 2))
-                else:
-                    center = None
-                if center is None:
-                    cur_poly.append(end)
-                else:
-                    cur_poly.extend(_arc_points(start, end, center, cw=(motion_g == 2)))
+            if motion_g in (2, 3) and (("I" in words) or ("J" in words)):
+                i = float(words.get("I", 0.0))
+                j = float(words.get("J", 0.0))
+                center = (i, j) if ijk_abs else (cur_x + i, cur_y + j)
+                cur_poly.extend(_arc_points(start, end, center, cw=(motion_g == 2)))
             else:
                 cur_poly.append(end)
         else:
@@ -1052,12 +1008,11 @@ def _write_svg_preview(
     vb_w = width + 2.0 * pad
     vb_h = height + 2.0 * pad
     center_y = (y0 + y1) * 0.5
-    translate_y = -(2.0 * center_y)
     parts = [
         '<?xml version="1.0" encoding="UTF-8"?>',
         '<svg xmlns="http://www.w3.org/2000/svg" version="1.1"',
         f'     width="{vb_w:.3f}mm" height="{vb_h:.3f}mm" viewBox="{vb_x:.3f} {vb_y:.3f} {vb_w:.3f} {vb_h:.3f}">',
-        f'  <g fill="none" stroke="#111827" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" transform="scale(1,-1) translate(0,{translate_y:.4f})">',
+        f'  <g fill="none" stroke="#111827" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" transform="scale(1,-1) translate(0,-{2.0 * center_y:.4f})">',
     ]
     for poly in flipped:
         if len(poly) < 2:
@@ -3850,12 +3805,6 @@ class BackendBridge:
                         first_pdf = page_pdf
                         first_nc = page_nc
                     ctx.check_canceled()
-                    preflight = getattr(backend, "preflight_check_gcode", None)
-                    if callable(preflight):
-                        pf_ok, pf_msg = preflight(page_nc, logger=log)
-                        if not pf_ok:
-                            return False, f"Method3 page {page_no} preflight failed: {pf_msg}"
-                        log(f"Method3 page {page_no} preflight: {pf_msg}")
                     with self._track_backend_subprocess(ctx):
                         plot_time_s = backend.send_to_grbl(
                             page_nc,

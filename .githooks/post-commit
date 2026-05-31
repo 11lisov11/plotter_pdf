@@ -1,0 +1,17 @@
+#!/bin/sh
+# Auto-push after every commit in this repo.
+# Uses current branch and default remote.
+set -e
+
+# Skip during rebase/merge conflicts.
+if [ -d .git/rebase-apply ] || [ -d .git/rebase-merge ] || [ -f .git/MERGE_HEAD ]; then
+  exit 0
+fi
+
+# Push current HEAD to its upstream (if set), otherwise to origin.
+branch=$(git rev-parse --abbrev-ref HEAD)
+if git rev-parse --abbrev-ref --symbolic-full-name @{u} >/dev/null 2>&1; then
+  git push
+else
+  git push -u origin "$branch"
+fi

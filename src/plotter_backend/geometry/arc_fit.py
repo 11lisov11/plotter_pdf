@@ -152,65 +152,6 @@ def arc_extents_xy(start: Point, end: Point, center: Point, cw: bool) -> Tuple[f
     return min(xs), max(xs), min(ys), max(ys)
 
 
-def _arc_sweep_radians(start: Point, end: Point, center: Point, cw: bool) -> float:
-    x0, y0 = start
-    x1, y1 = end
-    cx, cy = center
-    if math.hypot(x1 - x0, y1 - y0) <= 1e-12:
-        return 2.0 * math.pi
-    a0 = math.atan2(y0 - cy, x0 - cx)
-    a1 = math.atan2(y1 - cy, x1 - cx)
-    if cw:
-        sweep = a0 - a1
-        if sweep <= 0.0:
-            sweep += 2.0 * math.pi
-    else:
-        sweep = a1 - a0
-        if sweep <= 0.0:
-            sweep += 2.0 * math.pi
-    return abs(float(sweep))
-
-
-def arc_center_from_radius(start: Point, end: Point, radius_word: float, cw: bool) -> Optional[Point]:
-    """Resolve a G-code R-word arc center.
-
-    Positive R selects the minor arc, negative R selects the major arc. Full
-    circles cannot be represented by R-word arcs, so coincident endpoints return
-    None and callers should fall back to endpoint bounds/length.
-    """
-
-    x0, y0 = start
-    x1, y1 = end
-    radius_raw = float(radius_word)
-    radius = abs(radius_raw)
-    chord = math.hypot(x1 - x0, y1 - y0)
-    if radius <= 1e-12 or chord <= 1e-12:
-        return None
-    if chord > 2.0 * radius + 1e-9:
-        return None
-
-    mx = (x0 + x1) * 0.5
-    my = (y0 + y1) * 0.5
-    half = chord * 0.5
-    h_sq = max(0.0, radius * radius - half * half)
-    h = math.sqrt(h_sq)
-    nx = -(y1 - y0) / chord
-    ny = (x1 - x0) / chord
-    candidates = [(mx + nx * h, my + ny * h)]
-    if h > 1e-12:
-        candidates.append((mx - nx * h, my - ny * h))
-
-    want_major = radius_raw < 0.0
-    best = candidates[0]
-    for center in candidates:
-        sweep = _arc_sweep_radians(start, end, center, cw)
-        is_major = sweep > math.pi + 1e-9
-        if is_major == want_major:
-            return center
-        best = center
-    return best
-
-
 def polyline_is_near_line(poly: Polyline, tol_mm: float) -> bool:
     if len(poly) < 3:
         return False

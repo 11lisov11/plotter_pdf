@@ -3,24 +3,15 @@ import time
 from pathlib import Path
 import argparse
 from collections import deque
-import os
-import re
-import subprocess
 
 try:
     from src.plotter_backend.machine.windows_bt_spp import build_serial_open_hint
-    from src.plotter_backend.machine.grbl_transport import open_grbl_transport, parse_tcp_endpoint
 except Exception:
     try:
         from plotter_backend.machine.windows_bt_spp import build_serial_open_hint  # type: ignore
-        from plotter_backend.machine.grbl_transport import open_grbl_transport, parse_tcp_endpoint  # type: ignore
     except Exception:
         def build_serial_open_hint(_port: str, diagnostics=None) -> str:
             return ""
-        def parse_tcp_endpoint(_value: str, *, default_port: int = 23):
-            return None
-        def open_grbl_transport(_port: str, _baud: int, *, timeout_s: float = 1.0):
-            raise RuntimeError("GRBL transport helper is not available")
 
 
 def _force_utf8_stdio() -> None:
@@ -59,7 +50,7 @@ def _safe_print(*args, **kwargs) -> None:
 
 
 def usage():
-    _safe_print('Usage: python send_grbl_file.py COMx|tcp://host:port 115200 path\\to\\file.nc [--sleep]')
+    _safe_print('Usage: python send_grbl_file.py COMx 115200 path\\to\\file.nc [--sleep]')
 
 
 def _format_duration_hms(seconds: float) -> str:
@@ -75,7 +66,18 @@ def _format_duration_hms(seconds: float) -> str:
 
 def open_grbl(port: str, baud: int):
     try:
-        ser = open_grbl_transport(port, baud, timeout_s=1.0)
+        # Some boards reset on DTR when opening the serial port.
+        # Create the object first, force DTR/RTS low, then open.
+        ser = serial.Serial()
+        ser.port = port
+        ser.baudrate = baud
+        ser.timeout = 1
+        try:
+            ser.dtr = False
+            ser.rts = False
+        except Exception:
+            pass
+        ser.open()
     except SerialException as exc:
         hint = ""
         try:
@@ -86,11 +88,6 @@ def open_grbl(port: str, baud: int):
         if hint and hint not in message:
             message = f"{message}\n{hint}"
         raise RuntimeError(message) from exc
-    except Exception as exc:
-        endpoint = parse_tcp_endpoint(port)
-        if endpoint is not None:
-            raise RuntimeError(f"Cannot open TCP GRBL {endpoint.host}:{endpoint.port}: {exc}") from exc
-        raise
     time.sleep(0.2)
     ser.reset_input_buffer()
     ser.reset_output_buffer()
@@ -139,114 +136,13 @@ def open_grbl(port: str, baud: int):
 def _clean_gcode_lines(text: str) -> list[str]:
     out: list[str] = []
     for raw_line in text.splitlines():
-        line = _strip_inline_gcode_comment(raw_line.lstrip("\ufeff")).strip()
+        line = raw_line.lstrip("\ufeff").strip()
         if not line:
+            continue
+        if line.startswith(";") or line.startswith("("):
             continue
         out.append(line)
     return out
-
-
-def _strip_inline_gcode_comment(line: str) -> str:
-    raw = str(line or "").split(";", 1)[0]
-    out: list[str] = []
-    depth = 0
-    for ch in raw:
-        if ch == "(":
-            depth += 1
-            continue
-        if ch == ")" and depth:
-            depth -= 1
-            continue
-        if depth == 0:
-            out.append(ch)
-    return "".join(out)
-
-
-def _command_contains_arg_fragment(command: str, fragment: str) -> bool:
-    needle = str(fragment or "").strip().casefold()
-    if not needle:
-        return True
-    haystack = str(command or "").casefold()
-    variants = {needle, needle.replace("\\", "/"), needle.replace("/", "\\")}
-    for variant in variants:
-        if not variant:
-            continue
-        pattern = re.compile(r"(?<![A-Za-z0-9_.-])" + re.escape(variant) + r"(?![A-Za-z0-9_.-])")
-        if pattern.search(haystack):
-            return True
-    return False
-
-
-def _command_contains_any_arg_fragment(command: str, fragments: list[str]) -> bool:
-    return any(_command_contains_arg_fragment(command, fragment) for fragment in fragments)
-
-
-def _find_conflicting_sender_processes(port: str, file_path: Path) -> list[tuple[int, str]]:
-    """Return other running sender processes for the same port on Windows."""
-    if os.name != "nt":
-        return []
-    try:
-        resolved_file = str(file_path.resolve()).casefold()
-    except Exception:
-        resolved_file = str(file_path).casefold()
-    target_file_tokens: list[str] = []
-    for item in (str(file_path), str(Path(file_path)), resolved_file, Path(file_path).name):
-        token = str(item or "").strip().casefold()
-        if token and token not in target_file_tokens:
-            target_file_tokens.append(token)
-        slash_token = token.replace("\\", "/")
-        if slash_token and slash_token not in target_file_tokens:
-            target_file_tokens.append(slash_token)
-        backslash_token = token.replace("/", "\\")
-        if backslash_token and backslash_token not in target_file_tokens:
-            target_file_tokens.append(backslash_token)
-    target_port = str(port or "").casefold()
-    ps = (
-        "Get-CimInstance Win32_Process -Filter \"name = 'python.exe' or name = 'py.exe'\" | "
-        "Select-Object ProcessId,CommandLine | ConvertTo-Json -Compress"
-    )
-    try:
-        proc = subprocess.run(
-            ["powershell", "-NoProfile", "-Command", ps],
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            timeout=5,
-            check=False,
-        )
-    except Exception:
-        return []
-    if proc.returncode != 0 or not proc.stdout.strip():
-        return []
-    try:
-        import json
-
-        payload = json.loads(proc.stdout)
-    except Exception:
-        return []
-    rows = payload if isinstance(payload, list) else [payload]
-    current_pid = os.getpid()
-    conflicts: list[tuple[int, str]] = []
-    for row in rows:
-        if not isinstance(row, dict):
-            continue
-        try:
-            pid = int(row.get("ProcessId") or 0)
-        except Exception:
-            continue
-        if pid <= 0 or pid == current_pid:
-            continue
-        cmd = str(row.get("CommandLine") or "")
-        cmd_norm = cmd.casefold()
-        if "send_grbl_file.py" not in cmd_norm:
-            continue
-        if target_port and not _command_contains_arg_fragment(cmd_norm, target_port):
-            continue
-        if not target_port and target_file_tokens and not _command_contains_any_arg_fragment(cmd_norm, target_file_tokens):
-            continue
-        conflicts.append((pid, cmd))
-    return conflicts
 
 
 def _safe_pen_up_commands() -> tuple[str, ...]:
@@ -304,9 +200,9 @@ def release_axes(ser, *, sleep: bool = False, wait: bool = True):
     if wait:
         try:
             wait_for_idle(ser, timeout_s=45.0)
-        except Exception as exc:
-            _safe_print(f"Cannot confirm Idle after return-home move; motors were not released: {exc}")
-            return
+        except Exception:
+            # Teardown must still release motors even if status polling fails.
+            pass
     _send_no_throw("G0 Z0.0000 F800.0")
     # GRBL-friendly motor release.
     _send_no_throw("$1=0")
@@ -489,14 +385,6 @@ def main(argv):
     if not file_path.exists():
         _safe_print(f'File not found: {file_path}')
         return 2
-
-    conflicts = _find_conflicting_sender_processes(port, file_path)
-    if conflicts:
-        _safe_print("Refusing to start: another send_grbl_file.py is already streaming on this port.")
-        for pid, cmd in conflicts[:5]:
-            _safe_print(f"  PID {pid}: {cmd}")
-        _safe_print("Stop the old sender first, then rerun this command.")
-        return 4
 
     ser = None
     try:
