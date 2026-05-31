@@ -292,7 +292,7 @@ def _force_variant_a3_two_pass_for_large_sheet(source_pdf: Path, page_w_mm: floa
     if max(float(page_w_mm), float(page_h_mm)) <= 300.0:
         return False
     parent = str(source_pdf.parent).casefold()
-    return "компьютерная графика" in parent and ("20 вариант" in parent or "22 вариант" in parent)
+    return "компьютерная графика" in parent
 
 
 def _is_computer_graphics_variant20_or22_source(source_pdf: Path) -> bool:
@@ -7670,12 +7670,14 @@ def _prepare_drawing_package(source_pdf: Path, package_dir: Path) -> tuple[dict[
         report["items"] = candidates
         report.update(decision)
         report["selected_layout_similarity"] = best.get("layout_similarity")
-        if str(best.get("reference_source", "")).strip():
+        ref_pdf_raw = str(best.get("reference_source", "") or best.get("pdf", "") or "").strip()
+        ref_svg_raw = str(best.get("reference_source_svg", "") or best.get("svg", "") or "").strip()
+        if ref_pdf_raw:
             ref_pdf_dst = package_dir / "a4_clean_source.pdf"
             ref_svg_dst = package_dir / "a4_clean_source.svg"
-            _copy_file(Path(str(best.get("reference_source", ""))), ref_pdf_dst)
-            if str(best.get("reference_source_svg", "")).strip():
-                _copy_file(Path(str(best.get("reference_source_svg", ""))), ref_svg_dst)
+            _copy_file(Path(ref_pdf_raw), ref_pdf_dst)
+            if ref_svg_raw:
+                _copy_file(Path(ref_svg_raw), ref_svg_dst)
             report["a4_clean_source"] = {
                 "pdf": str(ref_pdf_dst),
                 "svg": str(ref_svg_dst),
@@ -7800,18 +7802,19 @@ def _prepare_drawing_package(source_pdf: Path, package_dir: Path) -> tuple[dict[
                     ),
                 ]
             )
-        candidate_builders.append(
-            (
-                "strict_1to1_clip",
-                lambda: _prepare_drawing_candidate(
-                    source_pdf,
-                    variant_name="strict_1to1_clip",
-                    exact_geometry_mode=True,
-                    strict_one_to_one=True,
-                    candidate_dir=candidate_root,
-                ),
+        if frame_class != "kompas_full_frame":
+            candidate_builders.append(
+                (
+                    "strict_1to1_clip",
+                    lambda: _prepare_drawing_candidate(
+                        source_pdf,
+                        variant_name="strict_1to1_clip",
+                        exact_geometry_mode=True,
+                        strict_one_to_one=True,
+                        candidate_dir=candidate_root,
+                    ),
+                )
             )
-        )
         for variant_name, fn in candidate_builders:
             try:
                 candidates.append(fn())
@@ -7905,12 +7908,14 @@ def _prepare_drawing_package(source_pdf: Path, package_dir: Path) -> tuple[dict[
         report["items"] = candidates
         report.update(decision)
         report["selected_layout_similarity"] = best.get("layout_similarity")
-        if str(best.get("reference_source", "")).strip():
+        ref_pdf_raw = str(best.get("reference_source", "") or best.get("pdf", "") or "").strip()
+        ref_svg_raw = str(best.get("reference_source_svg", "") or best.get("svg", "") or "").strip()
+        if ref_pdf_raw:
             ref_pdf_dst = package_dir / "a4_clean_source.pdf"
             ref_svg_dst = package_dir / "a4_clean_source.svg"
-            _copy_file(Path(str(best.get("reference_source", ""))), ref_pdf_dst)
-            if str(best.get("reference_source_svg", "")).strip():
-                _copy_file(Path(str(best.get("reference_source_svg", ""))), ref_svg_dst)
+            _copy_file(Path(ref_pdf_raw), ref_pdf_dst)
+            if ref_svg_raw:
+                _copy_file(Path(ref_svg_raw), ref_svg_dst)
             report["a4_clean_source"] = {
                 "pdf": str(ref_pdf_dst),
                 "svg": str(ref_svg_dst),

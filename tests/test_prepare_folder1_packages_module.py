@@ -2028,19 +2028,12 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
                 mock.patch.object(
                     mod,
                     "_prepare_drawing_candidate",
-                    side_effect=[
-                        _mk_candidate(
-                            "fit_full",
-                            0.952500,
-                            metrics={"segments_total": 4000, "draw_length_mm": 10.0, "point_like_strokes": 800, "tiny_strokes_lt_08_mm": 1600, "pen_down_strokes": 2600},
-                        ),
-                        _mk_candidate(
-                            "strict_1to1_clip",
-                            0.910741,
-                            metrics={"segments_total": 4000, "draw_length_mm": 10.0, "point_like_strokes": 300, "tiny_strokes_lt_08_mm": 600, "pen_down_strokes": 1800},
-                        ),
-                    ],
-                ),
+                    return_value=_mk_candidate(
+                        "fit_full",
+                        0.952500,
+                        metrics={"segments_total": 4000, "draw_length_mm": 10.0, "point_like_strokes": 800, "tiny_strokes_lt_08_mm": 1600, "pen_down_strokes": 2600},
+                    ),
+                ) as draw_mock,
                 mock.patch.object(mod, "_rewrite_preview_on_work_area_canvas_from_gcode", return_value=(True, "")),
                 mock.patch.object(
                     mod,
@@ -2048,13 +2041,14 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
                     side_effect=[
                         {"source_crop_iou": 0.18, "source_crop_corr": 0.22, "source_crop_x_px": 0.0, "source_crop_y_px": 0.0},
                         {"source_crop_iou": 0.21, "source_crop_corr": 0.24, "source_crop_x_px": 0.0, "source_crop_y_px": 0.0},
-                        {"source_crop_iou": 0.14, "source_crop_corr": 0.16, "source_crop_x_px": 0.0, "source_crop_y_px": 0.0},
                     ],
                 ),
             ):
                 report, rows = mod._prepare_drawing_package(source_pdf, root / "pkg")
 
         hybrid_mock.assert_not_called()
+        self.assertEqual(draw_mock.call_count, 1)
+        self.assertEqual(draw_mock.call_args.kwargs["variant_name"], "fit_full")
         self.assertEqual(report["frame_class"], "kompas_full_frame")
         self.assertEqual(report["selected_variant"], "mupdf_svg_paths")
         self.assertEqual(report["route_class"], "A4 drawing with full KOMPAS frame")
@@ -2298,7 +2292,7 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
         self.assertIn("boom", failed["message"])
         self.assertEqual(len(rows), 1)
 
-    def test_force_variant_a3_two_pass_for_large_sheet_matches_variants_20_22_only(self) -> None:
+    def test_force_variant_a3_two_pass_for_large_sheet_matches_computer_graphics(self) -> None:
         mod = _load_module()
         self.assertTrue(
             mod._force_variant_a3_two_pass_for_large_sheet(
@@ -2314,7 +2308,7 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
                 420.0,
             )
         )
-        self.assertFalse(
+        self.assertTrue(
             mod._force_variant_a3_two_pass_for_large_sheet(
                 Path(r"C:\plotter_pdf\Компьютерная графика\8 вариант\Втулка.pdf"),
                 420.0,

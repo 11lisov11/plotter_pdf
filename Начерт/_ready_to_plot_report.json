@@ -1,0 +1,1013 @@
+{
+  "ok": true,
+  "roots": [
+    "C:\\plotter_pdf\\Начерт"
+  ],
+  "package_count": 25,
+  "failed_count": 0,
+  "warning_count": 0,
+  "failed_packages": [],
+  "warnings": [],
+  "packages": [
+    {
+      "package_dir": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 10_pack",
+      "ok": true,
+      "kind": "a3_two_pass",
+      "report": {
+        "frame_class": "standard_frame",
+        "route_class": "A3 two-pass drawing",
+        "selected_variant": "a3_two_pass_clean_source",
+        "selected_layout_similarity": 0.980506,
+        "source_fidelity_score": 0.980506,
+        "fragmentation_score": 0.9595
+      },
+      "preflight": {
+        "checked_files": 8,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 835,
+        "tiny_strokes_lt_08_mm": 78,
+        "point_like_strokes": 54
+      },
+      "duplicates": {
+        "segments": 3149,
+        "duplicate_segments": 0,
+        "duplicate_ratio": 0.0
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 10_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 10_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 1_pack",
+      "ok": true,
+      "kind": "a4",
+      "report": {
+        "frame_class": "standard_frame",
+        "route_class": "drawing with miniature/header overlay",
+        "selected_variant": "a4_hybrid_frame",
+        "selected_layout_similarity": 0.976312,
+        "source_fidelity_score": 0.93726,
+        "fragmentation_score": 0.975933
+      },
+      "preflight": {
+        "checked_files": 4,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 837,
+        "tiny_strokes_lt_08_mm": 50,
+        "point_like_strokes": 5
+      },
+      "duplicates": {
+        "segments": 9309,
+        "duplicate_segments": 0,
+        "duplicate_ratio": 0.0
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 1_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 1_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 2_pack",
+      "ok": true,
+      "kind": "a4",
+      "report": {
+        "frame_class": "standard_frame",
+        "route_class": "drawing with miniature/header overlay",
+        "selected_variant": "a4_hybrid_frame",
+        "selected_layout_similarity": 0.985811,
+        "source_fidelity_score": 0.946379,
+        "fragmentation_score": 0.984408
+      },
+      "preflight": {
+        "checked_files": 4,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 509,
+        "tiny_strokes_lt_08_mm": 37,
+        "point_like_strokes": 2
+      },
+      "duplicates": {
+        "segments": 7343,
+        "duplicate_segments": 5,
+        "duplicate_ratio": 0.000681
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 2_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 2_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 3_pack",
+      "ok": true,
+      "kind": "a3_two_pass",
+      "report": {
+        "frame_class": "standard_frame",
+        "route_class": "A3 two-pass drawing",
+        "selected_variant": "a3_two_pass_clean_source",
+        "selected_layout_similarity": 0.979184,
+        "source_fidelity_score": 0.979184,
+        "fragmentation_score": 0.951733
+      },
+      "preflight": {
+        "checked_files": 8,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 672,
+        "tiny_strokes_lt_08_mm": 90,
+        "point_like_strokes": 48
+      },
+      "duplicates": {
+        "segments": 2107,
+        "duplicate_segments": 3,
+        "duplicate_ratio": 0.001424
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 3_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 3_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 4_pack",
+      "ok": true,
+      "kind": "a4",
+      "report": {
+        "frame_class": "standard_frame",
+        "route_class": "drawing with miniature/header overlay",
+        "selected_variant": "a4_hybrid_frame",
+        "selected_layout_similarity": 0.97725,
+        "source_fidelity_score": 0.93816,
+        "fragmentation_score": 0.978837
+      },
+      "preflight": {
+        "checked_files": 4,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 737,
+        "tiny_strokes_lt_08_mm": 41,
+        "point_like_strokes": 5
+      },
+      "duplicates": {
+        "segments": 8874,
+        "duplicate_segments": 7,
+        "duplicate_ratio": 0.000789
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 4_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 4_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 5_pack",
+      "ok": true,
+      "kind": "a4",
+      "report": {
+        "frame_class": "standard_frame",
+        "route_class": "drawing with miniature/header overlay",
+        "selected_variant": "a4_hybrid_frame",
+        "selected_layout_similarity": 0.976439,
+        "source_fidelity_score": 0.937381,
+        "fragmentation_score": 0.982651
+      },
+      "preflight": {
+        "checked_files": 4,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 558,
+        "tiny_strokes_lt_08_mm": 45,
+        "point_like_strokes": 2
+      },
+      "duplicates": {
+        "segments": 7488,
+        "duplicate_segments": 10,
+        "duplicate_ratio": 0.001335
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 5_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 5_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 6_pack",
+      "ok": true,
+      "kind": "a4",
+      "report": {
+        "frame_class": "standard_frame",
+        "route_class": "drawing with miniature/header overlay",
+        "selected_variant": "a4_hybrid_frame",
+        "selected_layout_similarity": 0.983479,
+        "source_fidelity_score": 0.94414,
+        "fragmentation_score": 0.982825
+      },
+      "preflight": {
+        "checked_files": 4,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 429,
+        "tiny_strokes_lt_08_mm": 52,
+        "point_like_strokes": 12
+      },
+      "duplicates": {
+        "segments": 5085,
+        "duplicate_segments": 0,
+        "duplicate_ratio": 0.0
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 6_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 6_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 7_pack",
+      "ok": true,
+      "kind": "a4",
+      "report": {
+        "frame_class": "standard_frame",
+        "route_class": "drawing with miniature/header overlay",
+        "selected_variant": "a4_hybrid_frame",
+        "selected_layout_similarity": 0.982642,
+        "source_fidelity_score": 0.943336,
+        "fragmentation_score": 0.982618
+      },
+      "preflight": {
+        "checked_files": 4,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 574,
+        "tiny_strokes_lt_08_mm": 43,
+        "point_like_strokes": 3
+      },
+      "duplicates": {
+        "segments": 8146,
+        "duplicate_segments": 0,
+        "duplicate_ratio": 0.0
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 7_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 7_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 8_pack",
+      "ok": true,
+      "kind": "a4",
+      "report": {
+        "frame_class": "standard_frame",
+        "route_class": "drawing with miniature/header overlay",
+        "selected_variant": "a4_hybrid_frame",
+        "selected_layout_similarity": 0.979031,
+        "source_fidelity_score": 0.93987,
+        "fragmentation_score": 0.981886
+      },
+      "preflight": {
+        "checked_files": 4,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 623,
+        "tiny_strokes_lt_08_mm": 30,
+        "point_like_strokes": 7
+      },
+      "duplicates": {
+        "segments": 7463,
+        "duplicate_segments": 3,
+        "duplicate_ratio": 0.000402
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 8_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 8_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 9_pack",
+      "ok": true,
+      "kind": "a4",
+      "report": {
+        "frame_class": "standard_frame",
+        "route_class": "drawing with miniature/header overlay",
+        "selected_variant": "a4_hybrid_frame",
+        "selected_layout_similarity": 0.980324,
+        "source_fidelity_score": 0.941111,
+        "fragmentation_score": 0.983851
+      },
+      "preflight": {
+        "checked_files": 4,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 532,
+        "tiny_strokes_lt_08_mm": 33,
+        "point_like_strokes": 2
+      },
+      "duplicates": {
+        "segments": 6616,
+        "duplicate_segments": 1,
+        "duplicate_ratio": 0.000151
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 9_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Начерт\\1 вариант\\Задача 9_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 10_pack",
+      "ok": true,
+      "kind": "a3_two_pass",
+      "report": {
+        "frame_class": "standard_frame",
+        "route_class": "A3 two-pass drawing",
+        "selected_variant": "a3_two_pass_clean_source",
+        "selected_layout_similarity": 0.988725,
+        "source_fidelity_score": 0.988725,
+        "fragmentation_score": 0.928082
+      },
+      "preflight": {
+        "checked_files": 8,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 1396,
+        "tiny_strokes_lt_08_mm": 234,
+        "point_like_strokes": 93
+      },
+      "duplicates": {
+        "segments": 4356,
+        "duplicate_segments": 3,
+        "duplicate_ratio": 0.000689
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 10_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 10_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 1_pack",
+      "ok": true,
+      "kind": "a4",
+      "report": {
+        "frame_class": "standard_frame",
+        "route_class": "drawing with miniature/header overlay",
+        "selected_variant": "a4_hybrid_frame",
+        "selected_layout_similarity": 0.968428,
+        "source_fidelity_score": 0.929691,
+        "fragmentation_score": 0.96335
+      },
+      "preflight": {
+        "checked_files": 4,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 1291,
+        "tiny_strokes_lt_08_mm": 101,
+        "point_like_strokes": 49
+      },
+      "duplicates": {
+        "segments": 16618,
+        "duplicate_segments": 2,
+        "duplicate_ratio": 0.00012
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 1_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 1_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 2_pack",
+      "ok": true,
+      "kind": "a4",
+      "report": {
+        "frame_class": "standard_frame",
+        "route_class": "drawing with miniature/header overlay",
+        "selected_variant": "a4_hybrid_frame",
+        "selected_layout_similarity": 0.982137,
+        "source_fidelity_score": 0.942852,
+        "fragmentation_score": 0.978088
+      },
+      "preflight": {
+        "checked_files": 4,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 610,
+        "tiny_strokes_lt_08_mm": 63,
+        "point_like_strokes": 36
+      },
+      "duplicates": {
+        "segments": 7092,
+        "duplicate_segments": 0,
+        "duplicate_ratio": 0.0
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 2_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 2_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 3_pack",
+      "ok": true,
+      "kind": "a3_two_pass",
+      "report": {
+        "frame_class": "standard_frame",
+        "route_class": "A3 two-pass drawing",
+        "selected_variant": "a3_two_pass_clean_source",
+        "selected_layout_similarity": 0.987725,
+        "source_fidelity_score": 0.987725,
+        "fragmentation_score": 0.939003
+      },
+      "preflight": {
+        "checked_files": 8,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 1063,
+        "tiny_strokes_lt_08_mm": 162,
+        "point_like_strokes": 69
+      },
+      "duplicates": {
+        "segments": 3290,
+        "duplicate_segments": 0,
+        "duplicate_ratio": 0.0
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 3_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 3_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 4_pack",
+      "ok": true,
+      "kind": "a4",
+      "report": {
+        "frame_class": "standard_frame",
+        "route_class": "drawing with miniature/header overlay",
+        "selected_variant": "a4_hybrid_frame",
+        "selected_layout_similarity": 0.979444,
+        "source_fidelity_score": 0.940266,
+        "fragmentation_score": 0.977052
+      },
+      "preflight": {
+        "checked_files": 4,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 692,
+        "tiny_strokes_lt_08_mm": 61,
+        "point_like_strokes": 25
+      },
+      "duplicates": {
+        "segments": 7490,
+        "duplicate_segments": 42,
+        "duplicate_ratio": 0.005607
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 4_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 4_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 5_pack",
+      "ok": true,
+      "kind": "a4",
+      "report": {
+        "frame_class": "standard_frame",
+        "route_class": "drawing with miniature/header overlay",
+        "selected_variant": "a4_hybrid_frame",
+        "selected_layout_similarity": 0.978645,
+        "source_fidelity_score": 0.939499,
+        "fragmentation_score": 0.97595
+      },
+      "preflight": {
+        "checked_files": 4,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 761,
+        "tiny_strokes_lt_08_mm": 66,
+        "point_like_strokes": 25
+      },
+      "duplicates": {
+        "segments": 8965,
+        "duplicate_segments": 27,
+        "duplicate_ratio": 0.003012
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 5_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 5_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 6_pack",
+      "ok": true,
+      "kind": "a4",
+      "report": {
+        "frame_class": "standard_frame",
+        "route_class": "drawing with miniature/header overlay",
+        "selected_variant": "a4_hybrid_frame",
+        "selected_layout_similarity": 0.977359,
+        "source_fidelity_score": 0.938265,
+        "fragmentation_score": 0.97589
+      },
+      "preflight": {
+        "checked_files": 4,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 714,
+        "tiny_strokes_lt_08_mm": 67,
+        "point_like_strokes": 35
+      },
+      "duplicates": {
+        "segments": 7844,
+        "duplicate_segments": 31,
+        "duplicate_ratio": 0.003952
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 6_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 6_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 7_pack",
+      "ok": true,
+      "kind": "a4",
+      "report": {
+        "frame_class": "standard_frame",
+        "route_class": "drawing with miniature/header overlay",
+        "selected_variant": "a4_hybrid_frame",
+        "selected_layout_similarity": 0.977898,
+        "source_fidelity_score": 0.938782,
+        "fragmentation_score": 0.970274
+      },
+      "preflight": {
+        "checked_files": 4,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 908,
+        "tiny_strokes_lt_08_mm": 101,
+        "point_like_strokes": 51
+      },
+      "duplicates": {
+        "segments": 10447,
+        "duplicate_segments": 35,
+        "duplicate_ratio": 0.00335
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 7_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 7_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 8_pack",
+      "ok": true,
+      "kind": "a4",
+      "report": {
+        "frame_class": "standard_frame",
+        "route_class": "drawing with miniature/header overlay",
+        "selected_variant": "a4_hybrid_frame",
+        "selected_layout_similarity": 0.977056,
+        "source_fidelity_score": 0.937974,
+        "fragmentation_score": 0.977444
+      },
+      "preflight": {
+        "checked_files": 4,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 714,
+        "tiny_strokes_lt_08_mm": 56,
+        "point_like_strokes": 32
+      },
+      "duplicates": {
+        "segments": 8925,
+        "duplicate_segments": 1,
+        "duplicate_ratio": 0.000112
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 8_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 8_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 9_pack",
+      "ok": true,
+      "kind": "a4",
+      "report": {
+        "frame_class": "standard_frame",
+        "route_class": "drawing with miniature/header overlay",
+        "selected_variant": "a4_hybrid_frame",
+        "selected_layout_similarity": 0.978722,
+        "source_fidelity_score": 0.939573,
+        "fragmentation_score": 0.977685
+      },
+      "preflight": {
+        "checked_files": 4,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 743,
+        "tiny_strokes_lt_08_mm": 51,
+        "point_like_strokes": 7
+      },
+      "duplicates": {
+        "segments": 8154,
+        "duplicate_segments": 6,
+        "duplicate_ratio": 0.000736
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 9_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Начерт\\24 варинт\\Задача 9_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Начерт\\4 варинт\\Задача 4_pack",
+      "ok": true,
+      "kind": "a4",
+      "report": {
+        "frame_class": "standard_frame",
+        "route_class": "drawing with miniature/header overlay",
+        "selected_variant": "a4_hybrid_frame",
+        "selected_layout_similarity": 0.97386,
+        "source_fidelity_score": 0.934906,
+        "fragmentation_score": 0.98023
+      },
+      "preflight": {
+        "checked_files": 4,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 638,
+        "tiny_strokes_lt_08_mm": 39,
+        "point_like_strokes": 9
+      },
+      "duplicates": {
+        "segments": 6440,
+        "duplicate_segments": 0,
+        "duplicate_ratio": 0.0
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Начерт\\4 варинт\\Задача 4_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Начерт\\4 варинт\\Задача 4_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Начерт\\4 варинт\\Задача 5_pack",
+      "ok": true,
+      "kind": "a4",
+      "report": {
+        "frame_class": "standard_frame",
+        "route_class": "drawing with miniature/header overlay",
+        "selected_variant": "a4_hybrid_frame",
+        "selected_layout_similarity": 0.980493,
+        "source_fidelity_score": 0.941273,
+        "fragmentation_score": 0.986374
+      },
+      "preflight": {
+        "checked_files": 4,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 362,
+        "tiny_strokes_lt_08_mm": 26,
+        "point_like_strokes": 18
+      },
+      "duplicates": {
+        "segments": 4502,
+        "duplicate_segments": 0,
+        "duplicate_ratio": 0.0
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Начерт\\4 варинт\\Задача 5_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Начерт\\4 варинт\\Задача 5_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Начерт\\4 варинт\\Задача 6_pack",
+      "ok": true,
+      "kind": "a4",
+      "report": {
+        "frame_class": "standard_frame",
+        "route_class": "drawing with miniature/header overlay",
+        "selected_variant": "a4_hybrid_frame",
+        "selected_layout_similarity": 0.975825,
+        "source_fidelity_score": 0.936792,
+        "fragmentation_score": 0.985866
+      },
+      "preflight": {
+        "checked_files": 4,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 493,
+        "tiny_strokes_lt_08_mm": 16,
+        "point_like_strokes": 3
+      },
+      "duplicates": {
+        "segments": 5446,
+        "duplicate_segments": 0,
+        "duplicate_ratio": 0.0
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Начерт\\4 варинт\\Задача 6_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Начерт\\4 варинт\\Задача 6_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Начерт\\4 варинт\\Задача 7_pack",
+      "ok": true,
+      "kind": "a3_two_pass",
+      "report": {
+        "frame_class": "standard_frame",
+        "route_class": "A3 two-pass drawing",
+        "selected_variant": "a3_two_pass_clean_source",
+        "selected_layout_similarity": 0.984307,
+        "source_fidelity_score": 0.984307,
+        "fragmentation_score": 0.928803
+      },
+      "preflight": {
+        "checked_files": 8,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 834,
+        "tiny_strokes_lt_08_mm": 186,
+        "point_like_strokes": 102
+      },
+      "duplicates": {
+        "segments": 2741,
+        "duplicate_segments": 3,
+        "duplicate_ratio": 0.001094
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Начерт\\4 варинт\\Задача 7_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Начерт\\4 варинт\\Задача 7_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Начерт\\4 варинт\\Задача 8_pack",
+      "ok": true,
+      "kind": "a4",
+      "report": {
+        "frame_class": "standard_frame",
+        "route_class": "drawing with miniature/header overlay",
+        "selected_variant": "a4_hybrid_frame",
+        "selected_layout_similarity": 0.967634,
+        "source_fidelity_score": 0.928929,
+        "fragmentation_score": 0.975331
+      },
+      "preflight": {
+        "checked_files": 4,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 904,
+        "tiny_strokes_lt_08_mm": 28,
+        "point_like_strokes": 4
+      },
+      "duplicates": {
+        "segments": 8120,
+        "duplicate_segments": 2,
+        "duplicate_ratio": 0.000246
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Начерт\\4 варинт\\Задача 8_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Начерт\\4 варинт\\Задача 8_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    }
+  ]
+}

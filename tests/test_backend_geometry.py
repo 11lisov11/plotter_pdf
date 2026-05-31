@@ -1480,6 +1480,49 @@ class BackendGeometryTests(unittest.TestCase):
         finally:
             backend.POLYLINE_COLLINEAR_EPS = old_col
 
+    def test_deduplicate_collinear_overlaps_drops_retraced_subsegments(self) -> None:
+        old_enabled = backend.COLLINEAR_OVERLAP_DEDUP_ENABLED
+        try:
+            backend.COLLINEAR_OVERLAP_DEDUP_ENABLED = True
+            polylines = [
+                [(0.0, 0.0), (10.0, 0.0)],
+                [(2.0, 0.02), (8.0, 0.02)],
+                [(0.0, 1.0), (10.0, 1.0)],
+            ]
+            out = backend.deduplicate_collinear_overlaps(
+                polylines,
+                dist_mm=0.08,
+                angle_deg=1.0,
+                min_len_mm=0.5,
+                min_overlap_ratio=0.90,
+                logger=None,
+            )
+            self.assertEqual(len(out), 2)
+            self.assertIn([(0.0, 0.0), (10.0, 0.0)], out)
+            self.assertIn([(0.0, 1.0), (10.0, 1.0)], out)
+        finally:
+            backend.COLLINEAR_OVERLAP_DEDUP_ENABLED = old_enabled
+
+    def test_deduplicate_collinear_overlaps_keeps_real_parallel_lines(self) -> None:
+        old_enabled = backend.COLLINEAR_OVERLAP_DEDUP_ENABLED
+        try:
+            backend.COLLINEAR_OVERLAP_DEDUP_ENABLED = True
+            polylines = [
+                [(0.0, 0.0), (10.0, 0.0)],
+                [(0.0, 0.20), (10.0, 0.20)],
+            ]
+            out = backend.deduplicate_collinear_overlaps(
+                polylines,
+                dist_mm=0.08,
+                angle_deg=1.0,
+                min_len_mm=0.5,
+                min_overlap_ratio=0.90,
+                logger=None,
+            )
+            self.assertEqual(out, polylines)
+        finally:
+            backend.COLLINEAR_OVERLAP_DEDUP_ENABLED = old_enabled
+
     def test_split_text_tokens_keep_spaces_preserves_whitespace(self) -> None:
         tokens = backend._split_text_tokens_keep_spaces("Привет  мир\tEN")
         self.assertEqual(tokens, ["Привет", "  ", "мир", "\t", "EN"])
@@ -1639,6 +1682,37 @@ class BackendGeometryTests(unittest.TestCase):
             backend.DRAW_ORDER_MODE = old_mode
             backend.REORDER_ENABLED = old_reorder
             backend.DRAW_ORDER_LINE_TOL_MM = old_tol
+
+    def test_two_opt_ordered_polylines_reduces_crossing_travel(self) -> None:
+        old_enabled = backend.DRAW_ORDER_TWO_OPT_ENABLED
+        try:
+            backend.DRAW_ORDER_TWO_OPT_ENABLED = True
+            polylines = [
+                [(0.0, -1.0), (0.0, 0.0)],
+                [(100.0, 0.0), (100.0, 1.0)],
+                [(1.0, 1.0), (1.0, 0.0)],
+                [(101.0, 0.0), (101.0, 1.0)],
+            ]
+            before = sum(
+                backend.points_distance(polylines[i][-1], polylines[i + 1][0])
+                for i in range(len(polylines) - 1)
+            )
+            out = backend._two_opt_ordered_polylines(
+                [list(p) for p in polylines],
+                max_polylines=10,
+                passes=4,
+                min_gain_mm=0.01,
+                logger=None,
+            )
+            after = sum(
+                backend.points_distance(out[i][-1], out[i + 1][0])
+                for i in range(len(out) - 1)
+            )
+            self.assertLess(after, before)
+            self.assertEqual(out[1], [(1.0, 0.0), (1.0, 1.0)])
+            self.assertEqual(out[2], [(100.0, 1.0), (100.0, 0.0)])
+        finally:
+            backend.DRAW_ORDER_TWO_OPT_ENABLED = old_enabled
 
 
 if __name__ == "__main__":

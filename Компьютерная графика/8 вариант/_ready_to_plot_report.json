@@ -1,0 +1,693 @@
+{
+  "ok": true,
+  "roots": [
+    "C:\\plotter_pdf\\Компьютерная графика\\8 вариант"
+  ],
+  "package_count": 17,
+  "failed_count": 0,
+  "warning_count": 0,
+  "failed_packages": [],
+  "warnings": [],
+  "packages": [
+    {
+      "package_dir": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\Втулка_pack",
+      "ok": true,
+      "kind": "a4",
+      "report": {
+        "frame_class": "kompas_full_frame",
+        "route_class": "A4 drawing with full KOMPAS frame",
+        "selected_variant": "mupdf_svg_paths",
+        "selected_layout_similarity": 0.960904,
+        "source_fidelity_score": 0.922468,
+        "fragmentation_score": 0.971626
+      },
+      "preflight": {
+        "checked_files": 4,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 364,
+        "tiny_strokes_lt_08_mm": 34,
+        "point_like_strokes": 30
+      },
+      "duplicates": {
+        "segments": 1515,
+        "duplicate_segments": 16,
+        "duplicate_ratio": 0.010561
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\Втулка_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\Втулка_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\Заглушка_pack",
+      "ok": true,
+      "kind": "a4",
+      "report": {
+        "frame_class": "kompas_full_frame",
+        "route_class": "A4 drawing with full KOMPAS frame",
+        "selected_variant": "mupdf_svg_paths",
+        "selected_layout_similarity": 0.961064,
+        "source_fidelity_score": 0.922621,
+        "fragmentation_score": 0.970139
+      },
+      "preflight": {
+        "checked_files": 4,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 381,
+        "tiny_strokes_lt_08_mm": 36,
+        "point_like_strokes": 30
+      },
+      "duplicates": {
+        "segments": 1490,
+        "duplicate_segments": 19,
+        "duplicate_ratio": 0.012752
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\Заглушка_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\Заглушка_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\ЛБ 1 Маховик_pack",
+      "ok": true,
+      "kind": "a4",
+      "report": {
+        "frame_class": "kompas_full_frame",
+        "route_class": "A4 drawing with full KOMPAS frame",
+        "selected_variant": "mupdf_svg_paths",
+        "selected_layout_similarity": 0.96068,
+        "source_fidelity_score": 0.922253,
+        "fragmentation_score": 0.970782
+      },
+      "preflight": {
+        "checked_files": 4,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 373,
+        "tiny_strokes_lt_08_mm": 33,
+        "point_like_strokes": 28
+      },
+      "duplicates": {
+        "segments": 1405,
+        "duplicate_segments": 16,
+        "duplicate_ratio": 0.011388
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\ЛБ 1 Маховик_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\ЛБ 1 Маховик_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\ЛБ 2 (1)_pack",
+      "ok": true,
+      "kind": "a3_two_pass",
+      "report": {
+        "frame_class": "kompas_full_frame",
+        "route_class": "A3/A2 -> A3 scaled two-pass",
+        "selected_variant": "a3_two_pass_clean_source",
+        "selected_layout_similarity": 0.978386,
+        "source_fidelity_score": 0.978386,
+        "fragmentation_score": 0.980376
+      },
+      "preflight": {
+        "checked_files": 8,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 349,
+        "tiny_strokes_lt_08_mm": 13,
+        "point_like_strokes": 9
+      },
+      "duplicates": {
+        "segments": 945,
+        "duplicate_segments": 27,
+        "duplicate_ratio": 0.028571
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\ЛБ 2 (1)_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\ЛБ 2 (1)_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\ЛБ 2 (2)_pack",
+      "ok": true,
+      "kind": "a3_two_pass",
+      "report": {
+        "frame_class": "kompas_full_frame",
+        "route_class": "A3/A2 -> A3 scaled two-pass",
+        "selected_variant": "a3_two_pass_clean_source",
+        "selected_layout_similarity": 0.973953,
+        "source_fidelity_score": 0.973953,
+        "fragmentation_score": 0.981612
+      },
+      "preflight": {
+        "checked_files": 8,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 372,
+        "tiny_strokes_lt_08_mm": 15,
+        "point_like_strokes": 14
+      },
+      "duplicates": {
+        "segments": 1447,
+        "duplicate_segments": 24,
+        "duplicate_ratio": 0.016586
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\ЛБ 2 (2)_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\ЛБ 2 (2)_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\МЧ00.01.00.00 СБ Клапан перепускной_pack",
+      "ok": true,
+      "kind": "a3_two_pass",
+      "report": {
+        "frame_class": "kompas_full_frame",
+        "route_class": "A3/A2 -> A3 scaled two-pass",
+        "selected_variant": "a3_two_pass_clean_source",
+        "selected_layout_similarity": 0.957896,
+        "source_fidelity_score": 0.957896,
+        "fragmentation_score": 0.969202
+      },
+      "preflight": {
+        "checked_files": 8,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 1002,
+        "tiny_strokes_lt_08_mm": 35,
+        "point_like_strokes": 19
+      },
+      "duplicates": {
+        "segments": 4506,
+        "duplicate_segments": 85,
+        "duplicate_ratio": 0.018864
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\МЧ00.01.00.00 СБ Клапан перепускной_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\МЧ00.01.00.00 СБ Клапан перепускной_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\МЧ00.01.00.00 СП Клапан перепускной_pack",
+      "ok": true,
+      "kind": "a4",
+      "report": {
+        "frame_class": "kompas_full_frame",
+        "route_class": "A4 drawing with full KOMPAS frame",
+        "selected_variant": "mupdf_svg_paths",
+        "selected_layout_similarity": 0.934181,
+        "source_fidelity_score": 0.896814,
+        "fragmentation_score": 0.972786
+      },
+      "preflight": {
+        "checked_files": 4,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 621,
+        "tiny_strokes_lt_08_mm": 46,
+        "point_like_strokes": 8
+      },
+      "duplicates": {
+        "segments": 2404,
+        "duplicate_segments": 24,
+        "duplicate_ratio": 0.009983
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\МЧ00.01.00.00 СП Клапан перепускной_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\МЧ00.01.00.00 СП Клапан перепускной_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\МЧ00.01.00.01 Корпус_pack",
+      "ok": true,
+      "kind": "a3_two_pass",
+      "report": {
+        "frame_class": "kompas_full_frame",
+        "route_class": "A3/A2 -> A3 scaled two-pass",
+        "selected_variant": "a3_two_pass_clean_source",
+        "selected_layout_similarity": 0.971674,
+        "source_fidelity_score": 0.971674,
+        "fragmentation_score": 0.964107
+      },
+      "preflight": {
+        "checked_files": 8,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 1240,
+        "tiny_strokes_lt_08_mm": 33,
+        "point_like_strokes": 20
+      },
+      "duplicates": {
+        "segments": 5140,
+        "duplicate_segments": 147,
+        "duplicate_ratio": 0.028599
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\МЧ00.01.00.01 Корпус_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\МЧ00.01.00.01 Корпус_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\МЧ00.01.00.02 Крышка_pack",
+      "ok": true,
+      "kind": "a4",
+      "report": {
+        "frame_class": "kompas_full_frame",
+        "route_class": "A4 drawing with full KOMPAS frame",
+        "selected_variant": "forced_a4_single_page",
+        "selected_layout_similarity": 0.9635,
+        "source_fidelity_score": 0.92496,
+        "fragmentation_score": 0.955897
+      },
+      "preflight": {
+        "checked_files": 4,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 727,
+        "tiny_strokes_lt_08_mm": 113,
+        "point_like_strokes": 60
+      },
+      "duplicates": {
+        "segments": 3207,
+        "duplicate_segments": 20,
+        "duplicate_ratio": 0.006236
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\МЧ00.01.00.02 Крышка_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\МЧ00.01.00.02 Крышка_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\МЧ00.01.00.03 Колпак_pack",
+      "ok": true,
+      "kind": "a4",
+      "report": {
+        "frame_class": "kompas_full_frame",
+        "route_class": "A4 drawing with full KOMPAS frame",
+        "selected_variant": "mupdf_svg_paths",
+        "selected_layout_similarity": 0.957547,
+        "source_fidelity_score": 0.919245,
+        "fragmentation_score": 0.964722
+      },
+      "preflight": {
+        "checked_files": 4,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 485,
+        "tiny_strokes_lt_08_mm": 54,
+        "point_like_strokes": 45
+      },
+      "duplicates": {
+        "segments": 1963,
+        "duplicate_segments": 25,
+        "duplicate_ratio": 0.012736
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\МЧ00.01.00.03 Колпак_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\МЧ00.01.00.03 Колпак_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\МЧ00.01.00.04 Клапан_pack",
+      "ok": true,
+      "kind": "a4",
+      "report": {
+        "frame_class": "kompas_full_frame",
+        "route_class": "A4 drawing with full KOMPAS frame",
+        "selected_variant": "mupdf_svg_paths",
+        "selected_layout_similarity": 0.953997,
+        "source_fidelity_score": 0.915837,
+        "fragmentation_score": 0.965282
+      },
+      "preflight": {
+        "checked_files": 4,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 596,
+        "tiny_strokes_lt_08_mm": 53,
+        "point_like_strokes": 44
+      },
+      "duplicates": {
+        "segments": 2248,
+        "duplicate_segments": 29,
+        "duplicate_ratio": 0.0129
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\МЧ00.01.00.04 Клапан_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\МЧ00.01.00.04 Клапан_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\МЧ00.01.00.05 Тарелка_pack",
+      "ok": true,
+      "kind": "a4",
+      "report": {
+        "frame_class": "kompas_full_frame",
+        "route_class": "A4 drawing with full KOMPAS frame",
+        "selected_variant": "mupdf_svg_paths",
+        "selected_layout_similarity": 0.964821,
+        "source_fidelity_score": 0.926228,
+        "fragmentation_score": 0.9652
+      },
+      "preflight": {
+        "checked_files": 4,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 352,
+        "tiny_strokes_lt_08_mm": 45,
+        "point_like_strokes": 37
+      },
+      "duplicates": {
+        "segments": 1450,
+        "duplicate_segments": 10,
+        "duplicate_ratio": 0.006897
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\МЧ00.01.00.05 Тарелка_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\МЧ00.01.00.05 Тарелка_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\МЧ00.01.00.06 Пружина_pack",
+      "ok": true,
+      "kind": "a4",
+      "report": {
+        "frame_class": "kompas_full_frame",
+        "route_class": "A4 drawing with full KOMPAS frame",
+        "selected_variant": "mupdf_svg_paths",
+        "selected_layout_similarity": 0.958776,
+        "source_fidelity_score": 0.920425,
+        "fragmentation_score": 0.96293
+      },
+      "preflight": {
+        "checked_files": 4,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 584,
+        "tiny_strokes_lt_08_mm": 66,
+        "point_like_strokes": 53
+      },
+      "duplicates": {
+        "segments": 2441,
+        "duplicate_segments": 17,
+        "duplicate_ratio": 0.006964
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\МЧ00.01.00.06 Пружина_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\МЧ00.01.00.06 Пружина_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\МЧ00.01.00.07 Винт М16_pack",
+      "ok": true,
+      "kind": "a4",
+      "report": {
+        "frame_class": "kompas_full_frame",
+        "route_class": "A4 drawing with full KOMPAS frame",
+        "selected_variant": "mupdf_svg_paths",
+        "selected_layout_similarity": 0.963647,
+        "source_fidelity_score": 0.925101,
+        "fragmentation_score": 0.970005
+      },
+      "preflight": {
+        "checked_files": 4,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 362,
+        "tiny_strokes_lt_08_mm": 38,
+        "point_like_strokes": 34
+      },
+      "duplicates": {
+        "segments": 1566,
+        "duplicate_segments": 15,
+        "duplicate_ratio": 0.009579
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\МЧ00.01.00.07 Винт М16_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\МЧ00.01.00.07 Винт М16_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\Переходник_pack",
+      "ok": true,
+      "kind": "a4",
+      "report": {
+        "frame_class": "kompas_full_frame",
+        "route_class": "A4 drawing with full KOMPAS frame",
+        "selected_variant": "mupdf_svg_paths",
+        "selected_layout_similarity": 0.953701,
+        "source_fidelity_score": 0.915553,
+        "fragmentation_score": 0.972503
+      },
+      "preflight": {
+        "checked_files": 4,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 524,
+        "tiny_strokes_lt_08_mm": 34,
+        "point_like_strokes": 26
+      },
+      "duplicates": {
+        "segments": 1931,
+        "duplicate_segments": 32,
+        "duplicate_ratio": 0.016572
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\Переходник_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\Переходник_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\СБ_pack",
+      "ok": true,
+      "kind": "a4",
+      "report": {
+        "frame_class": "kompas_full_frame",
+        "route_class": "A4 drawing with full KOMPAS frame",
+        "selected_variant": "mupdf_svg_paths",
+        "selected_layout_similarity": 0.951968,
+        "source_fidelity_score": 0.913889,
+        "fragmentation_score": 0.971185
+      },
+      "preflight": {
+        "checked_files": 4,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 464,
+        "tiny_strokes_lt_08_mm": 37,
+        "point_like_strokes": 30
+      },
+      "duplicates": {
+        "segments": 1792,
+        "duplicate_segments": 6,
+        "duplicate_ratio": 0.003348
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\СБ_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\СБ_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "package_dir": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\Спецификация_pack",
+      "ok": true,
+      "kind": "a4",
+      "report": {
+        "frame_class": "kompas_full_frame",
+        "route_class": "A4 drawing with full KOMPAS frame",
+        "selected_variant": "mupdf_svg_paths",
+        "selected_layout_similarity": 0.932186,
+        "source_fidelity_score": 0.894899,
+        "fragmentation_score": 0.96963
+      },
+      "preflight": {
+        "checked_files": 4,
+        "failed": 0
+      },
+      "pen_start": {
+        "failed": 0
+      },
+      "bounds": {
+        "checked_by_preflight": true
+      },
+      "fragmentation": {
+        "pen_down_strokes": 486,
+        "tiny_strokes_lt_08_mm": 45,
+        "point_like_strokes": 36
+      },
+      "duplicates": {
+        "segments": 2050,
+        "duplicate_segments": 1,
+        "duplicate_ratio": 0.000488
+      },
+      "compare": {
+        "pdf": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\Спецификация_pack\\source_vs_gcode_compare.pdf",
+        "png": "C:\\plotter_pdf\\Компьютерная графика\\8 вариант\\Спецификация_pack\\source_vs_gcode_compare.png",
+        "generated": true
+      },
+      "issues": [],
+      "warnings": []
+    }
+  ]
+}

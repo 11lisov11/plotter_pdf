@@ -1,3 +1,11 @@
 24 варинт
-Задача 3_pack: 0.987487
-Задача 10_pack: 0.988336
+Задача 1_pack: quality=0.962110; layout=0.968428; fidelity=0.929691
+Задача 8_pack: quality=0.971232; layout=0.977056; fidelity=0.937974
+Задача 7_pack: quality=0.971268; layout=0.977898; fidelity=0.938782
+Задача 6_pack: quality=0.971348; layout=0.977359; fidelity=0.938265
+Задача 5_pack: quality=0.972504; layout=0.978645; fidelity=0.939499
+Задача 9_pack: quality=0.972746; layout=0.978722; fidelity=0.939573
+Задача 4_pack: quality=0.973328; layout=0.979444; fidelity=0.940266
+Задача 2_pack: quality=0.975839; layout=0.982137; fidelity=0.942852
+Задача 10_pack: quality=0.982661; layout=0.988725; fidelity=0.988725
+Задача 3_pack: quality=0.982853; layout=0.987725; fidelity=0.987725
