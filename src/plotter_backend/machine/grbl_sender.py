@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Callable, List, Optional, Tuple
 
 from ..errors import SerialTransportError, ToolDependencyError
+from . import manual_commands
 
 
 def find_nearest_g0_xy_line(gcode_file: Path, *, x: float, y: float) -> int:
@@ -154,6 +155,36 @@ def send_to_grbl(
     logger("Sending to Grbl ...")
     use_inline = bool(getattr(sys, "frozen", False)) or os.environ.get("PLOTTER_INLINE_SENDER") == "1"
 
+    def _best_effort_safe_release_after_sender_failure(reason: str) -> None:
+        try:
+            logger(f"Sender stopped before normal teardown ({reason}); forcing safe park/release...")
+            ok_release, msg_release = manual_commands.grbl_safe_park_release(
+                com,
+                baud,
+                default_baud=baud,
+                soft_reset_first=True,
+                read_tail=True,
+                sleep=bool(sleep_after),
+                release=True,
+                hold=False,
+                home=True,
+                z_up=z_up,
+                z_feed=safe_lift_feed,
+                travel_feed=15000.0,
+                append_status_query=True,
+                serial_timeout_s=1.0,
+                wake_delay_s=0.10,
+                reset_delay_s=0.80,
+                command_delay_s=0.10,
+                tail_delay_s=0.20,
+            )
+            logger(f"Safe park/release after sender failure: {'ok' if ok_release else 'failed'}: {msg_release}")
+        except Exception as release_exc:  # pragma: no cover - best-effort safety path
+            logger(
+                "Safe park/release after sender failure failed "
+                f"({type(release_exc).__name__}: {release_exc})"
+            )
+
     if use_inline:
         try:
             rc, out_lines, sender_plot_time_s, elapsed = _run_sender_inline()
@@ -209,6 +240,7 @@ def send_to_grbl(
         return sender_plot_time_s if sender_plot_time_s is not None else max(0.0, elapsed)
 
     if not auto_resume or max_resume_attempts <= 0:
+        _best_effort_safe_release_after_sender_failure(f"rc={rc}")
         tail = "\n".join(out_lines[-8:]) if out_lines else ""
         raise SerialTransportError(f"Sender error code: {rc}\n{tail}".strip())
 

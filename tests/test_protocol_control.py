@@ -156,6 +156,62 @@ class ProtocolControlTests(unittest.TestCase):
         self.assertIn("RuntimeError", text)
         self.assertIn("manual channel unavailable", text)
 
+    def test_emergency_stop_uses_safe_park_release_backend_path(self) -> None:
+        class _Backend:
+            def __init__(self) -> None:
+                self.calls: list[tuple[str, str, dict[str, object]]] = []
+
+            def grbl_safe_park_release(self, com: str, baud: str, **kwargs):
+                self.calls.append((com, baud, dict(kwargs)))
+                return True, "parked"
+
+        bridge = protocol.BackendBridge(Path.cwd())
+        backend = _Backend()
+
+        with mock.patch.object(bridge, "_backend", return_value=backend):
+            ok, text = bridge.emergency_stop("COM8", "115200", lambda *_args: None)
+
+        self.assertTrue(ok)
+        self.assertEqual(text, "parked")
+        self.assertEqual(len(backend.calls), 1)
+        com, baud, kwargs = backend.calls[0]
+        self.assertEqual(com, "COM8")
+        self.assertEqual(baud, "115200")
+        self.assertTrue(kwargs["soft_reset_first"])
+        self.assertTrue(kwargs["home"])
+        self.assertTrue(kwargs["release"])
+        self.assertFalse(kwargs["hold"])
+
+    def test_emergency_stop_fallback_homes_before_motor_release(self) -> None:
+        class _Backend:
+            def __init__(self) -> None:
+                self.calls: list[tuple[str, str, list[str], dict[str, object]]] = []
+
+            def grbl_send_manual_commands(self, com: str, baud: str, commands: list[str], **kwargs):
+                self.calls.append((com, baud, list(commands), dict(kwargs)))
+                return True, "ok"
+
+        bridge = protocol.BackendBridge(Path.cwd())
+        backend = _Backend()
+
+        with mock.patch.object(bridge, "_backend", return_value=backend):
+            ok, _text = bridge.emergency_stop("COM8", "115200", lambda *_args: None)
+
+        self.assertTrue(ok)
+        self.assertEqual(len(backend.calls), 1)
+        _com, _baud, commands, kwargs = backend.calls[0]
+        lift_before_home = next(i for i, cmd in enumerate(commands) if cmd.startswith("G1 Z0.0000"))
+        home = commands.index("G1 X0.0000 Y0.0000 F15000.0")
+        lift_after_home = next(
+            i for i, cmd in enumerate(commands[home + 1 :], start=home + 1) if cmd.startswith("G1 Z0.0000")
+        )
+        release = commands.index("$1=0")
+        self.assertLess(lift_before_home, home)
+        self.assertLess(home, lift_after_home)
+        self.assertLess(lift_after_home, release)
+        self.assertLess(release, commands.index("?"))
+        self.assertEqual(kwargs, {"soft_reset_first": True, "read_tail": True})
+
     def test_emergency_stop_returns_typed_error_on_backend_exception(self) -> None:
         class _Backend:
             def grbl_send_manual_commands(self, *_args, **_kwargs):

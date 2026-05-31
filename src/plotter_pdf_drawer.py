@@ -170,6 +170,17 @@ PEN_FAST_Z_FEED_UP = 8000.0
 PEN_FAST_Z_FEED_UP_FINAL = 8000.0
 PEN_FAST_Z_SOFT_DOWN_MM = 0.0
 PEN_FAST_Z_SOFT_UP_MM = 0.0
+# Fast-but-bounded profile for technical pen drawings. This keeps the pen cycle
+# responsive without the F8000 Z spikes that caused unsafe starts/stops.
+TECHNICAL_PEN_Z_PROFILE_ENABLED = True
+TECHNICAL_PEN_Z_DELAY_DOWN = 0.02
+TECHNICAL_PEN_Z_DELAY_UP = 0.02
+TECHNICAL_PEN_Z_FEED_DOWN_APPROACH = 2500.0
+TECHNICAL_PEN_Z_FEED_DOWN_TOUCH = 2500.0
+TECHNICAL_PEN_Z_FEED_UP = 2500.0
+TECHNICAL_PEN_Z_FEED_UP_FINAL = 2500.0
+TECHNICAL_PEN_Z_SOFT_DOWN_MM = 0.0
+TECHNICAL_PEN_Z_SOFT_UP_MM = 0.0
 # Be explicit: if user passes Z params via CLI, do not force pen-fast profile.
 Z_PROFILE_CLI_OVERRIDE = False
 # Inter-path lift distance from Z-down towards Z-up.
@@ -177,6 +188,9 @@ Z_PROFILE_CLI_OVERRIDE = False
 Z_TRAVEL_LIFT_MM = 3.5
 # Full Z_UP travel between contours (mainly useful for pen/marker mode on uneven media).
 SAFE_PEN_TRAVEL_UP = False
+# Force a small physical upward move at job start. This recovers from Z
+# back-drive/lost steps where the controller thinks it is already at Z_UP.
+STARTUP_FORCE_Z_LIFT_MM = 4.0
 
 # Pen lift mode for GRBL output: 'z' (G0 Z..), or 'spindle' (M3/M5) for pen servo/servo via spindle.
 PEN_LIFT_MODE = "z"
@@ -192,6 +206,15 @@ HOME_Y = 0.0
 # NOTE: GRBL will still respect its $110/$111 max rate caps.
 FEED_TRAVEL = 15000.0
 FEED_DRAW = 12000.0
+# Physical plotter safeguard: tiny KOMPAS/technical-text fragments can be too
+# short for reliable marking at the normal long-line drawing feed. Only draw
+# feed is limited by default; travel must stay fast to avoid very slow title
+# blocks made from thousands of short strokes.
+TECH_TEXT_MICRO_STROKE_FEED_ENABLED = False
+TECH_TEXT_MICRO_STROKE_FEED_DRAW = 3500.0
+TECH_TEXT_MICRO_STROKE_FEED_TRAVEL = 0.0
+TECH_TEXT_MICRO_STROKE_MAX_LENGTH_MM = 16.0
+TECH_TEXT_MICRO_STROKE_MAX_SPAN_MM = 8.5
 SEGMENT_TOLERANCE_MM = 8.0
 MAX_ARC_SEGMENT_MM = 14.0
 CURVE_SEGMENT_MM = 4.0
@@ -298,6 +321,7 @@ BACKGROUND_FILL_MIN_CHANNEL = 0.92
 BACKGROUND_FILL_MIN_OPACITY = 0.05
 FIT_TO_WORK_AREA = True
 ALLOW_UPSCALE_TO_WORK_AREA = True
+FIT_TO_SOURCE_PAGE_BOUNDS = False
 WORK_AREA_EPS = 1e-6
 # If fit-to-area would shrink geometry more than this threshold,
 # keep 1:1 mm scale and clip to work area instead of distorting dimensions.
@@ -6492,6 +6516,26 @@ def fit_polylines_to_area(
     )
 
 
+def select_fit_reference_bounds(
+    min_x: float,
+    max_x: float,
+    min_y: float,
+    max_y: float,
+    page_w: float,
+    page_h: float,
+    logger=print,
+) -> Tuple[float, float, float, float]:
+    if bool(FIT_TO_SOURCE_PAGE_BOUNDS) and page_w > 0.0 and page_h > 0.0:
+        if logger:
+            logger(
+                "Fit reference: source page bounds "
+                f"x({0.0:.3f}, {float(page_w):.3f}) y({0.0:.3f}, {float(page_h):.3f}); "
+                "preserving sheet-relative placement."
+            )
+        return 0.0, float(page_w), 0.0, float(page_h)
+    return min_x, max_x, min_y, max_y
+
+
 def get_path_polylines(
     element: ET.Element,
     matrix: Tuple[float, float, float, float, float, float],
@@ -7162,6 +7206,56 @@ def _arc_is_grbl_safe(from_pt: Tuple[float, float], to_pt: Tuple[float, float], 
     return abs(r0 - r1) <= GRBL_ARC_RADIUS_MATCH_TOL_MM
 
 
+def _polyline_bbox_size(poly: List[Tuple[float, float]]) -> Tuple[float, float]:
+    if not poly:
+        return 0.0, 0.0
+    xs = [float(pt[0]) for pt in poly]
+    ys = [float(pt[1]) for pt in poly]
+    return max(xs) - min(xs), max(ys) - min(ys)
+
+
+def _is_micro_technical_stroke(poly: List[Tuple[float, float]]) -> bool:
+    if len(poly) < 2:
+        return False
+    length = polyline_length(poly)
+    if length <= 1e-9 or length > float(TECH_TEXT_MICRO_STROKE_MAX_LENGTH_MM):
+        return False
+    w, h = _polyline_bbox_size(poly)
+    return max(w, h) <= float(TECH_TEXT_MICRO_STROKE_MAX_SPAN_MM)
+
+
+def _feed_draw_for_polyline(
+    poly: List[Tuple[float, float]],
+    feed_draw: float,
+    *,
+    micro_stroke_feed: bool,
+) -> float:
+    if not micro_stroke_feed or not TECH_TEXT_MICRO_STROKE_FEED_ENABLED:
+        return float(feed_draw)
+    micro_feed = float(TECH_TEXT_MICRO_STROKE_FEED_DRAW)
+    if micro_feed <= 0.0 or float(feed_draw) <= micro_feed:
+        return float(feed_draw)
+    if _is_micro_technical_stroke(poly):
+        return micro_feed
+    return float(feed_draw)
+
+
+def _feed_profile_for_polyline(
+    poly: List[Tuple[float, float]],
+    feed_travel: float,
+    feed_draw: float,
+    *,
+    micro_stroke_feed: bool,
+) -> Tuple[float, float]:
+    draw_feed = _feed_draw_for_polyline(poly, feed_draw, micro_stroke_feed=micro_stroke_feed)
+    travel_feed = float(feed_travel)
+    if draw_feed != float(feed_draw) and micro_stroke_feed and TECH_TEXT_MICRO_STROKE_FEED_ENABLED:
+        micro_travel = float(TECH_TEXT_MICRO_STROKE_FEED_TRAVEL)
+        if micro_travel > 0.0 and float(feed_travel) > micro_travel:
+            travel_feed = micro_travel
+    return travel_feed, draw_feed
+
+
 def write_xy_gcode(
     output: Path,
     polylines: List[List[Tuple[float, float]]],
@@ -7169,6 +7263,7 @@ def write_xy_gcode(
     feed_draw: float,
     *,
     join_eps: Optional[float] = None,
+    micro_stroke_feed: bool = True,
 ) -> None:
     lines = [
         "G21",
@@ -7187,15 +7282,22 @@ def write_xy_gcode(
         poly = simplify_polyline(poly)
         if len(poly) < 2:
             continue
+        poly_feed_travel, poly_feed_draw = _feed_profile_for_polyline(
+            poly,
+            feed_travel,
+            feed_draw,
+            micro_stroke_feed=micro_stroke_feed,
+        )
+
         # If the next polyline starts exactly where we ended (within tolerance),
         # do not force a pen-up travel move. This avoids unnecessary pen lifts.
         if pos is None:
-            lines.append(f"G0 X{poly[0][0]:.4f} Y{poly[0][1]:.4f} F{feed_travel:.1f}")
+            lines.append(f"G0 X{poly[0][0]:.4f} Y{poly[0][1]:.4f} F{poly_feed_travel:.1f}")
             pos = poly[0]
         else:
             d0 = points_distance(poly[0], pos)
             if d0 > join_eps_v:
-                lines.append(f"G0 X{poly[0][0]:.4f} Y{poly[0][1]:.4f} F{feed_travel:.1f}")
+                lines.append(f"G0 X{poly[0][0]:.4f} Y{poly[0][1]:.4f} F{poly_feed_travel:.1f}")
                 pos = poly[0]
             elif d0 > 1e-9:
                 # Snap the start point to the current position so G2/G3 I/J offsets are valid.
@@ -7209,9 +7311,9 @@ def write_xy_gcode(
             mid = poly[1]
             start = poly[0]
             if pos is None or points_distance(mid, pos) > 1e-9:
-                lines.append(f"G1 X{mid[0]:.4f} Y{mid[1]:.4f} F{feed_draw:.1f}")
+                lines.append(f"G1 X{mid[0]:.4f} Y{mid[1]:.4f} F{poly_feed_draw:.1f}")
             # Rapid back to start without drawing (penlift postprocess will raise pen before this G0).
-            lines.append(f"G0 X{start[0]:.4f} Y{start[1]:.4f} F{feed_travel:.1f}")
+            lines.append(f"G0 X{start[0]:.4f} Y{start[1]:.4f} F{poly_feed_travel:.1f}")
             pos = start
             continue
 
@@ -7219,7 +7321,7 @@ def write_xy_gcode(
         if line_fit_tol > 0.0 and polyline_is_near_line(poly, line_fit_tol):
             end = poly[-1]
             if pos is None or points_distance(end, pos) > 1e-9:
-                lines.append(f"G1 X{end[0]:.4f} Y{end[1]:.4f} F{feed_draw:.1f}")
+                lines.append(f"G1 X{end[0]:.4f} Y{end[1]:.4f} F{poly_feed_draw:.1f}")
                 pos = end
             continue
 
@@ -7274,7 +7376,7 @@ def write_xy_gcode(
                 i = center[0] - from_pt[0]
                 j = center[1] - from_pt[1]
                 if with_f:
-                    lines.append(f"{code} X{to_pt[0]:.4f} Y{to_pt[1]:.4f} I{i:.4f} J{j:.4f} F{feed_draw:.1f}")
+                    lines.append(f"{code} X{to_pt[0]:.4f} Y{to_pt[1]:.4f} I{i:.4f} J{j:.4f} F{poly_feed_draw:.1f}")
                 else:
                     lines.append(f"{code} X{to_pt[0]:.4f} Y{to_pt[1]:.4f} I{i:.4f} J{j:.4f}")
 
@@ -7315,7 +7417,7 @@ def write_xy_gcode(
             if pos is not None and points_distance(pt, pos) <= 1e-9:
                 continue
             if not drew:
-                lines.append(f"G1 X{pt[0]:.4f} Y{pt[1]:.4f} F{feed_draw:.1f}")
+                lines.append(f"G1 X{pt[0]:.4f} Y{pt[1]:.4f} F{poly_feed_draw:.1f}")
                 drew = True
             else:
                 lines.append(f"G1 X{pt[0]:.4f} Y{pt[1]:.4f}")
@@ -8762,15 +8864,25 @@ def apply_penlift(
     z_soft_down_eff = float(Z_SOFT_DOWN_MM)
     z_soft_up_eff = float(Z_SOFT_UP_MM)
 
-    if TOOL_MODE == "pen" and PEN_FAST_Z_PROFILE_ENABLED and not Z_PROFILE_CLI_OVERRIDE:
-        z_delay_down_eff = float(PEN_FAST_Z_DELAY_DOWN)
-        z_delay_up_eff = float(PEN_FAST_Z_DELAY_UP)
-        z_feed_down_approach_eff = float(PEN_FAST_Z_FEED_DOWN_APPROACH)
-        z_feed_down_touch_eff = float(PEN_FAST_Z_FEED_DOWN_TOUCH)
-        z_feed_up_eff = float(PEN_FAST_Z_FEED_UP)
-        z_feed_up_final_eff = float(PEN_FAST_Z_FEED_UP_FINAL)
-        z_soft_down_eff = float(PEN_FAST_Z_SOFT_DOWN_MM)
-        z_soft_up_eff = float(PEN_FAST_Z_SOFT_UP_MM)
+    if TOOL_MODE == "pen" and not Z_PROFILE_CLI_OVERRIDE:
+        if PEN_FAST_Z_PROFILE_ENABLED and bool(handwriting_mode):
+            z_delay_down_eff = float(PEN_FAST_Z_DELAY_DOWN)
+            z_delay_up_eff = float(PEN_FAST_Z_DELAY_UP)
+            z_feed_down_approach_eff = float(PEN_FAST_Z_FEED_DOWN_APPROACH)
+            z_feed_down_touch_eff = float(PEN_FAST_Z_FEED_DOWN_TOUCH)
+            z_feed_up_eff = float(PEN_FAST_Z_FEED_UP)
+            z_feed_up_final_eff = float(PEN_FAST_Z_FEED_UP_FINAL)
+            z_soft_down_eff = float(PEN_FAST_Z_SOFT_DOWN_MM)
+            z_soft_up_eff = float(PEN_FAST_Z_SOFT_UP_MM)
+        elif TECHNICAL_PEN_Z_PROFILE_ENABLED:
+            z_delay_down_eff = float(TECHNICAL_PEN_Z_DELAY_DOWN)
+            z_delay_up_eff = float(TECHNICAL_PEN_Z_DELAY_UP)
+            z_feed_down_approach_eff = float(TECHNICAL_PEN_Z_FEED_DOWN_APPROACH)
+            z_feed_down_touch_eff = float(TECHNICAL_PEN_Z_FEED_DOWN_TOUCH)
+            z_feed_up_eff = float(TECHNICAL_PEN_Z_FEED_UP)
+            z_feed_up_final_eff = float(TECHNICAL_PEN_Z_FEED_UP_FINAL)
+            z_soft_down_eff = float(TECHNICAL_PEN_Z_SOFT_DOWN_MM)
+            z_soft_up_eff = float(TECHNICAL_PEN_Z_SOFT_UP_MM)
 
     travel_lift_mm = float(Z_TRAVEL_LIFT_MM)
     if force_full_lift or SAFE_PEN_TRAVEL_UP:
@@ -9167,6 +9279,7 @@ def make_final_with_preamble(prepared_gcode: Path, final_gcode: Path) -> None:
         feed_travel=float(FEED_TRAVEL),
         go_home_before_draw=bool(GO_HOME_BEFORE_DRAW),
         go_home_after_draw=bool(GO_HOME_AFTER_DRAW),
+        startup_force_z_lift_mm=float(STARTUP_FORCE_Z_LIFT_MM),
     )
     rewrite_duplicate_draw_segments_as_penup_travel(final_gcode)
 
@@ -9627,7 +9740,16 @@ def run_pipeline(
             log(f"SVG geometry: paths={len(polylines)}, segments={src_segments}.")
             min_x, max_x, min_y, max_y = bounds_polylines(polylines)
             log(f"Source bounds: x({min_x:.3f}, {max_x:.3f}) y({min_y:.3f}, {max_y:.3f})")
-            polylines = fit_polylines_to_area(polylines, min_x, max_x, min_y, max_y, logger=log)
+            fit_min_x, fit_max_x, fit_min_y, fit_max_y = select_fit_reference_bounds(
+                min_x,
+                max_x,
+                min_y,
+                max_y,
+                page_w,
+                page_h,
+                logger=log,
+            )
+            polylines = fit_polylines_to_area(polylines, fit_min_x, fit_max_x, fit_min_y, fit_max_y, logger=log)
             polylines = transform_polylines_for_active_sheet_pass(polylines, logger=log)
             fit_segments = sum(max(0, len(p) - 1) for p in polylines)
             polylines = clip_polylines_to_work_area(polylines, logger=log)
@@ -10255,6 +10377,56 @@ def grbl_send_manual_commands(
         default_baud=DEFAULT_BAUD,
         soft_reset_first=soft_reset_first,
         read_tail=read_tail,
+        serial_timeout_s=serial_timeout_s,
+        wake_delay_s=wake_delay_s,
+        reset_delay_s=reset_delay_s,
+        command_delay_s=command_delay_s,
+        tail_delay_s=tail_delay_s,
+        wake_read_bytes=wake_read_bytes,
+        tail_read_bytes=tail_read_bytes,
+    )
+
+
+def grbl_safe_park_release(
+    com: str,
+    baud: str,
+    *,
+    soft_reset_first: bool = True,
+    read_tail: bool = True,
+    sleep: bool = False,
+    release: bool = True,
+    hold: bool = False,
+    home: bool = True,
+    home_x: float = 0.0,
+    home_y: float = 0.0,
+    z_up: float = 0.0,
+    z_feed: float = 2500.0,
+    travel_feed: float = 15000.0,
+    append_status_query: bool = True,
+    serial_timeout_s: float = 1.0,
+    wake_delay_s: float = 0.20,
+    reset_delay_s: float = 1.0,
+    command_delay_s: float = 0.16,
+    tail_delay_s: float = 0.35,
+    wake_read_bytes: int = 4096,
+    tail_read_bytes: int = 8192,
+) -> Tuple[bool, str]:
+    return manual_commands_mod.grbl_safe_park_release(
+        com,
+        baud,
+        default_baud=DEFAULT_BAUD,
+        soft_reset_first=soft_reset_first,
+        read_tail=read_tail,
+        sleep=sleep,
+        release=release,
+        hold=hold,
+        home=home,
+        home_x=home_x,
+        home_y=home_y,
+        z_up=z_up,
+        z_feed=z_feed,
+        travel_feed=travel_feed,
+        append_status_query=append_status_query,
         serial_timeout_s=serial_timeout_s,
         wake_delay_s=wake_delay_s,
         reset_delay_s=reset_delay_s,

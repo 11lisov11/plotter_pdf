@@ -27,7 +27,7 @@ class GcodeGoldenPropertiesTests(unittest.TestCase):
             self.assertIn("G90", lines[:8])
             self.assertTrue(any(line.startswith("G1 X1.000 Y1.000") for line in lines))
             self.assertIn("M5", lines[-4:])
-            self.assertEqual(lines[-1], "$1=0")
+            self.assertNotIn("$1=0", lines)
 
     def test_svg_pipeline_output_has_finite_in_area_draw_bounds(self) -> None:
         with tempfile.TemporaryDirectory(prefix="plotter_gcode_bounds_") as td:

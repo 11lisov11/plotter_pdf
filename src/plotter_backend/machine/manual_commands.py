@@ -4,6 +4,7 @@ import time
 from typing import Callable, List, Tuple
 
 from ..errors import SerialTransportError, ToolDependencyError
+from .safe_shutdown import build_safe_park_release_commands, safe_park_release_message
 
 
 def grbl_send_manual_commands(
@@ -102,3 +103,67 @@ def grbl_send_manual_commands(
                 ser.close()
         except Exception:
             pass
+
+
+def grbl_safe_park_release(
+    com: str,
+    baud: str,
+    *,
+    default_baud: str,
+    soft_reset_first: bool = True,
+    read_tail: bool = True,
+    sleep: bool = False,
+    release: bool = True,
+    hold: bool = False,
+    home: bool = True,
+    home_x: float = 0.0,
+    home_y: float = 0.0,
+    z_up: float = 0.0,
+    z_feed: float = 2500.0,
+    travel_feed: float = 15000.0,
+    append_status_query: bool = True,
+    serial_timeout_s: float = 1.0,
+    wake_delay_s: float = 0.20,
+    reset_delay_s: float = 1.0,
+    command_delay_s: float = 0.16,
+    tail_delay_s: float = 0.35,
+    wake_read_bytes: int = 4096,
+    tail_read_bytes: int = 8192,
+    serial_factory: Callable[[], object] | None = None,
+) -> Tuple[bool, str]:
+    commands = build_safe_park_release_commands(
+        sleep=sleep,
+        release=release,
+        hold=hold,
+        home=home,
+        home_x=home_x,
+        home_y=home_y,
+        z_up=z_up,
+        z_feed=z_feed,
+        travel_feed=travel_feed,
+    )
+    if append_status_query:
+        commands.append("?")
+    ok, text = grbl_send_manual_commands(
+        com,
+        baud,
+        commands,
+        default_baud=default_baud,
+        soft_reset_first=soft_reset_first,
+        read_tail=read_tail,
+        serial_timeout_s=serial_timeout_s,
+        wake_delay_s=wake_delay_s,
+        reset_delay_s=reset_delay_s,
+        command_delay_s=command_delay_s,
+        tail_delay_s=tail_delay_s,
+        wake_read_bytes=wake_read_bytes,
+        tail_read_bytes=tail_read_bytes,
+        serial_factory=serial_factory,
+    )
+    if not ok:
+        return ok, text
+    status = str(text or "").strip()
+    message = safe_park_release_message(sleep=sleep, release=release, hold=hold)
+    if status and status != "ok":
+        return True, f"{message}\n{status}"
+    return True, message
