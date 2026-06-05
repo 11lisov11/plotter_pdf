@@ -144,6 +144,9 @@ def _iter_variant_sources(variant_dir: Path, generated_dir: Path) -> list[tuple[
     entries: list[tuple[int, str, Path, dict[str, object]]] = []
 
     frw_files = sorted(variant_dir.glob("*.frw"), key=lambda p: (_task_number_from_name(p.stem) or 999, p.name.lower()))
+    task_frw_files = [path for path in frw_files if path.stem.casefold() != variant_dir.name.casefold()]
+    if task_frw_files:
+        frw_files = task_frw_files
     if frw_files:
         for frw in frw_files:
             task_number = _task_number_from_name(frw.stem)
