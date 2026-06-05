@@ -1,46 +1,46 @@
-TTF centerline postprocess: 11 -> 2 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.025)
-TTF centerline text: '2'' -> 2 stroke(s), font=arial.ttf, size=9.07
-TTF centerline postprocess: 12 -> 2 stroke(s) (eps=0.18, gap=0.92, smooth_step=0.13, col=0.023)
-TTF centerline text: 'S'' -> 2 stroke(s), font=arial.ttf, size=8.33
-TTF centerline postprocess: 135 -> 12 stroke(s) (eps=0.08, gap=0.64, smooth_step=0.13, col=0.021)
-TTF centerline text: 'ЛТ-509-3' -> 12 stroke(s), font=arial.ttf, size=6.42
-TTF centerline postprocess: 158 -> 10 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'Дорохов' -> 10 stroke(s), font=arial.ttf, size=5.40
-TTF centerline postprocess: 50 -> 5 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'Егор' -> 5 stroke(s), font=arial.ttf, size=5.40
-TTF centerline postprocess: 156 -> 11 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'Кирилович' -> 11 stroke(s), font=arial.ttf, size=5.40
-Title block text reroute: removed 73 source polyline(s), rendered 42 polyline(s) from 4 PDF text line(s).
-A4 MuPDF source route: direct PDF vector SVG export with text_as_path=True; left_strip_removed=4, footer_removed=40, outer_frame_removed=4, title_block_text_removed=73, title_block_text_rendered=42.
-Render mode: drawing; ExactGeometry=on; Handwriting=off
-Sheet 210.0x297.0 mm is larger than workspace 180.0x280.0 mm. Using the overlapped sheet/workspace window.
-Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-285.000,-5.000), sheet_bounds x(0.000,210.000) y(-285.000,12.000), sheet=a4, anchor=lower_left, offset=(0.00,0.00)
+Source pages: 1, selected: 1
+Method3 centerline: threshold=128, candidates=9, paths=632
+Method3 PDF vector graphics: drawings=260, paths=812, thick_paths=174
+Method3 layer split: text_paths=621, graphics_source=pdf_vector, graphics_paths=804
+Method3 cleanup: restored overlap text paths=10
+Method3 cleanup: removed outer-frame paths=8
+Method3 detail thick-lines multipass: skipped reason=exact_geometry_mode, candidates=804
+Method3 filled accents: paths=20, segments=382
+Method3 cleanup: restored left vertical frame line.
+Method3 cleanup: removed tiny bottom artifacts=4
+Method3 micro-segment prune: segments=8555->8554, min=0.03 mm
+A4 header text extraction: 3 line(s) from PDF text blocks.
+Technical point marker normalization: replaced 6 point-marker loop(s) with compact dot markers.
+A4 clean source centered on page X: offset_x=0.018 mm
+A4 header text reroute: removed 241 source polyline(s) from the header text band.
+A4 header text reroute: restored 241 transformed source polyline(s).
+A4 header gutter cleanup: removed 1 tiny artifact polyline(s) from the thumb/text gap.
+A4 header cleanup: removed 3 duplicate axis-aligned frame line(s) in the preserved top band.
+A4 outer frame restore: added 2 missing top/right border line(s).
+--- hybrid fit: detail=1:1, frame=fit-to-work-area ---
 Text render mode: handwriting=off font='Marck Script'; image_contours=off
 Extracting paths from SVG ...
-Raw geometry bounds: x(0.508, 185.505) y(0.508, 285.496)
-SVG page: 186.097 x 286.089 mm
+Raw geometry bounds: x(0.000, 180.000) y(0.000, 280.000)
+SVG page: 180.000 x 280.000 mm
 Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).
-SVG geometry: paths=988, segments=2090.
-Source bounds: x(0.508, 185.505) y(0.508, 285.496)
-Fit to work area: scale=0.9730, translate=(-0.494,-284.140), from (0.508, 0.508)-(185.505, 285.496)
-Segment dedup: dropped 194/2090 retraced segments (9.3%), kept=1896, eps=0.010 mm
-Collinear overlap dedup: dropped 5/1893 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
-Reorder: source order preserved (983 polylines).
-Technical text join: merged 331 short gaps (ordered=226, nearest=105, gap<=0.55 mm, dy<=0.75 mm), polylines 983 -> 652
-Segment dedup: dropped 2/1907 retraced segments (0.1%), kept=1905, eps=0.050 mm
-Collinear overlap dedup: dropped 3/1905 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
-Polyline optimization: 983 -> 656
-Segment counts: source=2090, fitted=2090, clipped=2090
-Drawable segments after clip: 2090 (100.0% of source)
-Prepared bounds: x(0.000, 180.000) y(-283.645, -6.355)
-Estimated draw length: 3.67 m
+SVG geometry: paths=1167, segments=7888.
+Source bounds: x(0.000, 180.000) y(0.000, 280.000)
+Fit to work area: scale=1.0000, translate=(0.000,-285.000), from (0.000, 0.000)-(180.000, 280.000)
+Collinear overlap dedup: dropped 431/7888 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
+Reorder: source order preserved (1026 polylines).
+Technical text join: merged 316 short gaps (ordered=185, nearest=131, gap<=0.55 mm, dy<=0.75 mm), polylines 1026 -> 710
+Segment dedup: dropped 4/7706 retraced segments (0.1%), kept=7702, eps=0.050 mm
+Collinear overlap dedup: dropped 8/7702 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
+Polyline optimization: 1026 -> 720
+Segment counts: source=7888, fitted=7888, clipped=7888
+Drawable segments after clip: 7888 (100.0% of source)
+Prepared bounds: x(0.000, 180.000) y(-285.000, -5.000)
+Estimated draw length: 5.82 m
 Applying pen-up / pen-down ...
-G-code stats: lines=5148, draw=1902, travel=647, bounds=0.000..180.000 x, -283.645..0.000 y
-Preflight: ok: lines=5148, draw=1902, travel=647, ratio=0.34
-Saved file stats: lines=5148, draw=1902, travel=647, bounds=0.000..180.000 x, -283.645..0.000 y
-Saved: C:\plotter_pdf\_tmp\latest_preview_preview-1780674174774077900.nc
-Preview SVG: C:\plotter_pdf\_tmp\latest_preview_preview-1780674174774077900_vector.svg
-Preview PDF: C:\plotter_pdf\_tmp\latest_preview_preview-1780674174774077900_vector.pdf
+G-code stats: lines=11315, draw=7694, travel=722, bounds=0.000..180.000 x, -285.000..0.000 y
+Preflight: ok: lines=11315, draw=7694, travel=722, ratio=0.09
+Saved file stats: lines=11315, draw=7694, travel=722, bounds=0.000..180.000 x, -285.000..0.000 y
+Saved: C:\plotter_pdf\Начерт\3 вариант\Задача 8_pack\_candidates\a4_hybrid_frame.nc
 Sheet preview centered on compact source page bbox: ref=(0.176,0.176)..(185.657,285.736) mm
 Sheet preview placed on source page: offset=(3.049,288.044) mm
 Fixed-canvas preview centered on page: page=180.000x280.000 mm, offset=(0.000,285.000) mm

@@ -1,7 +1,4 @@
-Image contour tracing: +52 path(s) from embedded raster.
-Image vectorization mode: centerline (added 52 path(s), simplify=0.02 mm).
-Condition image recovery: rect=202.86,241.64,240.96,274.83 mm -> +52 path(s).
-A3 condition image recovery summary: 1 image(s), 52 path(s), appended=52.
+Condition image recovery disabled for Nachert: preserving source KOMPAS/PDF miniature geometry.
 A3 clean source route: direct PDF vector SVG export (text_as_path=True).
 pass_02_rotated_180_for_sheet_flip=True
 --- a3 clean pass ---
@@ -13,29 +10,29 @@ Extracting paths from SVG ...
 Raw geometry bounds: x(0.508, 410.464) y(0.508, 290.491)
 SVG page: 411.057 x 291.084 mm
 Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).
-SVG geometry: paths=2459, segments=3339.
+SVG geometry: paths=2407, segments=3141.
 Source bounds: x(0.508, 410.464) y(0.508, 290.491)
 Fit to work area: scale=0.8781, translate=(-90.446,-272.770), from (0.508, 0.508)-(410.464, 290.491)
 Pass window: col 2/2, row 1/1, source=360.000x254.647 mm, window=180.000x254.647 mm, offset=(180.000,0.000), shift=(-90.000,0.000)
 Sheet pass transform: rotating geometry by 180 deg for a3 pass 2/2 x 1/1 around active area center (90.000,-145.000).
 Sheet pass transform: translating geometry by (0.000,3.000) mm for a3 pass 2/2 x 1/1.
-Work area clipping: kept 1806 visible segments, dropped 1533 out-of-area segments.
-Segment dedup: dropped 118/1806 retraced segments (6.5%), kept=1688, eps=0.010 mm
-Reorder: source order preserved (1400 polylines).
-Technical text join: merged 877 short gaps (ordered=544, nearest=333, gap<=0.55 mm, dy<=0.75 mm), polylines 1400 -> 523
-Segment dedup: dropped 6/1538 retraced segments (0.4%), kept=1532, eps=0.050 mm
-Polyline optimization: 1400 -> 529
-Segment counts: source=3339, fitted=3339, clipped=1806
-Drawable segments after clip: 1806 (54.1% of source)
+Work area clipping: kept 1611 visible segments, dropped 1530 out-of-area segments.
+Segment dedup: dropped 118/1611 retraced segments (7.3%), kept=1493, eps=0.010 mm
+Reorder: source order preserved (1348 polylines).
+Technical text join: merged 872 short gaps (ordered=543, nearest=329, gap<=0.55 mm, dy<=0.75 mm), polylines 1348 -> 476
+Segment dedup: dropped 6/1340 retraced segments (0.4%), kept=1334, eps=0.050 mm
+Polyline optimization: 1348 -> 482
+Segment counts: source=3141, fitted=3141, clipped=1611
+Drawable segments after clip: 1611 (51.3% of source)
 Warning: significant clipping/transforming occurred. Check that page is inside target work area.
 Prepared bounds: x(0.000, 180.000) y(-269.323, -14.677)
-Estimated draw length: 3.42 m
+Estimated draw length: 3.16 m
 Applying pen-up / pen-down ...
-G-code stats: lines=3989, draw=1528, travel=490, bounds=0.000..180.000 x, -269.323..0.000 y
-Preflight: ok: lines=3989, draw=1528, travel=490, ratio=0.32
-Saved file stats: lines=3989, draw=1528, travel=490, bounds=0.000..180.000 x, -269.323..0.000 y
-Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1780674096845791900.nc
-Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1780674096845791900_vector.svg
-Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1780674096845791900_vector.pdf
+G-code stats: lines=3556, draw=1330, travel=443, bounds=0.000..180.000 x, -269.323..0.000 y
+Preflight: ok: lines=3556, draw=1330, travel=443, ratio=0.33
+Saved file stats: lines=3556, draw=1330, travel=443, bounds=0.000..180.000 x, -269.323..0.000 y
+Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1780674872905950000.nc
+Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1780674872905950000_vector.svg
+Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1780674872905950000_vector.pdf
 Sheet preview centered on compact source page bbox: ref=(0.176,0.176)..(410.704,290.731) mm
 Sheet preview placed on source page: offset=(115.528,287.542) mm

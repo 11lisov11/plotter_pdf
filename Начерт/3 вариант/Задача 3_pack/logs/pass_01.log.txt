@@ -1,7 +1,4 @@
-Image contour tracing: +52 path(s) from embedded raster.
-Image vectorization mode: centerline (added 52 path(s), simplify=0.02 mm).
-Condition image recovery: rect=202.86,241.64,240.96,274.83 mm -> +52 path(s).
-A3 condition image recovery summary: 1 image(s), 52 path(s), appended=52.
+Condition image recovery disabled for Nachert: preserving source KOMPAS/PDF miniature geometry.
 A3 clean source route: direct PDF vector SVG export (text_as_path=True).
 --- a3 clean pass ---
 Render mode: drawing; ExactGeometry=on; Handwriting=off
@@ -12,29 +9,29 @@ Extracting paths from SVG ...
 Raw geometry bounds: x(0.508, 410.464) y(0.508, 290.491)
 SVG page: 411.057 x 291.084 mm
 Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).
-SVG geometry: paths=2459, segments=3339.
+SVG geometry: paths=2407, segments=3141.
 Source bounds: x(0.508, 410.464) y(0.508, 290.491)
 Fit to work area: scale=0.8781, translate=(-90.446,-272.770), from (0.508, 0.508)-(410.464, 290.491)
 Pass window: col 1/2, row 1/1, source=360.000x254.647 mm, window=180.000x254.647 mm, offset=(0.000,0.000), shift=(90.000,0.000)
-Work area clipping: kept 1566 visible segments, dropped 1773 out-of-area segments.
-Segment dedup: dropped 432/1566 retraced segments (27.6%), kept=1134, eps=0.010 mm
-Collinear overlap dedup: dropped 17/1121 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
-Reorder: source order preserved (1062 polylines).
-Technical text join: merged 584 short gaps (ordered=365, nearest=219, gap<=0.55 mm, dy<=0.75 mm), polylines 1062 -> 478
-Segment dedup: dropped 4/1075 retraced segments (0.4%), kept=1071, eps=0.050 mm
-Collinear overlap dedup: dropped 4/1071 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
-Polyline optimization: 1062 -> 486
-Segment counts: source=3339, fitted=3339, clipped=1566
-Drawable segments after clip: 1566 (46.9% of source)
+Work area clipping: kept 1561 visible segments, dropped 1580 out-of-area segments.
+Segment dedup: dropped 432/1561 retraced segments (27.7%), kept=1129, eps=0.010 mm
+Collinear overlap dedup: dropped 17/1116 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
+Reorder: source order preserved (1060 polylines).
+Technical text join: merged 584 short gaps (ordered=365, nearest=219, gap<=0.55 mm, dy<=0.75 mm), polylines 1060 -> 476
+Segment dedup: dropped 4/1070 retraced segments (0.4%), kept=1066, eps=0.050 mm
+Collinear overlap dedup: dropped 4/1066 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
+Polyline optimization: 1060 -> 484
+Segment counts: source=3141, fitted=3141, clipped=1561
+Drawable segments after clip: 1561 (49.7% of source)
 Warning: significant clipping/transforming occurred. Check that page is inside target work area.
 Prepared bounds: x(0.000, 180.000) y(-272.323, -17.677)
 Estimated draw length: 4.98 m
 Applying pen-up / pen-down ...
-G-code stats: lines=3051, draw=1055, travel=397, bounds=0.000..180.000 x, -272.323..0.000 y
-Preflight: ok: lines=3051, draw=1055, travel=397, ratio=0.38
-Saved file stats: lines=3051, draw=1055, travel=397, bounds=0.000..180.000 x, -272.323..0.000 y
-Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1780674091425191200.nc
-Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1780674091425191200_vector.svg
-Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1780674091425191200_vector.pdf
+G-code stats: lines=3036, draw=1050, travel=395, bounds=0.000..180.000 x, -272.323..0.000 y
+Preflight: ok: lines=3036, draw=1050, travel=395, ratio=0.38
+Saved file stats: lines=3036, draw=1050, travel=395, bounds=0.000..180.000 x, -272.323..0.000 y
+Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1780674867240111200.nc
+Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1780674867240111200_vector.svg
+Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1780674867240111200_vector.pdf
 Sheet preview centered on compact source page bbox: ref=(0.176,0.176)..(410.704,290.731) mm
 Sheet preview placed on source page: offset=(115.528,290.542) mm

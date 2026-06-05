@@ -681,14 +681,12 @@ def _needs_variant20_22_a4_titleblock_direct_candidate(source_pdf: Path) -> bool
 
 
 def _prefer_direct_fit_full_for_nachert_a4(source_pdf: Path) -> bool:
-    return _is_nachert_source(source_pdf)
-    parts = [str(part).lower() for part in source_pdf.parts]
-    return "РЅР°С‡РµСЂС‚" in parts and "4 РІР°СЂРёРЅС‚" in parts
+    return False
 
 
 def _preserve_nachert_header_source_for_variant(source_pdf: Path) -> bool:
     parts = {str(part).casefold() for part in source_pdf.parts}
-    return "начерт" in parts and ("1 вариант" in parts or "4 варинт" in parts)
+    return "начерт" in parts and ("1 вариант" in parts or "3 вариант" in parts or "4 варинт" in parts)
 
 
 def _is_nachert_variant4_source(source_pdf: Path) -> bool:
@@ -4599,6 +4597,9 @@ def _extract_small_condition_image_polylines_from_pdf(
 ) -> tuple[list[list[tuple[float, float]]], list[dict[str, float]]]:
     out: list[list[tuple[float, float]]] = []
     recovered: list[dict[str, float]] = []
+    if _is_nachert_source(source_pdf):
+        logger("Condition image recovery disabled for Nachert: preserving source KOMPAS/PDF miniature geometry.")
+        return out, recovered
     if fitz is None:
         return out, recovered
 

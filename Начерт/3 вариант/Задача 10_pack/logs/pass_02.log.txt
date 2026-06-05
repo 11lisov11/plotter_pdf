@@ -1,7 +1,4 @@
-Image contour tracing: +74 path(s) from embedded raster.
-Image vectorization mode: centerline (added 74 path(s), simplify=0.02 mm).
-Condition image recovery: rect=197.78,240.20,245.62,277.79 mm -> +74 path(s).
-A3 condition image recovery summary: 1 image(s), 74 path(s), appended=74.
+Condition image recovery disabled for Nachert: preserving source KOMPAS/PDF miniature geometry.
 A3 clean source route: direct PDF vector SVG export (text_as_path=True).
 pass_02_rotated_180_for_sheet_flip=True
 --- a3 clean pass ---
@@ -13,31 +10,31 @@ Extracting paths from SVG ...
 Raw geometry bounds: x(0.508, 410.464) y(0.508, 290.491)
 SVG page: 411.057 x 291.084 mm
 Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).
-SVG geometry: paths=2648, segments=3938.
+SVG geometry: paths=2574, segments=3656.
 Source bounds: x(0.508, 410.464) y(0.508, 290.491)
 Fit to work area: scale=0.8781, translate=(-90.446,-272.770), from (0.508, 0.508)-(410.464, 290.491)
 Pass window: col 2/2, row 1/1, source=360.000x254.647 mm, window=180.000x254.647 mm, offset=(180.000,0.000), shift=(-90.000,0.000)
 Sheet pass transform: rotating geometry by 180 deg for a3 pass 2/2 x 1/1 around active area center (90.000,-145.000).
 Sheet pass transform: translating geometry by (0.000,3.000) mm for a3 pass 2/2 x 1/1.
-Work area clipping: kept 2275 visible segments, dropped 1663 out-of-area segments.
-Segment dedup: dropped 310/2275 retraced segments (13.6%), kept=1965, eps=0.010 mm
-Collinear overlap dedup: dropped 16/1916 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
-Reorder: source order preserved (1628 polylines).
-Technical text join: merged 955 short gaps (ordered=605, nearest=350, gap<=0.55 mm, dy<=0.75 mm), polylines 1628 -> 673
-Segment dedup: dropped 3/1781 retraced segments (0.2%), kept=1778, eps=0.050 mm
-Collinear overlap dedup: dropped 2/1778 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
-Polyline optimization: 1628 -> 678
-Segment counts: source=3938, fitted=3938, clipped=2275
-Drawable segments after clip: 2275 (57.8% of source)
+Work area clipping: kept 2014 visible segments, dropped 1642 out-of-area segments.
+Segment dedup: dropped 310/2014 retraced segments (15.4%), kept=1704, eps=0.010 mm
+Collinear overlap dedup: dropped 16/1656 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
+Reorder: source order preserved (1558 polylines).
+Technical text join: merged 947 short gaps (ordered=604, nearest=343, gap<=0.55 mm, dy<=0.75 mm), polylines 1558 -> 611
+Segment dedup: dropped 3/1516 retraced segments (0.2%), kept=1513, eps=0.050 mm
+Collinear overlap dedup: dropped 1/1513 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
+Polyline optimization: 1558 -> 615
+Segment counts: source=3656, fitted=3656, clipped=2014
+Drawable segments after clip: 2014 (55.1% of source)
 Warning: significant clipping/transforming occurred. Check that page is inside target work area.
 Prepared bounds: x(0.000, 180.000) y(-269.323, -14.677)
-Estimated draw length: 4.34 m
+Estimated draw length: 4.01 m
 Applying pen-up / pen-down ...
-G-code stats: lines=4984, draw=1773, travel=640, bounds=0.000..180.000 x, -269.323..0.000 y
-Preflight: ok: lines=4984, draw=1773, travel=640, ratio=0.36
-Saved file stats: lines=4984, draw=1773, travel=640, bounds=0.000..180.000 x, -269.323..0.000 y
-Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1780674205685793500.nc
-Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1780674205685793500_vector.svg
-Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1780674205685793500_vector.pdf
+G-code stats: lines=4406, draw=1510, travel=577, bounds=0.000..180.000 x, -269.323..0.000 y
+Preflight: ok: lines=4406, draw=1510, travel=577, ratio=0.38
+Saved file stats: lines=4406, draw=1510, travel=577, bounds=0.000..180.000 x, -269.323..0.000 y
+Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1780675040471720700.nc
+Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1780675040471720700_vector.svg
+Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1780675040471720700_vector.pdf
 Sheet preview centered on compact source page bbox: ref=(0.176,0.176)..(410.704,290.731) mm
 Sheet preview placed on source page: offset=(115.528,287.542) mm
