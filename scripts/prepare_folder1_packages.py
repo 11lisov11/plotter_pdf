@@ -327,6 +327,24 @@ def _kompas_text_join_backend_overrides(source_pdf: Path | None) -> dict[str, An
     }
 
 
+def _kompas_source_to_drawing_polylines(page_items: list[Any]) -> list[list[tuple[float, float]]]:
+    # KOMPAS technical text often arrives as thin stroked/fill glyph geometry.
+    # The default drawing route centerlines small fill groups; that is useful for
+    # handwriting, but makes KOMPAS letters look like broken hairlines in G-code.
+    # Keep the source outlines only for this KOMPAS clean-source extraction pass.
+    with _backend_override_context(
+        {
+            "HANDWRITING_TEXT_ENABLED": True,
+            "HANDWRITING_STROKE_ACTIVE": True,
+            "HANDWRITING_PRESERVE_FILL_OUTLINES": True,
+            "SINGLE_STROKE_TEXT_ENABLED": False,
+            "SINGLE_STROKE_OUTLINE_TEXT_ENABLED": False,
+            "HANDWRITING_OUTLINE_CENTERLINE_ENABLED": False,
+        }
+    ):
+        return backend.to_drawing_polylines(page_items)
+
+
 @lru_cache(maxsize=256)
 def _pdf_page0_text_casefold(path_text: str) -> str:
     try:
@@ -2013,6 +2031,13 @@ def _should_reroute_kompas_text(source_pdf: Path) -> bool:
     # Production drawing packages must preserve KOMPAS source text. The
     # explicit reroute helper remains available for tests/fallbacks, but the
     # default route is source-faithful text-as-path.
+    return False
+
+
+def _should_repair_kompas_stamp_title_text(source_pdf: Path) -> bool:
+    # KOMPAS stamp/title text in production drawings should stay source-faithful
+    # too. The repair helper re-renders selected labels with a single-line font;
+    # that can distort Cyrillic letters and designation text in generated G-code.
     return False
 
 
@@ -6345,13 +6370,18 @@ def _prepare_mupdf_svg_paths_candidate(
                 float(page_h_mm),
                 logger=lambda *_args, **_kwargs: None,
             )
-            source_polys = backend.to_drawing_polylines(page_items)
+            frame_class = _drawing_frame_class(source_pdf)
+            source_polys = (
+                _kompas_source_to_drawing_polylines(page_items)
+                if frame_class == "kompas_full_frame"
+                else backend.to_drawing_polylines(page_items)
+            )
             cleanup_meta = {"left_strip_removed": 0, "footer_removed": 0, "outer_frame_removed": 0}
             kompas_cleanup_meta = {"archive_strip_removed": 0, "under_frame_removed": 0}
             kompas_text_meta = _empty_kompas_text_meta()
             kompas_stamp_text_meta = _empty_kompas_stamp_text_meta()
             title_block_meta = {"title_block_text_removed": 0.0, "title_block_text_rendered": 0.0}
-            if _drawing_frame_class(source_pdf) == "kompas_full_frame":
+            if frame_class == "kompas_full_frame":
                 source_polys, kompas_cleanup_meta = _cleanup_kompas_archive_strip_polylines(
                     source_polys,
                     page_w_mm=float(page_w_mm),
@@ -6368,12 +6398,17 @@ def _prepare_mupdf_svg_paths_candidate(
                     )
                 else:
                     logs.append("KOMPAS source text preserved: single-line text reroute disabled for production.")
-                source_polys, kompas_stamp_text_meta = _reroute_kompas_stamp_title_text_polylines(
-                    source_polys,
-                    source_pdf=source_pdf,
-                    page_index=0,
-                    logger=logs.append,
-                )
+                if _should_repair_kompas_stamp_title_text(source_pdf):
+                    source_polys, kompas_stamp_text_meta = _reroute_kompas_stamp_title_text_polylines(
+                        source_polys,
+                        source_pdf=source_pdf,
+                        page_index=0,
+                        logger=logs.append,
+                    )
+                else:
+                    logs.append(
+                        "KOMPAS stamp/title text preserved: single-line stamp repair disabled for production."
+                    )
             else:
                 source_polys, cleanup_meta = _cleanup_mupdf_a4_source_polylines(
                     source_polys,
@@ -6412,6 +6447,7 @@ def _prepare_mupdf_svg_paths_candidate(
                     f"kompas_stamp_text_lines={int(kompas_stamp_text_meta.get('kompas_stamp_text_lines', 0.0))}; "
                     f"kompas_stamp_text_removed={int(kompas_stamp_text_meta.get('kompas_stamp_text_removed', 0.0))}; "
                     f"kompas_stamp_text_rendered={int(kompas_stamp_text_meta.get('kompas_stamp_text_rendered', 0.0))}; "
+                    "kompas_fill_outline_preserved=True; "
                     "source text preserved outside stamp/title repair regions."
                 )
             else:
@@ -6602,7 +6638,7 @@ def _prepare_forced_a4_candidate(
                     float(page_h_mm),
                     logger=lambda *_args, **_kwargs: None,
                 )
-                source_polys = backend.to_drawing_polylines(page_items)
+                source_polys = _kompas_source_to_drawing_polylines(page_items)
                 source_polys, kompas_cleanup_meta = _cleanup_kompas_archive_strip_polylines(
                     source_polys,
                     page_w_mm=float(page_w_mm),
@@ -6633,7 +6669,8 @@ def _prepare_forced_a4_candidate(
                     f"top_outer_frame_removed={kompas_cleanup_meta['top_outer_frame_removed']}; "
                     f"kompas_text_lines={int(kompas_text_meta.get('kompas_text_lines', 0.0))}; "
                     f"kompas_text_removed={int(kompas_text_meta.get('kompas_text_removed', 0.0))}; "
-                    f"kompas_text_rendered={int(kompas_text_meta.get('kompas_text_rendered', 0.0))}."
+                    f"kompas_text_rendered={int(kompas_text_meta.get('kompas_text_rendered', 0.0))}; "
+                    "kompas_fill_outline_preserved=True."
                 )
             else:
                 title_lines = _extract_title_block_text_lines_from_pdf(ascii_pdf, page_index=0)
@@ -6968,7 +7005,7 @@ def _prepare_a3_clean_source_svg(
                 float(page_h_mm),
                 logger=lambda *_args, **_kwargs: None,
             )
-            source_polys = backend.to_drawing_polylines(page_items)
+            source_polys = _kompas_source_to_drawing_polylines(page_items)
             source_polys, kompas_cleanup_meta = _cleanup_kompas_archive_strip_polylines(
                 source_polys,
                 page_w_mm=float(page_w_mm),
@@ -6992,12 +7029,15 @@ def _prepare_a3_clean_source_svg(
                 )
             else:
                 logs.append("KOMPAS source text preserved: single-line text reroute disabled for production.")
-            source_polys, kompas_stamp_text_meta = _reroute_kompas_stamp_title_text_polylines(
-                source_polys,
-                source_pdf=source_pdf,
-                page_index=0,
-                logger=logs.append,
-            )
+            if _should_repair_kompas_stamp_title_text(source_pdf):
+                source_polys, kompas_stamp_text_meta = _reroute_kompas_stamp_title_text_polylines(
+                    source_polys,
+                    source_pdf=source_pdf,
+                    page_index=0,
+                    logger=logs.append,
+                )
+            else:
+                logs.append("KOMPAS stamp/title text preserved: single-line stamp repair disabled for production.")
             bridge._write_method3_svg(
                 source_svg,
                 source_polys,
@@ -7022,7 +7062,8 @@ def _prepare_a3_clean_source_svg(
                 f"kompas_text_rendered={int(kompas_text_meta.get('kompas_text_rendered', 0.0))}; "
                 f"kompas_stamp_text_lines={int(kompas_stamp_text_meta.get('kompas_stamp_text_lines', 0.0))}; "
                 f"kompas_stamp_text_removed={int(kompas_stamp_text_meta.get('kompas_stamp_text_removed', 0.0))}; "
-                f"kompas_stamp_text_rendered={int(kompas_stamp_text_meta.get('kompas_stamp_text_rendered', 0.0))}."
+                f"kompas_stamp_text_rendered={int(kompas_stamp_text_meta.get('kompas_stamp_text_rendered', 0.0))}; "
+                "kompas_fill_outline_preserved=True."
             )
         logs.append(
             "A3 clean source route: direct PDF vector SVG export "
@@ -7220,7 +7261,7 @@ def _prepare_literal_clean_source_svg(
                 float(page_h_mm),
                 logger=lambda *_args, **_kwargs: None,
             )
-            source_polys = backend.to_drawing_polylines(page_items)
+            source_polys = _kompas_source_to_drawing_polylines(page_items)
             source_polys, kompas_cleanup_meta = _cleanup_kompas_archive_strip_polylines(
                 source_polys,
                 page_w_mm=float(page_w_mm),
@@ -7244,12 +7285,15 @@ def _prepare_literal_clean_source_svg(
                 )
             else:
                 logs.append("KOMPAS source text preserved: single-line text reroute disabled for production.")
-            source_polys, kompas_stamp_text_meta = _reroute_kompas_stamp_title_text_polylines(
-                source_polys,
-                source_pdf=source_pdf,
-                page_index=0,
-                logger=logs.append,
-            )
+            if _should_repair_kompas_stamp_title_text(source_pdf):
+                source_polys, kompas_stamp_text_meta = _reroute_kompas_stamp_title_text_polylines(
+                    source_polys,
+                    source_pdf=source_pdf,
+                    page_index=0,
+                    logger=logs.append,
+                )
+            else:
+                logs.append("KOMPAS stamp/title text preserved: single-line stamp repair disabled for production.")
             bridge._write_method3_svg(
                 source_svg,
                 source_polys,
@@ -7274,7 +7318,8 @@ def _prepare_literal_clean_source_svg(
                 f"kompas_text_rendered={int(kompas_text_meta.get('kompas_text_rendered', 0.0))}; "
                 f"kompas_stamp_text_lines={int(kompas_stamp_text_meta.get('kompas_stamp_text_lines', 0.0))}; "
                 f"kompas_stamp_text_removed={int(kompas_stamp_text_meta.get('kompas_stamp_text_removed', 0.0))}; "
-                f"kompas_stamp_text_rendered={int(kompas_stamp_text_meta.get('kompas_stamp_text_rendered', 0.0))}."
+                f"kompas_stamp_text_rendered={int(kompas_stamp_text_meta.get('kompas_stamp_text_rendered', 0.0))}; "
+                "kompas_fill_outline_preserved=True."
             )
         logs.append(
             "Literal clean source route: direct PDF vector SVG export "
