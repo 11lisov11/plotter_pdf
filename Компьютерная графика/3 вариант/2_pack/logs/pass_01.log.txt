@@ -1,6 +1,7 @@
+KOMPAS text centerline averaging: using source glyph paths and text-element centerline route.
 KOMPAS source text preserved: single-line text reroute disabled for production.
 KOMPAS stamp/title text preserved: single-line stamp repair disabled for production.
-A3 clean source KOMPAS cleanup: archive_strip_removed=9; service_region_removed=328; under_frame_removed=1; top_outer_frame_removed=2; a3_outer_sheet_frame_removed=6; a3_outer_sheet_frame_kept_stamp_edges=4; kompas_text_lines=0; kompas_text_removed=0; kompas_text_rendered=0; kompas_stamp_text_lines=0; kompas_stamp_text_removed=0; kompas_stamp_text_rendered=0; kompas_fill_outline_preserved=True.
+A3 clean source KOMPAS cleanup: archive_strip_removed=9; service_region_removed=592; under_frame_removed=1; top_outer_frame_removed=2; a3_outer_sheet_frame_removed=6; a3_outer_sheet_frame_kept_stamp_edges=4; kompas_text_lines=0; kompas_text_removed=0; kompas_text_rendered=0; kompas_stamp_text_lines=0; kompas_stamp_text_removed=0; kompas_stamp_text_rendered=0; kompas_text_centerline_averaging=True; kompas_text_centerline_nodes=0.
 A3 clean source route: direct PDF vector SVG export (text_as_path=True).
 --- a3 clean pass ---
 Render mode: drawing; ExactGeometry=on; Handwriting=off
@@ -11,26 +12,25 @@ Extracting paths from SVG ...
 Raw geometry bounds: x(24.000, 415.459) y(5.503, 292.523)
 SVG page: 421.047 x 298.111 mm
 Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).
-SVG geometry: paths=3529, segments=7633.
+SVG geometry: paths=1438, segments=2706.
 Source bounds: x(24.000, 415.459) y(5.503, 292.523)
 Fit to work area: scale=0.9196, translate=(-112.071,-282.038), from (24.000, 5.503)-(415.459, 292.523)
 Pass window: col 1/2, row 1/1, source=360.000x263.954 mm, window=180.000x263.954 mm, offset=(0.000,0.000), shift=(90.000,0.000)
-Work area clipping: kept 3242 visible segments, dropped 4391 out-of-area segments.
-Segment dedup: dropped 326/3242 retraced segments (10.1%), kept=2916, eps=0.010 mm
-Collinear overlap dedup: dropped 260/2891 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
-Reorder: source order preserved (1774 polylines).
-Segment counts: source=7633, fitted=7633, clipped=3242
-Drawable segments after clip: 3242 (42.5% of source)
+Work area clipping: kept 997 visible segments, dropped 1709 out-of-area segments.
+Segment dedup: dropped 297/997 retraced segments (29.8%), kept=700, eps=0.010 mm
+Collinear overlap dedup: dropped 7/700 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
+Reorder: source order preserved (533 polylines).
+Segment counts: source=2706, fitted=2706, clipped=997
+Drawable segments after clip: 997 (36.8% of source)
 Warning: significant clipping/transforming occurred. Check that page is inside target work area.
 Prepared bounds: x(0.000, 149.693) y(-276.977, -61.064)
-Estimated draw length: 3.61 m
-Final XY G-code overlap cleanup: converted 1 redundant draw move(s) to travel.
+Estimated draw length: 2.58 m
 Applying pen-up / pen-down ...
-G-code stats: lines=10758, draw=2622, travel=1625, bounds=0.000..149.693 x, -276.977..0.000 y
-Preflight: ok: lines=10758, draw=2622, travel=1625, ratio=0.62
-Saved file stats: lines=10758, draw=2622, travel=1625, bounds=0.000..149.693 x, -276.977..0.000 y
-Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1780645473444274300.nc
-Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1780645473444274300_vector.svg
-Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1780645473444274300_vector.pdf
+G-code stats: lines=2644, draw=693, travel=388, bounds=0.000..149.693 x, -276.977..0.000 y
+Preflight: ok: lines=2644, draw=693, travel=388, ratio=0.56
+Saved file stats: lines=2644, draw=693, travel=388, bounds=0.000..149.693 x, -276.977..0.000 y
+Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1780647175195571600.nc
+Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1780647175195571600_vector.svg
+Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-1-1780647175195571600_vector.pdf
 Sheet preview centered on compact source page bbox: ref=(0.353,0.353)..(420.518,297.670) mm
 Sheet preview placed on source page: offset=(135.677,318.076) mm

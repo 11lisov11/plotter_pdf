@@ -328,21 +328,50 @@ def _kompas_text_join_backend_overrides(source_pdf: Path | None) -> dict[str, An
 
 
 def _kompas_source_to_drawing_polylines(page_items: list[Any]) -> list[list[tuple[float, float]]]:
-    # KOMPAS technical text often arrives as thin stroked/fill glyph geometry.
-    # The default drawing route centerlines small fill groups; that is useful for
-    # handwriting, but makes KOMPAS letters look like broken hairlines in G-code.
-    # Keep the source outlines only for this KOMPAS clean-source extraction pass.
+    # KOMPAS technical text must be plotted as averaged single-stroke text, not
+    # as double glyph contours. Keep the existing text-element centerline route:
+    # cluster text fill glyphs, average them to centerlines, then refine/merge
+    # technical strokes. Do not enable outline preservation here.
     with _backend_override_context(
         {
-            "HANDWRITING_TEXT_ENABLED": True,
-            "HANDWRITING_STROKE_ACTIVE": True,
-            "HANDWRITING_PRESERVE_FILL_OUTLINES": True,
-            "SINGLE_STROKE_TEXT_ENABLED": False,
+            "HANDWRITING_TEXT_ENABLED": False,
+            "HANDWRITING_STROKE_ACTIVE": False,
+            "HANDWRITING_PRESERVE_FILL_OUTLINES": False,
+            "SINGLE_STROKE_TEXT_ENABLED": True,
             "SINGLE_STROKE_OUTLINE_TEXT_ENABLED": False,
             "HANDWRITING_OUTLINE_CENTERLINE_ENABLED": False,
+            "TECH_TEXT_SINGLELINE_ENABLED": True,
         }
     ):
         return backend.to_drawing_polylines(page_items)
+
+
+def _export_pdf_page_to_svg_for_kompas_text_centerline(
+    source_pdf: Path,
+    page_index: int,
+    out_svg: Path,
+    *,
+    logger,
+    frame_source_pdf: Path | None = None,
+) -> tuple[float, float, int, bool]:
+    frame_pdf = frame_source_pdf or source_pdf
+    if _drawing_frame_class(frame_pdf) != "kompas_full_frame":
+        page_w_mm, page_h_mm = _export_pdf_page_to_mupdf_svg(
+            source_pdf,
+            page_index,
+            out_svg,
+            text_as_path=True,
+        )
+        return float(page_w_mm), float(page_h_mm), 0, False
+
+    page_w_mm, page_h_mm = _export_pdf_page_to_mupdf_svg(
+        source_pdf,
+        page_index,
+        out_svg,
+        text_as_path=True,
+    )
+    logger("KOMPAS text centerline averaging: using source glyph paths and text-element centerline route.")
+    return float(page_w_mm), float(page_h_mm), 0, True
 
 
 @lru_cache(maxsize=256)
@@ -6349,11 +6378,13 @@ def _prepare_mupdf_svg_paths_candidate(
         source_pdf_preview = td_path / "source.pdf"
         logs: list[str] = []
         try:
-            page_w_mm, page_h_mm = _export_pdf_page_to_mupdf_svg(
-                source_pdf,
-                0,
-                source_svg,
-                text_as_path=True,
+            page_w_mm, page_h_mm, kompas_centerline_text_nodes, kompas_centerline_text_ok = (
+                _export_pdf_page_to_svg_for_kompas_text_centerline(
+                    source_pdf,
+                    0,
+                    source_svg,
+                    logger=logs.append,
+                )
             )
             with fitz.open(str(source_pdf)) as src_doc:
                 out_doc = fitz.open()
@@ -6436,7 +6467,7 @@ def _prepare_mupdf_svg_paths_candidate(
             )
             if _drawing_frame_class(source_pdf) == "kompas_full_frame":
                 logs.append(
-                    "A4 MuPDF source route: direct PDF vector SVG export with text_as_path=True; "
+                    f"A4 MuPDF source route: direct PDF vector SVG export with text_as_path={'False' if kompas_centerline_text_ok else 'True'}; "
                     f"kompas_archive_strip_removed={kompas_cleanup_meta['archive_strip_removed']}; "
                     f"kompas_service_region_removed={kompas_cleanup_meta['service_region_removed']}; "
                     f"kompas_under_frame_removed={kompas_cleanup_meta['under_frame_removed']}; "
@@ -6447,7 +6478,8 @@ def _prepare_mupdf_svg_paths_candidate(
                     f"kompas_stamp_text_lines={int(kompas_stamp_text_meta.get('kompas_stamp_text_lines', 0.0))}; "
                     f"kompas_stamp_text_removed={int(kompas_stamp_text_meta.get('kompas_stamp_text_removed', 0.0))}; "
                     f"kompas_stamp_text_rendered={int(kompas_stamp_text_meta.get('kompas_stamp_text_rendered', 0.0))}; "
-                    "kompas_fill_outline_preserved=True; "
+                    f"kompas_text_centerline_averaging={'True' if kompas_centerline_text_ok else 'False'}; "
+                    f"kompas_text_centerline_nodes={int(kompas_centerline_text_nodes)}; "
                     "source text preserved outside stamp/title repair regions."
                 )
             else:
@@ -6623,13 +6655,15 @@ def _prepare_forced_a4_candidate(
         appended = 0
         kompas_text_meta = _empty_kompas_text_meta()
         try:
-            page_w_mm, page_h_mm = _export_pdf_page_to_mupdf_svg(
-                ascii_pdf,
-                0,
-                clean_svg,
-                text_as_path=False,
-            )
             if _drawing_frame_class(source_pdf) == "kompas_full_frame":
+                page_w_mm, page_h_mm, kompas_centerline_text_nodes, kompas_centerline_text_ok = (
+                    _export_pdf_page_to_svg_for_kompas_text_centerline(
+                        source_pdf,
+                        0,
+                        clean_svg,
+                        logger=prep_logs.append,
+                    )
+                )
                 bridge = BackendBridge(PROJECT_ROOT)
                 path_items = backend.extract_polylines(clean_svg)
                 page_items, _unit_scale = backend.normalize_path_units_to_page(
@@ -6670,9 +6704,16 @@ def _prepare_forced_a4_candidate(
                     f"kompas_text_lines={int(kompas_text_meta.get('kompas_text_lines', 0.0))}; "
                     f"kompas_text_removed={int(kompas_text_meta.get('kompas_text_removed', 0.0))}; "
                     f"kompas_text_rendered={int(kompas_text_meta.get('kompas_text_rendered', 0.0))}; "
-                    "kompas_fill_outline_preserved=True."
+                    f"kompas_text_centerline_averaging={'True' if kompas_centerline_text_ok else 'False'}; "
+                    f"kompas_text_centerline_nodes={int(kompas_centerline_text_nodes)}."
                 )
             else:
+                page_w_mm, page_h_mm = _export_pdf_page_to_mupdf_svg(
+                    ascii_pdf,
+                    0,
+                    clean_svg,
+                    text_as_path=False,
+                )
                 title_lines = _extract_title_block_text_lines_from_pdf(ascii_pdf, page_index=0)
                 region_mm = _svg_title_block_region_from_pdf_lines(title_lines)
                 if region_mm is not None:
@@ -6939,12 +6980,24 @@ def _prepare_a3_clean_source_svg(
     logs: list[str] = []
     try:
         reroute_title_block = _should_reroute_title_block_text(source_pdf)
-        page_w_mm, page_h_mm = _export_pdf_page_to_mupdf_svg(
-            source_pdf,
-            0,
-            source_svg,
-            text_as_path=not reroute_title_block,
-        )
+        kompas_centerline_text_nodes = 0
+        kompas_centerline_text_ok = False
+        if _drawing_frame_class(source_pdf) == "kompas_full_frame":
+            page_w_mm, page_h_mm, kompas_centerline_text_nodes, kompas_centerline_text_ok = (
+                _export_pdf_page_to_svg_for_kompas_text_centerline(
+                    source_pdf,
+                    0,
+                    source_svg,
+                    logger=logs.append,
+                )
+            )
+        else:
+            page_w_mm, page_h_mm = _export_pdf_page_to_mupdf_svg(
+                source_pdf,
+                0,
+                source_svg,
+                text_as_path=not reroute_title_block,
+            )
         with fitz.open(str(source_pdf)) as src_doc:
             if int(src_doc.page_count) < 1:
                 return False, "Source A3 PDF has no pages.", logs
@@ -7063,7 +7116,8 @@ def _prepare_a3_clean_source_svg(
                 f"kompas_stamp_text_lines={int(kompas_stamp_text_meta.get('kompas_stamp_text_lines', 0.0))}; "
                 f"kompas_stamp_text_removed={int(kompas_stamp_text_meta.get('kompas_stamp_text_removed', 0.0))}; "
                 f"kompas_stamp_text_rendered={int(kompas_stamp_text_meta.get('kompas_stamp_text_rendered', 0.0))}; "
-                "kompas_fill_outline_preserved=True."
+                f"kompas_text_centerline_averaging={'True' if kompas_centerline_text_ok else 'False'}; "
+                f"kompas_text_centerline_nodes={int(kompas_centerline_text_nodes)}."
             )
         logs.append(
             "A3 clean source route: direct PDF vector SVG export "
@@ -7246,12 +7300,25 @@ def _prepare_literal_clean_source_svg(
                     out_doc.save(str(source_preview_pdf))
                 finally:
                     out_doc.close()
-        page_w_mm, page_h_mm = _export_pdf_page_to_mupdf_svg(
-            export_pdf,
-            0,
-            source_svg,
-            text_as_path=True,
-        )
+        kompas_centerline_text_nodes = 0
+        kompas_centerline_text_ok = False
+        if _drawing_frame_class(source_pdf) == "kompas_full_frame":
+            page_w_mm, page_h_mm, kompas_centerline_text_nodes, kompas_centerline_text_ok = (
+                _export_pdf_page_to_svg_for_kompas_text_centerline(
+                    export_pdf,
+                    0,
+                    source_svg,
+                    logger=logs.append,
+                    frame_source_pdf=source_pdf,
+                )
+            )
+        else:
+            page_w_mm, page_h_mm = _export_pdf_page_to_mupdf_svg(
+                export_pdf,
+                0,
+                source_svg,
+                text_as_path=True,
+            )
         if _drawing_frame_class(source_pdf) == "kompas_full_frame":
             bridge = BackendBridge(PROJECT_ROOT)
             path_items = backend.extract_polylines(source_svg)
@@ -7319,11 +7386,13 @@ def _prepare_literal_clean_source_svg(
                 f"kompas_stamp_text_lines={int(kompas_stamp_text_meta.get('kompas_stamp_text_lines', 0.0))}; "
                 f"kompas_stamp_text_removed={int(kompas_stamp_text_meta.get('kompas_stamp_text_removed', 0.0))}; "
                 f"kompas_stamp_text_rendered={int(kompas_stamp_text_meta.get('kompas_stamp_text_rendered', 0.0))}; "
-                "kompas_fill_outline_preserved=True."
+                f"kompas_text_centerline_averaging={'True' if kompas_centerline_text_ok else 'False'}; "
+                f"kompas_text_centerline_nodes={int(kompas_centerline_text_nodes)}."
             )
         logs.append(
             "Literal clean source route: direct PDF vector SVG export "
-            f"(text_as_path=True, page={float(page_w_mm):.3f}x{float(page_h_mm):.3f} mm, rotated_90={'yes' if rotate_90 else 'no'})."
+            f"(text_as_path={'False' if _drawing_frame_class(source_pdf) == 'kompas_full_frame' and kompas_centerline_text_ok else 'True'}, "
+            f"page={float(page_w_mm):.3f}x{float(page_h_mm):.3f} mm, rotated_90={'yes' if rotate_90 else 'no'})."
         )
         return True, "Literal clean source prepared from direct PDF vector export.", logs
     except Exception as exc:
