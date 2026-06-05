@@ -4706,6 +4706,57 @@ def _is_a3_header_band_image_rect_mm(
     return True
 
 
+def _is_nachert_a4_header_image_rect_mm(
+    x0_mm: float,
+    y0_mm: float,
+    x1_mm: float,
+    y1_mm: float,
+    *,
+    page_w_mm: float,
+    page_h_mm: float,
+) -> bool:
+    if float(page_w_mm) > 230.0 or float(page_h_mm) > 330.0:
+        return False
+    if float(x0_mm) > 6.0 or float(y0_mm) > 6.0:
+        return False
+    return _is_small_condition_image_rect_mm(x0_mm, y0_mm, x1_mm, y1_mm)
+
+
+def _keep_nachert_a4_header_epure_polyline(
+    poly: list[tuple[float, float]],
+    *,
+    image_x0_mm: float,
+    image_y0_mm: float,
+    image_x1_mm: float,
+    image_y1_mm: float,
+) -> bool:
+    if len(poly) < 2:
+        return False
+    x0, y0, x1, y1 = _poly_bbox_mm(poly)
+    bw = max(0.0, float(x1) - float(x0))
+    bh = max(0.0, float(y1) - float(y0))
+    span = max(float(bw), float(bh))
+    length = _polyline_length(poly)
+    image_h = max(1e-6, float(image_y1_mm) - float(image_y0_mm))
+    rel_y0 = (float(y0) - float(image_y0_mm)) / image_h
+    rel_y1 = (float(y1) - float(image_y0_mm)) / image_h
+    if span < 0.25 and float(length) < 0.45:
+        return False
+    # Drop the tiny printed explanation under the thumbnail; keep the actual
+    # epure geometry and its point labels above it.
+    if rel_y0 >= 0.76 and span < 7.0 and float(length) < 10.0:
+        return False
+    # Do not duplicate the raster thumbnail border over the clean KOMPAS frame.
+    if _poly_is_axis_aligned_mm(poly, eps=0.18):
+        near_left = abs(float(x0) - float(image_x0_mm)) <= 0.6 and bw <= 0.8
+        near_right = abs(float(x1) - float(image_x1_mm)) <= 0.6 and bw <= 0.8
+        near_top = abs(float(y0) - float(image_y0_mm)) <= 0.6 and bh <= 0.8
+        near_bottom = abs(float(y1) - float(image_y1_mm)) <= 0.6 and bh <= 0.8
+        if (near_left or near_right or near_top or near_bottom) and span >= 8.0:
+            return False
+    return True
+
+
 def _detect_a3_header_miniature_crop_px(image: Image.Image) -> tuple[int, int, int, int] | None:
     gray = image.convert("L")
     arr = np.array(gray, dtype=np.uint8)
@@ -4751,9 +4802,9 @@ def _extract_small_condition_image_polylines_from_pdf(
 ) -> tuple[list[list[tuple[float, float]]], list[dict[str, float]]]:
     out: list[list[tuple[float, float]]] = []
     recovered: list[dict[str, float]] = []
-    if _is_nachert_source(source_pdf):
-        logger("Condition image recovery disabled for Nachert: preserving source KOMPAS/PDF miniature geometry.")
-        return out, recovered
+    nachert_source = _is_nachert_source(source_pdf)
+    if nachert_source:
+        logger("Condition image recovery limited for Nachert: A4 header miniature epure only.")
     if fitz is None:
         return out, recovered
 
@@ -4824,7 +4875,18 @@ def _extract_small_condition_image_polylines_from_pdf(
                             page_w_mm=page_w_mm,
                             page_h_mm=page_h_mm,
                         )
-                        if not is_small and not is_header_band:
+                        is_nachert_a4_header = nachert_source and _is_nachert_a4_header_image_rect_mm(
+                            x0_mm,
+                            y0_mm,
+                            x1_mm,
+                            y1_mm,
+                            page_w_mm=page_w_mm,
+                            page_h_mm=page_h_mm,
+                        )
+                        if nachert_source:
+                            if not is_nachert_a4_header:
+                                continue
+                        elif not is_small and not is_header_band:
                             continue
 
                         png_path = td_path / f"condimg_{img_idx}_{rect_idx}.png"
@@ -4882,7 +4944,21 @@ def _extract_small_condition_image_polylines_from_pdf(
                         for item in items:
                             pts = list(getattr(item, "points", []) or [])
                             if len(pts) >= 2:
-                                out.append([(float(x), float(y)) for x, y in pts])
+                                poly = [(float(x), float(y)) for x, y in pts]
+                                if is_nachert_a4_header:
+                                    poly = [
+                                        (float(x), float(image_y0_mm) + float(image_y1_mm) - float(y))
+                                        for x, y in poly
+                                    ]
+                                    if not _keep_nachert_a4_header_epure_polyline(
+                                        poly,
+                                        image_x0_mm=float(image_x0_mm),
+                                        image_y0_mm=float(image_y0_mm),
+                                        image_x1_mm=float(image_x1_mm),
+                                        image_y1_mm=float(image_y1_mm),
+                                    ):
+                                        continue
+                                out.append(poly)
                                 added += 1
                         if added > 0:
                             recovered.append(
@@ -6028,7 +6104,13 @@ def _prepare_a4_hybrid_drawing_candidate(
                 "message": msg,
                 "logs": logs,
             }
-        if preserve_variant1_header_source:
+        if preserve_variant1_header_source and _is_nachert_source(source_pdf):
+            extra_frame_polys, recovered = _extract_small_condition_image_polylines_from_pdf(
+                source_pdf,
+                page_index=0,
+                logger=logs.append,
+            )
+        elif preserve_variant1_header_source:
             extra_frame_polys, recovered = [], []
         else:
             extra_frame_polys, recovered = _extract_small_condition_image_polylines_from_pdf(
