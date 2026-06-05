@@ -9,6 +9,9 @@ Method3 filled accents: paths=32, segments=610
 Method3 cleanup: restored left vertical frame line.
 Method3 cleanup: removed tiny bottom artifacts=5
 A4 header text extraction: 3 line(s) from PDF text blocks.
+TTF centerline postprocess: 10 -> 9 stroke(s) (eps=0.08, gap=0.63, smooth_step=0.13, col=0.020)
+TTF centerline method3 text: 'ЛТ-509-3' -> 9 stroke(s), thr=224, cand=8, font=GOST_AU.ttf, size=6.27
+Nachert bottom group text repair: removed 8 source polyline(s), rendered 9 single-line polyline(s) from 1 PDF text span(s).
 A4 clean source centered on page X: offset_x=0.018 mm
 A4 header text reroute: removed 152 source polyline(s) from the header text band.
 A4 header text reroute: restored 152 transformed source polyline(s).
@@ -20,21 +23,21 @@ Extracting paths from SVG ...
 Raw geometry bounds: x(0.000, 180.000) y(0.000, 280.000)
 SVG page: 180.000 x 280.000 mm
 Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).
-SVG geometry: paths=1272, segments=7672.
+SVG geometry: paths=1273, segments=7578.
 Source bounds: x(0.000, 180.000) y(0.000, 280.000)
 Fit to work area: scale=1.0000, translate=(0.000,-285.000), from (0.000, 0.000)-(180.000, 280.000)
-Collinear overlap dedup: dropped 518/7672 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
-Reorder: source order preserved (992 polylines).
-Technical text join: merged 262 short gaps (ordered=181, nearest=81, gap<=0.55 mm, dy<=0.75 mm), polylines 992 -> 730
-Polyline optimization: 992 -> 730
-Segment counts: source=7672, fitted=7672, clipped=7672
-Drawable segments after clip: 7672 (100.0% of source)
+Collinear overlap dedup: dropped 518/7578 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
+Reorder: source order preserved (993 polylines).
+Technical text join: merged 262 short gaps (ordered=181, nearest=81, gap<=0.55 mm, dy<=0.75 mm), polylines 993 -> 731
+Polyline optimization: 993 -> 731
+Segment counts: source=7578, fitted=7578, clipped=7578
+Drawable segments after clip: 7578 (100.0% of source)
 Prepared bounds: x(0.000, 180.000) y(-285.000, -5.000)
-Estimated draw length: 5.91 m
+Estimated draw length: 5.90 m
 Applying pen-up / pen-down ...
-G-code stats: lines=11073, draw=7412, travel=730, bounds=0.000..180.000 x, -285.000..0.000 y
-Preflight: ok: lines=11073, draw=7412, travel=730, ratio=0.10
-Saved file stats: lines=11073, draw=7412, travel=730, bounds=0.000..180.000 x, -285.000..0.000 y
+G-code stats: lines=10984, draw=7318, travel=731, bounds=0.000..180.000 x, -285.000..0.000 y
+Preflight: ok: lines=10984, draw=7318, travel=731, ratio=0.10
+Saved file stats: lines=10984, draw=7318, travel=731, bounds=0.000..180.000 x, -285.000..0.000 y
 Saved: C:\plotter_pdf\Начерт\3 вариант\Задача 9_pack\_candidates\a4_hybrid_frame.nc
 Sheet preview centered on compact source page bbox: ref=(0.176,0.176)..(185.657,285.736) mm
 Sheet preview placed on source page: offset=(3.049,288.044) mm

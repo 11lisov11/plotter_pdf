@@ -2469,6 +2469,148 @@ def _extract_kompas_stamp_title_text_lines_from_pdf(
         doc.close()
 
 
+def _extract_nachert_bottom_group_text_lines_from_pdf(
+    source_pdf: Path,
+    *,
+    page_index: int,
+) -> list[dict[str, Any]]:
+    if fitz is None or not _is_nachert_source(source_pdf):
+        return []
+    doc = fitz.open(str(source_pdf))
+    try:
+        if page_index < 0 or page_index >= int(doc.page_count):
+            return []
+        page = doc[page_index]
+        page_w_mm = float(page.rect.width) * 25.4 / 72.0
+        page_h_mm = float(page.rect.height) * 25.4 / 72.0
+        out: list[dict[str, Any]] = []
+        seen: set[tuple[str, int, int, int, int]] = set()
+        for block in page.get_text("dict").get("blocks", []):
+            if block.get("type") != 0:
+                continue
+            for line in block.get("lines", []):
+                for span in line.get("spans", []) or []:
+                    text = re.sub(r"\s+", " ", str(span.get("text", "") or "")).strip()
+                    if not text:
+                        continue
+                    compact = re.sub(r"\s+", "", text)
+                    normalized = compact.replace("–", "-").replace("—", "-").replace("−", "-")
+                    if not re.match(r"^(?:[Лл][Тт]|[Ll][Tt])-?\d", normalized):
+                        continue
+                    bbox = list(span.get("bbox", []) or [])
+                    if len(bbox) < 4:
+                        continue
+                    bbox_mm = tuple(float(v) * 25.4 / 72.0 for v in bbox[:4])
+                    x0, y0, x1, y1 = [float(v) for v in bbox_mm]
+                    if y0 < float(page_h_mm) - 16.0:
+                        continue
+                    if x0 > float(page_w_mm) * 0.42 or x1 > float(page_w_mm) * 0.38:
+                        continue
+                    if (x1 - x0) < 6.0 or (y1 - y0) < 2.0:
+                        continue
+                    key = (
+                        text,
+                        round(x0 * 100),
+                        round(y0 * 100),
+                        round(x1 * 100),
+                        round(y1 * 100),
+                    )
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    out.append(
+                        {
+                            "text": text,
+                            "bbox_mm": (x0, y0, x1, y1),
+                            "font_names": [str(span.get("font", "") or "")],
+                        }
+                    )
+        out.sort(key=lambda row: (float(row["bbox_mm"][1]), float(row["bbox_mm"][0]), str(row["text"])))
+        return out
+    finally:
+        doc.close()
+
+
+def _reroute_nachert_bottom_group_text_polylines(
+    polys_mm: list[list[tuple[float, float]]],
+    *,
+    source_pdf: Path,
+    page_index: int,
+    logger,
+) -> tuple[list[list[tuple[float, float]]], dict[str, float]]:
+    text_lines = _extract_nachert_bottom_group_text_lines_from_pdf(source_pdf, page_index=page_index)
+    if not text_lines:
+        return list(polys_mm), {
+            "nachert_bottom_group_text_lines": 0.0,
+            "nachert_bottom_group_text_removed": 0.0,
+            "nachert_bottom_group_text_rendered": 0.0,
+        }
+
+    text_regions = [
+        tuple(line.get("bbox_mm", ()) or ())
+        for line in text_lines
+        if len(tuple(line.get("bbox_mm", ()) or ())) >= 4
+    ]
+    text_regions = [(float(a), float(b), float(c), float(d)) for a, b, c, d in text_regions]
+    if not text_regions:
+        return list(polys_mm), {
+            "nachert_bottom_group_text_lines": float(len(text_lines)),
+            "nachert_bottom_group_text_removed": 0.0,
+            "nachert_bottom_group_text_rendered": 0.0,
+        }
+
+    kept: list[list[tuple[float, float]]] = []
+    removed = 0
+    removed_bboxes_by_region: dict[int, list[tuple[float, float, float, float]]] = {}
+    for poly in polys_mm:
+        region_idx = _kompas_text_region_index_for_poly_mm(poly, text_regions=text_regions, pad_mm=0.75)
+        if region_idx is not None:
+            removed += 1
+            removed_bboxes_by_region.setdefault(region_idx, []).append(_poly_bbox_mm(poly))
+            continue
+        kept.append(poly)
+
+    render_lines: list[dict[str, Any]] = []
+    for idx, line in enumerate(text_lines):
+        row = dict(line)
+        visible_boxes = removed_bboxes_by_region.get(idx, [])
+        if visible_boxes:
+            vx0 = min(float(box[0]) for box in visible_boxes)
+            vy0 = min(float(box[1]) for box in visible_boxes)
+            vx1 = max(float(box[2]) for box in visible_boxes)
+            vy1 = max(float(box[3]) for box in visible_boxes)
+            if (vx1 - vx0) >= 0.35 and (vy1 - vy0) >= 0.35:
+                row["bbox_mm"] = (vx0, vy0, vx1, vy1)
+        render_lines.append(row)
+
+    rerendered = _render_pdf_text_lines_polylines_in_place(
+        render_lines,
+        tight_layout=True,
+        ttf_backend="autotrace3",
+        logger=logger,
+        prefer_italic=True,
+    )
+    if removed > 0 and not rerendered:
+        logger("Nachert bottom group text repair skipped: renderer produced no replacement strokes.")
+        return list(polys_mm), {
+            "nachert_bottom_group_text_lines": float(len(text_lines)),
+            "nachert_bottom_group_text_removed": 0.0,
+            "nachert_bottom_group_text_rendered": 0.0,
+        }
+    if rerendered:
+        kept.extend(rerendered)
+        logger(
+            "Nachert bottom group text repair: removed "
+            f"{removed} source polyline(s), rendered {len(rerendered)} single-line polyline(s) "
+            f"from {len(text_lines)} PDF text span(s)."
+        )
+    return kept, {
+        "nachert_bottom_group_text_lines": float(len(text_lines)),
+        "nachert_bottom_group_text_removed": float(removed),
+        "nachert_bottom_group_text_rendered": float(len(rerendered)),
+    }
+
+
 def _reroute_kompas_stamp_title_text_polylines(
     polys_mm: list[list[tuple[float, float]]],
     *,
@@ -2677,20 +2819,32 @@ def _render_pdf_text_lines_polylines_in_place(
     tight_layout: bool,
     ttf_backend: str = "autotrace3",
     logger,
+    prefer_italic: bool = False,
 ) -> list[list[tuple[float, float]]]:
     if not text_lines:
         return []
     resolve_ttf = getattr(backend, "_resolve_handwriting_ttf_path", lambda _font: None)
     if tight_layout:
-        ttf_path = (
-            resolve_ttf("GOST_BU.ttf")
-            or resolve_ttf("GOST_AU.ttf")
-            or resolve_ttf("GOST_B.TTF")
-            or resolve_ttf("GOST_A.TTF")
-            or resolve_ttf("ARIALNI.TTF")
-            or resolve_ttf("ARIALN.TTF")
-            or resolve_ttf("Arial")
-        )
+        if prefer_italic:
+            ttf_path = (
+                resolve_ttf("GOST_AU.ttf")
+                or resolve_ttf("GOST_A.TTF")
+                or resolve_ttf("GOST_BU.ttf")
+                or resolve_ttf("GOST_B.TTF")
+                or resolve_ttf("ARIALNI.TTF")
+                or resolve_ttf("ARIALN.TTF")
+                or resolve_ttf("Arial")
+            )
+        else:
+            ttf_path = (
+                resolve_ttf("GOST_BU.ttf")
+                or resolve_ttf("GOST_AU.ttf")
+                or resolve_ttf("GOST_B.TTF")
+                or resolve_ttf("GOST_A.TTF")
+                or resolve_ttf("ARIALNI.TTF")
+                or resolve_ttf("ARIALN.TTF")
+                or resolve_ttf("Arial")
+            )
     else:
         ttf_path = (
             resolve_ttf("Arial")
@@ -5927,10 +6081,19 @@ def _prepare_a4_hybrid_drawing_candidate(
             page_h_mm=page_h_mm,
             logger=logs.append,
         )
+        source_polys, bottom_group_text_meta = _reroute_nachert_bottom_group_text_polylines(
+            source_polys,
+            source_pdf=source_pdf,
+            page_index=0,
+            logger=logs.append,
+        )
         title_block_meta = {
             "title_block_text_lines": 0.0,
             "title_block_text_removed": 0.0,
             "title_block_text_rendered": 0.0,
+            "nachert_bottom_group_text_lines": float(bottom_group_text_meta.get("nachert_bottom_group_text_lines", 0.0)),
+            "nachert_bottom_group_text_removed": float(bottom_group_text_meta.get("nachert_bottom_group_text_removed", 0.0)),
+            "nachert_bottom_group_text_rendered": float(bottom_group_text_meta.get("nachert_bottom_group_text_rendered", 0.0)),
         }
         clean_reference_polys = list(source_polys)
         if extra_frame_polys:

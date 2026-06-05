@@ -23,7 +23,7 @@
     {
       "item": "pass_01",
       "ok": true,
-      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1780682168022960500_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1780682168022960500.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1780682168022960500_vector.pdf",
+      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1780682879943462100_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1780682879943462100.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1780682879943462100_vector.pdf",
       "logs": [
         "Condition image recovery disabled for Nachert: preserving source KOMPAS/PDF miniature geometry.",
         "A3 clean source route: direct PDF vector SVG export (text_as_path=True).",
@@ -57,9 +57,9 @@
         "G-code stats: lines=2929, draw=913, travel=401, bounds=0.000..180.000 x, -272.323..0.000 y",
         "Preflight: ok: lines=2929, draw=913, travel=401, ratio=0.44",
         "Saved file stats: lines=2929, draw=913, travel=401, bounds=0.000..180.000 x, -272.323..0.000 y",
-        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1780682168022960500.nc",
-        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1780682168022960500_vector.svg",
-        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1780682168022960500_vector.pdf",
+        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1780682879943462100.nc",
+        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1780682879943462100_vector.svg",
+        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1780682879943462100_vector.pdf",
         "Sheet preview centered on compact source page bbox: ref=(0.176,0.176)..(410.704,290.731) mm",
         "Sheet preview placed on source page: offset=(115.528,290.542) mm"
       ],
@@ -92,7 +92,7 @@
     {
       "item": "pass_02",
       "ok": true,
-      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1780682173687201800_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1780682173687201800.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1780682173687201800_vector.pdf",
+      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1780682885102446200_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1780682885102446200.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1780682885102446200_vector.pdf",
       "logs": [
         "Condition image recovery disabled for Nachert: preserving source KOMPAS/PDF miniature geometry.",
         "A3 clean source route: direct PDF vector SVG export (text_as_path=True).",
@@ -129,9 +129,9 @@
         "G-code stats: lines=4406, draw=1510, travel=577, bounds=0.000..180.000 x, -269.323..0.000 y",
         "Preflight: ok: lines=4406, draw=1510, travel=577, ratio=0.38",
         "Saved file stats: lines=4406, draw=1510, travel=577, bounds=0.000..180.000 x, -269.323..0.000 y",
-        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1780682173687201800.nc",
-        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1780682173687201800_vector.svg",
-        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1780682173687201800_vector.pdf",
+        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1780682885102446200.nc",
+        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1780682885102446200_vector.svg",
+        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1780682885102446200_vector.pdf",
         "Sheet preview centered on compact source page bbox: ref=(0.176,0.176)..(410.704,290.731) mm",
         "Sheet preview placed on source page: offset=(115.528,287.542) mm"
       ],
