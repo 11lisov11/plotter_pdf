@@ -1,0 +1,69 @@
+Image contour tracing: +33 path(s) from embedded raster.
+Image vectorization mode: centerline (added 33 path(s), simplify=0.02 mm).
+Condition image recovery: rect=250.11,18.37,286.94,51.05 mm -> +33 path(s).
+Image contour tracing: +72 path(s) from embedded raster.
+Image vectorization mode: centerline (added 72 path(s), simplify=0.02 mm).
+Condition image recovery: rect=2.20,17.95,37.51,51.39 mm -> +72 path(s).
+Image contour tracing: +52 path(s) from embedded raster.
+Image vectorization mode: centerline (added 52 path(s), simplify=0.02 mm).
+Condition image recovery: rect=667.34,257.89,705.44,291.08 mm -> +52 path(s).
+Image contour tracing: +76 path(s) from embedded raster.
+Image vectorization mode: centerline (added 76 path(s), simplify=0.02 mm).
+Condition image recovery: rect=888.32,17.95,924.14,50.38 mm -> +76 path(s).
+Image contour tracing: +63 path(s) from embedded raster.
+Image vectorization mode: centerline (added 63 path(s), simplify=0.02 mm).
+Condition image recovery: rect=1099.14,18.54,1135.72,51.22 mm -> +63 path(s).
+Image contour tracing: +54 path(s) from embedded raster.
+Image vectorization mode: centerline (added 54 path(s), simplify=0.02 mm).
+Condition image recovery: rect=1310.22,18.46,1346.96,50.46 mm -> +54 path(s).
+Image contour tracing: +53 path(s) from embedded raster.
+Image vectorization mode: centerline (added 53 path(s), simplify=0.02 mm).
+Condition image recovery: rect=1524.17,18.54,1559.56,51.99 mm -> +53 path(s).
+Image contour tracing: +51 path(s) from embedded raster.
+Image vectorization mode: centerline (added 51 path(s), simplify=0.02 mm).
+Condition image recovery: rect=1731.69,19.39,1768.18,51.90 mm -> +51 path(s).
+Image contour tracing: +129 path(s) from embedded raster.
+Image vectorization mode: centerline (added 129 path(s), simplify=0.02 mm).
+Condition image recovery: rect=1947.33,18.37,1984.76,52.32 mm -> +129 path(s).
+Image contour tracing: +74 path(s) from embedded raster.
+Image vectorization mode: centerline (added 74 path(s), simplify=0.02 mm).
+Condition image recovery: rect=2365.33,256.46,2413.08,294.05 mm -> +74 path(s).
+A3 condition image recovery summary: 10 image(s), 657 path(s), appended=657.
+A3 clean source route: direct PDF vector SVG export (text_as_path=True).
+tile_cols=2
+tile_rows=10
+tile_col=2
+tile_row=2
+--- tiled clean pass ---
+Render mode: drawing; ExactGeometry=on; Handwriting=off
+Sheet 307.3x2578.6 mm is larger than workspace 180.0x280.0 mm. Using the overlapped sheet/workspace window.
+Active area: 180.0x280.0 mm, bounds x(0.000,180.000) y(-285.000,-5.000), sheet_bounds x(0.000,307.340) y(-285.000,2293.608), sheet=custom, anchor=lower_left, offset=(0.00,0.00)
+Text render mode: handwriting=off font='Marck Script'; image_contours=off
+Extracting paths from SVG ...
+Raw geometry bounds: x(0.508, 2578.015) y(0.643, 306.747)
+SVG page: 2578.608 x 307.340 mm
+Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).
+SVG geometry: paths=24471, segments=31006.
+Source bounds: x(0.508, 2578.015) y(0.643, 306.747)
+Fit guard (1:1 mm): required fit scale 0.1397 is below threshold 1.000; keeping scale=1.0 and clipping overflow to work area.
+Pass window: col 2/2, row 2/10, source=2577.507x306.104 mm, window=180.000x280.000 mm, offset=(2397.507,2.900), shift=(-1198.754,10.152)
+Work area clipping: kept 1445 visible segments, dropped 29561 out-of-area segments.
+Segment dedup: dropped 53/1445 retraced segments (3.7%), kept=1392, eps=0.010 mm
+Collinear overlap dedup: dropped 2/1392 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
+Reorder: source order preserved (1105 polylines).
+Technical text join: merged 669 short gaps (ordered=433, nearest=236, gap<=0.55 mm, dy<=0.75 mm), polylines 1105 -> 436
+Segment dedup: dropped 4/1311 retraced segments (0.3%), kept=1307, eps=0.050 mm
+Collinear overlap dedup: dropped 2/1307 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
+Polyline optimization: 1105 -> 440
+Segment counts: source=31006, fitted=31006, clipped=1445
+Drawable segments after clip: 1445 (4.7% of source)
+Warning: significant clipping/transforming occurred. Check that page is inside target work area.
+Prepared bounds: x(0.000, 180.000) y(-285.000, -5.000)
+Estimated draw length: 3.33 m
+Applying pen-up / pen-down ...
+G-code stats: lines=3506, draw=1305, travel=438, bounds=0.000..180.000 x, -285.000..0.000 y
+Preflight: ok: lines=3506, draw=1305, travel=438, ratio=0.34
+Saved file stats: lines=3506, draw=1305, travel=438, bounds=0.000..180.000 x, -285.000..0.000 y
+Saved: C:\plotter_pdf\_tmp\latest_preview_tiled-clean-pass-4-1780651307950985600.nc
+Preview SVG: C:\plotter_pdf\_tmp\latest_preview_tiled-clean-pass-4-1780651307950985600_vector.svg
+Preview PDF: C:\plotter_pdf\_tmp\latest_preview_tiled-clean-pass-4-1780651307950985600_vector.pdf
