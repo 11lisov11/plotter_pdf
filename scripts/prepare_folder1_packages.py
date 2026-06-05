@@ -6255,15 +6255,31 @@ def _prepare_a4_hybrid_drawing_candidate(
                 else float(_A4_HEADER_TEXT_SRC_PAD_MM)
             )
             header_text_src_x0 = max(float(header_thumb_divider_x) + float(header_text_src_pad_mm), float(header_text_src_min_x_mm))
-        if variant1_header_cleanup and extra_frame_polys and header_text_src_x0 > 0.0:
-            source_polys, removed_thumb_source = _strip_a4_header_thumb_source_content_polys(
+        strip_recovered_thumb_source = bool(
+            extra_frame_polys
+            and header_text_src_x0 > 0.0
+            and (
+                variant1_header_cleanup
+                or (preserve_variant1_header_source and _is_nachert_source(source_pdf))
+            )
+        )
+        if strip_recovered_thumb_source:
+            stripped_source_polys, removed_thumb_source = _strip_a4_header_thumb_source_content_polys(
                 source_polys,
                 src_x0=float(src_x0),
                 src_y0=float(src_y0),
                 header_thumb_divider_x=float(header_thumb_divider_x),
                 header_text_src_x0=float(header_text_src_x0),
             )
-            if removed_thumb_source:
+            if removed_thumb_source >= 24:
+                extra_frame_polys = []
+                recovery_meta["path_count"] = 0.0
+                logs.append(
+                    "A4 header thumb recovery: source thumbnail already has "
+                    f"{removed_thumb_source} polyline(s); skipped recovered overlay to avoid duplicate."
+                )
+            elif removed_thumb_source:
+                source_polys = stripped_source_polys
                 logs.append(
                     "A4 header thumb reroute: removed "
                     f"{removed_thumb_source} source polyline(s) from the thumbnail block."
