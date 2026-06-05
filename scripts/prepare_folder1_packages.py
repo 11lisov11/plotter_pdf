@@ -327,7 +327,13 @@ def _kompas_text_join_backend_overrides(source_pdf: Path | None) -> dict[str, An
     }
 
 
-def _kompas_source_to_drawing_polylines(page_items: list[Any]) -> list[list[tuple[float, float]]]:
+def _kompas_source_to_drawing_polylines(
+    page_items: list[Any],
+    *,
+    source_pdf: Path | None = None,
+    page_index: int = 0,
+    logger=None,
+) -> list[list[tuple[float, float]]]:
     # KOMPAS technical text must be plotted as averaged single-stroke text, not
     # as double glyph contours. Keep the existing text-element centerline route:
     # cluster text fill glyphs, average them to centerlines, then refine/merge
@@ -343,7 +349,160 @@ def _kompas_source_to_drawing_polylines(page_items: list[Any]) -> list[list[tupl
             "TECH_TEXT_SINGLELINE_ENABLED": True,
         }
     ):
-        return backend.to_drawing_polylines(page_items)
+        polys = backend.to_drawing_polylines(page_items)
+    if source_pdf is not None:
+        polys = _stitch_kompas_text_centerline_fragments(
+            polys,
+            source_pdf=source_pdf,
+            page_index=page_index,
+            logger=logger,
+        )
+    return polys
+
+
+def _project_point_to_segment_mm(
+    point: tuple[float, float],
+    a: tuple[float, float],
+    b: tuple[float, float],
+) -> tuple[tuple[float, float], float]:
+    px, py = float(point[0]), float(point[1])
+    ax, ay = float(a[0]), float(a[1])
+    bx, by = float(b[0]), float(b[1])
+    vx, vy = bx - ax, by - ay
+    denom = vx * vx + vy * vy
+    if denom <= 1e-12:
+        qx, qy = ax, ay
+    else:
+        t = max(0.0, min(1.0, ((px - ax) * vx + (py - ay) * vy) / denom))
+        qx, qy = ax + t * vx, ay + t * vy
+    return (qx, qy), math.hypot(px - qx, py - qy)
+
+
+def _snap_kompas_text_endpoints_to_strokes(
+    polys_mm: list[list[tuple[float, float]]],
+    *,
+    max_dist_mm: float,
+) -> list[list[tuple[float, float]]]:
+    src = [[(float(x), float(y)) for x, y in poly] for poly in polys_mm if len(poly) >= 2]
+    if len(src) < 2:
+        return src
+    max_dist = max(0.0, float(max_dist_mm))
+    if max_dist <= 1e-9:
+        return src
+
+    out: list[list[tuple[float, float]]] = []
+    for idx, poly in enumerate(src):
+        cur = list(poly)
+        endpoint_specs = ((0, True), (-1, False))
+        inserts: list[tuple[bool, tuple[float, float]]] = []
+        for endpoint_idx, at_start in endpoint_specs:
+            point = cur[endpoint_idx]
+            best_point: tuple[float, float] | None = None
+            best_dist = float("inf")
+            for other_idx, other in enumerate(src):
+                if other_idx == idx or len(other) < 2:
+                    continue
+                for a, b in zip(other, other[1:]):
+                    q, dist = _project_point_to_segment_mm(point, a, b)
+                    if dist < best_dist:
+                        best_dist = dist
+                        best_point = q
+            if best_point is not None and 1e-5 < best_dist <= max_dist:
+                inserts.append((at_start, best_point))
+        for at_start, q in inserts:
+            if at_start:
+                if math.hypot(cur[0][0] - q[0], cur[0][1] - q[1]) > 1e-5:
+                    cur.insert(0, q)
+            else:
+                if math.hypot(cur[-1][0] - q[0], cur[-1][1] - q[1]) > 1e-5:
+                    cur.append(q)
+        out.append(cur)
+    return out
+
+
+def _stitch_kompas_text_centerline_fragments(
+    polys_mm: list[list[tuple[float, float]]],
+    *,
+    source_pdf: Path,
+    page_index: int,
+    logger=None,
+) -> list[list[tuple[float, float]]]:
+    if _drawing_frame_class(source_pdf) != "kompas_full_frame" or not polys_mm:
+        return list(polys_mm)
+
+    text_lines = [
+        *_extract_kompas_plot_text_lines_from_pdf(source_pdf, page_index=page_index),
+        *_extract_kompas_stamp_title_text_lines_from_pdf(source_pdf, page_index=page_index),
+    ]
+    regions: list[tuple[float, float, float, float]] = []
+    seen: set[tuple[int, int, int, int]] = set()
+    for line in text_lines:
+        bbox = tuple(line.get("bbox_mm", ()) or ())
+        if len(bbox) < 4:
+            continue
+        x0, y0, x1, y1 = (float(v) for v in bbox[:4])
+        if (x1 - x0) < 0.30 or (y1 - y0) < 0.30:
+            continue
+        key = (round(x0 * 100), round(y0 * 100), round(x1 * 100), round(y1 * 100))
+        if key in seen:
+            continue
+        seen.add(key)
+        regions.append((x0, y0, x1, y1))
+    if not regions:
+        return list(polys_mm)
+
+    kept: list[list[tuple[float, float]]] = []
+    buckets: dict[int, list[list[tuple[float, float]]]] = {}
+    for poly in polys_mm:
+        region_idx = _kompas_text_region_index_for_poly_mm(poly, text_regions=regions, pad_mm=1.05)
+        if region_idx is None:
+            kept.append(poly)
+            continue
+        buckets.setdefault(region_idx, []).append(poly)
+
+    before = sum(len(group) for group in buckets.values())
+    after = 0
+    changed_regions = 0
+    with _backend_override_context(
+        {
+            "TECH_TEXT_JOIN_ENABLE": True,
+            "TECH_TEXT_JOIN_MAX_STROKE_LEN_MM": 22.0,
+            "TECH_TEXT_JOIN_MAX_SPAN_MM": 18.0,
+            "TECH_TEXT_JOIN_MAX_AREA_MM2": 180.0,
+            "TECH_TEXT_JOIN_MAX_COMBINED_SPAN_X_MM": 10.5,
+            "TECH_TEXT_JOIN_MAX_COMBINED_SPAN_Y_MM": 18.0,
+            "TECH_TEXT_JOIN_MAX_COMBINED_AREA_MM2": 190.0,
+        }
+    ):
+        for idx in sorted(buckets):
+            group = buckets[idx]
+            if len(group) < 2:
+                kept.extend(group)
+                after += len(group)
+                continue
+            merged = backend.merge_technical_text_strokes(
+                group,
+                logger=None,
+                join_gap_mm=2.25,
+                join_max_dy_mm=3.40,
+                join_max_backtrack_mm=3.00,
+                simplify_collinear_eps=0.012,
+            )
+            if not merged:
+                merged = group
+            merged = _snap_kompas_text_endpoints_to_strokes(merged, max_dist_mm=1.05)
+            if len(merged) < len(group):
+                changed_regions += 1
+            kept.extend(merged)
+            after += len(merged)
+
+    if logger and before > 0:
+        logger(
+            "KOMPAS text centerline stitch: "
+            f"regions={len(regions)}, touched={len(buckets)}, changed={changed_regions}, "
+            f"strokes={before}->{after}."
+        )
+    return kept
 
 
 def _export_pdf_page_to_svg_for_kompas_text_centerline(
@@ -2057,17 +2216,15 @@ def _should_reroute_title_block_text(source_pdf: Path) -> bool:
 
 
 def _should_reroute_kompas_text(source_pdf: Path) -> bool:
-    # Production drawing packages must preserve KOMPAS source text. The
-    # explicit reroute helper remains available for tests/fallbacks, but the
-    # default route is source-faithful text-as-path.
-    return False
+    # KOMPAS emits many Cyrillic glyphs as broken source fragments. Replace
+    # only PDF text-element regions with the skeleton TTF centerline route:
+    # raster text -> averaged centerline strokes. Avoid autotrace here because
+    # it can mangle Cyrillic glyph geometry.
+    return _drawing_frame_class(source_pdf) == "kompas_full_frame"
 
 
 def _should_repair_kompas_stamp_title_text(source_pdf: Path) -> bool:
-    # KOMPAS stamp/title text in production drawings should stay source-faithful
-    # too. The repair helper re-renders selected labels with a single-line font;
-    # that can distort Cyrillic letters and designation text in generated G-code.
-    return False
+    return _drawing_frame_class(source_pdf) == "kompas_full_frame"
 
 
 def _empty_kompas_text_meta() -> dict[str, float]:
@@ -6403,7 +6560,7 @@ def _prepare_mupdf_svg_paths_candidate(
             )
             frame_class = _drawing_frame_class(source_pdf)
             source_polys = (
-                _kompas_source_to_drawing_polylines(page_items)
+                _kompas_source_to_drawing_polylines(page_items, source_pdf=source_pdf, page_index=0)
                 if frame_class == "kompas_full_frame"
                 else backend.to_drawing_polylines(page_items)
             )
@@ -6672,7 +6829,7 @@ def _prepare_forced_a4_candidate(
                     float(page_h_mm),
                     logger=lambda *_args, **_kwargs: None,
                 )
-                source_polys = _kompas_source_to_drawing_polylines(page_items)
+                source_polys = _kompas_source_to_drawing_polylines(page_items, source_pdf=source_pdf, page_index=0)
                 source_polys, kompas_cleanup_meta = _cleanup_kompas_archive_strip_polylines(
                     source_polys,
                     page_w_mm=float(page_w_mm),
@@ -7058,7 +7215,7 @@ def _prepare_a3_clean_source_svg(
                 float(page_h_mm),
                 logger=lambda *_args, **_kwargs: None,
             )
-            source_polys = _kompas_source_to_drawing_polylines(page_items)
+            source_polys = _kompas_source_to_drawing_polylines(page_items, source_pdf=source_pdf, page_index=0)
             source_polys, kompas_cleanup_meta = _cleanup_kompas_archive_strip_polylines(
                 source_polys,
                 page_w_mm=float(page_w_mm),
@@ -7328,7 +7485,7 @@ def _prepare_literal_clean_source_svg(
                 float(page_h_mm),
                 logger=lambda *_args, **_kwargs: None,
             )
-            source_polys = _kompas_source_to_drawing_polylines(page_items)
+            source_polys = _kompas_source_to_drawing_polylines(page_items, source_pdf=source_pdf, page_index=0)
             source_polys, kompas_cleanup_meta = _cleanup_kompas_archive_strip_polylines(
                 source_polys,
                 page_w_mm=float(page_w_mm),
