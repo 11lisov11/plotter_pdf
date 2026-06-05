@@ -442,6 +442,47 @@ def _snap_kompas_text_endpoints_to_strokes(
     return out
 
 
+def _reinforce_kompas_text_centerlines(
+    polys_mm: list[list[tuple[float, float]]],
+    *,
+    offset_mm: float,
+    max_len_mm: float,
+    max_span_mm: float,
+) -> list[list[tuple[float, float]]]:
+    src = [[(float(x), float(y)) for x, y in poly] for poly in polys_mm if len(poly) >= 2]
+    if not src:
+        return []
+    offset = max(0.0, float(offset_mm))
+    if offset <= 1e-9:
+        return src
+
+    out: list[list[tuple[float, float]]] = []
+    for poly in src:
+        out.append(poly)
+        length = 0.0
+        vx = 0.0
+        vy = 0.0
+        for a, b in zip(poly, poly[1:]):
+            sx = float(b[0]) - float(a[0])
+            sy = float(b[1]) - float(a[1])
+            seg_len = math.hypot(sx, sy)
+            length += seg_len
+            vx += sx
+            vy += sy
+        xs = [float(x) for x, _y in poly]
+        ys = [float(y) for _x, y in poly]
+        span = max(max(xs) - min(xs), max(ys) - min(ys))
+        if length <= 1e-6 or length > float(max_len_mm) or span > float(max_span_mm):
+            continue
+        axis_len = math.hypot(vx, vy)
+        if axis_len <= 1e-6:
+            nx, ny = 1.0, 0.0
+        else:
+            nx, ny = -vy / axis_len, vx / axis_len
+        out.append([(float(x) + nx * offset, float(y) + ny * offset) for x, y in poly])
+    return out
+
+
 def _stitch_kompas_text_centerline_fragments(
     polys_mm: list[list[tuple[float, float]]],
     *,
@@ -513,6 +554,12 @@ def _stitch_kompas_text_centerline_fragments(
             if not merged:
                 merged = group
             merged = _snap_kompas_text_endpoints_to_strokes(merged, max_dist_mm=1.70)
+            merged = _reinforce_kompas_text_centerlines(
+                merged,
+                offset_mm=0.075,
+                max_len_mm=34.0,
+                max_span_mm=24.0,
+            )
             if len(merged) < len(group):
                 changed_regions += 1
             kept.extend(merged)
