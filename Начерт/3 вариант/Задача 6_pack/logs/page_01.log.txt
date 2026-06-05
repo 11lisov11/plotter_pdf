@@ -11,8 +11,8 @@ Method3 cleanup: removed tiny bottom artifacts=6
 Condition image recovery limited for Nachert: A4 header miniature epure only.
 Image contour tracing: +54 path(s) from embedded raster.
 Image vectorization mode: centerline (added 54 path(s), simplify=0.02 mm).
-Condition image recovery: rect=1.61,2.20,38.27,34.21 mm -> +26 path(s).
-Condition image recovery summary: 1 image(s), 26 path(s) staged as frame overlay.
+Condition image recovery: rect=1.61,2.20,38.27,34.21 mm -> +7 path(s).
+Condition image recovery summary: 1 image(s), 7 path(s) staged as frame overlay.
 A4 header text extraction: 3 line(s) from PDF text blocks.
 TTF centerline postprocess: 10 -> 7 stroke(s) (eps=0.08, gap=0.64, smooth_step=0.13, col=0.021)
 TTF centerline method3 text: 'ЛТ-509-3' -> 7 stroke(s), thr=192, cand=8, font=GOST_AU.ttf, size=6.43
@@ -28,22 +28,22 @@ Extracting paths from SVG ...
 Raw geometry bounds: x(0.000, 180.000) y(0.000, 280.000)
 SVG page: 180.000 x 280.000 mm
 Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).
-SVG geometry: paths=787, segments=5750.
+SVG geometry: paths=768, segments=5705.
 Source bounds: x(0.000, 180.000) y(0.000, 280.000)
 Fit to work area: scale=1.0000, translate=(0.000,-285.000), from (0.000, 0.000)-(180.000, 280.000)
-Collinear overlap dedup: dropped 378/5750 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
-Reorder: source order preserved (647 polylines).
-Technical text join: merged 153 short gaps (ordered=98, nearest=55, gap<=0.55 mm, dy<=0.75 mm), polylines 647 -> 494
-Collinear overlap dedup: dropped 2/5525 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
-Polyline optimization: 647 -> 493
-Segment counts: source=5750, fitted=5750, clipped=5750
-Drawable segments after clip: 5750 (100.0% of source)
+Collinear overlap dedup: dropped 378/5705 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
+Reorder: source order preserved (628 polylines).
+Technical text join: merged 153 short gaps (ordered=98, nearest=55, gap<=0.55 mm, dy<=0.75 mm), polylines 628 -> 475
+Collinear overlap dedup: dropped 2/5480 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
+Polyline optimization: 628 -> 474
+Segment counts: source=5705, fitted=5705, clipped=5705
+Drawable segments after clip: 5705 (100.0% of source)
 Prepared bounds: x(0.000, 180.000) y(-285.000, -5.000)
-Estimated draw length: 5.29 m
+Estimated draw length: 5.26 m
 Applying pen-up / pen-down ...
-G-code stats: lines=8004, draw=5523, travel=494, bounds=0.000..180.000 x, -285.000..0.000 y
-Preflight: ok: lines=8004, draw=5523, travel=494, ratio=0.09
-Saved file stats: lines=8004, draw=5523, travel=494, bounds=0.000..180.000 x, -285.000..0.000 y
+G-code stats: lines=7864, draw=5478, travel=475, bounds=0.000..180.000 x, -285.000..0.000 y
+Preflight: ok: lines=7864, draw=5478, travel=475, ratio=0.09
+Saved file stats: lines=7864, draw=5478, travel=475, bounds=0.000..180.000 x, -285.000..0.000 y
 Saved: C:\plotter_pdf\Начерт\3 вариант\Задача 6_pack\_candidates\a4_hybrid_frame.nc
 Sheet preview centered on compact source page bbox: ref=(0.176,0.176)..(185.657,285.736) mm
 Sheet preview placed on source page: offset=(3.049,288.044) mm

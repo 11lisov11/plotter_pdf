@@ -4740,7 +4740,13 @@ def _keep_nachert_a4_header_epure_polyline(
     image_h = max(1e-6, float(image_y1_mm) - float(image_y0_mm))
     rel_y0 = (float(y0) - float(image_y0_mm)) / image_h
     rel_y1 = (float(y1) - float(image_y0_mm)) / image_h
+    if float(x0) <= float(image_x0_mm) + 18.0 and float(y0) <= float(image_y0_mm) + 12.0:
+        return False
     if span < 0.25 and float(length) < 0.45:
+        return False
+    # Tiny OCR-like letter fragments in the thumbnail are worse on the plotter
+    # than no labels at all. Keep the epure geometry, not raster-caption noise.
+    if span < 2.80 and float(length) < 5.00:
         return False
     # Drop the tiny printed explanation under the thumbnail; keep the actual
     # epure geometry and its point labels above it.
@@ -4755,6 +4761,21 @@ def _keep_nachert_a4_header_epure_polyline(
         if (near_left or near_right or near_top or near_bottom) and span >= 8.0:
             return False
     return True
+
+
+def _nachert_a4_header_badge_polylines(
+    *,
+    image_x0_mm: float,
+    image_y0_mm: float,
+) -> list[list[tuple[float, float]]]:
+    bx = float(image_x0_mm) + 0.45
+    by = float(image_y0_mm) + 0.45
+    bw = 6.25
+    bh = 5.15
+    out: list[list[tuple[float, float]]] = [
+        [(bx, by + bh), (bx + bw, by), (bx + bw, by + bh), (bx, by + bh)],
+    ]
+    return out
 
 
 def _detect_a3_header_miniature_crop_px(image: Image.Image) -> tuple[int, int, int, int] | None:
@@ -4960,6 +4981,14 @@ def _extract_small_condition_image_polylines_from_pdf(
                                         continue
                                 out.append(poly)
                                 added += 1
+                        if is_nachert_a4_header:
+                            for poly in _nachert_a4_header_badge_polylines(
+                                image_x0_mm=float(image_x0_mm),
+                                image_y0_mm=float(image_y0_mm),
+                            ):
+                                if len(poly) >= 2:
+                                    out.append([(float(x), float(y)) for x, y in poly])
+                                    added += 1
                         if added > 0:
                             recovered.append(
                                 {
