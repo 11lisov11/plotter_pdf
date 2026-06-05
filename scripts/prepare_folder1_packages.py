@@ -3382,7 +3382,7 @@ def _render_polylines_pdf(
                 if prev is not None:
                     shape.draw_line(prev, point)
                 prev = point
-        shape.finish(color=(0.0, 0.0, 0.0), width=0.45)
+        shape.finish(color=(0.0, 0.0, 0.0), width=0.45, closePath=False)
         shape.commit()
         out_pdf.parent.mkdir(parents=True, exist_ok=True)
         doc.save(out_pdf)
