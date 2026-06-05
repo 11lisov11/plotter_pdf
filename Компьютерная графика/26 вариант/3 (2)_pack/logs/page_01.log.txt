@@ -1,65 +1,11 @@
 KOMPAS text centerline averaging: using source glyph paths and text-element centerline route.
-TTF centerline postprocess: 280 -> 20 stroke(s) (eps=0.09, gap=0.73, smooth_step=0.13, col=0.023)
-TTF centerline text: 'Кнг.03.26.02' -> 20 stroke(s), font=arial.ttf, size=7.26
-TTF centerline postprocess: 279 -> 14 stroke(s) (eps=0.09, gap=0.72, smooth_step=0.13, col=0.023)
-TTF centerline text: 'Кнг.03.26.02' -> 14 stroke(s), font=arial.ttf, size=7.21
-TTF centerline postprocess: 36 -> 4 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'Лит.' -> 4 stroke(s), font=arial.ttf, size=3.80
-TTF centerline postprocess: 111 -> 3 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'Масса' -> 3 stroke(s), font=arial.ttf, size=3.58
-TTF centerline postprocess: 94 -> 10 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'Масштаб' -> 10 stroke(s), font=arial.ttf, size=3.75
-TTF centerline postprocess: 27 -> 3 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
-TTF centerline text: '№' -> 3 stroke(s), font=arial.ttf, size=3.36
-TTF centerline postprocess: 93 -> 6 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'докум.' -> 6 stroke(s), font=arial.ttf, size=3.36
-TTF centerline postprocess: 33 -> 3 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'Подп.' -> 3 stroke(s), font=arial.ttf, size=3.20
-TTF centerline postprocess: 45 -> 1 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'Изм.' -> 1 stroke(s), font=arial.ttf, size=3.20
-TTF centerline postprocess: 45 -> 5 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'Лист' -> 5 stroke(s), font=arial.ttf, size=3.20
-TTF centerline postprocess: 39 -> 4 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'Дата' -> 4 stroke(s), font=arial.ttf, size=3.46
-TTF centerline postprocess: 325 -> 11 stroke(s) (eps=0.13, gap=0.92, smooth_step=0.13, col=0.028)
-TTF centerline text: 'Муфта' -> 11 stroke(s), font=arial.ttf, size=11.06
-TTF centerline postprocess: 120 -> 6 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'Разраб.' -> 6 stroke(s), font=arial.ttf, size=3.33
-TTF centerline postprocess: 90 -> 3 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'Чумичев' -> 3 stroke(s), font=arial.ttf, size=3.27
-TTF centerline postprocess: 55 -> 3 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'Пров.' -> 3 stroke(s), font=arial.ttf, size=3.20
-TTF centerline postprocess: 118 -> 6 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'Пузанова' -> 6 stroke(s), font=arial.ttf, size=3.53
-TTF centerline postprocess: 72 -> 7 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'Т.контр.' -> 7 stroke(s), font=arial.ttf, size=3.46
-TTF centerline postprocess: 38 -> 5 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'Лист' -> 5 stroke(s), font=arial.ttf, size=4.00
-TTF centerline postprocess: 86 -> 7 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'Листов' -> 7 stroke(s), font=arial.ttf, size=4.00
-TTF centerline postprocess: 59 -> 5 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'Пгупс' -> 5 stroke(s), font=arial.ttf, size=4.58
-TTF centerline postprocess: 69 -> 7 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'Сталь' -> 7 stroke(s), font=arial.ttf, size=5.92
-TTF centerline postprocess: 7 -> 3 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
-TTF centerline text: '10' -> 3 stroke(s), font=arial.ttf, size=5.92
-TTF centerline postprocess: 64 -> 9 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'ГОСТ' -> 9 stroke(s), font=arial.ttf, size=5.92
-TTF centerline postprocess: 83 -> 11 stroke(s) (eps=0.13, gap=0.66, smooth_step=0.11, col=0.017)
-TTF centerline text: '1050-88' -> 11 stroke(s), font=arial.ttf, size=5.92
-TTF centerline postprocess: 76 -> 7 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'Н.контр.' -> 7 stroke(s), font=arial.ttf, size=3.45
-TTF centerline postprocess: 129 -> 7 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'ЛТ-519-з' -> 7 stroke(s), font=arial.ttf, size=4.96
-TTF centerline postprocess: 49 -> 2 stroke(s) (eps=0.07, gap=0.60, smooth_step=0.13, col=0.019)
-TTF centerline text: 'Утв.' -> 2 stroke(s), font=arial.ttf, size=3.50
-KOMPAS stamp/title text repair: removed 128 outline polyline(s), rendered 172 single-line polyline(s) from 22 PDF text line(s).
-A4 MuPDF source route: direct PDF vector SVG export with text_as_path=False; kompas_archive_strip_removed=8; kompas_service_region_removed=570; kompas_under_frame_removed=1; kompas_top_outer_frame_removed=2; kompas_text_lines=0; kompas_text_removed=0; kompas_text_rendered=0; kompas_stamp_text_lines=22; kompas_stamp_text_removed=128; kompas_stamp_text_rendered=172; kompas_text_centerline_averaging=True; kompas_text_centerline_nodes=0; source text preserved outside stamp/title repair regions.
-Segment dedup: dropped 262/2608 retraced segments (10.0%), kept=2346, eps=0.010 mm
-Collinear overlap dedup: dropped 14/1826 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
-Reorder: 590 polylines ordered (nearest-end).
-Segment dedup: dropped 2/1813 retraced segments (0.1%), kept=1811, eps=0.010 mm
-Collinear overlap dedup: dropped 1/1811 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
+KOMPAS source text preserved: single-line text reroute disabled for production.
+KOMPAS stamp/title text preserved: single-line stamp repair disabled for production.
+A4 MuPDF source route: direct PDF vector SVG export with text_as_path=False; kompas_archive_strip_removed=8; kompas_service_region_removed=570; kompas_under_frame_removed=1; kompas_top_outer_frame_removed=2; kompas_text_lines=0; kompas_text_removed=0; kompas_text_rendered=0; kompas_stamp_text_lines=0; kompas_stamp_text_removed=0; kompas_stamp_text_rendered=0; kompas_text_centerline_averaging=True; kompas_text_centerline_nodes=0; source text preserved outside stamp/title repair regions.
+Segment dedup: dropped 269/2225 retraced segments (12.1%), kept=1956, eps=0.010 mm
+Collinear overlap dedup: dropped 21/1820 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
+Reorder: 553 polylines ordered (nearest-end).
+Collinear overlap dedup: dropped 1/1803 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
 KOMPAS A4 clean-bbox route: source-page fit disabled; source_frame_bbox=[20.4893, 5.5033, 205.4859, 292.5232]; content_scale=0.972991; translate=(-19.9359,-289.9885) mm; pre_clip_bbox=[0.0, -284.6338, 180.0, -5.3662]; clipped_segments=0; work_area_frame=full.
 Fixed-canvas preview centered on page: page=180.000x280.000 mm, offset=(0.000,285.000) mm
 Preview canvas switched to machine work area: 180.000x280.000 mm.

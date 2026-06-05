@@ -2216,15 +2216,15 @@ def _should_reroute_title_block_text(source_pdf: Path) -> bool:
 
 
 def _should_reroute_kompas_text(source_pdf: Path) -> bool:
-    # KOMPAS emits many Cyrillic glyphs as broken source fragments. Replace
-    # only PDF text-element regions with the skeleton TTF centerline route:
-    # raster text -> averaged centerline strokes. Avoid autotrace here because
-    # it can mangle Cyrillic glyph geometry.
-    return _drawing_frame_class(source_pdf) == "kompas_full_frame"
+    # Keep native KOMPAS text centerline fragments. Re-rendering text through
+    # fonts changes glyph geometry too much for these drawings; the source
+    # route below still uses centerline/averaging and stitch repair, not
+    # outline contour tracing.
+    return False
 
 
 def _should_repair_kompas_stamp_title_text(source_pdf: Path) -> bool:
-    return _drawing_frame_class(source_pdf) == "kompas_full_frame"
+    return False
 
 
 def _empty_kompas_text_meta() -> dict[str, float]:
