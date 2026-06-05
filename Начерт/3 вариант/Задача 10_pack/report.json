@@ -23,7 +23,7 @@
     {
       "item": "pass_01",
       "ok": true,
-      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1780651590167652100_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1780651590167652100.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1780651590167652100_vector.pdf",
+      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1780653138460683800_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1780653138460683800.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1780653138460683800_vector.pdf",
       "logs": [
         "Image contour tracing: +74 path(s) from embedded raster.",
         "Image vectorization mode: centerline (added 74 path(s), simplify=0.02 mm).",
@@ -60,9 +60,9 @@
         "G-code stats: lines=2970, draw=934, travel=405, bounds=0.000..180.000 x, -272.323..0.000 y",
         "Preflight: ok: lines=2970, draw=934, travel=405, ratio=0.43",
         "Saved file stats: lines=2970, draw=934, travel=405, bounds=0.000..180.000 x, -272.323..0.000 y",
-        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1780651590167652100.nc",
-        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1780651590167652100_vector.svg",
-        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1780651590167652100_vector.pdf",
+        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1780653138460683800.nc",
+        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1780653138460683800_vector.svg",
+        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-1-1780653138460683800_vector.pdf",
         "Sheet preview centered on compact source page bbox: ref=(0.176,0.176)..(410.704,290.731) mm",
         "Sheet preview placed on source page: offset=(115.528,290.542) mm"
       ],
@@ -95,7 +95,7 @@
     {
       "item": "pass_02",
       "ok": true,
-      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1780651595282455300_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1780651595282455300.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1780651595282455300_vector.pdf",
+      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1780653143622571200_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1780653143622571200.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1780653143622571200_vector.pdf",
       "logs": [
         "Image contour tracing: +74 path(s) from embedded raster.",
         "Image vectorization mode: centerline (added 74 path(s), simplify=0.02 mm).",
@@ -135,9 +135,9 @@
         "G-code stats: lines=4984, draw=1773, travel=640, bounds=0.000..180.000 x, -269.323..0.000 y",
         "Preflight: ok: lines=4984, draw=1773, travel=640, ratio=0.36",
         "Saved file stats: lines=4984, draw=1773, travel=640, bounds=0.000..180.000 x, -269.323..0.000 y",
-        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1780651595282455300.nc",
-        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1780651595282455300_vector.svg",
-        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1780651595282455300_vector.pdf",
+        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1780653143622571200.nc",
+        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1780653143622571200_vector.svg",
+        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_a3-clean-pass-2-1780653143622571200_vector.pdf",
         "Sheet preview centered on compact source page bbox: ref=(0.176,0.176)..(410.704,290.731) mm",
         "Sheet preview placed on source page: offset=(115.528,287.542) mm"
       ],

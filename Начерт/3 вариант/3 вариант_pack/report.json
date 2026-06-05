@@ -80,7 +80,7 @@
     {
       "item": "pass_02",
       "ok": true,
-      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-2-1780651294047613700_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-2-1780651294047613700.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-2-1780651294047613700_vector.pdf",
+      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-2-1780652843768151600_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-2-1780652843768151600.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-2-1780652843768151600_vector.pdf",
       "logs": [
         "Image contour tracing: +33 path(s) from embedded raster.",
         "Image vectorization mode: centerline (added 33 path(s), simplify=0.02 mm).",
@@ -148,9 +148,9 @@
         "G-code stats: lines=3509, draw=1308, travel=438, bounds=0.000..180.000 x, -282.579..0.000 y",
         "Preflight: ok: lines=3509, draw=1308, travel=438, ratio=0.33",
         "Saved file stats: lines=3509, draw=1308, travel=438, bounds=0.000..180.000 x, -282.579..0.000 y",
-        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-2-1780651294047613700.nc",
-        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-2-1780651294047613700_vector.svg",
-        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-2-1780651294047613700_vector.pdf"
+        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-2-1780652843768151600.nc",
+        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-2-1780652843768151600_vector.svg",
+        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-2-1780652843768151600_vector.pdf"
       ],
       "fit_scale": null,
       "clipping_warning": true,
@@ -238,7 +238,7 @@
     {
       "item": "pass_04",
       "ok": true,
-      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-4-1780651307950985600_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-4-1780651307950985600.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-4-1780651307950985600_vector.pdf",
+      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-4-1780652857577216600_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-4-1780652857577216600.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-4-1780652857577216600_vector.pdf",
       "logs": [
         "Image contour tracing: +33 path(s) from embedded raster.",
         "Image vectorization mode: centerline (added 33 path(s), simplify=0.02 mm).",
@@ -306,9 +306,9 @@
         "G-code stats: lines=3506, draw=1305, travel=438, bounds=0.000..180.000 x, -285.000..0.000 y",
         "Preflight: ok: lines=3506, draw=1305, travel=438, ratio=0.34",
         "Saved file stats: lines=3506, draw=1305, travel=438, bounds=0.000..180.000 x, -285.000..0.000 y",
-        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-4-1780651307950985600.nc",
-        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-4-1780651307950985600_vector.svg",
-        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-4-1780651307950985600_vector.pdf"
+        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-4-1780652857577216600.nc",
+        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-4-1780652857577216600_vector.svg",
+        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-4-1780652857577216600_vector.pdf"
       ],
       "fit_scale": null,
       "clipping_warning": true,
@@ -396,7 +396,7 @@
     {
       "item": "pass_06",
       "ok": true,
-      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-6-1780651321868861900_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-6-1780651321868861900.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-6-1780651321868861900_vector.pdf",
+      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-6-1780652870980795900_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-6-1780652870980795900.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-6-1780652870980795900_vector.pdf",
       "logs": [
         "Image contour tracing: +33 path(s) from embedded raster.",
         "Image vectorization mode: centerline (added 33 path(s), simplify=0.02 mm).",
@@ -464,9 +464,9 @@
         "G-code stats: lines=3477, draw=1296, travel=434, bounds=0.000..180.000 x, -285.000..0.000 y",
         "Preflight: ok: lines=3477, draw=1296, travel=434, ratio=0.33",
         "Saved file stats: lines=3477, draw=1296, travel=434, bounds=0.000..180.000 x, -285.000..0.000 y",
-        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-6-1780651321868861900.nc",
-        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-6-1780651321868861900_vector.svg",
-        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-6-1780651321868861900_vector.pdf"
+        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-6-1780652870980795900.nc",
+        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-6-1780652870980795900_vector.svg",
+        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-6-1780652870980795900_vector.pdf"
       ],
       "fit_scale": null,
       "clipping_warning": true,
@@ -554,7 +554,7 @@
     {
       "item": "pass_08",
       "ok": true,
-      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-8-1780651335652201200_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-8-1780651335652201200.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-8-1780651335652201200_vector.pdf",
+      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-8-1780652884647776800_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-8-1780652884647776800.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-8-1780652884647776800_vector.pdf",
       "logs": [
         "Image contour tracing: +33 path(s) from embedded raster.",
         "Image vectorization mode: centerline (added 33 path(s), simplify=0.02 mm).",
@@ -622,9 +622,9 @@
         "G-code stats: lines=3456, draw=1280, travel=433, bounds=0.000..180.000 x, -285.000..0.000 y",
         "Preflight: ok: lines=3456, draw=1280, travel=433, ratio=0.34",
         "Saved file stats: lines=3456, draw=1280, travel=433, bounds=0.000..180.000 x, -285.000..0.000 y",
-        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-8-1780651335652201200.nc",
-        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-8-1780651335652201200_vector.svg",
-        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-8-1780651335652201200_vector.pdf"
+        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-8-1780652884647776800.nc",
+        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-8-1780652884647776800_vector.svg",
+        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-8-1780652884647776800_vector.pdf"
       ],
       "fit_scale": null,
       "clipping_warning": true,
@@ -712,7 +712,7 @@
     {
       "item": "pass_10",
       "ok": true,
-      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-10-1780651349272349200_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-10-1780651349272349200.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-10-1780651349272349200_vector.pdf",
+      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-10-1780652898270255600_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-10-1780652898270255600.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-10-1780652898270255600_vector.pdf",
       "logs": [
         "Image contour tracing: +33 path(s) from embedded raster.",
         "Image vectorization mode: centerline (added 33 path(s), simplify=0.02 mm).",
@@ -780,9 +780,9 @@
         "G-code stats: lines=3466, draw=1280, travel=435, bounds=0.000..180.000 x, -280.481..0.000 y",
         "Preflight: ok: lines=3466, draw=1280, travel=435, ratio=0.34",
         "Saved file stats: lines=3466, draw=1280, travel=435, bounds=0.000..180.000 x, -280.481..0.000 y",
-        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-10-1780651349272349200.nc",
-        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-10-1780651349272349200_vector.svg",
-        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-10-1780651349272349200_vector.pdf"
+        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-10-1780652898270255600.nc",
+        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-10-1780652898270255600_vector.svg",
+        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-10-1780652898270255600_vector.pdf"
       ],
       "fit_scale": null,
       "clipping_warning": true,
@@ -870,7 +870,7 @@
     {
       "item": "pass_12",
       "ok": true,
-      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-12-1780651363059842100_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-12-1780651363059842100.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-12-1780651363059842100_vector.pdf",
+      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-12-1780652911780707200_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-12-1780652911780707200.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-12-1780652911780707200_vector.pdf",
       "logs": [
         "Image contour tracing: +33 path(s) from embedded raster.",
         "Image vectorization mode: centerline (added 33 path(s), simplify=0.02 mm).",
@@ -938,9 +938,9 @@
         "G-code stats: lines=3588, draw=1322, travel=451, bounds=0.000..180.000 x, -283.381..0.000 y",
         "Preflight: ok: lines=3588, draw=1322, travel=451, ratio=0.34",
         "Saved file stats: lines=3588, draw=1322, travel=451, bounds=0.000..180.000 x, -283.381..0.000 y",
-        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-12-1780651363059842100.nc",
-        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-12-1780651363059842100_vector.svg",
-        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-12-1780651363059842100_vector.pdf"
+        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-12-1780652911780707200.nc",
+        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-12-1780652911780707200_vector.svg",
+        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-12-1780652911780707200_vector.pdf"
       ],
       "fit_scale": null,
       "clipping_warning": true,
@@ -1028,7 +1028,7 @@
     {
       "item": "pass_14",
       "ok": true,
-      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-14-1780651376887281700_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-14-1780651376887281700.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-14-1780651376887281700_vector.pdf",
+      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-14-1780652925267344100_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-14-1780652925267344100.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-14-1780652925267344100_vector.pdf",
       "logs": [
         "Image contour tracing: +33 path(s) from embedded raster.",
         "Image vectorization mode: centerline (added 33 path(s), simplify=0.02 mm).",
@@ -1096,9 +1096,9 @@
         "G-code stats: lines=3937, draw=1441, travel=497, bounds=0.000..180.000 x, -285.000..0.000 y",
         "Preflight: ok: lines=3937, draw=1441, travel=497, ratio=0.34",
         "Saved file stats: lines=3937, draw=1441, travel=497, bounds=0.000..180.000 x, -285.000..0.000 y",
-        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-14-1780651376887281700.nc",
-        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-14-1780651376887281700_vector.svg",
-        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-14-1780651376887281700_vector.pdf"
+        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-14-1780652925267344100.nc",
+        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-14-1780652925267344100_vector.svg",
+        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-14-1780652925267344100_vector.pdf"
       ],
       "fit_scale": null,
       "clipping_warning": true,
@@ -1186,7 +1186,7 @@
     {
       "item": "pass_16",
       "ok": true,
-      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-16-1780651390862285600_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-16-1780651390862285600.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-16-1780651390862285600_vector.pdf",
+      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-16-1780652939019120600_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-16-1780652939019120600.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-16-1780652939019120600_vector.pdf",
       "logs": [
         "Image contour tracing: +33 path(s) from embedded raster.",
         "Image vectorization mode: centerline (added 33 path(s), simplify=0.02 mm).",
@@ -1254,9 +1254,9 @@
         "G-code stats: lines=3837, draw=1406, travel=484, bounds=0.000..180.000 x, -285.000..0.000 y",
         "Preflight: ok: lines=3837, draw=1406, travel=484, ratio=0.34",
         "Saved file stats: lines=3837, draw=1406, travel=484, bounds=0.000..180.000 x, -285.000..0.000 y",
-        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-16-1780651390862285600.nc",
-        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-16-1780651390862285600_vector.svg",
-        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-16-1780651390862285600_vector.pdf"
+        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-16-1780652939019120600.nc",
+        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-16-1780652939019120600_vector.svg",
+        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-16-1780652939019120600_vector.pdf"
       ],
       "fit_scale": null,
       "clipping_warning": true,
@@ -1344,7 +1344,7 @@
     {
       "item": "pass_18",
       "ok": true,
-      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-18-1780651404994441300_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-18-1780651404994441300.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-18-1780651404994441300_vector.pdf",
+      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-18-1780652952742648000_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-18-1780652952742648000.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-18-1780652952742648000_vector.pdf",
       "logs": [
         "Image contour tracing: +33 path(s) from embedded raster.",
         "Image vectorization mode: centerline (added 33 path(s), simplify=0.02 mm).",
@@ -1412,9 +1412,9 @@
         "G-code stats: lines=3633, draw=1282, travel=468, bounds=0.000..180.000 x, -285.000..0.000 y",
         "Preflight: ok: lines=3633, draw=1282, travel=468, ratio=0.37",
         "Saved file stats: lines=3633, draw=1282, travel=468, bounds=0.000..180.000 x, -285.000..0.000 y",
-        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-18-1780651404994441300.nc",
-        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-18-1780651404994441300_vector.svg",
-        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-18-1780651404994441300_vector.pdf"
+        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-18-1780652952742648000.nc",
+        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-18-1780652952742648000_vector.svg",
+        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-18-1780652952742648000_vector.pdf"
       ],
       "fit_scale": null,
       "clipping_warning": true,
@@ -1502,7 +1502,7 @@
     {
       "item": "pass_20",
       "ok": true,
-      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-20-1780651418928334000_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-20-1780651418928334000.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-20-1780651418928334000_vector.pdf",
+      "message": "Preview ready: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-20-1780652966407527900_vector.svg | G-code: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-20-1780652966407527900.nc | PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-20-1780652966407527900_vector.pdf",
       "logs": [
         "Image contour tracing: +33 path(s) from embedded raster.",
         "Image vectorization mode: centerline (added 33 path(s), simplify=0.02 mm).",
@@ -1570,9 +1570,9 @@
         "G-code stats: lines=3188, draw=1157, travel=404, bounds=0.000..180.000 x, -285.000..0.000 y",
         "Preflight: ok: lines=3188, draw=1157, travel=404, ratio=0.35",
         "Saved file stats: lines=3188, draw=1157, travel=404, bounds=0.000..180.000 x, -285.000..0.000 y",
-        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-20-1780651418928334000.nc",
-        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-20-1780651418928334000_vector.svg",
-        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-20-1780651418928334000_vector.pdf"
+        "Saved: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-20-1780652966407527900.nc",
+        "Preview SVG: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-20-1780652966407527900_vector.svg",
+        "Preview PDF: C:\\plotter_pdf\\_tmp\\latest_preview_tiled-clean-pass-20-1780652966407527900_vector.pdf"
       ],
       "fit_scale": null,
       "clipping_warning": true,

@@ -343,9 +343,31 @@ def _kompas_source_to_drawing_polylines(
             "HANDWRITING_TEXT_ENABLED": False,
             "HANDWRITING_STROKE_ACTIVE": False,
             "HANDWRITING_PRESERVE_FILL_OUTLINES": False,
+            "FILL_CENTERLINE_PX_PER_MM": 44.0,
+            "FILL_CENTERLINE_MIN_COMPONENT_PX": 2,
+            "FILL_CENTERLINE_MIN_PATH_MM": 0.055,
+            "FILL_CENTERLINE_MAX_PATHS_PER_GLYPH": 18,
+            "FILL_CENTERLINE_LEN_RATIO_MIN": 0.07,
+            "FILL_CENTERLINE_LEN_RATIO_MAX": 1.35,
+            "FILL_CENTERLINE_SPUR_PRUNE_PX": 1,
+            "FILL_CENTERLINE_LOCAL_STITCH_EPS_MM": 0.20,
+            "FILL_CENTERLINE_LOCAL_GAP_EPS_MM": 0.38,
+            "FILL_CENTERLINE_LOCAL_ANGLE_DEG": 44.0,
             "SINGLE_STROKE_TEXT_ENABLED": True,
+            "SINGLE_STROKE_TEXT_CLUSTER_MAX_BBOX_MM": 16.0,
+            "SINGLE_STROKE_TEXT_CLUSTER_GAP_MM": 0.34,
             "SINGLE_STROKE_OUTLINE_TEXT_ENABLED": False,
             "HANDWRITING_OUTLINE_CENTERLINE_ENABLED": False,
+            "TECH_TEXT_JOIN_ENABLE": True,
+            "TECH_TEXT_JOIN_GAP_MM": 1.25,
+            "TECH_TEXT_JOIN_MAX_DY_MM": 1.60,
+            "TECH_TEXT_JOIN_MAX_BACKTRACK_MM": 0.90,
+            "TECH_TEXT_JOIN_MAX_STROKE_LEN_MM": 18.0,
+            "TECH_TEXT_JOIN_MAX_SPAN_MM": 18.0,
+            "TECH_TEXT_JOIN_MAX_AREA_MM2": 180.0,
+            "TECH_TEXT_JOIN_MAX_COMBINED_SPAN_X_MM": 12.0,
+            "TECH_TEXT_JOIN_MAX_COMBINED_SPAN_Y_MM": 18.0,
+            "TECH_TEXT_JOIN_MAX_COMBINED_AREA_MM2": 190.0,
             "TECH_TEXT_SINGLELINE_ENABLED": True,
         }
     ):
@@ -454,7 +476,7 @@ def _stitch_kompas_text_centerline_fragments(
     kept: list[list[tuple[float, float]]] = []
     buckets: dict[int, list[list[tuple[float, float]]]] = {}
     for poly in polys_mm:
-        region_idx = _kompas_text_region_index_for_poly_mm(poly, text_regions=regions, pad_mm=1.05)
+        region_idx = _kompas_text_region_index_for_poly_mm(poly, text_regions=regions, pad_mm=1.65)
         if region_idx is None:
             kept.append(poly)
             continue
@@ -483,14 +505,14 @@ def _stitch_kompas_text_centerline_fragments(
             merged = backend.merge_technical_text_strokes(
                 group,
                 logger=None,
-                join_gap_mm=2.25,
-                join_max_dy_mm=3.40,
-                join_max_backtrack_mm=3.00,
-                simplify_collinear_eps=0.012,
+                join_gap_mm=3.15,
+                join_max_dy_mm=4.40,
+                join_max_backtrack_mm=4.00,
+                simplify_collinear_eps=0.008,
             )
             if not merged:
                 merged = group
-            merged = _snap_kompas_text_endpoints_to_strokes(merged, max_dist_mm=1.05)
+            merged = _snap_kompas_text_endpoints_to_strokes(merged, max_dist_mm=1.70)
             if len(merged) < len(group):
                 changed_regions += 1
             kept.extend(merged)

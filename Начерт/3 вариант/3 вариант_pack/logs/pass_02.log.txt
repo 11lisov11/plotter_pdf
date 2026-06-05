@@ -64,6 +64,6 @@ Applying pen-up / pen-down ...
 G-code stats: lines=3509, draw=1308, travel=438, bounds=0.000..180.000 x, -282.579..0.000 y
 Preflight: ok: lines=3509, draw=1308, travel=438, ratio=0.33
 Saved file stats: lines=3509, draw=1308, travel=438, bounds=0.000..180.000 x, -282.579..0.000 y
-Saved: C:\plotter_pdf\_tmp\latest_preview_tiled-clean-pass-2-1780651294047613700.nc
-Preview SVG: C:\plotter_pdf\_tmp\latest_preview_tiled-clean-pass-2-1780651294047613700_vector.svg
-Preview PDF: C:\plotter_pdf\_tmp\latest_preview_tiled-clean-pass-2-1780651294047613700_vector.pdf
+Saved: C:\plotter_pdf\_tmp\latest_preview_tiled-clean-pass-2-1780652843768151600.nc
+Preview SVG: C:\plotter_pdf\_tmp\latest_preview_tiled-clean-pass-2-1780652843768151600_vector.svg
+Preview PDF: C:\plotter_pdf\_tmp\latest_preview_tiled-clean-pass-2-1780652843768151600_vector.pdf

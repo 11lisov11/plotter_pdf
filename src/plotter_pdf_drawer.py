@@ -210,7 +210,7 @@ FEED_DRAW = 12000.0
 # short for reliable marking at the normal long-line drawing feed. Only draw
 # feed is limited by default; travel must stay fast to avoid very slow title
 # blocks made from thousands of short strokes.
-TECH_TEXT_MICRO_STROKE_FEED_ENABLED = False
+TECH_TEXT_MICRO_STROKE_FEED_ENABLED = True
 TECH_TEXT_MICRO_STROKE_FEED_DRAW = 3500.0
 TECH_TEXT_MICRO_STROKE_FEED_TRAVEL = 0.0
 TECH_TEXT_MICRO_STROKE_MAX_LENGTH_MM = 16.0
