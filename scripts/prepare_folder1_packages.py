@@ -681,7 +681,7 @@ def _needs_variant20_22_a4_titleblock_direct_candidate(source_pdf: Path) -> bool
 
 
 def _prefer_direct_fit_full_for_nachert_a4(source_pdf: Path) -> bool:
-    return False
+    return _is_nachert_source(source_pdf)
     parts = [str(part).lower() for part in source_pdf.parts]
     return "РЅР°С‡РµСЂС‚" in parts and "4 РІР°СЂРёРЅС‚" in parts
 
@@ -880,13 +880,20 @@ def _select_best_a4_drawing_candidate(
     frame_class = _drawing_frame_class(source_pdf)
     preferred_successful = [row for row in successful if str(row.get("variant", "") or "") != "strict_1to1_clip"]
     if frame_class == "standard_frame":
-        standard_candidates = [
-            row
-            for row in preferred_successful
-            if str(row.get("variant", "") or "") == "a4_hybrid_frame"
-            or "compact_miniature_overlay" in str(row.get("notes", "") or "")
-            or "condition_images_recovered=" in str(row.get("notes", "") or "")
-        ]
+        if _prefer_direct_fit_full_for_nachert_a4(source_pdf):
+            standard_candidates = [
+                row
+                for row in preferred_successful
+                if str(row.get("variant", "") or "") in {"fit_full", "mupdf_svg_paths", "clean_source_direct"}
+            ]
+        else:
+            standard_candidates = [
+                row
+                for row in preferred_successful
+                if str(row.get("variant", "") or "") == "a4_hybrid_frame"
+                or "compact_miniature_overlay" in str(row.get("notes", "") or "")
+                or "condition_images_recovered=" in str(row.get("notes", "") or "")
+            ]
         if standard_candidates:
             best = max(standard_candidates, key=lambda row: float(row.get("layout_similarity", 0.0) or 0.0))
             selection_reason = "standard_frame_route"
@@ -8068,16 +8075,38 @@ def _prepare_drawing_package(source_pdf: Path, package_dir: Path) -> tuple[dict[
         candidates: list[dict[str, Any]] = []
         candidate_builders: list[tuple[str, Callable[[], dict[str, Any]]]] = []
         if frame_class == "standard_frame":
-            candidate_builders.append(
-                (
-                    "a4_hybrid_frame",
-                    lambda: _prepare_a4_hybrid_drawing_candidate(
-                        source_pdf,
-                        variant_name="a4_hybrid_frame",
-                        candidate_dir=candidate_root,
-                    ),
+            if _prefer_direct_fit_full_for_nachert_a4(source_pdf):
+                candidate_builders.extend(
+                    [
+                        (
+                            "fit_full",
+                            lambda: _prepare_compact_source_overlay_candidate(
+                                source_pdf,
+                                variant_name="fit_full",
+                                candidate_dir=candidate_root,
+                            ),
+                        ),
+                        (
+                            "mupdf_svg_paths",
+                            lambda: _prepare_mupdf_svg_paths_candidate(
+                                source_pdf,
+                                variant_name="mupdf_svg_paths",
+                                candidate_dir=candidate_root,
+                            ),
+                        ),
+                    ]
                 )
-            )
+            else:
+                candidate_builders.append(
+                    (
+                        "a4_hybrid_frame",
+                        lambda: _prepare_a4_hybrid_drawing_candidate(
+                            source_pdf,
+                            variant_name="a4_hybrid_frame",
+                            candidate_dir=candidate_root,
+                        ),
+                    )
+                )
         elif frame_class == "kompas_full_frame":
             candidate_builders.extend(
                 [
