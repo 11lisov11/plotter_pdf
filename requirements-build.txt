@@ -1,0 +1,12 @@
+pyserial==3.5
+numpy==2.2.6
+Pillow==11.2.1
+PyMuPDF==1.26.0
+opencv-python-headless==4.11.0.86
+hershey-fonts==2.1.0
+PySide6==6.9.1
+pyinstaller==6.14.1
+pytest==8.4.0
+pytest-qt==4.4.0
+ruff==0.11.13
+coverage==7.8.2

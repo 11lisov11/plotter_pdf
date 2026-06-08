@@ -1,0 +1,31 @@
+name: Release Windows
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    env:
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build Windows release
+        shell: pwsh
+        run: powershell -ExecutionPolicy Bypass -File scripts/build_windows_release.ps1
+      - name: Verify artifacts
+        shell: pwsh
+        run: |
+          Test-Path dist/PlotterPDF/PlotterPDF_GUI.exe
+          Test-Path dist/PlotterPDF/plotter-pdf.exe
+          Test-Path dist/PlotterPDF/plotter-pdf-self-check.exe
+          Get-ChildItem dist/plotter_pdf_windows_*.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: plotter_pdf_windows
+          path: |
+            dist/PlotterPDF
+            dist/plotter_pdf_windows_*.zip

@@ -45,3 +45,19 @@ Resemu.pdf
 Фрагмент.frw
 Фрагмент.pdf
 Втулка _ КГН.11.01.pdf
+
+# Runtime plotter jobs and GUI settings
+_plotter_jobs/
+config/gui_settings.json
+
+# Generated plotter artifacts
+*.nc
+*.gcode
+*.preview.svg
+*.preview.pdf
+*_preview.svg
+*_preview.pdf
+
+# Root PyInstaller specs are generated; canonical specs live in packaging/
+/*.spec
+!/packaging/*.spec

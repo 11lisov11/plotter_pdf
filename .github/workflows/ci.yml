@@ -2,9 +2,7 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
-      - master
+    branches: [main, master]
   pull_request:
 
 concurrency:
@@ -12,74 +10,44 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  lint:
-    name: Lint (ruff)
-    runs-on: windows-latest
-    timeout-minutes: 20
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt pytest ruff coverage
-
-      - name: Run ruff
-        run: ruff check src plotter_studio tests
-
   tests:
-    name: Tests (unittest + pytest)
     runs-on: windows-latest
-    timeout-minutes: 30
-    needs: lint
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    env:
+      QT_QPA_PLATFORM: offscreen
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
-
-      - name: Install dependencies
+          python-version: ${{ matrix.python-version }}
+      - name: Install
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt pytest
-
-      - name: Run unittest suite
-        run: python -m unittest discover -s tests -p "test_*.py" -v
-
-      - name: Run pytest suite
-        run: python -m pytest -q
-
-  coverage-report:
-    name: Coverage (pytest)
-    runs-on: windows-latest
-    timeout-minutes: 20
-    needs: tests
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-
-      - name: Install dependencies
+          pip install -e ".[dev,gui,photo]"
+      - name: Ruff
+        run: ruff check src plotter_studio plotter_app tests scripts
+      - name: Pytest
+        run: python -m pytest -q -m "not hardware_required and not word_required and not kompas_required and not build"
+      - name: Coverage
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt pytest coverage
-
-      - name: Run coverage
-        run: |
-          python -m coverage run -m pytest -q
-          python -m coverage report -m --include "src/*,plotter_studio/*" --fail-under=32
+          python -m coverage run -m pytest -q -m "not hardware_required and not word_required and not kompas_required and not build"
+          python -m coverage report -m --fail-under=55
           python -m coverage xml -o coverage.xml
-
+      - name: GUI tests
+        run: python -m pytest -q -m "gui and not hardware_required"
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.python-version }}
+          path: coverage.xml
+      - name: Upload failed artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failed-artifacts-${{ matrix.python-version }}
+          path: |
+            .pytest_cache
+            _plotter_jobs

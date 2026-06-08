@@ -134,3 +134,15 @@ def unit_to_mm(value: float, unit: str) -> float:
     if unit == "pc":
         return value * 25.4 / 6.0
     return value
+
+
+
+def clean_report_value(value: Any) -> Any:
+    """Return JSON/report-safe values with paths and containers normalized."""
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, dict):
+        return {str(k): clean_report_value(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple, set)):
+        return [clean_report_value(v) for v in value]
+    return value

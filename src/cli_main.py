@@ -15,4 +15,8 @@ CLI_BACKEND = _BackendProxy()
 
 
 def main(argv: Optional[list[str]] = None) -> int:
+    if argv and len(argv) > 0 and argv[0] == "self-check":
+        from src.plotter_backend.jobs.self_check_cli import main as self_check_main
+
+        return self_check_main(argv[1:])
     return cli_entry.run_cli_main(CLI_BACKEND, argv)

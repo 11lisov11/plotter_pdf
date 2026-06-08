@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "plotter-pdf"
+version = "0.1.0"
+description = "CLI and GUI tools for preparing and streaming GRBL plotter jobs."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["pyserial>=3.5", "numpy>=2.0", "Pillow>=10.4", "PyMuPDF>=1.24"]
+
+[project.optional-dependencies]
+photo = ["opencv-python-headless>=4.10", "hershey-fonts>=2.1.0"]
+word = ["pywin32>=306; platform_system=='Windows'"]
+kompas = ["pywin32>=306; platform_system=='Windows'"]
+gui = ["PySide6>=6.7"]
+dev = ["pytest>=8", "pytest-qt>=4.4", "ruff>=0.6", "coverage>=7", "mypy>=1.10", "pyinstaller>=6"]
+
+[project.scripts]
+plotter-pdf = "src.cli_main:main"
+plotter-pdf-self-check = "src.plotter_backend.jobs.self_check_cli:main"
+plotter-pdf-gui = "plotter_app.app_entry:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*", "plotter_studio*", "plotter_app*"]
+
+[tool.ruff]
+line-length = 140
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["F"]
+ignore = ["F401", "F841", "F811"]

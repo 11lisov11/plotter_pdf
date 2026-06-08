@@ -519,3 +519,132 @@ scripts\toe_package_editor.bat --pdf TOE_Zadachi_1_2_Variant_11.pdf show --page 
 - не требует вручную лезть в `report.json`;
 - позволяет точечно пересобрать пакет тем же `prepare_toe_handwriting_package.py`;
 - умеет построить черновик suggestions из текущего `report.json`, если в пакете уже есть кандидат, доминирующий над выбранным.
+
+---
+
+# Production GUI / binaries / tests additions
+
+## Implementation plan for this pass
+
+1. Preserve legacy CLI compatibility (`python main.py`, `python src/plotter_pdf_drawer.py`).
+2. Add package entry points, structured job services, self-check, fake GRBL tests, GUI, Windows build scripts and CI.
+3. Document safety and keep default tests hardware-free.
+
+## Install for development
+
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+pip install -e ".[dev,gui,photo]"
+```
+
+Legacy `requirements.txt` is kept for compatibility; `pyproject.toml` is the canonical package definition.
+
+## CLI quick start
+
+Legacy commands still work:
+
+```powershell
+python main.py --help
+python src\plotter_pdf_drawer.py --help
+```
+
+Installed commands:
+
+```powershell
+plotter-pdf --help
+plotter-pdf self-check
+plotter-pdf-self-check --json-out _plotter_jobs\self_check.json
+plotter-pdf sample.pdf --preview --output _plotter_jobs\sample_prepared.nc
+plotter-pdf sample.pdf --com COM6 --sheet-format a4
+```
+
+If entry points are not installed yet, use development wrappers:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\dev_cli.ps1 --help
+powershell -ExecutionPolicy Bypass -File scripts\dev_gui.ps1 --help
+```
+
+## GUI quick start
+
+```powershell
+plotter-pdf-gui
+```
+
+The GUI supports input/output selection, COM refresh, sheet formats (`work`, `a4`, `a3`, `notebook`, `custom`), offsets, pass grid, tool (`pen`/`pencil`), handwriting flag, quality and draw order. Preview and Generate G-code never require COM. Draw is blocked until input path, COM, successful preflight and explicit hardware confirmation are present.
+
+Runtime GUI settings are saved in `config/gui_settings.json` and ignored by git. Defaults live in `config/gui_settings.default.json`.
+
+## Self-check
+
+```powershell
+plotter-pdf-self-check
+plotter-pdf-self-check --json-out _plotter_jobs\self_check.json
+plotter-pdf self-check
+```
+
+Exit codes: `0` core OK, `1` critical error, `2` optional dependency missing while core remains usable.
+
+## A3 pass transform
+
+The canonical A3 two-pass workflow is: pass 1 normal, pass 2 rotated `180°` with post-shift `Y +4.0 mm`. The single source of truth is `A3_SECOND_PASS_POST_SHIFT_Y_MM` in `src/plotter_backend/geometry/sheet_tiling.py`.
+
+## Tests
+
+Default tests do not open a real COM port:
+
+```powershell
+ruff check src plotter_studio plotter_app tests scripts
+python -m pytest -q -m "not hardware_required and not word_required and not kompas_required and not build"
+python -m coverage run -m pytest -q -m "not hardware_required and not word_required and not kompas_required and not build"
+python -m coverage report -m --fail-under=55
+```
+
+Markers: `hardware_required`, `word_required`, `kompas_required`, `gui`, `slow`, `build`. Hardware tests are skipped unless both variables are set:
+
+```powershell
+$env:PLOTTER_HARDWARE=1
+$env:PLOTTER_COM="COM6"
+pytest -m hardware_required
+```
+
+## Windows release build
+
+GitHub Actions workflow `release-windows.yml` builds the portable zip. Local Windows build:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\build_windows_release.ps1
+```
+
+Expected output:
+
+```text
+dist/PlotterPDF/PlotterPDF_GUI.exe
+dist/PlotterPDF/plotter-pdf.exe
+dist/PlotterPDF/plotter-pdf-self-check.exe
+dist/PlotterPDF/config/
+dist/PlotterPDF/examples/
+dist/PlotterPDF/README_START_HERE.md
+dist/plotter_pdf_windows_<version>.zip
+```
+
+## Hardware safety
+
+- Always run self-check and preview before Draw.
+- Draw always requires preflight and explicit confirmation.
+- Keep the pen lifted, sheet secured and work area clear before sending G-code.
+- Emergency stop / safe release controls are exposed in the GUI workflow and documented in `docs/safety.md`.
+- Real documents and generated jobs should live outside git, usually `_plotter_jobs/`.
+
+## More documentation
+
+- `docs/quickstart_windows.md`
+- `docs/gui.md`
+- `docs/cli.md`
+- `docs/hardware_setup.md`
+- `docs/testing.md`
+- `docs/release.md`
+- `docs/troubleshooting.md`
+- `docs/safety.md`
