@@ -42,7 +42,7 @@ class _Worker(QThread):
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("Plotter PDF")
+        self.setWindowTitle("Plotter PDF - управление плоттером")
         self.resize(980, 720)
         self.settings_data = load_gui_settings()
         self.vm = JobViewModel(self._settings_from_ui_data())
@@ -106,43 +106,43 @@ class MainWindow(QMainWindow):
         self.pass_row = QSpinBox()
         self.pass_row.setRange(1, 10)
         self.pass_row.setValue(self.vm.settings.pass_row)
-        self.handwriting = QCheckBox("Handwriting text")
+        self.handwriting = QCheckBox("Рукописный текст")
         self.handwriting.setChecked(self.vm.settings.handwriting)
         input_row = QHBoxLayout()
         input_row.addWidget(self.input_edit)
-        pick_input = QPushButton("Browse")
+        pick_input = QPushButton("Выбрать")
         pick_input.clicked.connect(self._pick_input)
         input_row.addWidget(pick_input)
         output_row = QHBoxLayout()
         output_row.addWidget(self.output_edit)
-        pick_output = QPushButton("Browse")
+        pick_output = QPushButton("Выбрать")
         pick_output.clicked.connect(self._pick_output)
         output_row.addWidget(pick_output)
         com_row = QHBoxLayout()
         com_row.addWidget(self.com_combo)
-        refresh_com = QPushButton("Refresh")
+        refresh_com = QPushButton("Обновить")
         refresh_com.clicked.connect(lambda: self._refresh_com_ports(self.com_combo.currentText().strip()))
         com_row.addWidget(refresh_com)
-        form.addRow("Input PDF/SVG/DOC/CDW:", input_row)
-        form.addRow("Output dir:", output_row)
-        form.addRow("COM port:", com_row)
-        form.addRow("Baud:", self.baud_edit)
-        form.addRow("Sheet:", self.sheet_combo)
-        form.addRow("Tool:", self.tool_combo)
-        form.addRow("Quality:", self.quality_combo)
-        form.addRow("Pass cols/rows:", self._pair(self.pass_cols, self.pass_rows))
-        form.addRow("Pass col/row:", self._pair(self.pass_col, self.pass_row))
-        form.addRow("Text:", self.handwriting)
+        form.addRow("Файл PDF/SVG/DOC/CDW:", input_row)
+        form.addRow("Папка результата:", output_row)
+        form.addRow("COM-порт:", com_row)
+        form.addRow("Скорость:", self.baud_edit)
+        form.addRow("Лист:", self.sheet_combo)
+        form.addRow("Инструмент:", self.tool_combo)
+        form.addRow("Качество:", self.quality_combo)
+        form.addRow("Разбиение cols/rows:", self._pair(self.pass_cols, self.pass_rows))
+        form.addRow("Текущая часть col/row:", self._pair(self.pass_col, self.pass_row))
+        form.addRow("Текст:", self.handwriting)
         layout.addLayout(form)
-        self.status_label = QLabel("Preflight: not run")
+        self.status_label = QLabel("Предпроверка: еще не запускалась")
         layout.addWidget(self.status_label)
         buttons = QHBoxLayout()
-        self.self_check_btn = QPushButton("Self-check")
-        self.preview_btn = QPushButton("Preview")
-        self.generate_btn = QPushButton("Generate G-code")
-        self.draw_btn = QPushButton("Draw")
-        self.release_btn = QPushButton("Safe park / release")
-        self.stop_btn = QPushButton("Emergency stop")
+        self.self_check_btn = QPushButton("Самопроверка")
+        self.preview_btn = QPushButton("Предпросмотр")
+        self.generate_btn = QPushButton("Сформировать G-code")
+        self.draw_btn = QPushButton("Рисовать")
+        self.release_btn = QPushButton("Отпустить моторы")
+        self.stop_btn = QPushButton("Аварийный стоп")
         buttons.addWidget(self.self_check_btn)
         buttons.addWidget(self.preview_btn)
         buttons.addWidget(self.generate_btn)
@@ -157,8 +157,8 @@ class MainWindow(QMainWindow):
         self.preview_btn.clicked.connect(lambda: self._run_job(self.vm.run_preview))
         self.generate_btn.clicked.connect(lambda: self._run_job(self.vm.generate_gcode))
         self.draw_btn.clicked.connect(self._confirm_and_draw)
-        self.release_btn.clicked.connect(lambda: self._append_log("Use CLI safe-release script for now: scripts\\release_motors.bat"))
-        self.stop_btn.clicked.connect(lambda: QMessageBox.warning(self, "Emergency stop", "Use controller reset / power stop for hard emergency."))
+        self.release_btn.clicked.connect(lambda: self._append_log("Пока используйте CLI-скрипт отпускания моторов: scripts\\release_motors.bat"))
+        self.stop_btn.clicked.connect(lambda: QMessageBox.warning(self, "Аварийный стоп", "Для жесткой аварии используйте reset контроллера или отключение питания."))
         for widget in [
             self.input_edit,
             self.output_edit,
@@ -189,12 +189,12 @@ class MainWindow(QMainWindow):
         return box
 
     def _pick_input(self) -> None:
-        path, _filter = QFileDialog.getOpenFileName(self, "Select input", "", "Drawings (*.pdf *.svg *.doc *.docx *.frw *.cdw);;All files (*.*)")
+        path, _filter = QFileDialog.getOpenFileName(self, "Выберите чертеж", "", "Чертежи (*.pdf *.svg *.doc *.docx *.frw *.cdw);;Все файлы (*.*)")
         if path:
             self.input_edit.setText(path)
 
     def _pick_output(self) -> None:
-        path = QFileDialog.getExistingDirectory(self, "Select output directory", self.output_edit.text() or str(Path.cwd()))
+        path = QFileDialog.getExistingDirectory(self, "Выберите папку результата", self.output_edit.text() or str(Path.cwd()))
         if path:
             self.output_edit.setText(path)
 
@@ -253,12 +253,12 @@ class MainWindow(QMainWindow):
     def _run_self_check(self) -> None:
         exit_code, text = self.self_check_vm.run()
         self._append_log(text)
-        self.status_label.setText(f"Self-check exit code: {exit_code}")
+        self.status_label.setText(f"Код самопроверки: {exit_code}")
 
     def _run_job(self, action) -> None:
         self._sync_from_ui()
         if not self.vm.has_input():
-            QMessageBox.warning(self, "Missing input", "Choose an input drawing first.")
+            QMessageBox.warning(self, "Не выбран файл", "Сначала выберите файл чертежа.")
             return
         self._set_busy(True)
         self._worker = _Worker(action, self)
@@ -268,10 +268,10 @@ class MainWindow(QMainWindow):
     def _confirm_and_draw(self) -> None:
         self._sync_from_ui()
         text = (
-            "G-code will be sent to the COM port.\n\n"
-            "Make sure the pen is lifted, the sheet is fixed, and the work area is clear."
+            "G-code будет отправлен в COM-порт.\n\n"
+            "Убедитесь, что перо поднято, лист закреплен, а рабочая зона свободна."
         )
-        if QMessageBox.question(self, "Confirm plotter draw", text) != QMessageBox.StandardButton.Yes:
+        if QMessageBox.question(self, "Подтвердите рисование", text) != QMessageBox.StandardButton.Yes:
             return
         self.vm.set_hardware_confirmed(True)
         self._run_job(self.vm.draw)
@@ -285,7 +285,7 @@ class MainWindow(QMainWindow):
         self._set_busy(False)
         self._append_log(result.message)
         if result.ok:
-            self.status_label.setText(f"Ready: {result.gcode_path or result.nc_path or ''}")
+            self.status_label.setText(f"Готово: {result.gcode_path or result.nc_path or ''}")
         else:
-            self.status_label.setText("Failed")
-            QMessageBox.warning(self, "Job failed", result.message)
+            self.status_label.setText("Ошибка")
+            QMessageBox.warning(self, "Задание завершилось с ошибкой", result.message)

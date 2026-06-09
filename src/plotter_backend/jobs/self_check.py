@@ -55,12 +55,14 @@ def _runtime_root() -> Path:
     return Path(__file__).resolve().parents[3]
 
 
-def _apply_frozen_bundle_optional_checks(root: Path, optional: dict[str, bool]) -> None:
+def _apply_frozen_bundle_checks(root: Path, core: dict[str, bool], optional: dict[str, bool]) -> None:
     if not getattr(sys, "frozen", False):
         return
     if (root / "PlotterPDF_GUI.exe").exists():
         optional["PySide6"] = True
     if (root / "plotter-pdf.exe").exists():
+        for module_name in CORE_MODULES:
+            core[module_name] = True
         optional["opencv"] = True
         optional["hershey-fonts"] = True
 
@@ -70,7 +72,7 @@ def run_self_check(*, json_out: Path | None = None) -> tuple[int, dict[str, Any]
     config_path = root / "config" / "axis_profile.json"
     core = {name: _module_available(name) for name in CORE_MODULES}
     optional = {label: _module_available(module) for label, module in OPTIONAL_MODULES.items()}
-    _apply_frozen_bundle_optional_checks(root, optional)
+    _apply_frozen_bundle_checks(root, core, optional)
     fake = _fake_grbl_smoke()
     hardware_requested = os.environ.get("PLOTTER_HARDWARE") == "1"
     hardware_com = os.environ.get("PLOTTER_COM", "").strip()
@@ -81,14 +83,14 @@ def run_self_check(*, json_out: Path | None = None) -> tuple[int, dict[str, Any]
     }
     critical_errors: list[str] = []
     if sys.version_info < (3, 10):
-        critical_errors.append("Python >= 3.10 is required.")
+        critical_errors.append("Нужен Python >= 3.10.")
     if not config_path.exists():
-        critical_errors.append(f"Missing config: {config_path}")
+        critical_errors.append(f"Не найден config: {config_path}")
     for module_name, ok in core.items():
         if not ok:
-            critical_errors.append(f"Missing core module: {module_name}")
+            critical_errors.append(f"Не найден основной модуль: {module_name}")
     if not fake["ok"]:
-        critical_errors.append("Fake GRBL smoke test failed.")
+        critical_errors.append("Встроенная проверка Fake GRBL не прошла.")
 
     optional_missing = [name for name, ok in optional.items() if not ok]
     exit_code = 1 if critical_errors else (2 if optional_missing else 0)
@@ -117,21 +119,21 @@ def run_self_check(*, json_out: Path | None = None) -> tuple[int, dict[str, Any]
 
 def format_self_check_report(report: dict[str, Any]) -> str:
     lines = [
-        "Plotter PDF self-check",
-        f"Core ok: {'yes' if report.get('ok') else 'no'}",
+        "Проверка Plotter PDF",
+        f"Ядро: {'ок' if report.get('ok') else 'ошибка'}",
         f"Python: {str(report.get('python', '')).splitlines()[0]}",
-        f"OS: {report.get('platform')}",
-        f"CWD: {report.get('cwd')}",
-        f"axis_profile.json: {'ok' if report.get('axis_profile_exists') else 'missing'}",
-        f"COM ports: {', '.join(report.get('com_ports') or []) or 'none detected'}",
-        f"Fake GRBL: {'ok' if (report.get('fake_grbl') or {}).get('ok') else 'failed'}",
-        f"Hardware tests: {'requested' if not (report.get('hardware') or {}).get('skipped') else 'skipped'}",
+        f"ОС: {report.get('platform')}",
+        f"Папка запуска: {report.get('cwd')}",
+        f"axis_profile.json: {'ок' if report.get('axis_profile_exists') else 'не найден'}",
+        f"COM-порты: {', '.join(report.get('com_ports') or []) or 'не найдены'}",
+        f"Fake GRBL: {'ок' if (report.get('fake_grbl') or {}).get('ok') else 'ошибка'}",
+        f"Аппаратные тесты: {'запрошены' if not (report.get('hardware') or {}).get('skipped') else 'пропущены'}",
     ]
     missing = report.get("optional_missing") or []
     if missing:
-        lines.append("Optional missing: " + ", ".join(str(x) for x in missing))
+        lines.append("Необязательные компоненты отсутствуют: " + ", ".join(str(x) for x in missing))
     errors = report.get("errors") or []
     if errors:
-        lines.append("Errors:")
+        lines.append("Ошибки:")
         lines.extend(f"- {err}" for err in errors)
     return "\n".join(lines)

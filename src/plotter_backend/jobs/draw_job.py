@@ -24,15 +24,15 @@ def draw_job(settings: JobSettings, *, confirm_hardware: bool = False) -> JobRes
     output_dir.mkdir(parents=True, exist_ok=True)
     input_path = settings.normalized_input_path()
     if input_path is None:
-        result = JobResult(False, "Input file is required.", output_dir=output_dir, errors=["missing_input"])
+        result = JobResult(False, "Нужно выбрать файл чертежа.", output_dir=output_dir, errors=["missing_input"])
         return write_job_report(result, output_dir)
     if not settings.com:
-        result = JobResult(False, "COM port is required for hardware draw.", output_dir=output_dir, errors=["missing_com"])
+        result = JobResult(False, "Не найден COM-порт плоттера.", output_dir=output_dir, errors=["missing_com"])
         return write_job_report(result, output_dir)
     if not _hardware_enabled(settings, confirm_hardware):
         result = JobResult(
             False,
-            "Hardware draw is blocked until the user confirms the operation or PLOTTER_HARDWARE=1/PLOTTER_COM match.",
+            "Рисование на плоттере заблокировано до подтверждения операции.",
             output_dir=output_dir,
             errors=["hardware_not_confirmed"],
         )
@@ -63,7 +63,7 @@ def draw_job(settings: JobSettings, *, confirm_hardware: bool = False) -> JobRes
     )
     result = JobResult(
         proc.returncode == 0,
-        proc.stdout.strip() or f"Draw exited with code {proc.returncode}.",
+        "Рисование завершено." if proc.returncode == 0 else f"Рисование завершилось с ошибкой (код {proc.returncode}).",
         output_dir=output_dir,
         nc_path=nc_path if nc_path.exists() else None,
         errors=[] if proc.returncode == 0 else [proc.stdout.strip()],
