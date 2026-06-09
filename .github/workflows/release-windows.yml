@@ -77,18 +77,21 @@ jobs:
           }
 
           & dist\PlotterPDF\plotter-pdf.exe --help > $null
-          if ($LASTEXITCODE -ne 0) {
-            throw "plotter-pdf.exe --help failed with exit code $LASTEXITCODE"
+          $cliHelpExitCode = $LASTEXITCODE
+          if ($cliHelpExitCode -ne 0) {
+            throw "plotter-pdf.exe --help failed with exit code $cliHelpExitCode"
           }
 
           & dist\PlotterPDF\plotter-pdf.exe self-check
-          if (@(0, 2) -notcontains $LASTEXITCODE) {
-            throw "plotter-pdf.exe self-check failed with exit code $LASTEXITCODE"
+          $cliSelfCheckExitCode = $LASTEXITCODE
+          if (@(0, 2) -notcontains $cliSelfCheckExitCode) {
+            throw "plotter-pdf.exe self-check failed with exit code $cliSelfCheckExitCode"
           }
 
           & dist\PlotterPDF\plotter-pdf-self-check.exe
-          if (@(0, 2) -notcontains $LASTEXITCODE) {
-            throw "plotter-pdf-self-check.exe failed with exit code $LASTEXITCODE"
+          $selfCheckExitCode = $LASTEXITCODE
+          if (@(0, 2) -notcontains $selfCheckExitCode) {
+            throw "plotter-pdf-self-check.exe failed with exit code $selfCheckExitCode"
           }
 
           $gui = Start-Process -FilePath (Resolve-Path "dist\PlotterPDF\PlotterPDF_GUI.exe") -ArgumentList "--help" -Wait -PassThru
@@ -97,6 +100,7 @@ jobs:
           }
 
           Get-ChildItem dist\plotter_pdf_windows_*.zip
+          exit 0
 
       - name: Upload Windows zip
         uses: actions/upload-artifact@v4
