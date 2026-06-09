@@ -41,6 +41,8 @@ jobs:
             "dist\PlotterPDF\plotter-pdf-self-check.exe",
             "dist\PlotterPDF\config",
             "dist\PlotterPDF\examples",
+            "dist\PlotterPDF\examples\simple_square.svg",
+            "dist\PlotterPDF\examples\README_examples.md",
             "dist\PlotterPDF\README_START_HERE.md"
           )
           foreach ($path in $expectedBundleFiles) {
@@ -67,6 +69,8 @@ jobs:
             "PlotterPDF\plotter-pdf-self-check.exe",
             "PlotterPDF\config",
             "PlotterPDF\examples",
+            "PlotterPDF\examples\simple_square.svg",
+            "PlotterPDF\examples\README_examples.md",
             "PlotterPDF\README_START_HERE.md"
           )
           foreach ($path in $expectedZipFiles) {

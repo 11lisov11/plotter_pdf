@@ -63,6 +63,8 @@ $expectedBundleFiles = @(
     (Join-Path $bundle "plotter-pdf-self-check.exe"),
     (Join-Path $bundle "config"),
     (Join-Path $bundle "examples"),
+    (Join-Path $bundle "examples\simple_square.svg"),
+    (Join-Path $bundle "examples\README_examples.md"),
     (Join-Path $bundle "README_START_HERE.md")
 )
 foreach ($path in $expectedBundleFiles) {
