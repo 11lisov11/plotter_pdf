@@ -1,0 +1,67 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "plotter-pdf"
+version = "0.2.0"
+description = "Windows CLI and GUI tools for preparing and sending drawings to a GRBL plotter."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "plotter_pdf contributors" }]
+dependencies = [
+    "pyserial>=3.5",
+    "numpy>=2.0",
+    "Pillow>=10.4",
+    "PyMuPDF>=1.24",
+]
+
+[project.optional-dependencies]
+photo = [
+    "opencv-python-headless>=4.10",
+    "hershey-fonts>=2.1.0",
+]
+word = [
+    "pywin32>=306; platform_system == 'Windows'",
+]
+kompas = [
+    "pywin32>=306; platform_system == 'Windows'",
+]
+gui = [
+    "PySide6>=6.7",
+]
+dev = [
+    "coverage>=7.5",
+    "mypy>=1.10",
+    "pyinstaller>=6.8",
+    "pytest>=8.2",
+    "pytest-qt>=4.4",
+    "ruff>=0.5",
+]
+
+[project.scripts]
+plotter-pdf = "src.cli_main:main"
+plotter-pdf-self-check = "src.plotter_backend.jobs.self_check_cli:main"
+plotter-pdf-gui = "plotter_app.app_entry:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*", "plotter_studio*", "plotter_app*"]
+exclude = ["tests*", "scripts*"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F"]
+ignore = ["E501", "E402", "E731", "F401", "F811", "F841"]
+
+[tool.coverage.run]
+branch = true
+source = ["src", "plotter_studio", "plotter_app"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 55

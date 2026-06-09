@@ -1,0 +1,100 @@
+from __future__ import annotations
+
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+from .job_report import summarize_existing_gcode, write_job_report
+from .models import JobResult, JobSettings
+
+
+def _project_root() -> Path:
+    return Path(__file__).resolve().parents[3]
+
+
+def _append_sheet_args(args: list[str], settings: JobSettings) -> None:
+    args.extend(["--sheet-format", settings.sheet_format])
+    if settings.sheet_width_mm is not None:
+        args.extend(["--sheet-width-mm", str(settings.sheet_width_mm)])
+    if settings.sheet_height_mm is not None:
+        args.extend(["--sheet-height-mm", str(settings.sheet_height_mm)])
+    args.extend(["--sheet-anchor", settings.sheet_anchor])
+    args.extend(["--sheet-offset-x-mm", str(settings.sheet_offset_x_mm)])
+    args.extend(["--sheet-offset-y-mm", str(settings.sheet_offset_y_mm)])
+    args.extend(["--pass-cols", str(max(1, int(settings.pass_cols)))])
+    args.extend(["--pass-rows", str(max(1, int(settings.pass_rows)))])
+    args.extend(["--pass-col", str(max(1, int(settings.pass_col)))])
+    args.extend(["--pass-row", str(max(1, int(settings.pass_row)))])
+    args.extend(["--tool", settings.tool])
+    args.extend(["--quality", settings.quality])
+    args.extend(["--draw-order", settings.draw_order])
+    args.append("--safe-travel-up" if settings.safe_travel_up else "--no-safe-travel-up")
+    args.append("--handwriting" if settings.handwriting else "--no-handwriting")
+
+
+def prepare_gcode_job(settings: JobSettings) -> JobResult:
+    input_path = settings.normalized_input_path()
+    output_dir = settings.normalized_output_dir()
+    output_dir.mkdir(parents=True, exist_ok=True)
+    if input_path is None:
+        result = JobResult(False, "Input file is required.", output_dir=output_dir, errors=["missing_input"])
+        return write_job_report(result, output_dir)
+    if not input_path.exists():
+        result = JobResult(False, f"Input not found: {input_path}", output_dir=output_dir, errors=["input_not_found"])
+        return write_job_report(result, output_dir)
+
+    nc_path = output_dir / f"{input_path.stem}_prepared.nc"
+    gcode_path = output_dir / f"{input_path.stem}_prepared.gcode"
+    cmd = [
+        sys.executable,
+        str(_project_root() / "main.py"),
+        str(input_path),
+        "--dry-run",
+        "--output",
+        str(nc_path),
+        "--skip-calibration",
+        "--skip-calibration-confirmation",
+        "--baud",
+        str(settings.baud),
+    ]
+    if settings.com:
+        cmd.extend(["--com", str(settings.com)])
+    _append_sheet_args(cmd, settings)
+
+    proc = subprocess.run(
+        cmd,
+        cwd=str(_project_root()),
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    if proc.returncode != 0:
+        result = JobResult(
+            False,
+            f"Prepare failed with exit code {proc.returncode}.",
+            output_dir=output_dir,
+            nc_path=nc_path,
+            gcode_path=gcode_path,
+            errors=[proc.stdout.strip()],
+        )
+        return write_job_report(result, output_dir)
+
+    if nc_path.exists():
+        shutil.copyfile(nc_path, gcode_path)
+    line_count, draw_moves, travel_moves, bounds = summarize_existing_gcode(nc_path)
+    result = JobResult(
+        True,
+        proc.stdout.strip() or "G-code prepared.",
+        output_dir=output_dir,
+        nc_path=nc_path if nc_path.exists() else None,
+        gcode_path=gcode_path if gcode_path.exists() else None,
+        bounds=bounds,
+        line_count=line_count,
+        draw_moves=draw_moves,
+        travel_moves=travel_moves,
+    )
+    return write_job_report(result, output_dir)

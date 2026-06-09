@@ -237,6 +237,7 @@ STITCH_GAP_MAX_ANGLE_DEG = 20.0
 REORDER_ENABLED = True
 DRAW_ORDER_MODE = "auto"  # auto | nearest | source | line_lr
 DRAW_ORDER_LINE_TOL_MM = 3.0
+DRAW_ORDER_TWO_OPT_ENABLED = True
 CONTINUOUS_JOIN_EPS = 0.08
 # Handwriting mode needs softer continuity constraints to avoid excessive pen lifts
 # inside words built from fragmented vector contours.
@@ -8029,6 +8030,39 @@ def reorder_polylines(polylines: List[List[Tuple[float, float]]], logger=print) 
     return ordered
 
 
+def _two_opt_ordered_polylines(
+    polylines: List[List[Tuple[float, float]]],
+    *,
+    max_polylines: int = 600,
+    passes: int = 2,
+    min_gain_mm: float = 0.05,
+    logger=print,
+) -> List[List[Tuple[float, float]]]:
+    if not DRAW_ORDER_TWO_OPT_ENABLED or len(polylines) < 4 or len(polylines) > int(max_polylines):
+        return polylines
+    out = [list(poly) for poly in polylines]
+
+    def _travel(items: List[List[Tuple[float, float]]], idx: int) -> float:
+        return points_distance(items[idx][-1], items[idx + 1][0])
+
+    for _ in range(max(1, int(passes))):
+        improved = False
+        for i in range(0, len(out) - 2):
+            for j in range(i + 1, len(out) - 1):
+                before = _travel(out, i) + _travel(out, j)
+                middle = [list(reversed(poly)) for poly in reversed(out[i + 1 : j + 1])]
+                candidate = out[: i + 1] + middle + out[j + 1 :]
+                after = _travel(candidate, i) + _travel(candidate, j)
+                if before - after > float(min_gain_mm):
+                    out = candidate
+                    improved = True
+        if not improved:
+            break
+    if logger and out != polylines:
+        logger(f"Reorder: two-opt improved {len(out)} polylines.")
+    return out
+
+
 def merge_handwriting_word_strokes(
     polylines: List[List[Tuple[float, float]]],
     logger=print,
@@ -9541,6 +9575,75 @@ def send_to_grbl(
         z_delay_up=Z_DELAY_UP,
     )
 
+
+def _prepared_pack_gcode_for_clean_source(input_path: Path) -> Optional[Path]:
+    """Return sibling prepared G-code for *_pack/a4_clean_source.pdf inputs.
+
+    Package clean-source PDFs are reference artifacts, not fresh drawing inputs.
+    Re-running the full PDF pipeline on them fits the already-normalized page a
+    second time and can shift/scale the drawing. If a package G-code exists,
+    use it directly.
+    """
+
+    try:
+        p = Path(input_path)
+    except Exception:
+        return None
+    if p.name.lower() != "a4_clean_source.pdf":
+        return None
+    if not p.parent.name.lower().endswith("_pack"):
+        return None
+    for name in ("page_01.gcode", "page_01.nc"):
+        candidate = p.parent / name
+        if candidate.exists() and candidate.is_file():
+            return candidate
+    return None
+
+
+def _run_prepared_pack_gcode(
+    prepared_gcode: Path,
+    log,
+    *,
+    com: str,
+    baud: str,
+    send_to_plotter: bool,
+    output_path: Optional[Path],
+    auto_resume: bool,
+) -> Tuple[bool, str]:
+    log(
+        "Prepared package clean-source detected: using sibling "
+        f"{prepared_gcode.name} directly, no PDF reconversion/refit."
+    )
+    gcode_lines, gcode_draw, gcode_travel, gcode_bounds = summarize_gcode_file(prepared_gcode)
+    log(
+        f"Prepared package G-code stats: lines={gcode_lines}, draw={gcode_draw}, travel={gcode_travel}, "
+        f"bounds={gcode_bounds[0]:.3f}..{gcode_bounds[1]:.3f} x, "
+        f"{gcode_bounds[2]:.3f}..{gcode_bounds[3]:.3f} y"
+    )
+    pf_ok, pf_msg = preflight_check_gcode(prepared_gcode, logger=log)
+    if not pf_ok:
+        return False, f"Preflight failed: {pf_msg}"
+    log(f"Preflight: {pf_msg}")
+
+    if output_path is not None:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(prepared_gcode.read_text(encoding="utf-8"), encoding="utf-8")
+        log(f"Saved: {output_path}")
+
+    if send_to_plotter:
+        plot_time_s = send_to_grbl(
+            prepared_gcode,
+            com,
+            baud,
+            log,
+            sleep_after=True,
+            auto_resume=bool(auto_resume),
+            max_resume_attempts=1,
+        )
+        return True, f"Done: {prepared_gcode.name} sent from package. Plot time: {format_duration_hms(plot_time_s)} ({plot_time_s:.1f}s)"
+    return True, f"Done: {prepared_gcode.name} prepared from package."
+
+
 def run_pipeline(
     input_path: Path,
     log,
@@ -9555,6 +9658,17 @@ def run_pipeline(
     global HANDWRITING_STROKE_ACTIVE
     global HANDWRITING_CYRILLIC_ACTIVE
     try:
+        prepared_gcode = _prepared_pack_gcode_for_clean_source(input_path)
+        if prepared_gcode is not None:
+            return _run_prepared_pack_gcode(
+                prepared_gcode,
+                log,
+                com=com,
+                baud=baud,
+                send_to_plotter=send_to_plotter,
+                output_path=output_path,
+                auto_resume=auto_resume,
+            )
         HANDWRITING_STROKE_ACTIVE = False
         HANDWRITING_CYRILLIC_ACTIVE = False
         with tempfile.TemporaryDirectory(dir=str(ensure_local_tmp_root()), ignore_cleanup_errors=True) as td:

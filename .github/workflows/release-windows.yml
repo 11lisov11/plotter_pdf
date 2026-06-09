@@ -1,0 +1,40 @@
+name: Release Windows
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version label for the zip artifact"
+        required: true
+        default: "dev"
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build Windows bundle
+        shell: pwsh
+        run: powershell -ExecutionPolicy Bypass -File scripts\build_windows_release.ps1 -Version "${{ inputs.version }}"
+
+      - name: Verify expected files
+        shell: pwsh
+        run: |
+          Test-Path dist\PlotterPDF\PlotterPDF_GUI.exe
+          Test-Path dist\PlotterPDF\plotter-pdf.exe
+          Test-Path dist\PlotterPDF\plotter-pdf-self-check.exe
+          Get-ChildItem dist\plotter_pdf_windows_*.zip
+
+      - name: Upload Windows zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: plotter_pdf_windows_${{ inputs.version }}
+          path: dist/plotter_pdf_windows_*.zip

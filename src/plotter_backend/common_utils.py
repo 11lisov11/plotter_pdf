@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import math
 import sys
+from dataclasses import asdict, is_dataclass
 from pathlib import Path
 from typing import Any, Callable, List, Optional, Pattern, Tuple
 
@@ -56,6 +58,26 @@ def safe_logger(logger):
             pass
 
     return _emit
+
+
+def clean_report_value(value: Any) -> Any:
+    if value is None or isinstance(value, (str, bool, int)):
+        return value
+    if isinstance(value, float):
+        return value if math.isfinite(value) else None
+    if isinstance(value, Path):
+        return str(value)
+    if is_dataclass(value):
+        return clean_report_value(asdict(value))
+    if isinstance(value, dict):
+        return {str(clean_report_value(k)): clean_report_value(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple, set)):
+        return [clean_report_value(v) for v in value]
+    try:
+        json.dumps(value)
+        return value
+    except TypeError:
+        return safe_log_text(value)
 
 
 def resolve_bundle_root(*, file_path: str, sys_module=sys) -> Path:

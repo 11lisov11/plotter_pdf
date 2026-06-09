@@ -47,8 +47,23 @@ def _safe_pen_up_commands() -> tuple[str, ...]:
         "G92 Z0.0000",
         "G0 Z0.0000 F800.0",
         "G4 P0.05",
+        "G0 X0.0000 Y0.0000 F900.0",
         "M5",
     )
+
+
+def _wait_for_idle(ser, *, attempts: int = 8, delay_s: float = 0.12) -> bool:
+    for _ in range(max(1, int(attempts))):
+        try:
+            ser.write(b"?")
+            ser.flush()
+            time.sleep(max(0.0, float(delay_s)))
+            line = ser.readline().decode("ascii", errors="replace")
+        except Exception:
+            line = ""
+        if "<Idle" in line:
+            return True
+    return False
 
 
 def main(argv: list[str]) -> int:
@@ -105,14 +120,25 @@ def main(argv: list[str]) -> int:
         except Exception:
             pass
 
-        # Best-effort safe teardown: force pen up, stop spindle/servo, release steppers.
-        for cmd in (*_safe_pen_up_commands(), "$1=0"):
+        # Best-effort safe teardown: force pen up, return XY home, stop spindle/servo.
+        for cmd in _safe_pen_up_commands():
             try:
                 ser.write((cmd + "\n").encode("ascii"))
                 ser.flush()
                 time.sleep(0.12)
             except Exception:
                 pass
+
+        if not _wait_for_idle(ser):
+            print("Motors not released: controller did not confirm Idle after safe park.")
+            return 1
+
+        try:
+            ser.write(b"$1=0\n")
+            ser.flush()
+            time.sleep(0.12)
+        except Exception:
+            pass
 
         if ns.sleep:
             try:

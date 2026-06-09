@@ -4,6 +4,9 @@ import math
 from typing import Dict, Optional, Tuple
 
 
+A3_SECOND_PASS_POST_SHIFT_Y_MM = 4.0
+
+
 def plan_tiled_passes_for_sheet(
     sheet_w_mm: float,
     sheet_h_mm: float,
@@ -171,8 +174,8 @@ def sheet_pass_post_translation_mm(
 
     # Canonical physical A3 workflow on the current machine:
     # after the 180 deg sheet flip, the second pass must be drawn
-    # 3 mm higher relative to the machine home point.
+    # with the calibrated post-shift shared by code, docs, and tests.
     if fmt == "a3" and cols == 2 and rows == 1 and col == 2 and row == 1:
-        return 0.0, 3.0
+        return 0.0, A3_SECOND_PASS_POST_SHIFT_Y_MM
     return 0.0, 0.0
 

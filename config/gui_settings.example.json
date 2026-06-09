@@ -1,0 +1,20 @@
+{
+  "baud": "115200",
+  "com": "",
+  "draw_order": "auto",
+  "handwriting": false,
+  "open_preview": false,
+  "output_dir": "_plotter_jobs",
+  "pass_col": 1,
+  "pass_cols": 1,
+  "pass_row": 1,
+  "pass_rows": 1,
+  "quality": "normal",
+  "sheet_anchor": "center",
+  "sheet_format": "a4",
+  "sheet_height_mm": null,
+  "sheet_offset_x_mm": 0.0,
+  "sheet_offset_y_mm": 0.0,
+  "sheet_width_mm": null,
+  "tool": "pen"
+}

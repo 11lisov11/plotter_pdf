@@ -16,6 +16,7 @@ def make_final_with_preamble(
     go_home_before_draw: bool,
     go_home_after_draw: bool,
     startup_force_z_lift_mm: float = 4.0,
+    release_steppers_after_draw: bool = False,
 ) -> None:
     forced_lift = max(0.0, float(startup_force_z_lift_mm))
     startup_z = float(z_up) + forced_lift
@@ -52,7 +53,8 @@ def make_final_with_preamble(
         ),
         "M5",
         "G4 P0.10",
-        "$1=0",
     ]
+    if release_steppers_after_draw:
+        trailer.append("$1=0")
     final_gcode.write_text("\n".join(lines) + g + "\n".join(trailer) + "\n", encoding="utf-8")
 
