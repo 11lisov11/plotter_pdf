@@ -2,12 +2,11 @@ from __future__ import annotations
 
 import os
 import subprocess
-import sys
 from pathlib import Path
 
 from .job_report import write_job_report
 from .models import JobResult, JobSettings
-from .prepare_job import _append_sheet_args, _project_root, prepare_gcode_job
+from .prepare_job import _append_sheet_args, _plotter_cli_command, _runtime_root, prepare_gcode_job
 
 
 def _hardware_enabled(settings: JobSettings, confirm_hardware: bool) -> bool:
@@ -41,8 +40,7 @@ def draw_job(settings: JobSettings, *, confirm_hardware: bool = False) -> JobRes
 
     nc_path = output_dir / f"{Path(input_path).stem}_draw.nc"
     cmd = [
-        sys.executable,
-        str(_project_root() / "main.py"),
+        *_plotter_cli_command(),
         str(input_path),
         "--output",
         str(nc_path),
@@ -55,7 +53,7 @@ def draw_job(settings: JobSettings, *, confirm_hardware: bool = False) -> JobRes
     _append_sheet_args(cmd, settings)
     proc = subprocess.run(
         cmd,
-        cwd=str(_project_root()),
+        cwd=str(_runtime_root()),
         text=True,
         encoding="utf-8",
         errors="replace",

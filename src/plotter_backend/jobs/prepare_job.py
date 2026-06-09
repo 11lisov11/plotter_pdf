@@ -13,6 +13,20 @@ def _project_root() -> Path:
     return Path(__file__).resolve().parents[3]
 
 
+def _runtime_root() -> Path:
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent
+    return _project_root()
+
+
+def _plotter_cli_command() -> list[str]:
+    if getattr(sys, "frozen", False):
+        exe = _runtime_root() / "plotter-pdf.exe"
+        if exe.exists():
+            return [str(exe)]
+    return [sys.executable, str(_project_root() / "main.py")]
+
+
 def _append_sheet_args(args: list[str], settings: JobSettings) -> None:
     args.extend(["--sheet-format", settings.sheet_format])
     if settings.sheet_width_mm is not None:
@@ -47,8 +61,7 @@ def prepare_gcode_job(settings: JobSettings) -> JobResult:
     nc_path = output_dir / f"{input_path.stem}_prepared.nc"
     gcode_path = output_dir / f"{input_path.stem}_prepared.gcode"
     cmd = [
-        sys.executable,
-        str(_project_root() / "main.py"),
+        *_plotter_cli_command(),
         str(input_path),
         "--dry-run",
         "--output",
@@ -64,7 +77,7 @@ def prepare_gcode_job(settings: JobSettings) -> JobResult:
 
     proc = subprocess.run(
         cmd,
-        cwd=str(_project_root()),
+        cwd=str(_runtime_root()),
         text=True,
         encoding="utf-8",
         errors="replace",
