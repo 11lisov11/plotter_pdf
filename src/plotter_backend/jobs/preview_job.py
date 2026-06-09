@@ -9,8 +9,6 @@ from pathlib import Path
 from .models import JobResult, JobSettings
 from .prepare_job import prepare_gcode_job
 
-from scripts.gcode_to_svg_preview import gcode_to_polylines
-
 
 _WORD_RE = re.compile(r"([A-Z])\s*(-?\d+(?:\.\d+)?)", re.IGNORECASE)
 _SHEET_SIZES_MM = {
@@ -37,6 +35,114 @@ def _detect_pen_z(lines: list[str]) -> tuple[float | None, float | None]:
     if len(rounded) < 2:
         return None, None
     return min(rounded), max(rounded)
+
+
+def _strip_gcode_comment(line: str) -> str:
+    out: list[str] = []
+    in_paren = False
+    for char in line:
+        if char == "(":
+            in_paren = True
+            continue
+        if char == ")":
+            in_paren = False
+            continue
+        if char == ";" and not in_paren:
+            break
+        if not in_paren:
+            out.append(char)
+    return "".join(out)
+
+
+def _parse_gcode_words(line: str) -> dict[str, float]:
+    return {letter.upper(): float(value) for letter, value in _WORD_RE.findall(_strip_gcode_comment(line))}
+
+
+def _gcode_to_polylines(
+    lines: list[str],
+    *,
+    z_up: float | None,
+    z_down: float | None,
+) -> list[list[tuple[float, float]]]:
+    out: list[list[tuple[float, float]]] = []
+    current: list[tuple[float, float]] = []
+    x = 0.0
+    y = 0.0
+    z = z_up if z_up is not None else 0.0
+    abs_mode = True
+    modal_g = 0
+    pen_down = False
+    z_tol = 0.05
+
+    def flush() -> None:
+        nonlocal current
+        if len(current) >= 2:
+            out.append(current)
+        current = []
+
+    for raw_line in lines:
+        line = _strip_gcode_comment(raw_line).strip().upper()
+        if not line:
+            continue
+        if "G90" in line:
+            abs_mode = True
+        if "G91" in line:
+            abs_mode = False
+        if "M3" in line:
+            pen_down = True
+        if "M5" in line:
+            pen_down = False
+            flush()
+
+        words = _parse_gcode_words(line)
+        if "G" in words:
+            next_g = int(words["G"])
+            if next_g in {0, 1, 2, 3, 92}:
+                modal_g = next_g
+            if next_g == 92:
+                if "X" in words:
+                    x = float(words["X"])
+                if "Y" in words:
+                    y = float(words["Y"])
+                flush()
+                continue
+
+        if "Z" in words:
+            next_z = float(words["Z"]) if abs_mode else z + float(words["Z"])
+            if z_down is not None and abs(next_z - z_down) <= z_tol:
+                pen_down = True
+            elif z_up is not None and abs(next_z - z_up) <= z_tol:
+                pen_down = False
+                flush()
+            z = next_z
+
+        has_xy = "X" in words or "Y" in words
+        if not has_xy:
+            continue
+
+        next_x = x
+        next_y = y
+        if "X" in words:
+            value = float(words["X"])
+            next_x = value if abs_mode else x + value
+        if "Y" in words:
+            value = float(words["Y"])
+            next_y = value if abs_mode else y + value
+
+        is_motion = modal_g in {0, 1, 2, 3}
+        draw_active = pen_down or (z_up is None and z_down is None)
+        if is_motion and modal_g != 0 and draw_active:
+            if not current:
+                current = [(x, y)]
+            current.append((next_x, next_y))
+        else:
+            flush()
+
+        x = next_x
+        y = next_y
+
+    flush()
+    return out
 
 
 def _open_preview(path: Path) -> None:
@@ -388,7 +494,7 @@ def preview_job(settings: JobSettings) -> JobResult:
     try:
         lines = nc_path.read_text(encoding="utf-8", errors="ignore").splitlines()
         z_up, z_down = _detect_pen_z(lines)
-        polylines = gcode_to_polylines(lines, z_up=z_up, z_down=z_down)
+        polylines = _gcode_to_polylines(lines, z_up=z_up, z_down=z_down)
         _write_interactive_preview(polylines, svg_path, html_path, preview_settings, result.bounds)
         result.preview_svg_path = svg_path
         result.message = f"Предпросмотр открыт: {html_path}"
