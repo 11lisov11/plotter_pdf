@@ -6,7 +6,7 @@ from pathlib import Path
 GCODE_MOVES_WITH_XY = {"G0", "G1", "G2", "G3", "G5", "G80", "G81", "G82", "G83", "G84", "G85", "G86", "G87", "G88", "G89"}
 
 
-def parse_args():
+def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Add pen-lift logic to XY gcode.")
     parser.add_argument("input_file", help="Source gcode file")
     parser.add_argument("--output", "-o", help="Output gcode file")
@@ -49,7 +49,7 @@ def parse_args():
     )
     parser.add_argument("--merge-short-travel-mm", type=float, default=0.0, help="Max XY distance for short-travel merge.")
     parser.add_argument("--merge-short-travel-feed", type=float, default=2200.0, help="Feed for merged short travel moves.")
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
 def split_comment(line: str):
@@ -402,8 +402,8 @@ def touch_pen_down(
     return out
 
 
-if __name__ == "__main__":
-    args = parse_args()
+def main(argv=None) -> int:
+    args = parse_args(argv)
     input_path = Path(args.input_file)
     output_path = Path(args.output) if args.output else input_path.with_name(f"{input_path.stem}_pen{input_path.suffix}")
 
@@ -438,3 +438,8 @@ if __name__ == "__main__":
     )
     output_path.write_text("\n".join(processed) + "\n", encoding="utf-8")
     print(f"saved: {output_path}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

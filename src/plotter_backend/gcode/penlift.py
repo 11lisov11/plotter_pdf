@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from typing import Callable, Optional, Sequence, Tuple
 
@@ -109,6 +110,19 @@ def run_penlift_postprocess(
                 f"{max(1.0, float(merge_short_travel_feed)):.1f}",
             ]
         )
+
+    if getattr(sys, "frozen", False):
+        try:
+            from src import penlift_postprocess
+
+            result = penlift_postprocess.main(cmd[2:])
+        except SystemExit as exc:
+            result = exc.code if isinstance(exc.code, int) else 1
+        except Exception as exc:
+            raise ConversionError(f"PenLift postprocess failed: {type(exc).__name__}: {exc}") from exc
+        if result not in (None, 0):
+            raise ConversionError(f"PenLift postprocess failed: exit code {result}")
+        return
 
     rc, out, err = run_cmd(cmd)
     if int(rc) != 0:
