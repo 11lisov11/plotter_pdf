@@ -31,6 +31,7 @@ def has_cli_action(args) -> bool:
         args.frame
         or args.calibrate_corners
         or args.pencil_wear_test
+        or args.draw_ready
         or args.input
         or args.plan_sheet
         or args.pencil_sharpened
@@ -42,6 +43,15 @@ def has_cli_action(args) -> bool:
 def build_cli_parser(backend: Any) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="PDF/SVG/FRW/CDW/DOC/DOCX -> Plotter converter")
     parser.add_argument("input", nargs="?", help="Path to PDF, SVG, FRW, CDW, DOC or DOCX file")
+    parser.add_argument("--draw-ready", default=None, help="Draw an already prepared ready-to-plot variant/package root.")
+    parser.add_argument("--kind", default="a4", help="Ready package kind for --draw-ready: a4, a3, a3_two_pass.")
+    parser.add_argument("--item", default=None, help="Ready package item for --draw-ready, e.g. page_01 or pass_02.")
+    parser.add_argument(
+        "--ready-sleep",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Send $SLP after --draw-ready sender completes.",
+    )
     parser.add_argument("--frame", action="store_true", help="Draw work area frame")
     parser.add_argument("--calibrate-corners", action="store_true", help="Draw 4 corner marks for calibration")
     parser.add_argument("--com", default=None, help="COM port (default detect)")
@@ -434,6 +444,53 @@ def apply_cli_quality_profile(backend: Any, args) -> Optional[int]:
 
 def run_cli_action(backend: Any, args, parser: argparse.ArgumentParser, *, com: str) -> int:
     output_path = optional_path_arg(args.output)
+
+    if args.draw_ready:
+        try:
+            from scripts.find_ready_package import find_first_ready_package
+        except Exception as exc:
+            print(f"Cannot import ready package selector: {type(exc).__name__}: {exc}")
+            return 1
+        try:
+            selection = find_first_ready_package(Path(args.draw_ready), kind=args.kind, item=args.item)
+            nc_path = Path(selection.nc)
+        except Exception as exc:
+            print(f"Ready package selection failed: {type(exc).__name__}: {exc}")
+            return 1
+        if not nc_path.exists():
+            print(f"Ready G-code not found: {nc_path}")
+            return 1
+        try:
+            has_coordinate_reset = any(
+                "G92" in line.upper().split(";", 1)[0]
+                for line in nc_path.read_text(encoding="utf-8", errors="ignore").splitlines()
+            )
+        except Exception:
+            has_coordinate_reset = False
+        if has_coordinate_reset:
+            print(f"Preflight failed for ready file: {nc_path}: coordinate reset G92 is not allowed in ready draw files.")
+            return 1
+        pf_ok, pf_msg = backend.preflight_check_gcode(nc_path, logger=print)
+        print(f"Ready preflight: {pf_msg}")
+        if not pf_ok:
+            return 1
+        if args.dry_run or args.preview:
+            print(f"Ready file selected: {nc_path}")
+            return 0
+        plot_time_s = backend.send_to_grbl(
+            nc_path,
+            com,
+            args.baud,
+            print,
+            sleep_after=bool(args.ready_sleep),
+            auto_resume=bool(args.auto_resume),
+        )
+        try:
+            duration = backend.format_duration_hms(float(plot_time_s))
+        except Exception:
+            duration = f"{float(plot_time_s):.1f}s"
+        print(f"Ready draw complete: {nc_path} ({duration})")
+        return 0
 
     if args.plan_sheet and not args.frame and not args.calibrate_corners and not args.pencil_wear_test and not args.input:
         return 0

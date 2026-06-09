@@ -15,7 +15,7 @@ if errorlevel 1 (
 )
 
 set "COM=%~1"
-if "%COM%"=="" set "COM=COM5"
+if "%COM%"=="" set "COM=COM6"
 set "BAUD=%~2"
 if "%BAUD%"=="" set "BAUD=115200"
 

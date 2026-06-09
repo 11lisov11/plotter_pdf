@@ -152,6 +152,49 @@ def arc_extents_xy(start: Point, end: Point, center: Point, cw: bool) -> Tuple[f
     return min(xs), max(xs), min(ys), max(ys)
 
 
+def arc_center_from_radius(start: Point, end: Point, radius: float, *, cw: bool) -> Optional[Point]:
+    x0, y0 = start
+    x1, y1 = end
+    r = float(radius)
+    abs_r = abs(r)
+    dx = x1 - x0
+    dy = y1 - y0
+    chord = math.hypot(dx, dy)
+    if chord <= 1e-12 or abs_r <= 1e-12 or chord > 2.0 * abs_r + 1e-9:
+        return None
+
+    mx = (x0 + x1) * 0.5
+    my = (y0 + y1) * 0.5
+    half = chord * 0.5
+    h_sq = max(0.0, abs_r * abs_r - half * half)
+    h = math.sqrt(h_sq)
+    ux = -dy / chord
+    uy = dx / chord
+    candidates = ((mx + ux * h, my + uy * h), (mx - ux * h, my - uy * h))
+    want_minor = r >= 0.0
+
+    def _sweep(center: Point) -> float:
+        cx, cy = center
+        a0 = math.atan2(y0 - cy, x0 - cx)
+        a1 = math.atan2(y1 - cy, x1 - cx)
+        if cw:
+            while a1 > a0:
+                a1 -= 2.0 * math.pi
+        else:
+            while a1 < a0:
+                a1 += 2.0 * math.pi
+        return a1 - a0
+
+    fallback = candidates[0]
+    for center in candidates:
+        sweep = _sweep(center)
+        is_minor = abs(sweep) <= math.pi + 1e-9
+        if is_minor == want_minor:
+            return float(center[0]), float(center[1])
+        fallback = center
+    return float(fallback[0]), float(fallback[1])
+
+
 def polyline_is_near_line(poly: Polyline, tol_mm: float) -> bool:
     if len(poly) < 3:
         return False

@@ -1,0 +1,113 @@
+name: Release Windows
+
+on:
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version label for the zip artifact"
+        required: true
+        default: "dev"
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    env:
+      RELEASE_VERSION: ${{ github.event.inputs.version || format('run-{0}', github.run_number) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build Windows bundle
+        shell: pwsh
+        run: powershell -ExecutionPolicy Bypass -File scripts\build_windows_release.ps1 -Version "$env:RELEASE_VERSION"
+
+      - name: Verify expected files
+        shell: pwsh
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $false
+          $expectedBundleFiles = @(
+            "dist\PlotterPDF\PlotterPDF_GUI.exe",
+            "dist\PlotterPDF\plotter-pdf.exe",
+            "dist\PlotterPDF\plotter-pdf-self-check.exe",
+            "dist\PlotterPDF\config",
+            "dist\PlotterPDF\examples",
+            "dist\PlotterPDF\examples\simple_square.svg",
+            "dist\PlotterPDF\examples\README_examples.md",
+            "dist\PlotterPDF\README_START_HERE.md"
+          )
+          foreach ($path in $expectedBundleFiles) {
+            if (-not (Test-Path -LiteralPath $path)) {
+              throw "Missing expected bundle path: $path"
+            }
+          }
+
+          $zip = Get-ChildItem dist\plotter_pdf_windows_*.zip | Select-Object -First 1
+          if (-not $zip) {
+            throw "Missing Windows zip artifact."
+          }
+
+          $zipCheckDir = Join-Path $env:RUNNER_TEMP "plotter_pdf_zip_check"
+          if (Test-Path -LiteralPath $zipCheckDir) {
+            Remove-Item -Recurse -Force -LiteralPath $zipCheckDir
+          }
+          New-Item -ItemType Directory -Force -Path $zipCheckDir | Out-Null
+          Expand-Archive -LiteralPath $zip.FullName -DestinationPath $zipCheckDir
+
+          $expectedZipFiles = @(
+            "PlotterPDF\PlotterPDF_GUI.exe",
+            "PlotterPDF\plotter-pdf.exe",
+            "PlotterPDF\plotter-pdf-self-check.exe",
+            "PlotterPDF\config",
+            "PlotterPDF\examples",
+            "PlotterPDF\examples\simple_square.svg",
+            "PlotterPDF\examples\README_examples.md",
+            "PlotterPDF\README_START_HERE.md"
+          )
+          foreach ($path in $expectedZipFiles) {
+            $fullPath = Join-Path $zipCheckDir $path
+            if (-not (Test-Path -LiteralPath $fullPath)) {
+              throw "Missing expected zip path: $path"
+            }
+          }
+
+          & dist\PlotterPDF\plotter-pdf.exe --help > $null
+          $cliHelpExitCode = $LASTEXITCODE
+          if ($cliHelpExitCode -ne 0) {
+            throw "plotter-pdf.exe --help failed with exit code $cliHelpExitCode"
+          }
+
+          & dist\PlotterPDF\plotter-pdf.exe self-check
+          $cliSelfCheckExitCode = $LASTEXITCODE
+          if (@(0, 2) -notcontains $cliSelfCheckExitCode) {
+            throw "plotter-pdf.exe self-check failed with exit code $cliSelfCheckExitCode"
+          }
+
+          & dist\PlotterPDF\plotter-pdf-self-check.exe
+          $selfCheckExitCode = $LASTEXITCODE
+          if (@(0, 2) -notcontains $selfCheckExitCode) {
+            throw "plotter-pdf-self-check.exe failed with exit code $selfCheckExitCode"
+          }
+
+          $gui = Start-Process -FilePath (Resolve-Path "dist\PlotterPDF\PlotterPDF_GUI.exe") -ArgumentList "--help" -Wait -PassThru
+          if ($gui.ExitCode -ne 0) {
+            throw "PlotterPDF_GUI.exe --help failed with exit code $($gui.ExitCode)"
+          }
+
+          Get-ChildItem dist\plotter_pdf_windows_*.zip
+          exit 0
+
+      - name: Upload Windows zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: plotter_pdf_windows_${{ github.event.inputs.version || format('run-{0}', github.run_number) }}
+          path: dist/plotter_pdf_windows_*.zip

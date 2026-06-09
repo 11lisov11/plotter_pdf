@@ -3,32 +3,39 @@ import math
 import re
 from pathlib import Path
 
+from src.plotter_backend.gcode.bounds import pen_down_from_z_level
+from src.plotter_backend.geometry.arc_fit import arc_center_from_radius
+
 
 def _split_comment(line: str) -> str:
-    # Keep it simple: drop everything after ';' or '('.
     s = line.strip()
     if not s:
         return ""
     if ";" in s:
         s = s.split(";", 1)[0].strip()
-    if "(" in s:
-        s = s.split("(", 1)[0].strip()
-    return s
+    out: list[str] = []
+    depth = 0
+    for ch in s:
+        if ch == "(":
+            depth += 1
+            continue
+        if ch == ")" and depth:
+            depth -= 1
+            continue
+        if depth == 0:
+            out.append(ch)
+    return "".join(out).strip()
 
 
 _G_RE = re.compile(r"\bG\d+(?:\.\d+)?\b", re.IGNORECASE)
+_WORD_RE = re.compile(r"([A-Za-z])\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)")
 
 
 def _parse_words(body: str) -> dict:
     # Returns word map, e.g. {"X": 10.0, "Y": -5.0, "I": 1.2}
     out: dict[str, float] = {}
-    for tok in body.split():
-        if not tok:
-            continue
-        k = tok[0].upper()
-        v = tok[1:]
-        if not v:
-            continue
+    for k_raw, v in _WORD_RE.findall(body):
+        k = k_raw.upper()
         if k in {"G", "M"}:
             continue
         try:
@@ -101,11 +108,23 @@ def gcode_to_polylines(lines: list[str], *, z_down: float | None = None, z_up: f
         # Ignore $ commands and non-motion M codes.
         if body.startswith("$"):
             continue
-        if body[0].upper() == "M":
-            continue
+
+        for m_raw in re.findall(r"M\s*(\d+(?:\.\d+)?)", body, flags=re.IGNORECASE):
+            try:
+                mval = int(round(float(m_raw)))
+            except Exception:
+                continue
+            if mval == 3:
+                pen_down = True
+            elif mval == 5:
+                if cur_poly and len(cur_poly) >= 2:
+                    out.append(cur_poly)
+                cur_poly = []
+                pen_down = False
 
         # First, handle G modal changes and extract motion command, if any.
         motion_g = None
+        coordinate_reset = False
         for gtok in _G_RE.findall(body):
             try:
                 gval = float(gtok[1:])
@@ -119,6 +138,8 @@ def gcode_to_polylines(lines: list[str], *, z_down: float | None = None, z_up: f
                 ijk_abs = True
             elif abs(gval - 91.1) <= 1e-6:
                 ijk_abs = False
+            elif abs(gval - 92.0) <= 1e-6:
+                coordinate_reset = True
             elif abs(gval - 0.0) <= 1e-6:
                 motion_g = 0
             elif abs(gval - 1.0) <= 1e-6:
@@ -134,7 +155,22 @@ def gcode_to_polylines(lines: list[str], *, z_down: float | None = None, z_up: f
         if "Z" in words:
             z = float(words["Z"])
             cur_z = z if abs_mode else (cur_z + z)
-            _update_pen_state()
+            if z_down is not None and z_up is not None:
+                pen_down = pen_down_from_z_level(cur_z, float(z_up), float(z_down))
+
+        if coordinate_reset:
+            if cur_poly and len(cur_poly) >= 2:
+                out.append(cur_poly)
+            cur_poly = []
+            if "X" in words:
+                cur_x = float(words["X"])
+            if "Y" in words:
+                cur_y = float(words["Y"])
+            if "Z" in words:
+                cur_z = float(words["Z"])
+                if z_down is not None and z_up is not None:
+                    pen_down = pen_down_from_z_level(cur_z, float(z_up), float(z_down))
+            continue
 
         if motion_g is not None:
             motion_mode = motion_g
@@ -170,6 +206,12 @@ def gcode_to_polylines(lines: list[str], *, z_down: float | None = None, z_up: f
                 center = (i, j) if ijk_abs else (cur_x + i, cur_y + j)
                 pts = _arc_points(start, end, center, cw=(g == 2))
                 cur_poly.extend(pts)
+            elif g in (2, 3) and "R" in words:
+                center = arc_center_from_radius(start, end, float(words["R"]), cw=(g == 2))
+                if center is None:
+                    cur_poly.append(end)
+                else:
+                    cur_poly.extend(_arc_points(start, end, center, cw=(g == 2)))
             else:
                 cur_poly.append(end)
         else:
@@ -208,13 +250,14 @@ def write_svg(polylines: list[list[tuple[float, float]]], out_path: Path, *, inv
     vb_w = w + 2 * pad
     vb_h = h + 2 * pad
 
+    translate_y = -(y0 + y1)
     parts = [
         '<?xml version="1.0" encoding="UTF-8"?>',
         '<svg xmlns="http://www.w3.org/2000/svg" version="1.1"',
         f'     width="{vb_w:.3f}mm" height="{vb_h:.3f}mm" viewBox="{vb_x:.3f} {vb_y:.3f} {vb_w:.3f} {vb_h:.3f}">',
         # Invert Y by flipping around the midline; keeps text readable while mapping to page-like coords.
         f'  <g fill="none" stroke="#000" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round"'
-        f' transform="scale(1,-1) translate(0,-{(y0 + y1):.4f})">',
+        f' transform="scale(1,-1) translate(0,{translate_y:.4f})">',
     ]
 
     for poly in polylines:

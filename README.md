@@ -1,5 +1,58 @@
 # Plotter PDF CLI
 
+## Windows app status
+
+This repository now exposes both the legacy CLI and the packaged application entrypoints:
+
+```powershell
+python main.py --help
+python src\plotter_pdf_drawer.py --help
+plotter-pdf --help
+plotter-pdf self-check
+plotter-pdf-self-check
+plotter-pdf-gui --help
+```
+
+Self-check exit codes:
+
+- `0`: core environment is OK and every checked optional dependency/tool is available.
+- `1`: critical/core failure.
+- `2`: core environment is OK, but one or more optional dependencies/tools are missing, for example `PySide6` on a CLI-only machine.
+
+For local development without installing console scripts:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\dev_cli.ps1 --help
+powershell -ExecutionPolicy Bypass -File scripts\dev_gui.ps1 --help
+```
+
+Hardware tests and automated checks must not open a real COM port by default. Real plotter hardware is allowed only when explicitly requested and configured with:
+
+```powershell
+$env:PLOTTER_HARDWARE = "1"
+$env:PLOTTER_COM = "COM6"
+```
+
+The canonical A3 two-pass workflow is: pass 1 normal, pass 2 rotated 180 degrees, then post-shifted by `A3_SECOND_PASS_POST_SHIFT_Y_MM = 4.0`.
+
+Windows release artifacts are built by the manual GitHub Actions workflow `Release Windows` or locally with:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\build_windows_release.ps1 -Version dev
+```
+
+Expected bundle outputs:
+
+```text
+dist/PlotterPDF/PlotterPDF_GUI.exe
+dist/PlotterPDF/plotter-pdf.exe
+dist/PlotterPDF/plotter-pdf-self-check.exe
+dist/PlotterPDF/config/
+dist/PlotterPDF/examples/
+dist/PlotterPDF/README_START_HERE.md
+dist/plotter_pdf_windows_<version>.zip
+```
+
 `plotter_pdf` теперь ведётся как консольный проект для подготовки и отправки G-code на GRBL-плоттер под Windows. Десктопная оболочка и portable-build сценарии убраны из активной структуры репозитория. Основной рабочий контур: подготовка PDF/SVG/DOCX в G-code, калибровка, A4/A3 раскладка, A3-переворот второго прохода, превью и отправка в GRBL.
 
 ## Что оставлено

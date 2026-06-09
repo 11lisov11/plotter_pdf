@@ -33,6 +33,7 @@ corner_calibration_prepared.nc
 config/pencil_profile.json
 config/pencil_state.json
 config/pencil_wear_test_last.json
+config/gui_settings.json
 
 # Local user samples / fonts (do not version personal inputs)
 Katerine Plus SL.otf

@@ -1,0 +1,4 @@
+-e .[dev,gui,photo]
+pyinstaller>=6.8
+setuptools>=69
+wheel>=0.43

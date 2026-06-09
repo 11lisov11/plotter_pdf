@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="40mm" height="40mm" viewBox="0 0 40 40">
+  <title>PlotterPDF simple square example</title>
+  <rect x="5" y="5" width="30" height="30" fill="none" stroke="black" stroke-width="0.4"/>
+  <line x1="5" y1="5" x2="35" y2="35" stroke="black" stroke-width="0.3"/>
+  <line x1="35" y1="5" x2="5" y2="35" stroke="black" stroke-width="0.3"/>
+</svg>
