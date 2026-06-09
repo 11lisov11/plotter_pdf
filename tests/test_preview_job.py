@@ -40,3 +40,8 @@ def test_preview_job_writes_and_reports_visual_svg(tmp_path, monkeypatch) -> Non
     assert result.preview_svg_path.exists()
     assert "Предпросмотр открыт" in result.message
     assert "<svg" in result.preview_svg_path.read_text(encoding="utf-8")
+    html_path = nc_path.with_suffix(".preview.html")
+    assert html_path.exists()
+    html_text = html_path.read_text(encoding="utf-8")
+    assert "колесо - масштаб" in html_text
+    assert "текущий проход" in html_text
