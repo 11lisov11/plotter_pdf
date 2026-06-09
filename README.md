@@ -13,6 +13,12 @@ plotter-pdf-self-check
 plotter-pdf-gui --help
 ```
 
+Self-check exit codes:
+
+- `0`: core environment is OK and every checked optional dependency/tool is available.
+- `1`: critical/core failure.
+- `2`: core environment is OK, but one or more optional dependencies/tools are missing, for example `PySide6` on a CLI-only machine.
+
 For local development without installing console scripts:
 
 ```powershell

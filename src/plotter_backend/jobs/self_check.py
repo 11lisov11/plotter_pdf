@@ -49,11 +49,28 @@ def _fake_grbl_smoke() -> dict[str, Any]:
     return {"ok": unlock == "ok" and status.startswith("<Idle|"), "unlock": unlock, "status": status}
 
 
+def _runtime_root() -> Path:
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent
+    return Path(__file__).resolve().parents[3]
+
+
+def _apply_frozen_bundle_optional_checks(root: Path, optional: dict[str, bool]) -> None:
+    if not getattr(sys, "frozen", False):
+        return
+    if (root / "PlotterPDF_GUI.exe").exists():
+        optional["PySide6"] = True
+    if (root / "plotter-pdf.exe").exists():
+        optional["opencv"] = True
+        optional["hershey-fonts"] = True
+
+
 def run_self_check(*, json_out: Path | None = None) -> tuple[int, dict[str, Any]]:
-    root = Path(__file__).resolve().parents[3]
+    root = _runtime_root()
     config_path = root / "config" / "axis_profile.json"
     core = {name: _module_available(name) for name in CORE_MODULES}
     optional = {label: _module_available(module) for label, module in OPTIONAL_MODULES.items()}
+    _apply_frozen_bundle_optional_checks(root, optional)
     fake = _fake_grbl_smoke()
     hardware_requested = os.environ.get("PLOTTER_HARDWARE") == "1"
     hardware_com = os.environ.get("PLOTTER_COM", "").strip()
