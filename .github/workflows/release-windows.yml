@@ -34,6 +34,7 @@ jobs:
       - name: Verify expected files
         shell: pwsh
         run: |
+          $PSNativeCommandUseErrorActionPreference = $false
           $expectedBundleFiles = @(
             "dist\PlotterPDF\PlotterPDF_GUI.exe",
             "dist\PlotterPDF\plotter-pdf.exe",
