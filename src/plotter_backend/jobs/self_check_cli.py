@@ -15,8 +15,8 @@ except ImportError:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Run Plotter PDF environment self-check.")
-    parser.add_argument("--json-out", default=None, help="Optional path for JSON report.")
+    parser = argparse.ArgumentParser(description="Проверить окружение Plotter PDF.")
+    parser.add_argument("--json-out", default=None, help="Путь для JSON-отчета.")
     return parser
 
 
@@ -27,7 +27,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     exit_code, report = run_self_check(json_out=json_out)
     print(format_self_check_report(report))
     if json_out is not None:
-        print(f"JSON report: {json_out}")
+        print(f"JSON-отчет: {json_out}")
     return int(exit_code)
 
 

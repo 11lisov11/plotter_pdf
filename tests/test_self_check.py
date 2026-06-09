@@ -1,9 +1,16 @@
 from __future__ import annotations
 
 import json
+import sys
 
 from src.plotter_backend.jobs import self_check_cli
-from src.plotter_backend.jobs.self_check import format_self_check_report, run_self_check
+from src.plotter_backend.jobs.self_check import (
+    CORE_MODULES,
+    OPTIONAL_MODULES,
+    _apply_frozen_bundle_checks,
+    format_self_check_report,
+    run_self_check,
+)
 
 
 def _fake_report(*, ok: bool, optional_missing: list[str] | None = None, errors: list[str] | None = None) -> dict:
@@ -36,8 +43,8 @@ def test_self_check_runs_without_touching_hardware(tmp_path, monkeypatch) -> Non
 def test_self_check_text_contains_core_status() -> None:
     _exit_code, report = run_self_check()
     text = format_self_check_report(report)
-    assert "Plotter PDF self-check" in text
-    assert "Hardware tests:" in text
+    assert "Проверка Plotter PDF" in text
+    assert "Аппаратные тесты:" in text
 
 
 def test_self_check_cli_returns_optional_missing_exit_code(monkeypatch) -> None:
@@ -58,3 +65,22 @@ def test_self_check_cli_returns_critical_exit_code(monkeypatch) -> None:
     )
 
     assert self_check_cli.main([]) == 1
+
+
+def test_frozen_bundle_self_check_accepts_sibling_cli_exe(tmp_path, monkeypatch) -> None:
+    self_check_exe = tmp_path / "plotter-pdf-self-check.exe"
+    self_check_exe.write_text("", encoding="utf-8")
+    (tmp_path / "plotter-pdf.exe").write_text("", encoding="utf-8")
+    (tmp_path / "PlotterPDF_GUI.exe").write_text("", encoding="utf-8")
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    monkeypatch.setattr(sys, "executable", str(self_check_exe))
+
+    core = dict.fromkeys(CORE_MODULES, False)
+    optional = dict.fromkeys(OPTIONAL_MODULES, False)
+
+    _apply_frozen_bundle_checks(tmp_path, core, optional)
+
+    assert all(core.values())
+    assert optional["PySide6"] is True
+    assert optional["opencv"] is True
+    assert optional["hershey-fonts"] is True

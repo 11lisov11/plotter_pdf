@@ -6,8 +6,8 @@ from typing import Optional
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Plotter PDF GUI")
-    parser.add_argument("--self-check", action="store_true", help="Run self-check in console mode and exit.")
+    parser = argparse.ArgumentParser(description="Графический интерфейс Plotter PDF")
+    parser.add_argument("--self-check", action="store_true", help="Запустить самопроверку в консоли и выйти.")
     return parser
 
 
@@ -21,7 +21,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     try:
         from PySide6.QtWidgets import QApplication
     except Exception as exc:
-        print(f"PySide6 is required for GUI. Install with: pip install -e \".[gui]\" ({type(exc).__name__}: {exc})")
+        print(f"Для GUI нужен PySide6. Установите: pip install -e \".[gui]\" ({type(exc).__name__}: {exc})")
         return 2
     try:
         from .main_window import MainWindow

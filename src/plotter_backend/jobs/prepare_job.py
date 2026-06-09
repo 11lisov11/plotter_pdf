@@ -52,10 +52,10 @@ def prepare_gcode_job(settings: JobSettings) -> JobResult:
     output_dir = settings.normalized_output_dir()
     output_dir.mkdir(parents=True, exist_ok=True)
     if input_path is None:
-        result = JobResult(False, "Input file is required.", output_dir=output_dir, errors=["missing_input"])
+        result = JobResult(False, "Нужно выбрать файл чертежа.", output_dir=output_dir, errors=["missing_input"])
         return write_job_report(result, output_dir)
     if not input_path.exists():
-        result = JobResult(False, f"Input not found: {input_path}", output_dir=output_dir, errors=["input_not_found"])
+        result = JobResult(False, f"Файл не найден: {input_path}", output_dir=output_dir, errors=["input_not_found"])
         return write_job_report(result, output_dir)
 
     nc_path = output_dir / f"{input_path.stem}_prepared.nc"
@@ -88,7 +88,7 @@ def prepare_gcode_job(settings: JobSettings) -> JobResult:
     if proc.returncode != 0:
         result = JobResult(
             False,
-            f"Prepare failed with exit code {proc.returncode}.",
+            f"Подготовка завершилась с ошибкой (код {proc.returncode}).",
             output_dir=output_dir,
             nc_path=nc_path,
             gcode_path=gcode_path,
@@ -101,7 +101,7 @@ def prepare_gcode_job(settings: JobSettings) -> JobResult:
     line_count, draw_moves, travel_moves, bounds = summarize_existing_gcode(nc_path)
     result = JobResult(
         True,
-        proc.stdout.strip() or "G-code prepared.",
+        f"G-code подготовлен: {nc_path}",
         output_dir=output_dir,
         nc_path=nc_path if nc_path.exists() else None,
         gcode_path=gcode_path if gcode_path.exists() else None,
