@@ -43,5 +43,5 @@ def test_preview_job_writes_and_reports_visual_svg(tmp_path, monkeypatch) -> Non
     html_path = nc_path.with_suffix(".preview.html")
     assert html_path.exists()
     html_text = html_path.read_text(encoding="utf-8")
-    assert "колесо - масштаб" in html_text
-    assert "текущий проход" in html_text
+    assert "реальный G-code после всех правил" in html_text
+    assert "рабочая область плоттера / проход" in html_text
