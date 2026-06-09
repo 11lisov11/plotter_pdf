@@ -244,6 +244,135 @@ def _write_interactive_preview(
     html_path.write_text(html_text, encoding="utf-8")
 
 
+def _write_interactive_preview(
+    polylines: list[list[tuple[float, float]]],
+    svg_path: Path,
+    html_path: Path,
+    settings: JobSettings,
+    job_bounds: tuple[float, float, float, float] | None = None,
+) -> None:
+    drawing = job_bounds or _polyline_bounds(polylines)
+    union = _union_bounds(_WORKSPACE_BOUNDS, drawing)
+    ux0, ux1, uy0, uy1 = union
+    pad = 10.0
+    view_x = ux0 - pad
+    view_y = -uy1 - pad
+    view_w = (ux1 - ux0) + pad * 2.0
+    view_h = (uy1 - uy0) + pad * 2.0
+
+    draw_x, draw_y, draw_w, draw_h = _display_rect(drawing)
+    work_x, work_y, work_w, work_h = _display_rect(_WORKSPACE_BOUNDS)
+    cols = max(1, int(settings.pass_cols or 1))
+    rows = max(1, int(settings.pass_rows or 1))
+    if str(settings.sheet_format).lower() == "a3" and cols == 1 and rows == 1:
+        cols = 2
+        rows = 1
+    pass_col = min(max(1, int(settings.pass_col or 1)), cols)
+    pass_row = min(max(1, int(settings.pass_row or 1)), rows)
+    cell_w = work_w / cols
+    cell_h = work_h / rows
+    selected_x = work_x + (pass_col - 1) * cell_w
+    selected_y = work_y + (pass_row - 1) * cell_h
+
+    paths = "\n".join(
+        f'      <path d="{_path_d(polyline)}" />'
+        for polyline in polylines
+        if len(polyline) >= 2
+    )
+    vertical_splits = "\n".join(
+        f'      <line x1="{work_x + cell_w * col:.4f}" y1="{work_y:.4f}" x2="{work_x + cell_w * col:.4f}" y2="{work_y + work_h:.4f}" />'
+        for col in range(1, cols)
+    )
+    horizontal_splits = "\n".join(
+        f'      <line x1="{work_x:.4f}" y1="{work_y + cell_h * row:.4f}" x2="{work_x + work_w:.4f}" y2="{work_y + cell_h * row:.4f}" />'
+        for row in range(1, rows)
+    )
+    sheet_label = html.escape(str(settings.sheet_format).upper())
+    svg = f"""<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1"
+     width="{view_w:.3f}mm" height="{view_h:.3f}mm" viewBox="{view_x:.3f} {view_y:.3f} {view_w:.3f} {view_h:.3f}">
+  <rect x="{view_x:.4f}" y="{view_y:.4f}" width="{view_w:.4f}" height="{view_h:.4f}" fill="#f7f4ec" />
+  <g fill="none" vector-effect="non-scaling-stroke">
+    <g id="workspace">
+      <rect x="{work_x:.4f}" y="{work_y:.4f}" width="{work_w:.4f}" height="{work_h:.4f}" stroke="#f97316" stroke-width="0.45" stroke-dasharray="4 3" />
+      <rect x="{selected_x:.4f}" y="{selected_y:.4f}" width="{cell_w:.4f}" height="{cell_h:.4f}" fill="#dbeafe" fill-opacity="0.25" stroke="#1d4ed8" stroke-width="0.4" />
+{vertical_splits}
+{horizontal_splits}
+      <text x="{work_x + 3.0:.4f}" y="{work_y + work_h - 4.0:.4f}" fill="#c2410c" font-family="Segoe UI, Arial, sans-serif" font-size="3.5">рабочая область плоттера / проход {pass_col}x{pass_row} из {cols}x{rows}</text>
+    </g>
+    <g id="prepared-bounds">
+      <rect x="{draw_x:.4f}" y="{draw_y:.4f}" width="{draw_w:.4f}" height="{draw_h:.4f}" stroke="#2563eb" stroke-width="0.45" />
+      <text x="{draw_x + 2.0:.4f}" y="{draw_y + 6.0:.4f}" fill="#1d4ed8" font-family="Segoe UI, Arial, sans-serif" font-size="3.5">реальные границы подготовленного G-code ({sheet_label})</text>
+    </g>
+    <g id="drawing" stroke="#111827" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round">
+{paths}
+    </g>
+  </g>
+</svg>
+"""
+    svg_path.write_text(svg, encoding="utf-8")
+
+    svg_embed = svg.split("\n", 1)[1] if svg.startswith("<?xml") else svg
+    title = html.escape(f"Предпросмотр Plotter PDF - {Path(settings.input_path or 'чертеж').name}")
+    html_text = f"""<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>{title}</title>
+  <style>
+    html, body {{ margin: 0; height: 100%; overflow: hidden; background: #111; color: #eee; font-family: "Segoe UI", Arial, sans-serif; }}
+    .bar {{ position: fixed; left: 12px; top: 12px; z-index: 2; padding: 8px 10px; border-radius: 10px; background: rgba(17, 24, 39, 0.88); box-shadow: 0 8px 24px rgba(0,0,0,.35); font-size: 14px; }}
+    .bar b {{ color: #93c5fd; }}
+    svg {{ width: 100vw; height: 100vh; display: block; cursor: grab; background: #1f2937; }}
+    svg.dragging {{ cursor: grabbing; }}
+  </style>
+</head>
+<body>
+  <div class="bar"><b>Предпросмотр:</b> показан реальный G-code после всех правил. Колесо - масштаб, мышью - таскать, двойной клик - сброс.</div>
+  {svg_embed}
+  <script>
+    const svg = document.querySelector('svg');
+    const initial = svg.getAttribute('viewBox').split(/\\s+/).map(Number);
+    let view = initial.slice();
+    let dragging = false;
+    let last = null;
+    function apply() {{ svg.setAttribute('viewBox', view.join(' ')); }}
+    function point(evt) {{
+      const r = svg.getBoundingClientRect();
+      return [
+        view[0] + (evt.clientX - r.left) / r.width * view[2],
+        view[1] + (evt.clientY - r.top) / r.height * view[3],
+      ];
+    }}
+    svg.addEventListener('wheel', (evt) => {{
+      evt.preventDefault();
+      const p = point(evt);
+      const k = evt.deltaY > 0 ? 1.15 : 0.87;
+      view[0] = p[0] - (p[0] - view[0]) * k;
+      view[1] = p[1] - (p[1] - view[1]) * k;
+      view[2] *= k;
+      view[3] *= k;
+      apply();
+    }}, {{ passive: false }});
+    svg.addEventListener('pointerdown', (evt) => {{ dragging = true; last = point(evt); svg.classList.add('dragging'); svg.setPointerCapture(evt.pointerId); }});
+    svg.addEventListener('pointermove', (evt) => {{
+      if (!dragging) return;
+      const p = point(evt);
+      view[0] += last[0] - p[0];
+      view[1] += last[1] - p[1];
+      apply();
+      last = point(evt);
+    }});
+    svg.addEventListener('pointerup', () => {{ dragging = false; svg.classList.remove('dragging'); }});
+    svg.addEventListener('pointercancel', () => {{ dragging = false; svg.classList.remove('dragging'); }});
+    svg.addEventListener('dblclick', () => {{ view = initial.slice(); apply(); }});
+  </script>
+</body>
+</html>
+"""
+    html_path.write_text(html_text, encoding="utf-8")
+
+
 def preview_job(settings: JobSettings) -> JobResult:
     preview_settings = JobSettings(**asdict(settings))
     preview_settings.preview = True
@@ -260,7 +389,7 @@ def preview_job(settings: JobSettings) -> JobResult:
         lines = nc_path.read_text(encoding="utf-8", errors="ignore").splitlines()
         z_up, z_down = _detect_pen_z(lines)
         polylines = gcode_to_polylines(lines, z_up=z_up, z_down=z_down)
-        _write_interactive_preview(polylines, svg_path, html_path, preview_settings)
+        _write_interactive_preview(polylines, svg_path, html_path, preview_settings, result.bounds)
         result.preview_svg_path = svg_path
         result.message = f"Предпросмотр открыт: {html_path}"
         _open_preview(html_path)
