@@ -110,3 +110,28 @@ class DiscoveryModuleTests(unittest.TestCase):
             serial_factory=lambda *_args, **_kwargs: (_Conn()),
         )
         self.assertEqual(resolved_empty, "COM6")
+
+    def test_suggest_plotter_port_uses_preferred_if_available(self) -> None:
+        ports = [
+            _Port("COM3", description="USB-SERIAL CH340"),
+            _Port("COM4", description="Arduino Uno"),
+        ]
+
+        resolved = discovery.suggest_plotter_port("COM4", ports=ports)
+
+        self.assertEqual(resolved, "COM4")
+
+    def test_suggest_plotter_port_selects_likely_usb_plotter(self) -> None:
+        ports = [
+            _Port("COM3", description="Standard Serial over Bluetooth link", hwid="BTHENUM\\X"),
+            _Port("COM9", description="USB-SERIAL CH340", manufacturer="wch.cn"),
+        ]
+
+        resolved = discovery.suggest_plotter_port(None, ports=ports)
+
+        self.assertEqual(resolved, "COM9")
+
+    def test_suggest_plotter_port_selects_single_port(self) -> None:
+        resolved = discovery.suggest_plotter_port(None, ports=[_Port("COM7", description="USB Serial Device")])
+
+        self.assertEqual(resolved, "COM7")

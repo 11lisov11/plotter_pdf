@@ -1,10 +1,100 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 import re
 import shutil
 import tempfile
 from pathlib import Path
 from typing import Callable, Iterable, Optional, Sequence, Tuple
+
+
+@dataclass(frozen=True)
+class SerialPortInfo:
+    device: str
+    description: str = ""
+    manufacturer: str = ""
+    hwid: str = ""
+
+    @property
+    def label(self) -> str:
+        details = " ".join(part for part in [self.description, self.manufacturer] if part).strip()
+        return f"{self.device} - {details}" if details else self.device
+
+    @property
+    def search_text(self) -> str:
+        return " ".join([self.device, self.description, self.manufacturer, self.hwid]).lower()
+
+
+def _com_num(device: str) -> int:
+    match = re.match(r"COM(\d+)$", str(device).upper())
+    if not match:
+        return 10**9
+    try:
+        return int(match.group(1))
+    except Exception:
+        return 10**9
+
+
+def _port_info_from_obj(port: object) -> SerialPortInfo:
+    return SerialPortInfo(
+        device=str(getattr(port, "device", "") or ""),
+        description=str(getattr(port, "description", "") or ""),
+        manufacturer=str(getattr(port, "manufacturer", "") or ""),
+        hwid=str(getattr(port, "hwid", "") or ""),
+    )
+
+
+def list_serial_ports(*, ports: Optional[Sequence[object]] = None) -> list[SerialPortInfo]:
+    if ports is None:
+        try:
+            import serial.tools.list_ports  # type: ignore
+        except Exception:
+            return []
+        ports = list(serial.tools.list_ports.comports())
+    infos = [_port_info_from_obj(port) for port in ports]
+    return sorted([info for info in infos if info.device], key=lambda info: _com_num(info.device))
+
+
+def _plotter_port_score(info: SerialPortInfo) -> int:
+    text = info.search_text
+    score = 0
+    weighted_keywords = [
+        ("grbl", 120),
+        ("plotter", 110),
+        ("arduino", 90),
+        ("ch340", 85),
+        ("wch", 80),
+        ("usb-serial", 75),
+        ("usb serial", 75),
+        ("cp210", 70),
+        ("silicon labs", 70),
+        ("ftdi", 70),
+        ("usb serial device", 60),
+        ("usb", 30),
+    ]
+    for keyword, weight in weighted_keywords:
+        if keyword in text:
+            score += weight
+    if "bluetooth" in text or "rfcomm" in text or "bthenum" in text:
+        score -= 25
+    return score
+
+
+def suggest_plotter_port(preferred: Optional[str] = None, *, ports: Optional[Sequence[object]] = None) -> Optional[str]:
+    infos = list_serial_ports(ports=ports)
+    if not infos:
+        return preferred or None
+    available = {info.device.upper(): info.device for info in infos}
+    if preferred:
+        selected = available.get(str(preferred).upper())
+        if selected:
+            return selected
+    if len(infos) == 1:
+        return infos[0].device
+    scored = sorted(infos, key=lambda info: (-_plotter_port_score(info), _com_num(info.device)))
+    if scored and _plotter_port_score(scored[0]) > 0:
+        return scored[0].device
+    return infos[0].device
 
 
 def _resolve_first_existing_tool(candidates: Iterable[str], *, which=shutil.which) -> Optional[str]:
@@ -94,15 +184,6 @@ def detect_com_port(
         return preferred or default_port
 
     available = {str(getattr(p, "device", "") or "").upper(): str(getattr(p, "device", "") or "") for p in ports if getattr(p, "device", None)}
-
-    def _com_num(device: str) -> int:
-        match = re.match(r"COM(\d+)$", str(device).upper())
-        if not match:
-            return 10**9
-        try:
-            return int(match.group(1))
-        except Exception:
-            return 10**9
 
     def _is_writable(device: str) -> bool:
         if serial_factory is None:
