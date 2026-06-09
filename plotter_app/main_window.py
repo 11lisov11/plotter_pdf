@@ -80,7 +80,9 @@ class MainWindow(QMainWindow):
         form = QFormLayout()
         self.input_edit = QLineEdit(str(self.vm.settings.input_path or ""))
         self.output_edit = QLineEdit(str(self.vm.settings.output_dir))
-        self.com_edit = QLineEdit(str(self.vm.settings.com or ""))
+        self.com_combo = QComboBox()
+        self.com_combo.setEditable(True)
+        self._refresh_com_ports(self.vm.settings.com or "", sync=False)
         self.baud_edit = QLineEdit(str(self.vm.settings.baud))
         self.sheet_combo = QComboBox()
         self.sheet_combo.addItems(["work", "a4", "a3", "notebook", "custom"])
@@ -115,9 +117,14 @@ class MainWindow(QMainWindow):
         pick_output = QPushButton("Browse")
         pick_output.clicked.connect(self._pick_output)
         output_row.addWidget(pick_output)
+        com_row = QHBoxLayout()
+        com_row.addWidget(self.com_combo)
+        refresh_com = QPushButton("Refresh")
+        refresh_com.clicked.connect(lambda: self._refresh_com_ports(self.com_combo.currentText().strip()))
+        com_row.addWidget(refresh_com)
         form.addRow("Input PDF/SVG/DOC/CDW:", input_row)
         form.addRow("Output dir:", output_row)
-        form.addRow("COM port:", self.com_edit)
+        form.addRow("COM port:", com_row)
         form.addRow("Baud:", self.baud_edit)
         form.addRow("Sheet:", self.sheet_combo)
         form.addRow("Tool:", self.tool_combo)
@@ -154,7 +161,7 @@ class MainWindow(QMainWindow):
         for widget in [
             self.input_edit,
             self.output_edit,
-            self.com_edit,
+            self.com_combo,
             self.baud_edit,
             self.sheet_combo,
             self.tool_combo,
@@ -190,10 +197,33 @@ class MainWindow(QMainWindow):
         if path:
             self.output_edit.setText(path)
 
+    def _list_com_ports(self) -> list[str]:
+        try:
+            from serial.tools import list_ports  # type: ignore
+
+            return [str(port.device) for port in list_ports.comports()]
+        except Exception:
+            return []
+
+    def _refresh_com_ports(self, preferred: str = "", *, sync: bool = True) -> None:
+        current = str(preferred or "").strip()
+        ports = self._list_com_ports()
+        if current and current not in ports:
+            ports.insert(0, current)
+        if "" not in ports:
+            ports.insert(0, "")
+        self.com_combo.blockSignals(True)
+        self.com_combo.clear()
+        self.com_combo.addItems(ports)
+        self.com_combo.setCurrentText(current)
+        self.com_combo.blockSignals(False)
+        if sync:
+            self._sync_from_ui()
+
     def _sync_from_ui(self, *_args) -> None:
         self.vm.settings.input_path = self.input_edit.text().strip() or None
         self.vm.settings.output_dir = self.output_edit.text().strip() or "_plotter_jobs"
-        self.vm.settings.com = self.com_edit.text().strip() or None
+        self.vm.settings.com = self.com_combo.currentText().strip() or None
         self.vm.settings.baud = self.baud_edit.text().strip() or "115200"
         self.vm.settings.sheet_format = self.sheet_combo.currentText()
         self.vm.settings.tool = self.tool_combo.currentText()

@@ -46,7 +46,6 @@ class JobViewModel:
             self.has_input()
             and bool(self.settings.com)
             and bool(self.preflight_ok)
-            and bool(self.hardware_confirmed)
             and not self.operation_running
         )
 
