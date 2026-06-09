@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from src.plotter_backend import discovery as discovery_mod
 from src.plotter_backend.jobs import JobResult, JobSettings
 
 from .settings import load_gui_settings, save_gui_settings
@@ -197,25 +198,25 @@ class MainWindow(QMainWindow):
         if path:
             self.output_edit.setText(path)
 
-    def _list_com_ports(self) -> list[str]:
-        try:
-            from serial.tools import list_ports  # type: ignore
-
-            return [str(port.device) for port in list_ports.comports()]
-        except Exception:
-            return []
-
     def _refresh_com_ports(self, preferred: str = "", *, sync: bool = True) -> None:
         current = str(preferred or "").strip()
-        ports = self._list_com_ports()
-        if current and current not in ports:
-            ports.insert(0, current)
-        if "" not in ports:
-            ports.insert(0, "")
+        ports = discovery_mod.list_serial_ports()
+        selected = discovery_mod.suggest_plotter_port(current or None, ports=ports) or current
         self.com_combo.blockSignals(True)
         self.com_combo.clear()
-        self.com_combo.addItems(ports)
-        self.com_combo.setCurrentText(current)
+        self.com_combo.addItem("", "")
+        for port in ports:
+            self.com_combo.addItem(port.label, port.device)
+        if selected:
+            selected_index = -1
+            for index in range(self.com_combo.count()):
+                if str(self.com_combo.itemData(index) or "").upper() == selected.upper():
+                    selected_index = index
+                    break
+            if selected_index >= 0:
+                self.com_combo.setCurrentIndex(selected_index)
+            else:
+                self.com_combo.setEditText(selected)
         self.com_combo.blockSignals(False)
         if sync:
             self._sync_from_ui()
@@ -223,7 +224,11 @@ class MainWindow(QMainWindow):
     def _sync_from_ui(self, *_args) -> None:
         self.vm.settings.input_path = self.input_edit.text().strip() or None
         self.vm.settings.output_dir = self.output_edit.text().strip() or "_plotter_jobs"
-        self.vm.settings.com = self.com_combo.currentText().strip() or None
+        com_value = str(self.com_combo.currentData() or "").strip()
+        if not com_value:
+            raw_com = self.com_combo.currentText().strip()
+            com_value = raw_com.split(" ", 1)[0].strip()
+        self.vm.settings.com = com_value or None
         self.vm.settings.baud = self.baud_edit.text().strip() or "115200"
         self.vm.settings.sheet_format = self.sheet_combo.currentText()
         self.vm.settings.tool = self.tool_combo.currentText()
