@@ -1,0 +1,18 @@
+{
+  "variant_dir": "C:\\plotter_pdf\\Компьютерная графика\\3 вариант",
+  "items": [
+    {
+      "task": "02_Пробка_pack",
+      "package_dir": "C:\\plotter_pdf\\Компьютерная графика\\3 вариант\\02_Пробка_pack",
+      "kind": "a4",
+      "layout_similarity": 0.955473,
+      "selected_variant": "mupdf_svg_paths",
+      "selection_reason": "kompas_full_frame_clean_bbox_fit",
+      "source_fidelity_score": 0.917254,
+      "fragmentation_score": 0.892504,
+      "quality_score": 0.943443,
+      "compare_png": "C:\\plotter_pdf\\Компьютерная графика\\3 вариант\\02_Пробка_pack\\source_vs_gcode_compare.png",
+      "compare_pdf": "C:\\plotter_pdf\\Компьютерная графика\\3 вариант\\02_Пробка_pack\\source_vs_gcode_compare.pdf"
+    }
+  ]
+}

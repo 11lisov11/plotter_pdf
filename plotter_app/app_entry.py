@@ -11,8 +11,16 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _has_console_stdout() -> bool:
-    return sys.stdout is not None and hasattr(sys.stdout, "write")
+def print_help_safely(parser: argparse.ArgumentParser) -> None:
+    help_text = parser.format_help()
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            if stream is not None:
+                stream.write(help_text)
+                stream.flush()
+                return
+        except Exception:
+            continue
 
 
 def main(argv: Optional[list[str]] = None) -> int:
@@ -22,14 +30,11 @@ def main(argv: Optional[list[str]] = None) -> int:
     if hasattr(sys.stderr, "reconfigure"):
         sys.stderr.reconfigure(encoding="utf-8", errors="replace")
     parser = build_parser()
-    if "--help" in args_list or "-h" in args_list:
-        if _has_console_stdout():
-            try:
-                parser.print_help()
-            except Exception:
-                pass
+    raw_args = sys.argv[1:] if argv is None else argv
+    if any(arg in {"-h", "--help"} for arg in raw_args):
+        print_help_safely(parser)
         return 0
-    args = parser.parse_args(args_list)
+    args = parser.parse_args(raw_args)
     if args.self_check:
         from src.plotter_backend.jobs.self_check_cli import main as self_check_main
 

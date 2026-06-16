@@ -69,6 +69,47 @@ def test_find_first_ready_a4_package_uses_audit_order_and_summary(tmp_path: Path
     assert selection.draw_length_m == 7.197
 
 
+def test_find_first_ready_package_uses_summary_fallback_without_audit_json(tmp_path: Path) -> None:
+    variant, nc = _write_minimal_ready_variant(tmp_path)
+    package = nc.parent
+    (variant / "_audit.json").unlink()
+    with (package / "summary.csv").open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=["kind", "item", "ok", "nc", "draw_length_m"])
+        writer.writeheader()
+        writer.writerow({"kind": "drawing", "item": "page_01", "ok": "True", "nc": str(nc), "draw_length_m": "7.197"})
+
+    selection = find_first_ready_package(variant, kind="a4")
+
+    assert selection.task == package.name
+    assert selection.kind == "a4"
+    assert selection.nc == str(nc)
+
+
+def test_find_first_ready_package_summary_fallback_detects_two_pass_items(tmp_path: Path) -> None:
+    variant = tmp_path / "cg" / "26"
+    package = variant / "a3_pack"
+    package.mkdir(parents=True)
+    pass_01 = package / "pass_01.nc"
+    pass_02 = package / "pass_02.nc"
+    pass_01.write_text("G0 X0 Y0\n", encoding="utf-8")
+    pass_02.write_text("G0 X2 Y2\n", encoding="utf-8")
+    with (package / "summary.csv").open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=["kind", "item", "ok", "nc", "draw_length_m"])
+        writer.writeheader()
+        writer.writerow({"kind": "drawing", "item": "pass_01", "ok": "True", "nc": str(pass_01), "draw_length_m": "1"})
+        writer.writerow({"kind": "drawing", "item": "pass_02", "ok": "True", "nc": str(pass_02), "draw_length_m": "2"})
+    (variant / "_ready_to_plot_audit.json").write_text(
+        json.dumps({"ok": True, "failed_packages": []}),
+        encoding="utf-8",
+    )
+
+    selection = find_first_ready_package(variant, kind="a3", item="pass_02")
+
+    assert selection.kind == "a3_two_pass"
+    assert selection.item == "pass_02"
+    assert selection.nc == str(pass_02)
+
+
 def test_find_first_ready_package_accepts_utf8_sig_reports(tmp_path: Path) -> None:
     variant, nc = _write_minimal_ready_variant(tmp_path)
     package = nc.parent
@@ -358,6 +399,7 @@ def test_ready_kind_aliases_match_audit_kind_names() -> None:
     assert _normalize_kind("a3") == "a3_two_pass"
     assert _normalize_kind("a3-two") == "a3_two_pass"
     assert _normalize_kind("first_a4") == "a4"
+    assert _normalize_kind("drawing") == "a4"
 
 
 def test_ready_item_aliases_match_summary_item_names() -> None:

@@ -311,12 +311,125 @@ def _is_nachert_source(source_pdf: Path) -> bool:
     return "начерт" in _path_casefold_text(source_pdf)
 
 
+def _force_kompas_full_frame_source(source_pdf: Path) -> bool:
+    if _force_no_frame_outline_source(source_pdf):
+        return False
+    text = _path_casefold_text(source_pdf)
+    return (
+        "компьютерная графика" in text
+        and "9 вариант" in text
+        and "начертить !!!" in text
+    )
+
+
+def _force_no_frame_outline_source(source_pdf: Path) -> bool:
+    return False
+
+
 def _drawing_frame_class(source_pdf: Path) -> str:
+    if _force_no_frame_outline_source(source_pdf):
+        return "neutral_frame"
+    if _force_kompas_full_frame_source(source_pdf):
+        return "kompas_full_frame"
     if _is_nachert_source(source_pdf):
         return "standard_frame"
     if _is_computer_graphics_source(source_pdf):
         return "kompas_full_frame"
     return "neutral_frame"
+
+
+def _a3_pass_sheet_offset_for_source(source_pdf: Path, pass_index: int) -> tuple[float, float]:
+    return 0.0, 0.0
+
+
+def _shift_kompas_a3_upper_left_stamp_fragment(
+    polylines: list[list[tuple[float, float]]],
+    *,
+    source_pdf: Path,
+    pass_index: int,
+    logger=None,
+) -> tuple[list[list[tuple[float, float]]], bool]:
+    return polylines, False
+    if _drawing_frame_class(source_pdf) != "kompas_full_frame" or int(pass_index) != 2 or not polylines:
+        return polylines, False
+
+    gx0, gy0, gx1, gy1 = _polys_bbox_mm(polylines)
+    left_limit = float(gx0) + min(105.0, max(80.0, float(gx1 - gx0) * 0.58))
+    top_floor = float(gy1) - min(105.0, max(75.0, float(gy1 - gy0) * 0.38))
+
+    selected: set[int] = set()
+    selected_xs: list[float] = []
+    selected_ys: list[float] = []
+    for idx, poly in enumerate(polylines):
+        if len(poly) < 2:
+            continue
+        xs = [float(x) for x, _y in poly]
+        ys = [float(y) for _x, y in poly]
+        x0, x1 = min(xs), max(xs)
+        y0, y1 = min(ys), max(ys)
+        if (
+            x0 >= float(gx0) - 2.0
+            and x1 <= float(left_limit)
+            and y0 >= float(top_floor)
+            and y1 <= float(gy1) + 2.0
+        ):
+            selected.add(idx)
+            selected_xs.extend(xs)
+            selected_ys.extend(ys)
+
+    if not selected or not selected_xs or not selected_ys:
+        return polylines, False
+
+    sx0, sx1 = min(selected_xs), max(selected_xs)
+    sy0, sy1 = min(selected_ys), max(selected_ys)
+    if (sx1 - sx0) < 18.0 or (sy1 - sy0) < 8.0:
+        return polylines, False
+
+    dx = -20.0
+    dy = 10.0
+    if sx0 + dx < 0.0:
+        dx = -sx0
+    if sy1 + dy > 0.0:
+        dy = -sy1
+    if abs(dx) <= 1e-9 and abs(dy) <= 1e-9:
+        return polylines, False
+
+    shifted: list[list[tuple[float, float]]] = []
+    for idx, poly in enumerate(polylines):
+        if idx in selected:
+            shifted.append([(float(x) + dx, float(y) + dy) for x, y in poly])
+        else:
+            shifted.append(list(poly))
+
+    if logger is not None:
+        logger(
+            "KOMPAS A3 pass_02 upper-left stamp fragment shifted: "
+            f"dx={dx:.3f} mm, dy={dy:.3f} mm, strokes={len(selected)}, "
+            f"region=({sx0:.3f},{sy0:.3f})-({sx1:.3f},{sy1:.3f})."
+        )
+    return shifted, True
+
+
+def _shift_kompas_a3_upper_left_stamp_fragment_in_gcode(
+    *,
+    nc_path: Path,
+    gcode_path: Path,
+    source_pdf: Path,
+    pass_index: int,
+    logs: list[str],
+) -> None:
+    if _drawing_frame_class(source_pdf) != "kompas_full_frame" or int(pass_index) != 2:
+        return
+    lines = nc_path.read_text(encoding="utf-8", errors="ignore").splitlines()
+    polylines = _gcode_to_polylines(lines, z_up=float(backend.Z_UP), z_down=float(backend.Z_DOWN))
+    shifted, changed = _shift_kompas_a3_upper_left_stamp_fragment(
+        polylines,
+        source_pdf=source_pdf,
+        pass_index=pass_index,
+        logger=logs.append,
+    )
+    if changed:
+        _rewrite_final_gcode_from_polylines(shifted, dst_nc=nc_path, dst_gcode=gcode_path)
 
 
 def _kompas_text_join_backend_overrides(source_pdf: Path | None) -> dict[str, Any]:
@@ -7450,11 +7563,23 @@ def _prepare_a3_pass(
         pass_notes = []
         if int(pass_index) == 2:
             pass_notes.append("pass_02_rotated_180_for_sheet_flip=True")
+        offset_x_mm, offset_y_mm = _a3_pass_sheet_offset_for_source(source_pdf, pass_index)
+        if abs(offset_x_mm) > 1e-9 or abs(offset_y_mm) > 1e-9:
+            pass_notes.append(f"pass_sheet_offset=({offset_x_mm:.3f},{offset_y_mm:.3f})mm")
         ctx = _ctx(f"preview-{time.time_ns()}")
         ok, msg, logs = _bridge_run_preview(
             ctx=ctx,
             input_path=ascii_pdf,
-            sheet=SheetConfig(sheet_format="a3", anchor="lower_left", pass_cols=2, pass_rows=1, pass_col=pass_index, pass_row=1),
+            sheet=SheetConfig(
+                sheet_format="a3",
+                anchor="lower_left",
+                offset_x_mm=offset_x_mm,
+                offset_y_mm=offset_y_mm,
+                pass_cols=2,
+                pass_rows=1,
+                pass_col=pass_index,
+                pass_row=1,
+            ),
             tool_mode="pen",
             render_mode="drawing",
             quality_profile="high",
@@ -7477,6 +7602,28 @@ def _prepare_a3_pass(
                 "logs": logs,
             }
         svg_path, pdf_path, nc_path, gcode_path = _copy_latest_preview_artifacts(prefix, op_id=ctx.op_id)
+        _shift_kompas_a3_upper_left_stamp_fragment_in_gcode(
+            nc_path=nc_path,
+            gcode_path=gcode_path,
+            source_pdf=source_pdf,
+            pass_index=pass_index,
+            logs=logs,
+        )
+        if _drawing_frame_class(source_pdf) == "kompas_full_frame" and int(pass_index) == 2:
+            preview_ok, preview_err = _build_sheet_preview_from_gcode(
+                gcode_path=nc_path,
+                reference_pdf=source_pdf,
+                out_svg=svg_path,
+                out_pdf=pdf_path,
+                logs=logs,
+            )
+            if not preview_ok:
+                return {
+                    "item": f"pass_{pass_index}",
+                    "ok": False,
+                    "message": preview_err,
+                    "logs": logs,
+                }
         metrics = _analyze_gcode(nc_path)
         return {
             "item": f"pass_{pass_index}",
@@ -7643,6 +7790,42 @@ def _prepare_a3_clean_source_svg(
                 f"kompas_text_centerline_averaging={'True' if kompas_centerline_text_ok else 'False'}; "
                 f"kompas_text_centerline_nodes={int(kompas_centerline_text_nodes)}."
             )
+        elif _force_no_frame_outline_source(source_pdf):
+            bridge = BackendBridge(PROJECT_ROOT)
+            path_items = backend.extract_polylines(source_svg)
+            page_items, _unit_scale = backend.normalize_path_units_to_page(
+                path_items,
+                float(page_w_mm),
+                float(page_h_mm),
+                logger=logs.append,
+            )
+            source_polys = [
+                [(float(point[0]), float(point[1])) for point in item.points]
+                for item in page_items
+                if len(item.points) >= 2
+            ]
+            source_polys, no_frame_meta = _strip_kompas_a3_outer_sheet_frame_polylines(
+                source_polys,
+                page_w_mm=float(page_w_mm),
+                page_h_mm=float(page_h_mm),
+            )
+            bridge._write_method3_svg(
+                source_svg,
+                source_polys,
+                page_w_mm=float(page_w_mm),
+                page_h_mm=float(page_h_mm),
+            )
+            _render_polylines_pdf(
+                polylines=source_polys,
+                out_pdf=source_preview_pdf,
+                canvas_bounds_mm=(0.0, float(page_w_mm), 0.0, float(page_h_mm)),
+            )
+            logs.append(
+                "A3 no-frame outline cleanup: "
+                f"outer_sheet_frame_removed={no_frame_meta['removed_segments']}; "
+                f"kept_stamp_edges={no_frame_meta['kept_stamp_segments']}; "
+                "text_as_path=True."
+            )
         logs.append(
             "A3 clean source route: direct PDF vector SVG export "
             f"(text_as_path={'False' if reroute_title_block else 'True'})."
@@ -7714,12 +7897,24 @@ def _prepare_a3_pass_from_clean_svg(
     pass_notes: list[str] = []
     if int(pass_index) == 2:
         pass_notes.append("pass_02_rotated_180_for_sheet_flip=True")
+    offset_x_mm, offset_y_mm = _a3_pass_sheet_offset_for_source(source_pdf, pass_index)
+    if abs(offset_x_mm) > 1e-9 or abs(offset_y_mm) > 1e-9:
+        pass_notes.append(f"pass_sheet_offset=({offset_x_mm:.3f},{offset_y_mm:.3f})mm")
     ctx = _ctx(f"a3-clean-pass-{pass_index}-{time.time_ns()}")
     with _technical_drawing_backend_precision(), _backend_override_context(_kompas_text_join_backend_overrides(source_pdf)):
         ok, msg = bridge.run_preview(
             ctx=ctx,
             input_path=clean_svg,
-            sheet=SheetConfig(sheet_format="a3", anchor="lower_left", pass_cols=2, pass_rows=1, pass_col=pass_index, pass_row=1),
+            sheet=SheetConfig(
+                sheet_format="a3",
+                anchor="lower_left",
+                offset_x_mm=offset_x_mm,
+                offset_y_mm=offset_y_mm,
+                pass_cols=2,
+                pass_rows=1,
+                pass_col=pass_index,
+                pass_row=1,
+            ),
             tool_mode="pen",
             render_mode="drawing",
             quality_profile="high",
@@ -7743,6 +7938,13 @@ def _prepare_a3_pass_from_clean_svg(
             "logs": [*(prep_logs or []), *pass_notes, "--- a3 clean pass ---", *logs],
         }
     svg_path, pdf_path, nc_path, gcode_path = _copy_latest_preview_artifacts(prefix, op_id=ctx.op_id)
+    _shift_kompas_a3_upper_left_stamp_fragment_in_gcode(
+        nc_path=nc_path,
+        gcode_path=gcode_path,
+        source_pdf=source_pdf,
+        pass_index=pass_index,
+        logs=logs,
+    )
     preview_ok, preview_err = _build_sheet_preview_from_gcode(
         gcode_path=nc_path,
         reference_pdf=source_pdf,

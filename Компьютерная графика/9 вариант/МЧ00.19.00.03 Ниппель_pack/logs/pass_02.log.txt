@@ -1,7 +1,7 @@
 KOMPAS text centerline averaging: using source glyph paths and text-element centerline route.
 KOMPAS source text preserved: single-line text reroute disabled for production.
 KOMPAS stamp/title text preserved: single-line stamp repair disabled for production.
-A3 clean source KOMPAS cleanup: archive_strip_removed=9; service_region_removed=578; under_frame_removed=1; top_outer_frame_removed=2; a3_outer_sheet_frame_removed=6; a3_outer_sheet_frame_kept_stamp_edges=4; kompas_text_lines=0; kompas_text_removed=0; kompas_text_rendered=0; kompas_stamp_text_lines=0; kompas_stamp_text_removed=0; kompas_stamp_text_rendered=0; kompas_text_centerline_averaging=True; kompas_text_centerline_nodes=0.
+A3 clean source KOMPAS cleanup: archive_strip_removed=9; service_region_removed=602; under_frame_removed=1; top_outer_frame_removed=2; a3_outer_sheet_frame_removed=6; a3_outer_sheet_frame_kept_stamp_edges=4; kompas_text_lines=0; kompas_text_removed=0; kompas_text_rendered=0; kompas_stamp_text_lines=0; kompas_stamp_text_removed=0; kompas_stamp_text_rendered=0; kompas_text_centerline_averaging=True; kompas_text_centerline_nodes=0.
 A3 clean source route: direct PDF vector SVG export (text_as_path=True).
 pass_02_rotated_180_for_sheet_flip=True
 --- a3 clean pass ---
@@ -13,29 +13,29 @@ Extracting paths from SVG ...
 Raw geometry bounds: x(24.000, 415.459) y(5.503, 292.523)
 SVG page: 421.047 x 298.111 mm
 Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).
-SVG geometry: paths=1312, segments=5153.
+SVG geometry: paths=1316, segments=5173.
 Source bounds: x(24.000, 415.459) y(5.503, 292.523)
 Fit to work area: scale=0.9196, translate=(-112.071,-282.038), from (24.000, 5.503)-(415.459, 292.523)
 Pass window: col 2/2, row 1/1, source=360.000x263.954 mm, window=180.000x263.954 mm, offset=(180.000,0.000), shift=(-90.000,0.000)
 Sheet pass transform: rotating geometry by 180 deg for a3 pass 2/2 x 1/1 around active area center (90.000,-145.000).
-Sheet pass transform: translating geometry by (0.000,3.000) mm for a3 pass 2/2 x 1/1.
-Work area clipping: kept 3392 visible segments, dropped 1761 out-of-area segments.
-Segment dedup: dropped 346/3392 retraced segments (10.2%), kept=3046, eps=0.010 mm
-Collinear overlap dedup: dropped 934/2982 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
-Reorder: source order preserved (1075 polylines).
-Segment dedup: dropped 7/2048 retraced segments (0.3%), kept=2041, eps=0.050 mm
-Polyline optimization: 1075 -> 1078
-Segment counts: source=5153, fitted=5153, clipped=3392
-Drawable segments after clip: 3392 (65.8% of source)
+Sheet pass transform: translating geometry by (0.000,4.000) mm for a3 pass 2/2 x 1/1.
+Work area clipping: kept 3412 visible segments, dropped 1761 out-of-area segments.
+Segment dedup: dropped 346/3412 retraced segments (10.1%), kept=3066, eps=0.010 mm
+Collinear overlap dedup: dropped 938/3006 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)
+Reorder: source order preserved (1080 polylines).
+Segment dedup: dropped 9/2068 retraced segments (0.4%), kept=2059, eps=0.050 mm
+Polyline optimization: 1080 -> 1084
+Segment counts: source=5173, fitted=5173, clipped=3412
+Drawable segments after clip: 3412 (66.0% of source)
 Warning: significant clipping/transforming occurred. Check that page is inside target work area.
-Prepared bounds: x(0.000, 180.000) y(-273.977, -80.800)
-Estimated draw length: 4.36 m
+Prepared bounds: x(0.000, 180.000) y(-272.977, -79.800)
+Estimated draw length: 4.37 m
 Applying pen-up / pen-down ...
-G-code stats: lines=6052, draw=2041, travel=800, bounds=0.000..180.000 x, -273.977..0.000 y
-Preflight: ok: lines=6052, draw=2041, travel=800, ratio=0.39
-Saved file stats: lines=6052, draw=2041, travel=800, bounds=0.000..180.000 x, -273.977..0.000 y
-Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1780692511465208300.nc
-Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1780692511465208300_vector.svg
-Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1780692511465208300_vector.pdf
+G-code stats: lines=6104, draw=2059, travel=807, bounds=0.000..180.000 x, -272.977..0.000 y
+Preflight: ok: lines=6104, draw=2059, travel=807, ratio=0.39
+Saved file stats: lines=6104, draw=2059, travel=807, bounds=0.000..180.000 x, -272.977..0.000 y
+Saved: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1781650081869535900.nc
+Preview SVG: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1781650081869535900_vector.svg
+Preview PDF: C:\plotter_pdf\_tmp\latest_preview_a3-clean-pass-2-1781650081869535900_vector.pdf
 Sheet preview centered on compact source page bbox: ref=(0.353,0.353)..(420.518,297.670) mm
-Sheet preview placed on source page: offset=(120.524,326.444) mm
+Sheet preview placed on source page: offset=(120.524,325.444) mm

@@ -77,12 +77,33 @@ def _write_ready_a3_variant(root: Path) -> Path:
 def _write_bad_ready_variant(root: Path) -> Path:
     variant = _write_ready_variant(root)
     package = next(variant.glob("*_pack"))
-    (package / "page_01.nc").write_text("G90\nG92 Z11.9\nG1 X10 Y-10\n", encoding="utf-8")
+    (package / "page_01.nc").write_text("G90\nG92 X0 Y0\nG1 X10 Y-10\n", encoding="utf-8")
     return variant
 
 
 def test_main_draw_ready_dry_run_selects_package_without_sender(tmp_path: Path) -> None:
     variant = _write_ready_variant(tmp_path)
+    with (
+        mock.patch.object(backend, "load_pencil_profile", return_value={}),
+        mock.patch.object(backend, "apply_pencil_profile"),
+        mock.patch.object(backend, "configure_active_work_area"),
+        mock.patch.object(backend, "resolve_sheet_size_mm", return_value=(210.0, 297.0)),
+        mock.patch.object(backend, "detect_com_port", return_value="COM6"),
+        mock.patch.object(backend, "apply_quality_profile"),
+        mock.patch.object(backend, "quality_state", return_value="mock-profile"),
+        mock.patch.object(backend, "send_to_grbl") as send_to_grbl,
+        mock.patch("builtins.print"),
+    ):
+        rc = backend.main(["--draw-ready", str(variant), "--kind", "a4", "--dry-run", "--com", "COM6"])
+
+    assert rc == 0
+    send_to_grbl.assert_not_called()
+
+
+def test_main_draw_ready_dry_run_allows_z_only_g92_header(tmp_path: Path) -> None:
+    variant = _write_ready_variant(tmp_path)
+    package = next(variant.glob("*_pack"))
+    (package / "page_01.nc").write_text("G90\nG92 Z4.0\nG0 Z0.0\nG92 Z0.0\nG1 X10 Y-10\n", encoding="utf-8")
     with (
         mock.patch.object(backend, "load_pencil_profile", return_value={}),
         mock.patch.object(backend, "apply_pencil_profile"),

@@ -40,6 +40,18 @@ def has_cli_action(args) -> bool:
     )
 
 
+def ready_line_has_unsafe_coordinate_reset(line: str) -> bool:
+    code = line.upper().split(";", 1)[0].strip()
+    if "G92" not in code:
+        return False
+    tokens = code.replace("\t", " ").split()
+    has_g92 = any(token == "G92" or token.startswith("G92.") for token in tokens)
+    if not has_g92:
+        return False
+    axes = {token[0] for token in tokens if token[:1] in {"X", "Y", "Z", "A", "B", "C"}}
+    return not axes or bool(axes - {"Z"})
+
+
 def build_cli_parser(backend: Any) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="PDF/SVG/FRW/CDW/DOC/DOCX -> Plotter converter")
     parser.add_argument("input", nargs="?", help="Path to PDF, SVG, FRW, CDW, DOC or DOCX file")
@@ -447,7 +459,7 @@ def run_cli_action(backend: Any, args, parser: argparse.ArgumentParser, *, com: 
 
     if args.draw_ready:
         try:
-            from scripts.find_ready_package import find_first_ready_package
+            from .jobs.ready_package_selector import find_first_ready_package
         except Exception as exc:
             print(f"Cannot import ready package selector: {type(exc).__name__}: {exc}")
             return 1
@@ -462,13 +474,16 @@ def run_cli_action(backend: Any, args, parser: argparse.ArgumentParser, *, com: 
             return 1
         try:
             has_coordinate_reset = any(
-                "G92" in line.upper().split(";", 1)[0]
+                ready_line_has_unsafe_coordinate_reset(line)
                 for line in nc_path.read_text(encoding="utf-8", errors="ignore").splitlines()
             )
         except Exception:
             has_coordinate_reset = False
         if has_coordinate_reset:
-            print(f"Preflight failed for ready file: {nc_path}: coordinate reset G92 is not allowed in ready draw files.")
+            print(
+                f"Preflight failed for ready file: {nc_path}: "
+                "coordinate reset G92 for X/Y axes is not allowed in ready draw files."
+            )
             return 1
         pf_ok, pf_msg = backend.preflight_check_gcode(nc_path, logger=print)
         print(f"Ready preflight: {pf_msg}")
