@@ -5,8 +5,9 @@
   "failed_packages": [],
   "warnings": [],
   "preflight": {
-    "checked_gcode_files": 16,
+    "checked_gcode_files": 64,
     "duplicate_segments": 0,
+    "overlap_segments": 0,
     "missing_motor_release": 0,
     "unsafe_endings": 0
   }

@@ -1,0 +1,14 @@
+{
+  "variant_dir": "C:\\plotter_pdf\\Компьютерная графика\\26 вариант",
+  "ok": true,
+  "packages": 14,
+  "failed_packages": [],
+  "warnings": [],
+  "preflight": {
+    "checked_gcode_files": 80,
+    "duplicate_segments": 0,
+    "overlap_segments": 0,
+    "missing_motor_release": 0,
+    "unsafe_endings": 0
+  }
+}

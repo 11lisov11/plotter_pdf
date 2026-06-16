@@ -6,30 +6,30 @@ from typing import Optional
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Графический интерфейс Plotter PDF")
-    parser.add_argument("--self-check", action="store_true", help="Запустить самопроверку в консоли и выйти.")
+    parser = argparse.ArgumentParser(description="Plotter PDF GUI")
+    parser.add_argument("--self-check", action="store_true", help="Run self-check in console mode and exit.")
     return parser
 
 
-def _has_console_stdout() -> bool:
-    return sys.stdout is not None and hasattr(sys.stdout, "write")
+def print_help_safely(parser: argparse.ArgumentParser) -> None:
+    help_text = parser.format_help()
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            if stream is not None:
+                stream.write(help_text)
+                stream.flush()
+                return
+        except Exception:
+            continue
 
 
 def main(argv: Optional[list[str]] = None) -> int:
-    args_list = list(sys.argv[1:] if argv is None else argv)
-    if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    if hasattr(sys.stderr, "reconfigure"):
-        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
     parser = build_parser()
-    if "--help" in args_list or "-h" in args_list:
-        if _has_console_stdout():
-            try:
-                parser.print_help()
-            except Exception:
-                pass
+    raw_args = sys.argv[1:] if argv is None else argv
+    if any(arg in {"-h", "--help"} for arg in raw_args):
+        print_help_safely(parser)
         return 0
-    args = parser.parse_args(args_list)
+    args = parser.parse_args(raw_args)
     if args.self_check:
         from src.plotter_backend.jobs.self_check_cli import main as self_check_main
 
@@ -37,7 +37,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     try:
         from PySide6.QtWidgets import QApplication
     except Exception as exc:
-        print(f"Для GUI нужен PySide6. Установите: pip install -e \".[gui]\" ({type(exc).__name__}: {exc})")
+        print(f"PySide6 is required for GUI. Install with: pip install -e \".[gui]\" ({type(exc).__name__}: {exc})")
         return 2
     try:
         from .main_window import MainWindow
