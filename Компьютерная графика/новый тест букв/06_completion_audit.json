@@ -1,0 +1,55 @@
+{
+  "all_passed": true,
+  "checks": [
+    {
+      "requirement": "Работа идёт в отдельной папке Компьютерная графика/новый тест букв",
+      "passed": true,
+      "evidence": "OUT_DIR=C:\\plotter_pdf\\Компьютерная графика\\новый тест букв; copied_pdf_parent=C:\\plotter_pdf\\Компьютерная графика\\новый тест букв"
+    },
+    {
+      "requirement": "Исходный PDF из 9 варианта скопирован в тестовую папку и не изменён",
+      "passed": true,
+      "evidence": "source=C:\\plotter_pdf\\Компьютерная графика\\9 вариант\\1.pdf; copy=C:\\plotter_pdf\\Компьютерная графика\\новый тест букв\\source_9_variant_1.pdf; sha256=a89f83773114c2d94bd0d0376a710b586864ca09aee99adce50add2d2c5e1fc5"
+    },
+    {
+      "requirement": "На машине найден целевой шрифт GOST type AU",
+      "passed": true,
+      "evidence": "font_path=C:\\WINDOWS\\Fonts\\GOST_AU.ttf"
+    },
+    {
+      "requirement": "PDF text layer найден и принят без OCR всей страницы",
+      "passed": true,
+      "evidence": "found=42; accepted=42; policy=Only PDF text layer lines are accepted as confidence=1.0. No full-page OCR guesses are used."
+    },
+    {
+      "requirement": "Порог уверенности соблюдён: заменяются только confidence >= 0.92",
+      "passed": true,
+      "evidence": "Only PDF text layer lines are accepted as confidence=1.0. No full-page OCR guesses are used."
+    },
+    {
+      "requirement": "Текст не рисуется контуром, а заменяется однолинейными stroke-буквами",
+      "passed": true,
+      "evidence": "stroke_style={'target_font': 'GOST type AU', 'italic_shear': 0.16, 'bbox_fill': 0.86, 'single_line': True, 'contour_text': False}"
+    },
+    {
+      "requirement": "Не осталось символов, ушедших в fallback-глиф",
+      "passed": true,
+      "evidence": "missing_chars=[]"
+    },
+    {
+      "requirement": "Рамочная логика KOMPAS A4 clean-bbox применена и не обрезала рабочую геометрию",
+      "passed": true,
+      "evidence": "fit_meta={'applied': True, 'source_bbox': [20.4893, 5.5033, 205.4859, 292.5232], 'removed_segments': 8, 'content_scale': 0.972991, 'translate_x_mm': -19.935902, 'translate_y_mm': -289.98853, 'pre_clip_bbox': [0.0, -284.6338, 180.0, -5.3662], 'clipped_segments': 0, 'work_area_bounds': [0.0, 180.0, -285.0, -5.0]}; cleanup_meta={'archive_strip_removed': 7, 'archive_strip_clipped': 0, 'service_region_removed': 378, 'under_frame_removed': 1, 'top_outer_frame_removed': 2}"
+    },
+    {
+      "requirement": "G-code preflight зелёный",
+      "passed": true,
+      "evidence": "ok: lines=3249, draw=953, travel=457, ratio=0.48"
+    },
+    {
+      "requirement": "Сформированы PDF/PNG preview и файлы G-code/NC",
+      "passed": true,
+      "evidence": "missing_artifacts=[]; artifacts={'raw_svg': 'C:\\\\plotter_pdf\\\\Компьютерная графика\\\\новый тест букв\\\\01_pdf_text_layer_geometry_only.svg', 'stroke_svg': 'C:\\\\plotter_pdf\\\\Компьютерная графика\\\\новый тест букв\\\\02_gost_au_fast_stroke_source.svg', 'cleaned_svg': 'C:\\\\plotter_pdf\\\\Компьютерная графика\\\\новый тест букв\\\\03_gost_au_after_frame_cleanup.svg', 'sheet_preview_pdf': 'C:\\\\plotter_pdf\\\\Компьютерная графика\\\\новый тест букв\\\\03_gost_au_sheet_preview.pdf', 'ready_preview_pdf': 'C:\\\\plotter_pdf\\\\Компьютерная графика\\\\новый тест букв\\\\04_gost_au_ready_preview.pdf', 'ready_preview_png': 'C:\\\\plotter_pdf\\\\Компьютерная графика\\\\новый тест букв\\\\04_gost_au_ready_preview.png', 'ready_nc': 'C:\\\\plotter_pdf\\\\Компьютерная графика\\\\новый тест букв\\\\04_gost_au_ready.nc', 'ready_gcode': 'C:\\\\plotter_pdf\\\\Компьютерная графика\\\\новый тест букв\\\\04_gost_au_ready.gcode', 'compare_pdf': 'C:\\\\plotter_pdf\\\\Компьютерная графика\\\\новый тест букв\\\\05_source_vs_gost_au_compare.pdf', 'compare_png': 'C:\\\\plotter_pdf\\\\Компьютерная графика\\\\новый тест букв\\\\05_source_vs_gost_au_compare.png', 'text_layer_lines_json': 'C:\\\\plotter_pdf\\\\Компьютерная графика\\\\новый тест букв\\\\text_layer_lines.json', 'completion_audit_json': 'C:\\\\plotter_pdf\\\\Компьютерная графика\\\\новый тест букв\\\\06_completion_audit.json'}"
+    }
+  ]
+}

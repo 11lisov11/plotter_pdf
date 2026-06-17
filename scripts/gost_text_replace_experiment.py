@@ -367,6 +367,80 @@ def _build_compare_pdf(source_pdf: Path, result_pdf: Path, out_pdf: Path) -> Non
             out.close()
 
 
+def _build_completion_audit(report: dict[str, Any]) -> dict[str, Any]:
+    def check(requirement: str, passed: bool, evidence: str) -> dict[str, Any]:
+        return {"requirement": requirement, "passed": bool(passed), "evidence": evidence}
+
+    artifacts = dict(report.get("artifacts", {}))
+    artifact_paths = {name: Path(path) for name, path in artifacts.items() if name != "completion_audit_json"}
+    all_artifacts_exist = all(path.exists() for path in artifact_paths.values())
+    missing_artifacts = [name for name, path in artifact_paths.items() if not path.exists()]
+    logs = "\n".join(str(item) for item in report.get("logs", []))
+    stroke_style = report.get("stroke_style", {})
+    cleanup_meta = report.get("cleanup_meta", {})
+    fit_meta = report.get("fit_meta", {})
+    source_pdf = Path(str(report.get("source_pdf", "")))
+    copied_pdf = Path(str(report.get("copied_pdf", "")))
+    out_dir_ok = OUT_DIR.exists() and copied_pdf.parent == OUT_DIR
+
+    checks = [
+        check(
+            "Работа идёт в отдельной папке Компьютерная графика/новый тест букв",
+            out_dir_ok,
+            f"OUT_DIR={OUT_DIR}; copied_pdf_parent={copied_pdf.parent}",
+        ),
+        check(
+            "Исходный PDF из 9 варианта скопирован в тестовую папку и не изменён",
+            bool(source_pdf.exists() and copied_pdf.exists() and report.get("source_hash_unchanged")),
+            f"source={source_pdf}; copy={copied_pdf}; sha256={report.get('source_sha256')}",
+        ),
+        check(
+            "На машине найден целевой шрифт GOST type AU",
+            bool(report.get("font_exists") and str(report.get("font_path", "")).lower().endswith("gost_au.ttf")),
+            f"font_path={report.get('font_path')}",
+        ),
+        check(
+            "PDF text layer найден и принят без OCR всей страницы",
+            bool(report.get("text_lines_found", 0) > 0 and report.get("text_lines_accepted") == report.get("text_lines_found")),
+            f"found={report.get('text_lines_found')}; accepted={report.get('text_lines_accepted')}; policy={report.get('confidence_policy')}",
+        ),
+        check(
+            "Порог уверенности соблюдён: заменяются только confidence >= 0.92",
+            "confidence=1.0" in str(report.get("confidence_policy", "")),
+            str(report.get("confidence_policy")),
+        ),
+        check(
+            "Текст не рисуется контуром, а заменяется однолинейными stroke-буквами",
+            bool(stroke_style.get("single_line") is True and stroke_style.get("contour_text") is False),
+            f"stroke_style={stroke_style}",
+        ),
+        check(
+            "Не осталось символов, ушедших в fallback-глиф",
+            not report.get("missing_chars_rendered_as_fallback"),
+            f"missing_chars={report.get('missing_chars_rendered_as_fallback')}",
+        ),
+        check(
+            "Рамочная логика KOMPAS A4 clean-bbox применена и не обрезала рабочую геометрию",
+            bool(fit_meta.get("applied") and fit_meta.get("clipped_segments") == 0 and "KOMPAS A4 clean-bbox route" in logs),
+            f"fit_meta={fit_meta}; cleanup_meta={cleanup_meta}",
+        ),
+        check(
+            "G-code preflight зелёный",
+            bool(report.get("preflight_ok")),
+            str(report.get("preflight_msg")),
+        ),
+        check(
+            "Сформированы PDF/PNG preview и файлы G-code/NC",
+            all_artifacts_exist,
+            f"missing_artifacts={missing_artifacts}; artifacts={artifacts}",
+        ),
+    ]
+    return {
+        "all_passed": all(item["passed"] for item in checks),
+        "checks": checks,
+    }
+
+
 def run() -> int:
     if not SOURCE_PDF.exists():
         raise FileNotFoundError(SOURCE_PDF)
@@ -506,6 +580,12 @@ def run() -> int:
         },
         "logs": logs,
     }
+    audit_path = OUT_DIR / "06_completion_audit.json"
+    report["artifacts"]["completion_audit_json"] = str(audit_path)
+    audit = _build_completion_audit(report)
+    report["completion_audit_all_passed"] = bool(audit["all_passed"])
+    report["ok"] = bool(report["ok"] and audit["all_passed"])
+    audit_path.write_text(json.dumps(audit, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     (OUT_DIR / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(report, ensure_ascii=False, indent=2))
     return 0 if report["ok"] else 2

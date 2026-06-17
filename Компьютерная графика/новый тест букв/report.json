@@ -93,7 +93,8 @@
     "ready_gcode": "C:\\plotter_pdf\\Компьютерная графика\\новый тест букв\\04_gost_au_ready.gcode",
     "compare_pdf": "C:\\plotter_pdf\\Компьютерная графика\\новый тест букв\\05_source_vs_gost_au_compare.pdf",
     "compare_png": "C:\\plotter_pdf\\Компьютерная графика\\новый тест букв\\05_source_vs_gost_au_compare.png",
-    "text_layer_lines_json": "C:\\plotter_pdf\\Компьютерная графика\\новый тест букв\\text_layer_lines.json"
+    "text_layer_lines_json": "C:\\plotter_pdf\\Компьютерная графика\\новый тест букв\\text_layer_lines.json",
+    "completion_audit_json": "C:\\plotter_pdf\\Компьютерная графика\\новый тест букв\\06_completion_audit.json"
   },
   "logs": [
     "Segment dedup: dropped 304/1437 retraced segments (21.2%), kept=1133, eps=0.010 mm",
@@ -101,5 +102,6 @@
     "Reorder: 634 polylines ordered (nearest-end).",
     "Collinear overlap dedup: dropped 1/954 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)",
     "KOMPAS A4 clean-bbox route: source-page fit disabled; source_frame_bbox=[20.4893, 5.5033, 205.4859, 292.5232]; content_scale=0.972991; translate=(-19.9359,-289.9885) mm; pre_clip_bbox=[0.0, -284.6338, 180.0, -5.3662]; clipped_segments=0; work_area_frame=full."
-  ]
+  ],
+  "completion_audit_all_passed": true
 }
