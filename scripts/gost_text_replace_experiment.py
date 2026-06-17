@@ -25,6 +25,8 @@ GOST_AU_FONT = Path(os.environ.get("WINDIR", r"C:\Windows")) / "Fonts" / "GOST_A
 
 GlyphStroke = list[tuple[float, float]]
 Glyph = tuple[float, list[GlyphStroke]]
+GOST_ITALIC_SHEAR = 0.18
+GOST_TEXT_BOX_FILL = 0.80
 
 
 BASE_GLYPHS: dict[str, Glyph] = {
@@ -229,7 +231,7 @@ def _text_width_units(text: str) -> float:
         glyph_w, _segments = _glyph_for_char(ch)
         if saw:
             width += 1.0
-        width += glyph_w
+        width += glyph_w + GOST_ITALIC_SHEAR * 7.0
         saw = True
     return max(width, 1.0)
 
@@ -259,10 +261,10 @@ def _line_text_to_strokes_mm(line: dict[str, Any]) -> tuple[list[GlyphStroke], s
     box_h = max(max_v - min_v, 0.001)
     local_w = _text_width_units(text)
     local_h = 7.0
-    scale = 0.90 * min(box_w / local_w, box_h / local_h)
+    scale = GOST_TEXT_BOX_FILL * min(box_w / local_w, box_h / local_h)
     if scale <= 0.0:
         return [], set(text)
-    origin_u = min_u + max((box_w - local_w * scale) * 0.04, 0.0)
+    origin_u = min_u + max((box_w - local_w * scale) * 0.50, 0.0)
     origin_v = min_v + max((box_h - local_h * scale) * 0.50, 0.0)
     cursor = 0.0
     out: list[GlyphStroke] = []
@@ -276,12 +278,13 @@ def _line_text_to_strokes_mm(line: dict[str, Any]) -> tuple[list[GlyphStroke], s
         for segment in segments:
             poly: GlyphStroke = []
             for gx, gy in segment:
-                u = origin_u + (cursor + gx) * scale
+                slanted_x = gx + GOST_ITALIC_SHEAR * (7.0 - gy)
+                u = origin_u + (cursor + slanted_x) * scale
                 v = origin_v + gy * scale
                 poly.append((u * ux + v * vx, u * uy + v * vy))
             if len(poly) >= 2:
                 out.append(poly)
-        cursor += glyph_w
+        cursor += glyph_w + GOST_ITALIC_SHEAR * 7.0
     return out, missing
 
 
@@ -461,8 +464,15 @@ def run() -> int:
         "font_target": "GOST type AU",
         "font_path": str(GOST_AU_FONT),
         "font_exists": bool(font_exists),
-        "algorithm": "pdf_text_layer_to_fast_one_line_gost_like_strokes_safe",
-        "why_not_ttf_autotrace": "GOST_AU TTF centerline/autotrace per string is too slow for full KOMPAS sheets and can fragment letters; this experiment keeps the PDF text layer positions and emits deterministic one-line technical strokes.",
+        "algorithm": "pdf_text_layer_to_fast_slanted_gost_au_like_one_line_strokes_safe",
+        "stroke_style": {
+            "target_font": "GOST type AU",
+            "italic_shear": GOST_ITALIC_SHEAR,
+            "bbox_fill": GOST_TEXT_BOX_FILL,
+            "single_line": True,
+            "contour_text": False,
+        },
+        "why_not_ttf_autotrace": "GOST_AU TTF centerline/autotrace per string is too slow for full KOMPAS sheets and can fragment letters; this experiment keeps the PDF text layer positions and emits deterministic slanted one-line technical strokes.",
         "confidence_policy": "Only PDF text layer lines are accepted as confidence=1.0. No full-page OCR guesses are used.",
         "text_lines_found": len(text_lines),
         "text_lines_accepted": len(accepted_text),

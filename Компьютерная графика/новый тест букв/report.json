@@ -5,8 +5,15 @@
   "font_target": "GOST type AU",
   "font_path": "C:\\WINDOWS\\Fonts\\GOST_AU.ttf",
   "font_exists": true,
-  "algorithm": "pdf_text_layer_to_fast_one_line_gost_like_strokes_safe",
-  "why_not_ttf_autotrace": "GOST_AU TTF centerline/autotrace per string is too slow for full KOMPAS sheets and can fragment letters; this experiment keeps the PDF text layer positions and emits deterministic one-line technical strokes.",
+  "algorithm": "pdf_text_layer_to_fast_slanted_gost_au_like_one_line_strokes_safe",
+  "stroke_style": {
+    "target_font": "GOST type AU",
+    "italic_shear": 0.18,
+    "bbox_fill": 0.8,
+    "single_line": true,
+    "contour_text": false
+  },
+  "why_not_ttf_autotrace": "GOST_AU TTF centerline/autotrace per string is too slow for full KOMPAS sheets and can fragment letters; this experiment keeps the PDF text layer positions and emits deterministic slanted one-line technical strokes.",
   "confidence_policy": "Only PDF text layer lines are accepted as confidence=1.0. No full-page OCR guesses are used.",
   "text_lines_found": 42,
   "text_lines_accepted": 42,
@@ -51,15 +58,15 @@
     ]
   },
   "metrics": {
-    "draw_length_mm": 6379.994,
-    "segments_total": 990,
+    "draw_length_mm": 5971.822,
+    "segments_total": 950,
     "segments_duplicate": 0,
     "pen_down_strokes": 457,
     "short_segments_lt_035_mm": 17,
-    "micro_segments_lt_015_mm": 12,
-    "tiny_strokes_lt_08_mm": 17,
+    "micro_segments_lt_015_mm": 17,
+    "tiny_strokes_lt_08_mm": 26,
     "point_like_strokes": 17,
-    "avg_stroke_length_mm": 13.961,
+    "avg_stroke_length_mm": 13.067,
     "bounds": {
       "x_min": 0.0,
       "x_max": 180.0,
@@ -68,7 +75,7 @@
     }
   },
   "preflight_ok": true,
-  "preflight_msg": "ok: lines=3296, draw=990, travel=459, ratio=0.46",
+  "preflight_msg": "ok: lines=3256, draw=950, travel=459, ratio=0.48",
   "source_hash_unchanged": true,
   "source_sha256": "a89f83773114c2d94bd0d0376a710b586864ca09aee99adce50add2d2c5e1fc5",
   "motor_release_added": {
@@ -90,9 +97,9 @@
   },
   "logs": [
     "Segment dedup: dropped 304/1437 retraced segments (21.2%), kept=1133, eps=0.010 mm",
-    "Collinear overlap dedup: dropped 8/995 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)",
+    "Collinear overlap dedup: dropped 7/954 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)",
     "Reorder: 634 polylines ordered (nearest-end).",
-    "Collinear overlap dedup: dropped 1/991 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)",
+    "Collinear overlap dedup: dropped 1/951 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)",
     "KOMPAS A4 clean-bbox route: source-page fit disabled; source_frame_bbox=[20.4893, 5.5033, 205.4859, 292.5232]; content_scale=0.972991; translate=(-19.9359,-289.9885) mm; pre_clip_bbox=[0.0, -284.6338, 180.0, -5.3662]; clipped_segments=0; work_area_frame=full."
   ]
 }
