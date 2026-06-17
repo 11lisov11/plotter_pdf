@@ -18,6 +18,850 @@
   "text_lines_found": 42,
   "text_lines_accepted": 42,
   "text_stroke_polylines": 683,
+  "text_placement_max_overflow_mm": 0.0,
+  "text_placement_overflow_lines": [],
+  "text_placement_accepted_lines": [
+    {
+      "text": "150",
+      "bbox_mm": [
+        101.077,
+        92.639,
+        112.09,
+        100.626
+      ],
+      "dir": [
+        1.0,
+        0.0
+      ],
+      "stroke_bbox_mm": [
+        102.2843,
+        94.8031,
+        110.8827,
+        98.4619
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "120",
+      "bbox_mm": [
+        100.879,
+        190.532,
+        112.288,
+        198.518
+      ],
+      "dir": [
+        1.0,
+        0.0
+      ],
+      "stroke_bbox_mm": [
+        102.1297,
+        192.6298,
+        111.0373,
+        196.4202
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "10",
+      "bbox_mm": [
+        184.418,
+        72.136,
+        192.405,
+        80.37
+      ],
+      "dir": [
+        0.0,
+        -1.0
+      ],
+      "stroke_bbox_mm": [
+        186.3666,
+        73.2001,
+        190.4564,
+        79.3059
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "5",
+      "bbox_mm": [
+        84.719,
+        113.535,
+        90.327,
+        123.255
+      ],
+      "dir": [
+        0.707107,
+        -0.707107
+      ],
+      "stroke_bbox_mm": [
+        84.749,
+        115.0499,
+        90.297,
+        121.7401
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "R15",
+      "bbox_mm": [
+        24.531,
+        129.95,
+        35.582,
+        137.937
+      ],
+      "dir": [
+        1.0,
+        0.0
+      ],
+      "stroke_bbox_mm": [
+        25.3046,
+        132.1078,
+        34.8084,
+        135.7792
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "R20",
+      "bbox_mm": [
+        129.42,
+        119.217,
+        141.888,
+        127.203
+      ],
+      "dir": [
+        1.0,
+        0.0
+      ],
+      "stroke_bbox_mm": [
+        130.4021,
+        121.1389,
+        140.9059,
+        125.2811
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "⌀6",
+      "bbox_mm": [
+        183.022,
+        133.333,
+        192.447,
+        141.319
+      ],
+      "dir": [
+        1.0,
+        0.0
+      ],
+      "stroke_bbox_mm": [
+        183.6817,
+        134.9853,
+        191.7873,
+        139.6667
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "2 отв.",
+      "bbox_mm": [
+        183.022,
+        142.714,
+        201.946,
+        150.701
+      ],
+      "dir": [
+        1.0,
+        0.0
+      ],
+      "stroke_bbox_mm": [
+        184.8468,
+        144.8533,
+        200.1212,
+        148.5617
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "Масса",
+      "bbox_mm": [
+        172.681,
+        252.38,
+        185.296,
+        257.93
+      ],
+      "dir": [
+        1.0,
+        0.0
+      ],
+      "stroke_bbox_mm": [
+        173.7658,
+        253.8943,
+        184.2112,
+        256.4157
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "Масштаб",
+      "bbox_mm": [
+        187.634,
+        252.38,
+        205.291,
+        257.93
+      ],
+      "dir": [
+        1.0,
+        0.0
+      ],
+      "stroke_bbox_mm": [
+        188.87,
+        253.9224,
+        204.055,
+        256.3876
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "Изм. Лист",
+      "bbox_mm": [
+        20.789,
+        257.38,
+        37.128,
+        262.93
+      ],
+      "dir": [
+        1.0,
+        0.0
+      ],
+      "stroke_bbox_mm": [
+        21.9327,
+        259.1456,
+        35.9843,
+        261.1644
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "№ докум.",
+      "bbox_mm": [
+        40.725,
+        257.38,
+        58.489,
+        262.93
+      ],
+      "dir": [
+        1.0,
+        0.0
+      ],
+      "stroke_bbox_mm": [
+        42.2798,
+        259.0006,
+        56.9342,
+        261.3094
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "Подп. Дата",
+      "bbox_mm": [
+        63.198,
+        257.38,
+        85.154,
+        262.93
+      ],
+      "dir": [
+        1.0,
+        0.0
+      ],
+      "stroke_bbox_mm": [
+        64.9254,
+        258.9647,
+        83.4266,
+        261.3453
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "Лит.",
+      "bbox_mm": [
+        158.568,
+        252.38,
+        168.646,
+        257.93
+      ],
+      "dir": [
+        1.0,
+        0.0
+      ],
+      "stroke_bbox_mm": [
+        159.6646,
+        253.705,
+        167.5494,
+        256.605
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "Разраб.",
+      "bbox_mm": [
+        20.597,
+        262.38,
+        35.212,
+        267.93
+      ],
+      "dir": [
+        1.0,
+        0.0
+      ],
+      "stroke_bbox_mm": [
+        21.9249,
+        264.0247,
+        33.8841,
+        266.2853
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "Пров.",
+      "bbox_mm": [
+        20.597,
+        267.38,
+        31.416,
+        272.93
+      ],
+      "dir": [
+        1.0,
+        0.0
+      ],
+      "stroke_bbox_mm": [
+        21.6806,
+        268.9453,
+        30.3324,
+        271.3647
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "Т.контр.",
+      "bbox_mm": [
+        20.597,
+        272.38,
+        36.972,
+        277.93
+      ],
+      "dir": [
+        1.0,
+        0.0
+      ],
+      "stroke_bbox_mm": [
+        22.2509,
+        273.9736,
+        35.3181,
+        276.3364
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "Лист",
+      "bbox_mm": [
+        156.413,
+        272.38,
+        167.552,
+        277.93
+      ],
+      "dir": [
+        1.0,
+        0.0
+      ],
+      "stroke_bbox_mm": [
+        157.1927,
+        273.7649,
+        166.7723,
+        276.5451
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "Листов",
+      "bbox_mm": [
+        177.456,
+        272.38,
+        192.663,
+        277.93
+      ],
+      "dir": [
+        1.0,
+        0.0
+      ],
+      "stroke_bbox_mm": [
+        178.5524,
+        273.8877,
+        191.5666,
+        276.4222
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "Н.контр.",
+      "bbox_mm": [
+        20.597,
+        282.38,
+        36.972,
+        287.93
+      ],
+      "dir": [
+        1.0,
+        0.0
+      ],
+      "stroke_bbox_mm": [
+        22.0619,
+        283.9736,
+        35.5071,
+        286.3364
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "Утв.",
+      "bbox_mm": [
+        20.597,
+        287.38,
+        30.397,
+        292.93
+      ],
+      "dir": [
+        1.0,
+        0.0
+      ],
+      "stroke_bbox_mm": [
+        21.8889,
+        288.745,
+        29.1051,
+        291.565
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "1:1",
+      "bbox_mm": [
+        192.364,
+        261.211,
+        200.582,
+        269.198
+      ],
+      "dir": [
+        1.0,
+        0.0
+      ],
+      "stroke_bbox_mm": [
+        193.5967,
+        263.5466,
+        199.3493,
+        266.8624
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "1",
+      "bbox_mm": [
+        198.002,
+        272.38,
+        201.506,
+        277.93
+      ],
+      "dir": [
+        1.0,
+        0.0
+      ],
+      "stroke_bbox_mm": [
+        198.9307,
+        273.4316,
+        200.5773,
+        276.8784
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "КНГ.09.06",
+      "bbox_mm": [
+        126.556,
+        239.652,
+        164.24,
+        250.888
+      ],
+      "dir": [
+        1.0,
+        0.0
+      ],
+      "stroke_bbox_mm": [
+        129.1939,
+        242.893,
+        161.6021,
+        247.647
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "Маховик",
+      "bbox_mm": [
+        96.882,
+        257.422,
+        144.12,
+        273.396
+      ],
+      "dir": [
+        1.0,
+        0.0
+      ],
+      "stroke_bbox_mm": [
+        100.1887,
+        262.0333,
+        140.8133,
+        268.7847
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "Гинтер",
+      "bbox_mm": [
+        37.597,
+        262.38,
+        52.249,
+        267.93
+      ],
+      "dir": [
+        1.0,
+        0.0
+      ],
+      "stroke_bbox_mm": [
+        38.6561,
+        263.934,
+        51.1899,
+        266.376
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "Сальникова",
+      "bbox_mm": [
+        37.597,
+        267.38,
+        59.101,
+        272.93
+      ],
+      "dir": [
+        1.0,
+        0.0
+      ],
+      "stroke_bbox_mm": [
+        39.274,
+        269.0819,
+        57.424,
+        271.2281
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "Сталь 10 ГОСТ 1050-88",
+      "bbox_mm": [
+        85.604,
+        279.652,
+        155.413,
+        290.888
+      ],
+      "dir": [
+        1.0,
+        0.0
+      ],
+      "stroke_bbox_mm": [
+        90.4906,
+        283.485,
+        150.5264,
+        287.055
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "ПГУПС",
+      "bbox_mm": [
+        171.469,
+        277.902,
+        189.532,
+        285.889
+      ],
+      "dir": [
+        1.0,
+        0.0
+      ],
+      "stroke_bbox_mm": [
+        172.7334,
+        280.0904,
+        188.2676,
+        283.7006
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "ЭТ-520-з",
+      "bbox_mm": [
+        167.17,
+        284.52,
+        193.788,
+        292.507
+      ],
+      "dir": [
+        1.0,
+        0.0
+      ],
+      "stroke_bbox_mm": [
+        169.0333,
+        286.6975,
+        191.9247,
+        290.3295
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "Инв. № подл.",
+      "bbox_mm": [
+        8.38,
+        267.455,
+        13.93,
+        291.331
+      ],
+      "dir": [
+        0.0,
+        -1.0
+      ],
+      "stroke_bbox_mm": [
+        10.048,
+        269.4249,
+        12.262,
+        289.3611
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "Подп. и дата",
+      "bbox_mm": [
+        8.38,
+        237.777,
+        13.93,
+        262.245
+      ],
+      "dir": [
+        0.0,
+        -1.0
+      ],
+      "stroke_bbox_mm": [
+        10.0275,
+        239.6702,
+        12.2825,
+        260.3518
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "Взам. инв. №Инв. № дубл.",
+      "bbox_mm": [
+        8.38,
+        182.455,
+        13.93,
+        232.107
+      ],
+      "dir": [
+        0.0,
+        -1.0
+      ],
+      "stroke_bbox_mm": [
+        9.9993,
+        186.2423,
+        12.3107,
+        228.3197
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "Подп. и дата",
+      "bbox_mm": [
+        8.38,
+        152.777,
+        13.93,
+        177.245
+      ],
+      "dir": [
+        0.0,
+        -1.0
+      ],
+      "stroke_bbox_mm": [
+        10.0275,
+        154.6702,
+        12.2825,
+        175.3518
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "Справ. №",
+      "bbox_mm": [
+        8.38,
+        86.835,
+        13.93,
+        104.273
+      ],
+      "dir": [
+        0.0,
+        -1.0
+      ],
+      "stroke_bbox_mm": [
+        10.012,
+        88.1523,
+        12.298,
+        102.9557
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "Перв. примен.",
+      "bbox_mm": [
+        8.38,
+        22.399,
+        13.93,
+        47.386
+      ],
+      "dir": [
+        0.0,
+        -1.0
+      ],
+      "stroke_bbox_mm": [
+        10.0731,
+        24.4399,
+        12.2369,
+        45.3451
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "КНГ.09.06",
+      "bbox_mm": [
+        36.76,
+        6.612,
+        74.444,
+        17.848
+      ],
+      "dir": [
+        -1.0,
+        -0.0
+      ],
+      "stroke_bbox_mm": [
+        39.3979,
+        9.853,
+        71.8061,
+        14.607
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "Копировал",
+      "bbox_mm": [
+        95.597,
+        292.38,
+        115.434,
+        297.93
+      ],
+      "dir": [
+        1.0,
+        0.0
+      ],
+      "stroke_bbox_mm": [
+        96.9856,
+        294.0517,
+        114.0454,
+        296.2583
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "Формат",
+      "bbox_mm": [
+        165.597,
+        292.38,
+        181.644,
+        297.93
+      ],
+      "dir": [
+        1.0,
+        0.0
+      ],
+      "stroke_bbox_mm": [
+        166.8381,
+        293.8396,
+        180.4029,
+        296.4704
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "A4",
+      "bbox_mm": [
+        185.597,
+        292.38,
+        192.348,
+        297.93
+      ],
+      "dir": [
+        1.0,
+        0.0
+      ],
+      "stroke_bbox_mm": [
+        186.2114,
+        293.4784,
+        191.7336,
+        296.8316
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "Не для коммерческого использования",
+      "bbox_mm": [
+        8.5,
+        292.356,
+        79.254,
+        297.774
+      ],
+      "dir": [
+        1.0,
+        0.0
+      ],
+      "stroke_bbox_mm": [
+        13.4528,
+        293.99,
+        74.3012,
+        296.14
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "КОМПАС-3D v24 Учебная версия © 2025 ООО \"АСКОН-Системы проектирования\", Россия. Все права защищены.",
+      "bbox_mm": [
+        3.106,
+        80.0,
+        8.524,
+        292.5
+      ],
+      "dir": [
+        0.0,
+        -1.0
+      ],
+      "stroke_bbox_mm": [
+        4.4986,
+        95.1857,
+        7.1314,
+        277.3143
+      ],
+      "bbox_overflow_mm": 0.0
+    }
+  ],
   "geometry_polylines": 349,
   "missing_chars_rendered_as_fallback": [],
   "page_size_mm": [
@@ -58,15 +902,15 @@
     ]
   },
   "metrics": {
-    "draw_length_mm": 6080.02,
-    "segments_total": 953,
+    "draw_length_mm": 6271.353,
+    "segments_total": 978,
     "segments_duplicate": 0,
     "pen_down_strokes": 455,
     "short_segments_lt_035_mm": 17,
-    "micro_segments_lt_015_mm": 17,
-    "tiny_strokes_lt_08_mm": 22,
+    "micro_segments_lt_015_mm": 13,
+    "tiny_strokes_lt_08_mm": 17,
     "point_like_strokes": 17,
-    "avg_stroke_length_mm": 13.363,
+    "avg_stroke_length_mm": 13.783,
     "bounds": {
       "x_min": 0.0,
       "x_max": 180.0,
@@ -75,7 +919,7 @@
     }
   },
   "preflight_ok": true,
-  "preflight_msg": "ok: lines=3249, draw=953, travel=457, ratio=0.48",
+  "preflight_msg": "ok: lines=3274, draw=978, travel=457, ratio=0.47",
   "source_hash_unchanged": true,
   "source_sha256": "a89f83773114c2d94bd0d0376a710b586864ca09aee99adce50add2d2c5e1fc5",
   "motor_release_added": {
@@ -91,16 +935,16 @@
     "ready_preview_png": "C:\\plotter_pdf\\Компьютерная графика\\новый тест букв\\04_gost_au_ready_preview.png",
     "ready_nc": "C:\\plotter_pdf\\Компьютерная графика\\новый тест букв\\04_gost_au_ready.nc",
     "ready_gcode": "C:\\plotter_pdf\\Компьютерная графика\\новый тест букв\\04_gost_au_ready.gcode",
-    "compare_pdf": "C:\\plotter_pdf\\Компьютерная графика\\новый тест букв\\05_source_vs_gost_au_compare.pdf",
+    "compare_pdf": "C:\\plotter_pdf\\Компьютерная графика\\новый тест букв\\05_source_vs_gost_au_compare_latest.pdf",
     "compare_png": "C:\\plotter_pdf\\Компьютерная графика\\новый тест букв\\05_source_vs_gost_au_compare.png",
     "text_layer_lines_json": "C:\\plotter_pdf\\Компьютерная графика\\новый тест букв\\text_layer_lines.json",
     "completion_audit_json": "C:\\plotter_pdf\\Компьютерная графика\\новый тест букв\\06_completion_audit.json"
   },
   "logs": [
     "Segment dedup: dropped 304/1437 retraced segments (21.2%), kept=1133, eps=0.010 mm",
-    "Collinear overlap dedup: dropped 7/957 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)",
+    "Collinear overlap dedup: dropped 7/982 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)",
     "Reorder: 634 polylines ordered (nearest-end).",
-    "Collinear overlap dedup: dropped 1/954 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)",
+    "Collinear overlap dedup: dropped 1/979 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)",
     "KOMPAS A4 clean-bbox route: source-page fit disabled; source_frame_bbox=[20.4893, 5.5033, 205.4859, 292.5232]; content_scale=0.972991; translate=(-19.9359,-289.9885) mm; pre_clip_bbox=[0.0, -284.6338, 180.0, -5.3662]; clipped_segments=0; work_area_frame=full."
   ],
   "completion_audit_all_passed": true

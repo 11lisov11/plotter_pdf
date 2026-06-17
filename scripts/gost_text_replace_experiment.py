@@ -231,9 +231,63 @@ def _text_width_units(text: str) -> float:
         glyph_w, _segments = _glyph_for_char(ch)
         if saw:
             width += 1.0
-        width += glyph_w + GOST_ITALIC_SHEAR * 7.0
+        width += glyph_w
         saw = True
+    if saw:
+        width += GOST_ITALIC_SHEAR * 7.0
     return max(width, 1.0)
+
+
+def _bbox_of_polylines(polylines: list[GlyphStroke]) -> list[float] | None:
+    points = [point for poly in polylines for point in poly]
+    if not points:
+        return None
+    xs = [point[0] for point in points]
+    ys = [point[1] for point in points]
+    return [min(xs), min(ys), max(xs), max(ys)]
+
+
+def _bbox_overflow_mm(inner: list[float] | None, outer: list[float], *, tolerance_mm: float = 0.0) -> float:
+    if inner is None or len(outer) != 4:
+        return 0.0
+    ix0, iy0, ix1, iy1 = inner
+    ox0, oy0, ox1, oy1 = outer
+    return max(
+        0.0,
+        ox0 - ix0 - tolerance_mm,
+        oy0 - iy0 - tolerance_mm,
+        ix1 - ox1 - tolerance_mm,
+        iy1 - oy1 - tolerance_mm,
+    )
+
+
+def _fit_polylines_inside_bbox(polylines: list[GlyphStroke], bbox: list[float], *, pad_mm: float = 0.03) -> list[GlyphStroke]:
+    stroke_bbox = _bbox_of_polylines(polylines)
+    if stroke_bbox is None or len(bbox) != 4:
+        return polylines
+    sx0, sy0, sx1, sy1 = stroke_bbox
+    bx0, by0, bx1, by1 = bbox
+    stroke_w = max(sx1 - sx0, 1e-6)
+    stroke_h = max(sy1 - sy0, 1e-6)
+    target_w = max(bx1 - bx0 - pad_mm * 2.0, 1e-6)
+    target_h = max(by1 - by0 - pad_mm * 2.0, 1e-6)
+    scale = min(1.0, target_w / stroke_w, target_h / stroke_h)
+    stroke_cx = (sx0 + sx1) * 0.5
+    stroke_cy = (sy0 + sy1) * 0.5
+    target_cx = (bx0 + bx1) * 0.5
+    target_cy = (by0 + by1) * 0.5
+    fitted: list[GlyphStroke] = []
+    for poly in polylines:
+        fitted.append(
+            [
+                (
+                    target_cx + (x - stroke_cx) * scale,
+                    target_cy + (y - stroke_cy) * scale,
+                )
+                for x, y in poly
+            ]
+        )
+    return fitted
 
 
 def _line_text_to_strokes_mm(line: dict[str, Any]) -> tuple[list[GlyphStroke], set[str]]:
@@ -284,7 +338,8 @@ def _line_text_to_strokes_mm(line: dict[str, Any]) -> tuple[list[GlyphStroke], s
                 poly.append((u * ux + v * vx, u * uy + v * vy))
             if len(poly) >= 2:
                 out.append(poly)
-        cursor += glyph_w + GOST_ITALIC_SHEAR * 7.0
+        cursor += glyph_w
+    out = _fit_polylines_inside_bbox(out, [x0, y0, x1, y1], pad_mm=0.03)
     return out, missing
 
 
@@ -298,8 +353,19 @@ def _make_text_strokes(text_lines: list[dict[str, Any]]) -> tuple[list[GlyphStro
         line_strokes, line_missing = _line_text_to_strokes_mm(line)
         missing.update(line_missing)
         if line_strokes:
+            bbox_mm = [float(v) for v in line.get("bbox_mm", (0, 0, 0, 0))[:4]]
+            stroke_bbox = _bbox_of_polylines(line_strokes)
+            overflow = _bbox_overflow_mm(stroke_bbox, bbox_mm, tolerance_mm=0.03)
             strokes.extend(line_strokes)
-            accepted.append({"text": line.get("text", ""), "bbox_mm": line.get("bbox_mm"), "dir": line.get("dir")})
+            accepted.append(
+                {
+                    "text": line.get("text", ""),
+                    "bbox_mm": line.get("bbox_mm"),
+                    "dir": line.get("dir"),
+                    "stroke_bbox_mm": [round(v, 4) for v in stroke_bbox] if stroke_bbox else None,
+                    "bbox_overflow_mm": round(float(overflow), 4),
+                }
+            )
     return strokes, accepted, missing
 
 
@@ -343,7 +409,7 @@ def _render_pdf_page_to_png(pdf_path: Path, png_path: Path, *, dpi: int = 180) -
         pix.save(png_path)
 
 
-def _build_compare_pdf(source_pdf: Path, result_pdf: Path, out_pdf: Path) -> None:
+def _build_compare_pdf(source_pdf: Path, result_pdf: Path, out_pdf: Path) -> Path:
     mm_to_pt = 72.0 / 25.4
     gap_pt = 10.0 * mm_to_pt
     label_h = 9.0 * mm_to_pt
@@ -362,7 +428,19 @@ def _build_compare_pdf(source_pdf: Path, result_pdf: Path, out_pdf: Path) -> Non
             page.show_pdf_page(left_rect, src_doc, 0, keep_proportion=True)
             page.show_pdf_page(right_rect, res_doc, 0, keep_proportion=True)
             out_pdf.parent.mkdir(parents=True, exist_ok=True)
-            out.save(out_pdf)
+            candidates = [
+                out_pdf,
+                out_pdf.with_name(f"{out_pdf.stem}_latest{out_pdf.suffix}"),
+                out_pdf.with_name(f"{out_pdf.stem}_{os.getpid()}{out_pdf.suffix}"),
+            ]
+            last_error: Exception | None = None
+            for candidate in candidates:
+                try:
+                    out.save(candidate)
+                    return candidate
+                except Exception as exc:
+                    last_error = exc
+            raise RuntimeError(f"Could not save compare PDF near {out_pdf}: {last_error}") from last_error
         finally:
             out.close()
 
@@ -379,6 +457,8 @@ def _build_completion_audit(report: dict[str, Any]) -> dict[str, Any]:
     stroke_style = report.get("stroke_style", {})
     cleanup_meta = report.get("cleanup_meta", {})
     fit_meta = report.get("fit_meta", {})
+    max_text_overflow = float(report.get("text_placement_max_overflow_mm", 999.0) or 0.0)
+    overflow_lines = list(report.get("text_placement_overflow_lines", []) or [])
     source_pdf = Path(str(report.get("source_pdf", "")))
     copied_pdf = Path(str(report.get("copied_pdf", "")))
     out_dir_ok = OUT_DIR.exists() and copied_pdf.parent == OUT_DIR
@@ -418,6 +498,11 @@ def _build_completion_audit(report: dict[str, Any]) -> dict[str, Any]:
             "Не осталось символов, ушедших в fallback-глиф",
             not report.get("missing_chars_rendered_as_fallback"),
             f"missing_chars={report.get('missing_chars_rendered_as_fallback')}",
+        ),
+        check(
+            "Stroke-текст не выходит за исходные PDF text bbox",
+            bool(max_text_overflow <= 0.05 and not overflow_lines),
+            f"max_overflow_mm={max_text_overflow}; overflow_lines={overflow_lines[:5]}",
         ),
         check(
             "Рамочная логика KOMPAS A4 clean-bbox применена и не обрезала рабочую геометрию",
@@ -522,11 +607,13 @@ def run() -> int:
 
     metrics = prep._analyze_gcode(ready_nc)
     preflight_ok, preflight_msg = backend.preflight_check_gcode(ready_nc, logs.append)
+    text_overflow_lines = [line for line in accepted_text if float(line.get("bbox_overflow_mm", 0.0) or 0.0) > 0.05]
+    max_text_overflow = max((float(line.get("bbox_overflow_mm", 0.0) or 0.0) for line in accepted_text), default=0.0)
 
-    compare_pdf = OUT_DIR / "05_source_vs_gost_au_compare.pdf"
+    requested_compare_pdf = OUT_DIR / "05_source_vs_gost_au_compare.pdf"
     compare_png = OUT_DIR / "05_source_vs_gost_au_compare.png"
     ready_png = OUT_DIR / "04_gost_au_ready_preview.png"
-    _build_compare_pdf(copied_pdf, sheet_preview_pdf, compare_pdf)
+    compare_pdf = _build_compare_pdf(copied_pdf, sheet_preview_pdf, requested_compare_pdf)
     _render_pdf_page_to_png(compare_pdf, compare_png, dpi=170)
     _render_pdf_page_to_png(ready_pdf, ready_png, dpi=190)
 
@@ -551,6 +638,9 @@ def run() -> int:
         "text_lines_found": len(text_lines),
         "text_lines_accepted": len(accepted_text),
         "text_stroke_polylines": len(text_polys),
+        "text_placement_max_overflow_mm": round(float(max_text_overflow), 4),
+        "text_placement_overflow_lines": text_overflow_lines,
+        "text_placement_accepted_lines": accepted_text,
         "geometry_polylines": len(geometry_polys),
         "missing_chars_rendered_as_fallback": sorted(missing_chars),
         "page_size_mm": [round(float(page_w_mm), 3), round(float(page_h_mm), 3)],
