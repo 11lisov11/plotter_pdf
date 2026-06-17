@@ -8,8 +8,8 @@
   "algorithm": "pdf_text_layer_to_fast_slanted_gost_au_like_one_line_strokes_safe",
   "stroke_style": {
     "target_font": "GOST type AU",
-    "italic_shear": 0.18,
-    "bbox_fill": 0.8,
+    "italic_shear": 0.16,
+    "bbox_fill": 0.86,
     "single_line": true,
     "contour_text": false
   },
@@ -58,15 +58,15 @@
     ]
   },
   "metrics": {
-    "draw_length_mm": 5971.822,
-    "segments_total": 950,
+    "draw_length_mm": 6080.02,
+    "segments_total": 953,
     "segments_duplicate": 0,
-    "pen_down_strokes": 457,
+    "pen_down_strokes": 455,
     "short_segments_lt_035_mm": 17,
     "micro_segments_lt_015_mm": 17,
-    "tiny_strokes_lt_08_mm": 26,
+    "tiny_strokes_lt_08_mm": 22,
     "point_like_strokes": 17,
-    "avg_stroke_length_mm": 13.067,
+    "avg_stroke_length_mm": 13.363,
     "bounds": {
       "x_min": 0.0,
       "x_max": 180.0,
@@ -75,7 +75,7 @@
     }
   },
   "preflight_ok": true,
-  "preflight_msg": "ok: lines=3256, draw=950, travel=459, ratio=0.48",
+  "preflight_msg": "ok: lines=3249, draw=953, travel=457, ratio=0.48",
   "source_hash_unchanged": true,
   "source_sha256": "a89f83773114c2d94bd0d0376a710b586864ca09aee99adce50add2d2c5e1fc5",
   "motor_release_added": {
@@ -97,9 +97,9 @@
   },
   "logs": [
     "Segment dedup: dropped 304/1437 retraced segments (21.2%), kept=1133, eps=0.010 mm",
-    "Collinear overlap dedup: dropped 7/954 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)",
+    "Collinear overlap dedup: dropped 7/957 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)",
     "Reorder: 634 polylines ordered (nearest-end).",
-    "Collinear overlap dedup: dropped 1/951 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)",
+    "Collinear overlap dedup: dropped 1/954 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)",
     "KOMPAS A4 clean-bbox route: source-page fit disabled; source_frame_bbox=[20.4893, 5.5033, 205.4859, 292.5232]; content_scale=0.972991; translate=(-19.9359,-289.9885) mm; pre_clip_bbox=[0.0, -284.6338, 180.0, -5.3662]; clipped_segments=0; work_area_frame=full."
   ]
 }

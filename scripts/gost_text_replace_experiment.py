@@ -25,8 +25,8 @@ GOST_AU_FONT = Path(os.environ.get("WINDIR", r"C:\Windows")) / "Fonts" / "GOST_A
 
 GlyphStroke = list[tuple[float, float]]
 Glyph = tuple[float, list[GlyphStroke]]
-GOST_ITALIC_SHEAR = 0.18
-GOST_TEXT_BOX_FILL = 0.80
+GOST_ITALIC_SHEAR = 0.16
+GOST_TEXT_BOX_FILL = 0.86
 
 
 BASE_GLYPHS: dict[str, Glyph] = {
