@@ -1,0 +1,1052 @@
+[
+  {
+    "text": "150",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      286.518,
+      262.599,
+      317.735,
+      285.238
+    ],
+    "bbox_mm": [
+      101.077,
+      92.639,
+      112.09,
+      100.626
+    ],
+    "dir": [
+      1.0,
+      0.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 20.732
+  },
+  {
+    "text": "120",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      285.955,
+      540.09,
+      318.298,
+      562.729
+    ],
+    "bbox_mm": [
+      100.879,
+      190.532,
+      112.288,
+      198.518
+    ],
+    "dir": [
+      1.0,
+      0.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 20.732
+  },
+  {
+    "text": "10",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      522.761,
+      204.479,
+      545.4,
+      227.821
+    ],
+    "bbox_mm": [
+      184.418,
+      72.136,
+      192.405,
+      80.37
+    ],
+    "dir": [
+      0.0,
+      -1.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 20.732
+  },
+  {
+    "text": "5",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      240.147,
+      321.832,
+      256.046,
+      349.385
+    ],
+    "bbox_mm": [
+      84.719,
+      113.535,
+      90.327,
+      123.255
+    ],
+    "dir": [
+      0.707107,
+      -0.707107
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 20.732
+  },
+  {
+    "text": "R15",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      69.537,
+      368.362,
+      100.863,
+      391.001
+    ],
+    "bbox_mm": [
+      24.531,
+      129.95,
+      35.582,
+      137.937
+    ],
+    "dir": [
+      1.0,
+      0.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 20.732
+  },
+  {
+    "text": "R20",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      366.859,
+      337.937,
+      402.201,
+      360.577
+    ],
+    "bbox_mm": [
+      129.42,
+      119.217,
+      141.888,
+      127.203
+    ],
+    "dir": [
+      1.0,
+      0.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 20.732
+  },
+  {
+    "text": "⌀6",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      518.803,
+      377.951,
+      545.52,
+      400.59
+    ],
+    "bbox_mm": [
+      183.022,
+      133.333,
+      192.447,
+      141.319
+    ],
+    "dir": [
+      1.0,
+      0.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 20.732
+  },
+  {
+    "text": "2 отв.",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      518.803,
+      404.545,
+      572.445,
+      427.184
+    ],
+    "bbox_mm": [
+      183.022,
+      142.714,
+      201.946,
+      150.701
+    ],
+    "dir": [
+      1.0,
+      0.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 20.732
+  },
+  {
+    "text": "Масса",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      489.49,
+      715.409,
+      525.248,
+      731.141
+    ],
+    "bbox_mm": [
+      172.681,
+      252.38,
+      185.296,
+      257.93
+    ],
+    "dir": [
+      1.0,
+      0.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 14.407
+  },
+  {
+    "text": "Масштаб",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      531.876,
+      715.409,
+      581.928,
+      731.141
+    ],
+    "bbox_mm": [
+      187.634,
+      252.38,
+      205.291,
+      257.93
+    ],
+    "dir": [
+      1.0,
+      0.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 14.151
+  },
+  {
+    "text": "Изм. Лист",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      58.929,
+      729.582,
+      105.246,
+      745.314
+    ],
+    "bbox_mm": [
+      20.789,
+      257.38,
+      37.128,
+      262.93
+    ],
+    "dir": [
+      1.0,
+      0.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 13.154
+  },
+  {
+    "text": "№ докум.",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      115.442,
+      729.582,
+      165.797,
+      745.314
+    ],
+    "bbox_mm": [
+      40.725,
+      257.38,
+      58.489,
+      262.93
+    ],
+    "dir": [
+      1.0,
+      0.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 14.407
+  },
+  {
+    "text": "Подп. Дата",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      179.144,
+      729.582,
+      241.381,
+      745.314
+    ],
+    "bbox_mm": [
+      63.198,
+      257.38,
+      85.154,
+      262.93
+    ],
+    "dir": [
+      1.0,
+      0.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 13.154
+  },
+  {
+    "text": "Лит.",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      449.485,
+      715.409,
+      478.053,
+      731.141
+    ],
+    "bbox_mm": [
+      158.568,
+      252.38,
+      168.646,
+      257.93
+    ],
+    "dir": [
+      1.0,
+      0.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 14.407
+  },
+  {
+    "text": "Разраб.",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      58.384,
+      743.755,
+      99.814,
+      759.488
+    ],
+    "bbox_mm": [
+      20.597,
+      262.38,
+      35.212,
+      267.93
+    ],
+    "dir": [
+      1.0,
+      0.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 14.407
+  },
+  {
+    "text": "Пров.",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      58.384,
+      757.928,
+      89.052,
+      773.661
+    ],
+    "bbox_mm": [
+      20.597,
+      267.38,
+      31.416,
+      272.93
+    ],
+    "dir": [
+      1.0,
+      0.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 14.407
+  },
+  {
+    "text": "Т.контр.",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      58.384,
+      772.102,
+      104.802,
+      787.834
+    ],
+    "bbox_mm": [
+      20.597,
+      272.38,
+      36.972,
+      277.93
+    ],
+    "dir": [
+      1.0,
+      0.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 14.407
+  },
+  {
+    "text": "Лист",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      443.375,
+      772.102,
+      474.951,
+      787.834
+    ],
+    "bbox_mm": [
+      156.413,
+      272.38,
+      167.552,
+      277.93
+    ],
+    "dir": [
+      1.0,
+      0.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 14.407
+  },
+  {
+    "text": "Листов",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      503.024,
+      772.102,
+      546.132,
+      787.834
+    ],
+    "bbox_mm": [
+      177.456,
+      272.38,
+      192.663,
+      277.93
+    ],
+    "dir": [
+      1.0,
+      0.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 14.407
+  },
+  {
+    "text": "Н.контр.",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      58.384,
+      800.448,
+      104.802,
+      816.181
+    ],
+    "bbox_mm": [
+      20.597,
+      282.38,
+      36.972,
+      287.93
+    ],
+    "dir": [
+      1.0,
+      0.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 14.407
+  },
+  {
+    "text": "Утв.",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      58.384,
+      814.621,
+      86.164,
+      830.354
+    ],
+    "bbox_mm": [
+      20.597,
+      287.38,
+      30.397,
+      292.93
+    ],
+    "dir": [
+      1.0,
+      0.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 14.407
+  },
+  {
+    "text": "1:1",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      545.283,
+      740.441,
+      568.578,
+      763.08
+    ],
+    "bbox_mm": [
+      192.364,
+      261.211,
+      200.582,
+      269.198
+    ],
+    "dir": [
+      1.0,
+      0.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 20.732
+  },
+  {
+    "text": "1",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      561.266,
+      772.102,
+      571.2,
+      787.834
+    ],
+    "bbox_mm": [
+      198.002,
+      272.38,
+      201.506,
+      277.93
+    ],
+    "dir": [
+      1.0,
+      0.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 14.407
+  },
+  {
+    "text": "КНГ.09.06",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      358.74,
+      679.329,
+      465.562,
+      711.178
+    ],
+    "bbox_mm": [
+      126.556,
+      239.652,
+      164.24,
+      250.888
+    ],
+    "dir": [
+      1.0,
+      0.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 29.165
+  },
+  {
+    "text": "Маховик",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      274.625,
+      729.701,
+      408.528,
+      774.98
+    ],
+    "bbox_mm": [
+      96.882,
+      257.422,
+      144.12,
+      273.396
+    ],
+    "dir": [
+      1.0,
+      0.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 41.464
+  },
+  {
+    "text": "Гинтер",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      106.573,
+      743.755,
+      148.106,
+      759.488
+    ],
+    "bbox_mm": [
+      37.597,
+      262.38,
+      52.249,
+      267.93
+    ],
+    "dir": [
+      1.0,
+      0.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 14.407
+  },
+  {
+    "text": "Сальникова",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      106.573,
+      757.928,
+      167.531,
+      773.661
+    ],
+    "bbox_mm": [
+      37.597,
+      267.38,
+      59.101,
+      272.93
+    ],
+    "dir": [
+      1.0,
+      0.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 14.407
+  },
+  {
+    "text": "Сталь 10 ГОСТ 1050-88",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      242.657,
+      792.715,
+      440.542,
+      824.564
+    ],
+    "bbox_mm": [
+      85.604,
+      279.652,
+      155.413,
+      290.888
+    ],
+    "dir": [
+      1.0,
+      0.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 26.127
+  },
+  {
+    "text": "ПГУПС",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      486.054,
+      787.754,
+      537.255,
+      810.393
+    ],
+    "bbox_mm": [
+      171.469,
+      277.902,
+      189.532,
+      285.889
+    ],
+    "dir": [
+      1.0,
+      0.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 20.732
+  },
+  {
+    "text": "ЭТ-520-з",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      473.866,
+      806.514,
+      549.32,
+      829.153
+    ],
+    "bbox_mm": [
+      167.17,
+      284.52,
+      193.788,
+      292.507
+    ],
+    "dir": [
+      1.0,
+      0.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 20.732
+  },
+  {
+    "text": "Инв. № подл.",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      23.755,
+      758.139,
+      39.488,
+      825.819
+    ],
+    "bbox_mm": [
+      8.38,
+      267.455,
+      13.93,
+      291.331
+    ],
+    "dir": [
+      0.0,
+      -1.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 14.407
+  },
+  {
+    "text": "Подп. и дата",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      23.755,
+      674.015,
+      39.488,
+      743.373
+    ],
+    "bbox_mm": [
+      8.38,
+      237.777,
+      13.93,
+      262.245
+    ],
+    "dir": [
+      0.0,
+      -1.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 14.407
+  },
+  {
+    "text": "Взам. инв. №Инв. № дубл.",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      23.755,
+      517.194,
+      39.488,
+      657.94
+    ],
+    "bbox_mm": [
+      8.38,
+      182.455,
+      13.93,
+      232.107
+    ],
+    "dir": [
+      0.0,
+      -1.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 14.407
+  },
+  {
+    "text": "Подп. и дата",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      23.755,
+      433.07,
+      39.488,
+      502.428
+    ],
+    "bbox_mm": [
+      8.38,
+      152.777,
+      13.93,
+      177.245
+    ],
+    "dir": [
+      0.0,
+      -1.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 14.407
+  },
+  {
+    "text": "Справ. №",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      23.755,
+      246.147,
+      39.488,
+      295.576
+    ],
+    "bbox_mm": [
+      8.38,
+      86.835,
+      13.93,
+      104.273
+    ],
+    "dir": [
+      0.0,
+      -1.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 14.407
+  },
+  {
+    "text": "Перв. примен.",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      23.755,
+      63.493,
+      39.488,
+      134.323
+    ],
+    "bbox_mm": [
+      8.38,
+      22.399,
+      13.93,
+      47.386
+    ],
+    "dir": [
+      0.0,
+      -1.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 14.407
+  },
+  {
+    "text": "КНГ.09.06",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      104.202,
+      18.743,
+      211.024,
+      50.592
+    ],
+    "bbox_mm": [
+      36.76,
+      6.612,
+      74.444,
+      17.848
+    ],
+    "dir": [
+      -1.0,
+      -0.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 29.165
+  },
+  {
+    "text": "Копировал",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      270.983,
+      828.795,
+      327.216,
+      844.527
+    ],
+    "bbox_mm": [
+      95.597,
+      292.38,
+      115.434,
+      297.93
+    ],
+    "dir": [
+      1.0,
+      0.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 14.407
+  },
+  {
+    "text": "Формат",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      469.408,
+      828.795,
+      514.896,
+      844.527
+    ],
+    "bbox_mm": [
+      165.597,
+      292.38,
+      181.644,
+      297.93
+    ],
+    "dir": [
+      1.0,
+      0.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 14.407
+  },
+  {
+    "text": "A4",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      526.101,
+      828.795,
+      545.24,
+      844.527
+    ],
+    "bbox_mm": [
+      185.597,
+      292.38,
+      192.348,
+      297.93
+    ],
+    "dir": [
+      1.0,
+      0.0
+    ],
+    "font_names": [
+      "GOSTypeAU"
+    ],
+    "font_size_pt_median": 14.407
+  },
+  {
+    "text": "Не для коммерческого использования",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      24.094,
+      828.726,
+      224.656,
+      844.085
+    ],
+    "bbox_mm": [
+      8.5,
+      292.356,
+      79.254,
+      297.774
+    ],
+    "dir": [
+      1.0,
+      0.0
+    ],
+    "font_names": [
+      "Arial-ItalicMT,Italic"
+    ],
+    "font_size_pt_median": 13.414
+  },
+  {
+    "text": "КОМПАС-3D v24 Учебная версия © 2025 ООО \"АСКОН-Системы проектирования\", Россия. Все права защищены.",
+    "confidence": 1.0,
+    "source": "pdf_text_layer",
+    "bbox_pt": [
+      8.805,
+      226.771,
+      24.164,
+      829.134
+    ],
+    "bbox_mm": [
+      3.106,
+      80.0,
+      8.524,
+      292.5
+    ],
+    "dir": [
+      0.0,
+      -1.0
+    ],
+    "font_names": [
+      "Arial-ItalicMT,Italic"
+    ],
+    "font_size_pt_median": 13.414
+  }
+]
