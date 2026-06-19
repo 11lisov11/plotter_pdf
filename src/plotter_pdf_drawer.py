@@ -9593,7 +9593,7 @@ def _prepared_pack_gcode_for_clean_source(input_path: Path) -> Optional[Path]:
         return None
     if not p.parent.name.lower().endswith("_pack"):
         return None
-    for name in ("page_01.gcode", "page_01.nc"):
+    for name in ("page_01_new_algorithm.gcode", "page_01_new_algorithm.nc", "page_01.gcode", "page_01.nc"):
         candidate = p.parent / name
         if candidate.exists() and candidate.is_file():
             return candidate

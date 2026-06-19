@@ -19,7 +19,7 @@
     {
       "requirement": "PDF text layer найден и принят без OCR всей страницы",
       "passed": true,
-      "evidence": "found=42; accepted=42; policy=Only PDF text layer lines are accepted as confidence=1.0. No full-page OCR guesses are used."
+      "evidence": "found=42; accepted=44; policy=Only PDF text layer lines are accepted as confidence=1.0. No full-page OCR guesses are used."
     },
     {
       "requirement": "Порог уверенности соблюдён: заменяются только confidence >= 0.92",
@@ -29,7 +29,22 @@
     {
       "requirement": "Текст не рисуется контуром, а заменяется однолинейными stroke-буквами",
       "passed": true,
-      "evidence": "stroke_style={'target_font': 'GOST type AU', 'italic_shear': 0.16, 'bbox_fill': 0.86, 'single_line': True, 'contour_text': False}"
+      "evidence": "stroke_style={'target_font': 'GOST type AU', 'italic_shear': 0.3, 'bbox_fill': 0.86, 'stamp_cell_text_fill': 0.62, 'stamp_cell_text_fill_tight': 0.5, 'stamp_role_text_fill': 0.68, 'stamp_role_letter_spacing_units': 0.58, 'lowercase_width_scale': 0.93, 'lowercase_y_offset': 1.15, 'lowercase_height_scale': 0.8357142857142856, 'single_line': True, 'contour_text': False}"
+    },
+    {
+      "requirement": "Регистр текста учитывается: строчные буквы не превращаются в полноразмерные заглавные",
+      "passed": true,
+      "evidence": "case_sensitive=True; lowercase_chars=227; stroke_style={'target_font': 'GOST type AU', 'italic_shear': 0.3, 'bbox_fill': 0.86, 'stamp_cell_text_fill': 0.62, 'stamp_cell_text_fill_tight': 0.5, 'stamp_role_text_fill': 0.68, 'stamp_role_letter_spacing_units': 0.58, 'lowercase_width_scale': 0.93, 'lowercase_y_offset': 1.15, 'lowercase_height_scale': 0.8357142857142856, 'single_line': True, 'contour_text': False}"
+    },
+    {
+      "requirement": "Заголовки штампа центрируются по ячейкам, а не по слепленному PDF text bbox",
+      "passed": true,
+      "evidence": "stamp_cell_centered_lines=10; enabled=True"
+    },
+    {
+      "requirement": "Цифра 1 не рисуется стрелкой вверх",
+      "passed": true,
+      "evidence": "digit_one_arrow=False"
     },
     {
       "requirement": "Не осталось символов, ушедших в fallback-глиф",
@@ -44,17 +59,17 @@
     {
       "requirement": "Рамочная логика KOMPAS A4 clean-bbox применена и не обрезала рабочую геометрию",
       "passed": true,
-      "evidence": "fit_meta={'applied': True, 'source_bbox': [20.4893, 5.5033, 205.4859, 292.5232], 'removed_segments': 8, 'content_scale': 0.972991, 'translate_x_mm': -19.935902, 'translate_y_mm': -289.98853, 'pre_clip_bbox': [0.0, -284.6338, 180.0, -5.3662], 'clipped_segments': 0, 'work_area_bounds': [0.0, 180.0, -285.0, -5.0]}; cleanup_meta={'archive_strip_removed': 7, 'archive_strip_clipped': 0, 'service_region_removed': 378, 'under_frame_removed': 1, 'top_outer_frame_removed': 2}"
+      "evidence": "fit_meta={'applied': True, 'source_bbox': [20.4893, 5.5033, 205.4859, 292.5232], 'removed_segments': 8, 'content_scale': 0.972991, 'translate_x_mm': -19.935902, 'translate_y_mm': -289.98853, 'pre_clip_bbox': [0.0, -284.6338, 180.0, -5.3662], 'clipped_segments': 0, 'work_area_bounds': [0.0, 180.0, -285.0, -5.0]}; cleanup_meta={'archive_strip_removed': 7, 'archive_strip_clipped': 0, 'service_region_removed': 380, 'under_frame_removed': 1, 'top_outer_frame_removed': 2}"
     },
     {
       "requirement": "G-code preflight зелёный",
       "passed": true,
-      "evidence": "ok: lines=3274, draw=978, travel=457, ratio=0.47"
+      "evidence": "ok: lines=3224, draw=948, travel=453, ratio=0.48"
     },
     {
       "requirement": "Сформированы PDF/PNG preview и файлы G-code/NC",
       "passed": true,
-      "evidence": "missing_artifacts=[]; artifacts={'raw_svg': 'C:\\\\plotter_pdf\\\\Компьютерная графика\\\\новый тест букв\\\\01_pdf_text_layer_geometry_only.svg', 'stroke_svg': 'C:\\\\plotter_pdf\\\\Компьютерная графика\\\\новый тест букв\\\\02_gost_au_fast_stroke_source.svg', 'cleaned_svg': 'C:\\\\plotter_pdf\\\\Компьютерная графика\\\\новый тест букв\\\\03_gost_au_after_frame_cleanup.svg', 'sheet_preview_pdf': 'C:\\\\plotter_pdf\\\\Компьютерная графика\\\\новый тест букв\\\\03_gost_au_sheet_preview.pdf', 'ready_preview_pdf': 'C:\\\\plotter_pdf\\\\Компьютерная графика\\\\новый тест букв\\\\04_gost_au_ready_preview.pdf', 'ready_preview_png': 'C:\\\\plotter_pdf\\\\Компьютерная графика\\\\новый тест букв\\\\04_gost_au_ready_preview.png', 'ready_nc': 'C:\\\\plotter_pdf\\\\Компьютерная графика\\\\новый тест букв\\\\04_gost_au_ready.nc', 'ready_gcode': 'C:\\\\plotter_pdf\\\\Компьютерная графика\\\\новый тест букв\\\\04_gost_au_ready.gcode', 'compare_pdf': 'C:\\\\plotter_pdf\\\\Компьютерная графика\\\\новый тест букв\\\\05_source_vs_gost_au_compare_latest.pdf', 'compare_png': 'C:\\\\plotter_pdf\\\\Компьютерная графика\\\\новый тест букв\\\\05_source_vs_gost_au_compare.png', 'text_layer_lines_json': 'C:\\\\plotter_pdf\\\\Компьютерная графика\\\\новый тест букв\\\\text_layer_lines.json', 'completion_audit_json': 'C:\\\\plotter_pdf\\\\Компьютерная графика\\\\новый тест букв\\\\06_completion_audit.json'}"
+      "evidence": "missing_artifacts=[]; artifacts={'raw_svg': 'C:\\\\plotter_pdf\\\\Компьютерная графика\\\\новый тест букв\\\\01_pdf_text_layer_geometry_only.svg', 'stroke_svg': 'C:\\\\plotter_pdf\\\\Компьютерная графика\\\\новый тест букв\\\\02_gost_au_fast_stroke_source.svg', 'cleaned_svg': 'C:\\\\plotter_pdf\\\\Компьютерная графика\\\\новый тест букв\\\\03_gost_au_after_frame_cleanup.svg', 'sheet_preview_pdf': 'C:\\\\plotter_pdf\\\\Компьютерная графика\\\\новый тест букв\\\\03_gost_au_sheet_preview.pdf', 'ready_preview_pdf': 'C:\\\\plotter_pdf\\\\Компьютерная графика\\\\новый тест букв\\\\04_gost_au_ready_preview.pdf', 'ready_preview_png': 'C:\\\\plotter_pdf\\\\Компьютерная графика\\\\новый тест букв\\\\04_gost_au_ready_preview.png', 'ready_nc': 'C:\\\\plotter_pdf\\\\Компьютерная графика\\\\новый тест букв\\\\04_gost_au_ready.nc', 'ready_gcode': 'C:\\\\plotter_pdf\\\\Компьютерная графика\\\\новый тест букв\\\\04_gost_au_ready.gcode', 'compare_pdf': 'C:\\\\plotter_pdf\\\\Компьютерная графика\\\\новый тест букв\\\\05_source_vs_gost_au_compare.pdf', 'compare_png': 'C:\\\\plotter_pdf\\\\Компьютерная графика\\\\новый тест букв\\\\05_source_vs_gost_au_compare.png', 'text_layer_lines_json': 'C:\\\\plotter_pdf\\\\Компьютерная графика\\\\новый тест букв\\\\text_layer_lines.json', 'completion_audit_json': 'C:\\\\plotter_pdf\\\\Компьютерная графика\\\\новый тест букв\\\\06_completion_audit.json'}"
     }
   ]
 }

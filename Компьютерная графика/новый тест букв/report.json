@@ -8,16 +8,28 @@
   "algorithm": "pdf_text_layer_to_fast_slanted_gost_au_like_one_line_strokes_safe",
   "stroke_style": {
     "target_font": "GOST type AU",
-    "italic_shear": 0.16,
+    "italic_shear": 0.3,
     "bbox_fill": 0.86,
+    "stamp_cell_text_fill": 0.62,
+    "stamp_cell_text_fill_tight": 0.5,
+    "stamp_role_text_fill": 0.68,
+    "stamp_role_letter_spacing_units": 0.58,
+    "lowercase_width_scale": 0.93,
+    "lowercase_y_offset": 1.15,
+    "lowercase_height_scale": 0.8357142857142856,
     "single_line": true,
     "contour_text": false
   },
+  "case_sensitive_glyphs": true,
+  "lowercase_chars_found": 227,
+  "stamp_cell_centering_enabled": true,
+  "stamp_cell_centered_lines": 10,
+  "digit_one_arrow": false,
   "why_not_ttf_autotrace": "GOST_AU TTF centerline/autotrace per string is too slow for full KOMPAS sheets and can fragment letters; this experiment keeps the PDF text layer positions and emits deterministic slanted one-line technical strokes.",
   "confidence_policy": "Only PDF text layer lines are accepted as confidence=1.0. No full-page OCR guesses are used.",
   "text_lines_found": 42,
-  "text_lines_accepted": 42,
-  "text_stroke_polylines": 683,
+  "text_lines_accepted": 44,
+  "text_stroke_polylines": 686,
   "text_placement_max_overflow_mm": 0.0,
   "text_placement_overflow_lines": [],
   "text_placement_accepted_lines": [
@@ -33,11 +45,14 @@
         1.0,
         0.0
       ],
+      "stamp_cell_centered": false,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": null,
       "stroke_bbox_mm": [
-        102.2843,
-        94.8031,
-        110.8827,
-        98.4619
+        102.2741,
+        94.7597,
+        110.8929,
+        98.5053
       ],
       "bbox_overflow_mm": 0.0
     },
@@ -53,11 +68,14 @@
         1.0,
         0.0
       ],
+      "stamp_cell_centered": false,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": null,
       "stroke_bbox_mm": [
-        102.1297,
-        192.6298,
-        111.0373,
-        196.4202
+        102.1192,
+        192.5848,
+        111.0478,
+        196.4652
       ],
       "bbox_overflow_mm": 0.0
     },
@@ -73,11 +91,14 @@
         0.0,
         -1.0
       ],
+      "stamp_cell_centered": false,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": null,
       "stroke_bbox_mm": [
-        186.3666,
-        73.2001,
-        190.4564,
-        79.3059
+        186.2932,
+        73.1944,
+        190.5298,
+        79.3116
       ],
       "bbox_overflow_mm": 0.0
     },
@@ -93,11 +114,14 @@
         0.707107,
         -0.707107
       ],
+      "stamp_cell_centered": false,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": null,
       "stroke_bbox_mm": [
         84.749,
-        115.0499,
+        114.4442,
         90.297,
-        121.7401
+        122.3458
       ],
       "bbox_overflow_mm": 0.0
     },
@@ -113,11 +137,14 @@
         1.0,
         0.0
       ],
+      "stamp_cell_centered": false,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": null,
       "stroke_bbox_mm": [
         25.3046,
-        132.1078,
+        132.0642,
         34.8084,
-        135.7792
+        135.8228
       ],
       "bbox_overflow_mm": 0.0
     },
@@ -133,11 +160,14 @@
         1.0,
         0.0
       ],
+      "stamp_cell_centered": false,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": null,
       "stroke_bbox_mm": [
-        130.4021,
-        121.1389,
-        140.9059,
-        125.2811
+        130.4873,
+        121.2451,
+        140.8207,
+        125.1749
       ],
       "bbox_overflow_mm": 0.0
     },
@@ -153,11 +183,14 @@
         1.0,
         0.0
       ],
+      "stamp_cell_centered": false,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": null,
       "stroke_bbox_mm": [
         183.6817,
-        134.9853,
+        135.1604,
         191.7873,
-        139.6667
+        139.4916
       ],
       "bbox_overflow_mm": 0.0
     },
@@ -173,131 +206,198 @@
         1.0,
         0.0
       ],
+      "stamp_cell_centered": false,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": null,
       "stroke_bbox_mm": [
-        184.8468,
-        144.8533,
-        200.1212,
-        148.5617
+        185.1007,
+        144.8491,
+        199.8673,
+        148.5659
       ],
       "bbox_overflow_mm": 0.0
     },
     {
       "text": "Масса",
       "bbox_mm": [
-        172.681,
+        170.3,
         252.38,
-        185.296,
+        187.5,
         257.93
       ],
       "dir": [
         1.0,
         0.0
       ],
+      "stamp_cell_centered": true,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": "Масса",
       "stroke_bbox_mm": [
-        173.7658,
-        253.8943,
-        184.2112,
-        256.4157
+        173.945,
+        253.8983,
+        183.855,
+        256.4117
       ],
       "bbox_overflow_mm": 0.0
     },
     {
       "text": "Масштаб",
       "bbox_mm": [
-        187.634,
+        187.5,
         252.38,
-        205.291,
+        205.6,
         257.93
       ],
       "dir": [
         1.0,
         0.0
       ],
+      "stamp_cell_centered": true,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": "Масштаб",
       "stroke_bbox_mm": [
-        188.87,
-        253.9224,
-        204.055,
-        256.3876
+        190.9852,
+        254.2183,
+        202.1148,
+        256.0917
       ],
       "bbox_overflow_mm": 0.0
     },
     {
-      "text": "Изм. Лист",
+      "text": "Изм.",
       "bbox_mm": [
-        20.789,
+        20.45,
         257.38,
-        37.128,
+        26.6,
         262.93
       ],
       "dir": [
         1.0,
         0.0
       ],
+      "stamp_cell_centered": true,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": "Изм. Лист",
       "stroke_bbox_mm": [
-        21.9327,
-        259.1456,
-        35.9843,
-        261.1644
+        21.8739,
+        259.5255,
+        25.1761,
+        260.7845
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "Лист",
+      "bbox_mm": [
+        26.6,
+        257.38,
+        37.4,
+        262.93
+      ],
+      "dir": [
+        1.0,
+        0.0
+      ],
+      "stamp_cell_centered": true,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": "Изм. Лист",
+      "stroke_bbox_mm": [
+        28.7,
+        259.1805,
+        35.3,
+        261.1295
       ],
       "bbox_overflow_mm": 0.0
     },
     {
       "text": "№ докум.",
       "bbox_mm": [
-        40.725,
+        37.4,
         257.38,
-        58.489,
+        61.8,
         262.93
       ],
       "dir": [
         1.0,
         0.0
       ],
+      "stamp_cell_centered": true,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": "№ докум.",
       "stroke_bbox_mm": [
-        42.2798,
-        259.0006,
-        56.9342,
-        261.3094
+        42.5098,
+        258.9871,
+        56.6902,
+        261.3229
       ],
       "bbox_overflow_mm": 0.0
     },
     {
-      "text": "Подп. Дата",
+      "text": "Подп.",
       "bbox_mm": [
-        63.198,
+        61.8,
         257.38,
-        85.154,
+        75.45,
         262.93
       ],
       "dir": [
         1.0,
         0.0
       ],
+      "stamp_cell_centered": true,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": "Подп. Дата",
       "stroke_bbox_mm": [
-        64.9254,
-        258.9647,
-        83.4266,
-        261.3453
+        64.835,
+        259.0669,
+        72.415,
+        261.2431
+      ],
+      "bbox_overflow_mm": 0.0
+    },
+    {
+      "text": "Дата",
+      "bbox_mm": [
+        75.45,
+        257.38,
+        85.4,
+        262.93
+      ],
+      "dir": [
+        1.0,
+        0.0
+      ],
+      "stamp_cell_centered": true,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": "Подп. Дата",
+      "stroke_bbox_mm": [
+        77.6054,
+        259.2719,
+        83.2446,
+        261.0381
       ],
       "bbox_overflow_mm": 0.0
     },
     {
       "text": "Лит.",
       "bbox_mm": [
-        158.568,
+        156.2,
         252.38,
-        168.646,
+        170.3,
         257.93
       ],
       "dir": [
         1.0,
         0.0
       ],
+      "stamp_cell_centered": true,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": "Лит.",
       "stroke_bbox_mm": [
-        159.6646,
-        253.705,
-        167.5494,
-        256.605
+        159.4645,
+        253.7117,
+        167.0355,
+        256.5983
       ],
       "bbox_overflow_mm": 0.0
     },
@@ -313,11 +413,14 @@
         1.0,
         0.0
       ],
+      "stamp_cell_centered": false,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": null,
       "stroke_bbox_mm": [
-        21.9249,
-        264.0247,
-        33.8841,
-        266.2853
+        23.3154,
+        264.1788,
+        32.4936,
+        266.1312
       ],
       "bbox_overflow_mm": 0.0
     },
@@ -333,11 +436,14 @@
         1.0,
         0.0
       ],
+      "stamp_cell_centered": false,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": null,
       "stroke_bbox_mm": [
-        21.6806,
-        268.9453,
-        30.3324,
-        271.3647
+        22.7431,
+        269.132,
+        29.2699,
+        271.178
       ],
       "bbox_overflow_mm": 0.0
     },
@@ -353,51 +459,60 @@
         1.0,
         0.0
       ],
+      "stamp_cell_centered": false,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": null,
       "stroke_bbox_mm": [
-        22.2509,
-        273.9736,
-        35.3181,
-        276.3364
+        23.9406,
+        274.1297,
+        33.6284,
+        276.1803
       ],
       "bbox_overflow_mm": 0.0
     },
     {
       "text": "Лист",
       "bbox_mm": [
-        156.413,
+        156.2,
         272.38,
-        167.552,
+        176.5,
         277.93
       ],
       "dir": [
         1.0,
         0.0
       ],
+      "stamp_cell_centered": true,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": "Лист",
       "stroke_bbox_mm": [
-        157.1927,
-        273.7649,
-        166.7723,
-        276.5451
+        161.6513,
+        273.7675,
+        171.0487,
+        276.5425
       ],
       "bbox_overflow_mm": 0.0
     },
     {
       "text": "Листов",
       "bbox_mm": [
-        177.456,
+        176.5,
         272.38,
-        192.663,
+        198.0,
         277.93
       ],
       "dir": [
         1.0,
         0.0
       ],
+      "stamp_cell_centered": true,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": "Листов",
       "stroke_bbox_mm": [
-        178.5524,
-        273.8877,
-        191.5666,
-        276.4222
+        181.9694,
+        274.0906,
+        192.5306,
+        276.2194
       ],
       "bbox_overflow_mm": 0.0
     },
@@ -413,11 +528,14 @@
         1.0,
         0.0
       ],
+      "stamp_cell_centered": false,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": null,
       "stroke_bbox_mm": [
-        22.0619,
-        283.9736,
-        35.5071,
-        286.3364
+        23.633,
+        284.1297,
+        33.936,
+        286.1803
       ],
       "bbox_overflow_mm": 0.0
     },
@@ -433,11 +551,14 @@
         1.0,
         0.0
       ],
+      "stamp_cell_centered": false,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": null,
       "stroke_bbox_mm": [
-        21.8889,
-        288.745,
-        29.1051,
-        291.565
+        22.7377,
+        288.9364,
+        28.2563,
+        291.3736
       ],
       "bbox_overflow_mm": 0.0
     },
@@ -453,11 +574,14 @@
         1.0,
         0.0
       ],
+      "stamp_cell_centered": false,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": null,
       "stroke_bbox_mm": [
-        193.5967,
-        263.5466,
-        199.3493,
-        266.8624
+        193.646,
+        263.4241,
+        199.3,
+        266.9849
       ],
       "bbox_overflow_mm": 0.0
     },
@@ -473,11 +597,14 @@
         1.0,
         0.0
       ],
+      "stamp_cell_centered": false,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": null,
       "stroke_bbox_mm": [
-        198.9307,
-        273.4316,
-        200.5773,
-        276.8784
+        198.9398,
+        273.4104,
+        200.5682,
+        276.8996
       ],
       "bbox_overflow_mm": 0.0
     },
@@ -493,11 +620,14 @@
         1.0,
         0.0
       ],
+      "stamp_cell_centered": false,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": null,
       "stroke_bbox_mm": [
         129.1939,
-        242.893,
+        242.9409,
         161.6021,
-        247.647
+        247.5991
       ],
       "bbox_overflow_mm": 0.0
     },
@@ -513,11 +643,14 @@
         1.0,
         0.0
       ],
+      "stamp_cell_centered": false,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": null,
       "stroke_bbox_mm": [
-        100.1887,
-        262.0333,
-        140.8133,
-        268.7847
+        100.3596,
+        261.941,
+        140.6424,
+        268.877
       ],
       "bbox_overflow_mm": 0.0
     },
@@ -533,11 +666,14 @@
         1.0,
         0.0
       ],
+      "stamp_cell_centered": false,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": null,
       "stroke_bbox_mm": [
-        38.6561,
-        263.934,
-        51.1899,
-        266.376
+        38.7377,
+        263.9074,
+        51.1083,
+        266.4026
       ],
       "bbox_overflow_mm": 0.0
     },
@@ -553,11 +689,14 @@
         1.0,
         0.0
       ],
+      "stamp_cell_centered": false,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": null,
       "stroke_bbox_mm": [
-        39.274,
-        269.0819,
-        57.424,
-        271.2281
+        39.4363,
+        269.0416,
+        57.2617,
+        271.2684
       ],
       "bbox_overflow_mm": 0.0
     },
@@ -573,11 +712,14 @@
         1.0,
         0.0
       ],
+      "stamp_cell_centered": false,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": null,
       "stroke_bbox_mm": [
         90.4906,
-        283.485,
+        283.4346,
         150.5264,
-        287.055
+        287.1054
       ],
       "bbox_overflow_mm": 0.0
     },
@@ -593,11 +735,14 @@
         1.0,
         0.0
       ],
+      "stamp_cell_centered": false,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": null,
       "stroke_bbox_mm": [
         172.7334,
-        280.0904,
+        280.1011,
         188.2676,
-        283.7006
+        283.6899
       ],
       "bbox_overflow_mm": 0.0
     },
@@ -613,11 +758,14 @@
         1.0,
         0.0
       ],
+      "stamp_cell_centered": false,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": null,
       "stroke_bbox_mm": [
-        169.0333,
-        286.6975,
-        191.9247,
-        290.3295
+        169.1215,
+        286.7231,
+        191.8365,
+        290.3039
       ],
       "bbox_overflow_mm": 0.0
     },
@@ -633,11 +781,14 @@
         0.0,
         -1.0
       ],
+      "stamp_cell_centered": false,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": null,
       "stroke_bbox_mm": [
-        10.048,
-        269.4249,
-        12.262,
-        289.3611
+        10.0281,
+        269.5835,
+        12.2819,
+        289.2025
       ],
       "bbox_overflow_mm": 0.0
     },
@@ -653,11 +804,14 @@
         0.0,
         -1.0
       ],
+      "stamp_cell_centered": false,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": null,
       "stroke_bbox_mm": [
-        10.0275,
-        239.6702,
-        12.2825,
-        260.3518
+        9.9942,
+        239.838,
+        12.3158,
+        260.184
       ],
       "bbox_overflow_mm": 0.0
     },
@@ -673,11 +827,14 @@
         0.0,
         -1.0
       ],
+      "stamp_cell_centered": false,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": null,
       "stroke_bbox_mm": [
-        9.9993,
-        186.2423,
-        12.3107,
-        228.3197
+        9.9678,
+        186.4123,
+        12.3422,
+        228.1497
       ],
       "bbox_overflow_mm": 0.0
     },
@@ -693,11 +850,14 @@
         0.0,
         -1.0
       ],
+      "stamp_cell_centered": false,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": null,
       "stroke_bbox_mm": [
-        10.0275,
-        154.6702,
-        12.2825,
-        175.3518
+        9.9942,
+        154.838,
+        12.3158,
+        175.184
       ],
       "bbox_overflow_mm": 0.0
     },
@@ -713,11 +873,14 @@
         0.0,
         -1.0
       ],
+      "stamp_cell_centered": false,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": null,
       "stroke_bbox_mm": [
-        10.012,
-        88.1523,
-        12.298,
-        102.9557
+        10.0014,
+        88.1809,
+        12.3086,
+        102.9271
       ],
       "bbox_overflow_mm": 0.0
     },
@@ -733,11 +896,14 @@
         0.0,
         -1.0
       ],
+      "stamp_cell_centered": false,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": null,
       "stroke_bbox_mm": [
-        10.0731,
-        24.4399,
-        12.2369,
-        45.3451
+        10.0383,
+        24.6012,
+        12.2717,
+        45.1838
       ],
       "bbox_overflow_mm": 0.0
     },
@@ -753,11 +919,14 @@
         -1.0,
         -0.0
       ],
+      "stamp_cell_centered": false,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": null,
       "stroke_bbox_mm": [
         39.3979,
-        9.853,
+        9.9009,
         71.8061,
-        14.607
+        14.5591
       ],
       "bbox_overflow_mm": 0.0
     },
@@ -773,11 +942,14 @@
         1.0,
         0.0
       ],
+      "stamp_cell_centered": false,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": null,
       "stroke_bbox_mm": [
-        96.9856,
-        294.0517,
-        114.0454,
-        296.2583
+        97.0419,
+        294.0133,
+        113.9891,
+        296.2967
       ],
       "bbox_overflow_mm": 0.0
     },
@@ -793,11 +965,14 @@
         1.0,
         0.0
       ],
+      "stamp_cell_centered": false,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": null,
       "stroke_bbox_mm": [
-        166.8381,
-        293.8396,
-        180.4029,
-        296.4704
+        167.0121,
+        293.8114,
+        180.2289,
+        296.4986
       ],
       "bbox_overflow_mm": 0.0
     },
@@ -813,11 +988,14 @@
         1.0,
         0.0
       ],
+      "stamp_cell_centered": false,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": null,
       "stroke_bbox_mm": [
-        186.2114,
-        293.4784,
-        191.7336,
-        296.8316
+        186.2468,
+        293.6038,
+        191.6982,
+        296.7062
       ],
       "bbox_overflow_mm": 0.0
     },
@@ -833,11 +1011,14 @@
         1.0,
         0.0
       ],
+      "stamp_cell_centered": false,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": null,
       "stroke_bbox_mm": [
-        13.4528,
-        293.99,
-        74.3012,
-        296.14
+        13.5084,
+        293.9355,
+        74.2456,
+        296.1945
       ],
       "bbox_overflow_mm": 0.0
     },
@@ -853,11 +1034,14 @@
         0.0,
         -1.0
       ],
+      "stamp_cell_centered": false,
+      "stamp_role_cell_expanded": false,
+      "stamp_source_text": null,
       "stroke_bbox_mm": [
-        4.4986,
-        95.1857,
-        7.1314,
-        277.3143
+        4.4807,
+        95.3586,
+        7.1493,
+        277.1414
       ],
       "bbox_overflow_mm": 0.0
     }
@@ -871,7 +1055,7 @@
   "cleanup_meta": {
     "archive_strip_removed": 7,
     "archive_strip_clipped": 0,
-    "service_region_removed": 378,
+    "service_region_removed": 380,
     "under_frame_removed": 1,
     "top_outer_frame_removed": 2
   },
@@ -902,15 +1086,15 @@
     ]
   },
   "metrics": {
-    "draw_length_mm": 6271.353,
-    "segments_total": 978,
+    "draw_length_mm": 6158.903,
+    "segments_total": 948,
     "segments_duplicate": 0,
-    "pen_down_strokes": 455,
+    "pen_down_strokes": 451,
     "short_segments_lt_035_mm": 17,
     "micro_segments_lt_015_mm": 13,
-    "tiny_strokes_lt_08_mm": 17,
+    "tiny_strokes_lt_08_mm": 27,
     "point_like_strokes": 17,
-    "avg_stroke_length_mm": 13.783,
+    "avg_stroke_length_mm": 13.656,
     "bounds": {
       "x_min": 0.0,
       "x_max": 180.0,
@@ -919,7 +1103,7 @@
     }
   },
   "preflight_ok": true,
-  "preflight_msg": "ok: lines=3274, draw=978, travel=457, ratio=0.47",
+  "preflight_msg": "ok: lines=3224, draw=948, travel=453, ratio=0.48",
   "source_hash_unchanged": true,
   "source_sha256": "a89f83773114c2d94bd0d0376a710b586864ca09aee99adce50add2d2c5e1fc5",
   "motor_release_added": {
@@ -935,16 +1119,16 @@
     "ready_preview_png": "C:\\plotter_pdf\\Компьютерная графика\\новый тест букв\\04_gost_au_ready_preview.png",
     "ready_nc": "C:\\plotter_pdf\\Компьютерная графика\\новый тест букв\\04_gost_au_ready.nc",
     "ready_gcode": "C:\\plotter_pdf\\Компьютерная графика\\новый тест букв\\04_gost_au_ready.gcode",
-    "compare_pdf": "C:\\plotter_pdf\\Компьютерная графика\\новый тест букв\\05_source_vs_gost_au_compare_latest.pdf",
+    "compare_pdf": "C:\\plotter_pdf\\Компьютерная графика\\новый тест букв\\05_source_vs_gost_au_compare.pdf",
     "compare_png": "C:\\plotter_pdf\\Компьютерная графика\\новый тест букв\\05_source_vs_gost_au_compare.png",
     "text_layer_lines_json": "C:\\plotter_pdf\\Компьютерная графика\\новый тест букв\\text_layer_lines.json",
     "completion_audit_json": "C:\\plotter_pdf\\Компьютерная графика\\новый тест букв\\06_completion_audit.json"
   },
   "logs": [
-    "Segment dedup: dropped 304/1437 retraced segments (21.2%), kept=1133, eps=0.010 mm",
-    "Collinear overlap dedup: dropped 7/982 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)",
-    "Reorder: 634 polylines ordered (nearest-end).",
-    "Collinear overlap dedup: dropped 1/979 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)",
+    "Segment dedup: dropped 304/1429 retraced segments (21.3%), kept=1125, eps=0.010 mm",
+    "Collinear overlap dedup: dropped 7/952 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)",
+    "Reorder: 635 polylines ordered (nearest-end).",
+    "Collinear overlap dedup: dropped 1/949 overlapping segments (dist<=0.120 mm, angle<=1.00 deg, overlap>=0.90)",
     "KOMPAS A4 clean-bbox route: source-page fit disabled; source_frame_bbox=[20.4893, 5.5033, 205.4859, 292.5232]; content_scale=0.972991; translate=(-19.9359,-289.9885) mm; pre_clip_bbox=[0.0, -284.6338, 180.0, -5.3662]; clipped_segments=0; work_area_frame=full."
   ],
   "completion_audit_all_passed": true

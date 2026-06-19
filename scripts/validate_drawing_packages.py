@@ -423,24 +423,33 @@ def _append_unique_path(paths: list[Path], seen: set[Path], path: Path) -> None:
 
 
 def _collect_package_plotter_files(package_dir: Path, canonical_paths: Iterable[Path]) -> list[Path]:
-    """Validate every G-code-like file that may be sent to the plotter.
+    """Validate canonical ready-to-plot G-code files and their same-stem aliases.
 
-    The package contract requires root ``*.gcode`` files, but the pipeline also
-    writes ``*.nc`` aliases and ``pages/`` mirrors. A stale alias is enough to
-    reproduce a bad plot even when the canonical ``*.gcode`` is clean.
+    New-algorithm packages may keep legacy ``page_01/pass_*.nc`` files beside
+    ``*_new_algorithm`` outputs for traceability. Those legacy files are not
+    ready-to-plot candidates anymore, so validating them here would mix the old
+    and new drawing routes and block a good new package for stale-file reasons.
     """
 
     paths: list[Path] = []
     seen: set[Path] = set()
+    canonical_stems = {path.stem for path in canonical_paths}
     for path in canonical_paths:
         if path.exists():
             _append_unique_path(paths, seen, path)
-    for path in sorted(
-        list(package_dir.rglob("*.gcode")) + list(package_dir.rglob("*.nc")),
-        key=lambda p: p.relative_to(package_dir).as_posix().casefold(),
-    ):
-        _append_unique_path(paths, seen, path)
+    for stem in sorted(canonical_stems):
+        for base in (package_dir, package_dir / "pages"):
+            for suffix in (".gcode", ".nc"):
+                path = base / f"{stem}{suffix}"
+                if path.exists():
+                    _append_unique_path(paths, seen, path)
     return paths
+
+
+def _validation_work_area_for_gcode(gcode_path: Path) -> tuple[float, float, float, float]:
+    if gcode_path.name.startswith("pass_"):
+        return A3_TWO_PASS_WORK_AREA
+    return DEFAULT_WORK_AREA
 
 
 def _plotter_alias_mismatch_problems(package_dir: Path, stems: Iterable[str]) -> list[str]:
@@ -471,12 +480,17 @@ def _plotter_alias_mismatch_problems(package_dir: Path, stems: Iterable[str]) ->
 
 def _unexpected_plotter_file_problems(package_dir: Path, stems: Iterable[str]) -> list[str]:
     expected_stems = set(stems)
+    legacy_stems = {stem.removesuffix("_new_algorithm") for stem in expected_stems if stem.endswith("_new_algorithm")}
     problems: list[str] = []
     for path in sorted(
         list(package_dir.rglob("*.gcode")) + list(package_dir.rglob("*.nc")),
         key=lambda p: p.relative_to(package_dir).as_posix().casefold(),
     ):
         if path.stem in expected_stems:
+            continue
+        if path.stem in legacy_stems:
+            # Legacy package outputs may remain beside new-algorithm files, but
+            # they are no longer canonical for ready-to-plot validation.
             continue
         problems.append(f"unexpected plotter file {path.relative_to(package_dir).as_posix()}")
     return problems
@@ -545,6 +559,14 @@ def _kompas_a3_outer_frame_problems(package_dir: Path) -> list[str]:
     ]
 
 
+def _canonical_plotter_stem(package_dir: Path, item_name: str) -> str:
+    item_name = str(item_name or "page_01")
+    new_stem = f"{item_name}_new_algorithm"
+    if (package_dir / f"{new_stem}.gcode").exists() or (package_dir / f"{new_stem}.nc").exists():
+        return new_stem
+    return item_name
+
+
 def validate_package(package_dir: Path, rows: list[dict[str, str]]) -> PackageValidation:
     problems: list[str] = []
     warnings: list[str] = []
@@ -593,17 +615,19 @@ def validate_package(package_dir: Path, rows: list[dict[str, str]]) -> PackageVa
     if items == {"page_01"}:
         _require_file(package_dir, "a4_clean_source.pdf", problems)
         _require_file(package_dir, "page_01.pdf", problems)
-        _require_file(package_dir, "page_01.gcode", problems)
-        canonical_gcode_paths.append(package_dir / "page_01.gcode")
-        canonical_gcode_stems.append("page_01")
+        canonical_stem = _canonical_plotter_stem(package_dir, "page_01")
+        _require_file(package_dir, f"{canonical_stem}.gcode", problems)
+        canonical_gcode_paths.append(package_dir / f"{canonical_stem}.gcode")
+        canonical_gcode_stems.append(canonical_stem)
     elif any(item.startswith("pass_") for item in items):
         _require_file(package_dir, "combined_preview.pdf", problems)
         pass_names = sorted(item for item in items if item.startswith("pass_"))
         for pass_name in pass_names:
             _require_file(package_dir, f"{pass_name}.pdf", problems)
-            _require_file(package_dir, f"{pass_name}.gcode", problems)
-            canonical_gcode_paths.append(package_dir / f"{pass_name}.gcode")
-            canonical_gcode_stems.append(pass_name)
+            canonical_stem = _canonical_plotter_stem(package_dir, pass_name)
+            _require_file(package_dir, f"{canonical_stem}.gcode", problems)
+            canonical_gcode_paths.append(package_dir / f"{canonical_stem}.gcode")
+            canonical_gcode_stems.append(canonical_stem)
         if frame_class == "kompas_full_frame":
             problems.extend(_kompas_a3_outer_frame_problems(package_dir))
     else:
@@ -617,7 +641,7 @@ def validate_package(package_dir: Path, rows: list[dict[str, str]]) -> PackageVa
     for gcode_path in gcode_paths:
         if not gcode_path.exists():
             continue
-        work_area = A3_TWO_PASS_WORK_AREA if gcode_path.name.startswith("pass_") else DEFAULT_WORK_AREA
+        work_area = _validation_work_area_for_gcode(gcode_path)
         result = validate_gcode_file(gcode_path, work_area=work_area)
         rel_name = gcode_path.relative_to(package_dir).as_posix()
         gcode_results[rel_name] = result

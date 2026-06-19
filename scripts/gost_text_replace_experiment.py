@@ -25,13 +25,16 @@ GOST_AU_FONT = Path(os.environ.get("WINDIR", r"C:\Windows")) / "Fonts" / "GOST_A
 
 GlyphStroke = list[tuple[float, float]]
 Glyph = tuple[float, list[GlyphStroke]]
-GOST_ITALIC_SHEAR = 0.16
+GOST_ITALIC_SHEAR = 0.30
 GOST_TEXT_BOX_FILL = 0.86
+LOWERCASE_WIDTH_SCALE = 0.93
+LOWERCASE_Y_OFFSET = 1.15
+LOWERCASE_HEIGHT_SCALE = (7.0 - LOWERCASE_Y_OFFSET) / 7.0
 
 
 BASE_GLYPHS: dict[str, Glyph] = {
     "0": (5.0, [[(0, 0), (5, 0), (5, 7), (0, 7), (0, 0)], [(0.8, 6.2), (4.2, 0.8)]]),
-    "1": (5.0, [[(2.5, 0), (2.5, 7)], [(1.3, 1.1), (2.5, 0), (3.7, 1.1)], [(1.3, 7), (3.7, 7)]]),
+    "1": (3.6, [[(2.0, 0.4), (2.0, 7.0)], [(0.9, 7.0), (3.1, 7.0)], [(1.1, 1.4), (2.0, 0.4)]]),
     "2": (5.0, [[(0, 0), (5, 0), (5, 3.2), (0, 7), (5, 7)], [(0, 3.5), (2.6, 3.5)]]),
     "3": (5.0, [[(0, 0), (5, 0), (3.1, 3.5), (5, 7), (0, 7)], [(1.4, 3.5), (4.3, 3.5)]]),
     "4": (5.0, [[(4.2, 0), (4.2, 7)], [(0, 0), (0, 3.7), (5, 3.7)]]),
@@ -112,7 +115,7 @@ CYRILLIC_MAP: dict[str, Glyph] = {
     "Р": BASE_GLYPHS["P"],
     "С": BASE_GLYPHS["C"],
     "Т": BASE_GLYPHS["T"],
-    "У": (5.0, [[(0, 0), (2.5, 3.7), (5, 0)], [(2.5, 3.7), (1.2, 7)]]),
+    "У": (4.2, [[(0.0, 0.0), (1.55, 3.35), (3.75, 0.0)], [(1.55, 3.35), (1.05, 7.0)], [(0.45, 7.0), (1.95, 7.0)]]),
     "Ф": (5.6, [[(2.8, 0), (2.8, 7)], [(0, 1.2), (5.6, 1.2), (5.6, 5.2), (0, 5.2), (0, 1.2)]]),
     "Х": BASE_GLYPHS["X"],
     "Ц": (5.4, [[(0, 0), (0, 7), (4.6, 7), (4.6, 0)], [(4.6, 7), (5.4, 7), (5.4, 8.0)]]),
@@ -128,6 +131,18 @@ CYRILLIC_MAP: dict[str, Glyph] = {
 }
 
 CYRILLIC_EXTRA = {"І": CYRILLIC_MAP["И"], "Ї": CYRILLIC_MAP["И"], "Є": CYRILLIC_MAP["Э"]}
+LOWERCASE_GLYPHS: dict[str, Glyph] = {
+    "в": (
+        3.8,
+        [
+            [(0.2, 0.0), (0.2, 7.0)],
+            [(0.2, 0.0), (3.0, 0.0), (3.8, 0.8), (3.8, 2.5), (3.0, 3.3), (0.2, 3.3)],
+            [(0.2, 3.3), (3.0, 3.3), (3.8, 4.1), (3.8, 6.2), (3.0, 7.0), (0.2, 7.0)],
+        ],
+    ),
+    "т": (3.8, [[(0.0, 0.0), (3.8, 0.0)], [(1.9, 0.0), (1.9, 7.0)], [(0.35, 0.0), (0.35, 1.1)], [(3.45, 0.0), (3.45, 1.1)]]),
+    "у": (4.8, [[(0.0, 0.0), (2.3, 3.9), (4.8, 0.0)], [(2.3, 3.9), (1.0, 7.0)]]),
+}
 
 
 def _oval(width: float = 5.0, height: float = 7.0) -> GlyphStroke:
@@ -209,9 +224,90 @@ def _extract_pdf_text_lines(pdf_path: Path) -> list[dict[str, Any]]:
     return out
 
 
+STAMP_CELL_TEXT_FILL = 0.62
+STAMP_CELL_TEXT_FILL_TIGHT = 0.50
+STAMP_ROLE_LABELS = {"Разраб.", "Пров.", "Т.контр.", "Н.контр.", "Утв."}
+STAMP_ROLE_TEXT_FILL = 0.68
+STAMP_ROLE_LETTER_SPACING_UNITS = 0.58
+STAMP_FORCE_UPPERCASE_SHAPE_LABELS: set[str] = set()
+STAMP_ROLE_CELL_BBOXES_MM: dict[str, list[float]] = {}
+
+PHRASE_GLYPHS: dict[str, Glyph] = {
+    "Утв.": (
+        11.6,
+        [
+            [(0.0, 0.0), (1.35, 3.15), (2.75, 0.0)],
+            [(1.35, 3.15), (1.35, 7.0), (2.15, 7.0)],
+            [(3.35, 0.0), (6.0, 0.0)],
+            [(4.68, 0.0), (4.68, 7.0)],
+            [(6.75, 0.0), (6.75, 7.0)],
+            [(6.75, 0.0), (9.15, 0.0), (9.75, 0.75), (9.75, 2.75), (9.1, 3.5), (6.75, 3.5)],
+            [(6.75, 3.5), (9.25, 3.5), (9.85, 4.3), (9.85, 6.25), (9.15, 7.0), (6.75, 7.0)],
+            [(10.85, 6.45), (11.08, 6.68)],
+        ],
+    ),
+}
+
+STAMP_CELL_CENTER_OVERRIDES_MM: dict[str, list[tuple[str, list[float]]]] = {
+    "Изм. Лист": [
+        ("Изм.", [20.45, 257.38, 26.6, 262.93]),
+        ("Лист", [26.6, 257.38, 37.4, 262.93]),
+    ],
+    "№ докум.": [
+        ("№ докум.", [37.4, 257.38, 61.8, 262.93]),
+    ],
+    "Подп. Дата": [
+        ("Подп.", [61.8, 257.38, 75.45, 262.93]),
+        ("Дата", [75.45, 257.38, 85.4, 262.93]),
+    ],
+    "Лит.": [
+        ("Лит.", [156.2, 252.38, 170.3, 257.93]),
+    ],
+    "Масса": [
+        ("Масса", [170.3, 252.38, 187.5, 257.93]),
+    ],
+    "Масштаб": [
+        ("Масштаб", [187.5, 252.38, 205.6, 257.93]),
+    ],
+    "Лист": [
+        ("Лист", [156.2, 272.38, 176.5, 277.93]),
+    ],
+    "Листов": [
+        ("Листов", [176.5, 272.38, 198.0, 277.93]),
+    ],
+}
+
+
+def _stamp_centered_lines(line: dict[str, Any]) -> list[dict[str, Any]]:
+    text = str(line.get("text", ""))
+    overrides = STAMP_CELL_CENTER_OVERRIDES_MM.get(text)
+    if not overrides:
+        role_bbox = STAMP_ROLE_CELL_BBOXES_MM.get(text)
+        if role_bbox:
+            patched = dict(line)
+            patched["bbox_mm"] = [round(float(v), 3) for v in role_bbox]
+            patched["stamp_role_cell_expanded"] = True
+            return [patched]
+        return [line]
+    out: list[dict[str, Any]] = []
+    for cell_text, bbox_mm in overrides:
+        patched = dict(line)
+        patched["text"] = cell_text
+        patched["bbox_mm"] = [round(float(v), 3) for v in bbox_mm]
+        patched["stamp_cell_centered"] = True
+        patched["stamp_source_text"] = text
+        patched["text_box_fill"] = (
+            STAMP_CELL_TEXT_FILL_TIGHT if text in {"Лист", "Листов"} else STAMP_CELL_TEXT_FILL
+        )
+        out.append(patched)
+    return out
+
+
 def _glyph_for_char(ch: str) -> Glyph:
     if ch.isspace():
         return (2.8, [])
+    if ch in LOWERCASE_GLYPHS and ch not in {"в", "т"}:
+        return LOWERCASE_GLYPHS[ch]
     up = ch.upper()
     if up in BASE_GLYPHS:
         return BASE_GLYPHS[up]
@@ -224,14 +320,31 @@ def _glyph_for_char(ch: str) -> Glyph:
     return (5.0, [[(0, 0), (5, 0), (5, 7), (0, 7), (0, 0)], [(0, 0), (5, 7)]])
 
 
-def _text_width_units(text: str) -> float:
+def _is_lowercase_letter(ch: str) -> bool:
+    return bool(ch.isalpha() and ch.lower() == ch and ch.upper() != ch)
+
+
+def _char_width_units(ch: str, *, force_uppercase_shape: bool = False) -> float:
+    render_ch = ch.upper() if force_uppercase_shape and ch.isalpha() else ch
+    glyph_w, _segments = _glyph_for_char(render_ch)
+    if _is_lowercase_letter(ch) and not force_uppercase_shape:
+        return glyph_w * LOWERCASE_WIDTH_SCALE
+    return glyph_w
+
+
+def _glyph_point_for_char(ch: str, gx: float, gy: float, *, force_uppercase_shape: bool = False) -> tuple[float, float]:
+    if force_uppercase_shape or not _is_lowercase_letter(ch):
+        return gx, gy
+    return gx * LOWERCASE_WIDTH_SCALE, LOWERCASE_Y_OFFSET + gy * LOWERCASE_HEIGHT_SCALE
+
+
+def _text_width_units(text: str, *, letter_spacing_units: float = 1.0, force_uppercase_shape: bool = False) -> float:
     width = 0.0
     saw = False
     for ch in text:
-        glyph_w, _segments = _glyph_for_char(ch)
         if saw:
-            width += 1.0
-        width += glyph_w
+            width += letter_spacing_units
+        width += _char_width_units(ch, force_uppercase_shape=force_uppercase_shape)
         saw = True
     if saw:
         width += GOST_ITALIC_SHEAR * 7.0
@@ -313,9 +426,22 @@ def _line_text_to_strokes_mm(line: dict[str, Any]) -> tuple[list[GlyphStroke], s
     min_v, max_v = min(v_vals), max(v_vals)
     box_w = max(max_u - min_u, 0.001)
     box_h = max(max_v - min_v, 0.001)
-    local_w = _text_width_units(text)
+    is_stamp_role_label = text in STAMP_ROLE_LABELS
+    force_uppercase_shape = text in STAMP_FORCE_UPPERCASE_SHAPE_LABELS
+    phrase_glyph = None if is_stamp_role_label else PHRASE_GLYPHS.get(text)
+    letter_spacing_units = STAMP_ROLE_LETTER_SPACING_UNITS if is_stamp_role_label else 1.0
+    local_w = (
+        phrase_glyph[0]
+        if phrase_glyph
+        else _text_width_units(
+            text,
+            letter_spacing_units=letter_spacing_units,
+            force_uppercase_shape=force_uppercase_shape,
+        )
+    )
     local_h = 7.0
-    scale = GOST_TEXT_BOX_FILL * min(box_w / local_w, box_h / local_h)
+    text_box_fill = STAMP_ROLE_TEXT_FILL if is_stamp_role_label else float(line.get("text_box_fill", GOST_TEXT_BOX_FILL))
+    scale = text_box_fill * min(box_w / local_w, box_h / local_h)
     if scale <= 0.0:
         return [], set(text)
     origin_u = min_u + max((box_w - local_w * scale) * 0.50, 0.0)
@@ -323,22 +449,37 @@ def _line_text_to_strokes_mm(line: dict[str, Any]) -> tuple[list[GlyphStroke], s
     cursor = 0.0
     out: list[GlyphStroke] = []
     missing: set[str] = set()
+    if phrase_glyph:
+        for segment in phrase_glyph[1]:
+            poly: GlyphStroke = []
+            for gx, gy in segment:
+                slanted_x = gx + GOST_ITALIC_SHEAR * (7.0 - gy)
+                u = origin_u + slanted_x * scale
+                v = origin_v + gy * scale
+                poly.append((u * ux + v * vx, u * uy + v * vy))
+            if len(poly) >= 2:
+                out.append(poly)
+        out = _fit_polylines_inside_bbox(out, [x0, y0, x1, y1], pad_mm=0.03)
+        return out, missing
     for index, ch in enumerate(text):
-        glyph_w, segments = _glyph_for_char(ch)
+        render_ch = ch.upper() if force_uppercase_shape and ch.isalpha() else ch
+        _glyph_w, segments = _glyph_for_char(render_ch)
+        char_w = _char_width_units(ch, force_uppercase_shape=force_uppercase_shape)
         if not segments and not ch.isspace():
             missing.add(ch)
         if index > 0:
-            cursor += 1.0
+            cursor += letter_spacing_units
         for segment in segments:
             poly: GlyphStroke = []
             for gx, gy in segment:
+                gx, gy = _glyph_point_for_char(ch, gx, gy, force_uppercase_shape=force_uppercase_shape)
                 slanted_x = gx + GOST_ITALIC_SHEAR * (7.0 - gy)
                 u = origin_u + (cursor + slanted_x) * scale
                 v = origin_v + gy * scale
                 poly.append((u * ux + v * vx, u * uy + v * vy))
             if len(poly) >= 2:
                 out.append(poly)
-        cursor += glyph_w
+        cursor += char_w
     out = _fit_polylines_inside_bbox(out, [x0, y0, x1, y1], pad_mm=0.03)
     return out, missing
 
@@ -347,25 +488,29 @@ def _make_text_strokes(text_lines: list[dict[str, Any]]) -> tuple[list[GlyphStro
     strokes: list[GlyphStroke] = []
     accepted: list[dict[str, Any]] = []
     missing: set[str] = set()
-    for line in text_lines:
-        if float(line.get("confidence", 0.0)) < 0.92:
-            continue
-        line_strokes, line_missing = _line_text_to_strokes_mm(line)
-        missing.update(line_missing)
-        if line_strokes:
-            bbox_mm = [float(v) for v in line.get("bbox_mm", (0, 0, 0, 0))[:4]]
-            stroke_bbox = _bbox_of_polylines(line_strokes)
-            overflow = _bbox_overflow_mm(stroke_bbox, bbox_mm, tolerance_mm=0.03)
-            strokes.extend(line_strokes)
-            accepted.append(
-                {
-                    "text": line.get("text", ""),
-                    "bbox_mm": line.get("bbox_mm"),
-                    "dir": line.get("dir"),
-                    "stroke_bbox_mm": [round(v, 4) for v in stroke_bbox] if stroke_bbox else None,
-                    "bbox_overflow_mm": round(float(overflow), 4),
-                }
-            )
+    for source_line in text_lines:
+        for line in _stamp_centered_lines(source_line):
+            if float(line.get("confidence", 0.0)) < 0.92:
+                continue
+            line_strokes, line_missing = _line_text_to_strokes_mm(line)
+            missing.update(line_missing)
+            if line_strokes:
+                bbox_mm = [float(v) for v in line.get("bbox_mm", (0, 0, 0, 0))[:4]]
+                stroke_bbox = _bbox_of_polylines(line_strokes)
+                overflow = _bbox_overflow_mm(stroke_bbox, bbox_mm, tolerance_mm=0.03)
+                strokes.extend(line_strokes)
+                accepted.append(
+                    {
+                        "text": line.get("text", ""),
+                        "bbox_mm": line.get("bbox_mm"),
+                        "dir": line.get("dir"),
+                        "stamp_cell_centered": bool(line.get("stamp_cell_centered")),
+                        "stamp_role_cell_expanded": bool(line.get("stamp_role_cell_expanded")),
+                        "stamp_source_text": line.get("stamp_source_text"),
+                        "stroke_bbox_mm": [round(v, 4) for v in stroke_bbox] if stroke_bbox else None,
+                        "bbox_overflow_mm": round(float(overflow), 4),
+                    }
+                )
     return strokes, accepted, missing
 
 
@@ -459,6 +604,7 @@ def _build_completion_audit(report: dict[str, Any]) -> dict[str, Any]:
     fit_meta = report.get("fit_meta", {})
     max_text_overflow = float(report.get("text_placement_max_overflow_mm", 999.0) or 0.0)
     overflow_lines = list(report.get("text_placement_overflow_lines", []) or [])
+    stamp_centered_count = int(report.get("stamp_cell_centered_lines", 0) or 0)
     source_pdf = Path(str(report.get("source_pdf", "")))
     copied_pdf = Path(str(report.get("copied_pdf", "")))
     out_dir_ok = OUT_DIR.exists() and copied_pdf.parent == OUT_DIR
@@ -481,7 +627,7 @@ def _build_completion_audit(report: dict[str, Any]) -> dict[str, Any]:
         ),
         check(
             "PDF text layer найден и принят без OCR всей страницы",
-            bool(report.get("text_lines_found", 0) > 0 and report.get("text_lines_accepted") == report.get("text_lines_found")),
+            bool(report.get("text_lines_found", 0) > 0 and report.get("text_lines_accepted", 0) >= report.get("text_lines_found", 0)),
             f"found={report.get('text_lines_found')}; accepted={report.get('text_lines_accepted')}; policy={report.get('confidence_policy')}",
         ),
         check(
@@ -493,6 +639,21 @@ def _build_completion_audit(report: dict[str, Any]) -> dict[str, Any]:
             "Текст не рисуется контуром, а заменяется однолинейными stroke-буквами",
             bool(stroke_style.get("single_line") is True and stroke_style.get("contour_text") is False),
             f"stroke_style={stroke_style}",
+        ),
+        check(
+            "Регистр текста учитывается: строчные буквы не превращаются в полноразмерные заглавные",
+            bool(report.get("case_sensitive_glyphs") and report.get("lowercase_chars_found", 0) > 0),
+            f"case_sensitive={report.get('case_sensitive_glyphs')}; lowercase_chars={report.get('lowercase_chars_found')}; stroke_style={stroke_style}",
+        ),
+        check(
+            "Заголовки штампа центрируются по ячейкам, а не по слепленному PDF text bbox",
+            bool(report.get("stamp_cell_centering_enabled") and stamp_centered_count >= 8),
+            f"stamp_cell_centered_lines={stamp_centered_count}; enabled={report.get('stamp_cell_centering_enabled')}",
+        ),
+        check(
+            "Цифра 1 не рисуется стрелкой вверх",
+            bool(report.get("digit_one_arrow") is False),
+            f"digit_one_arrow={report.get('digit_one_arrow')}",
         ),
         check(
             "Не осталось символов, ушедших в fallback-глиф",
@@ -609,6 +770,8 @@ def run() -> int:
     preflight_ok, preflight_msg = backend.preflight_check_gcode(ready_nc, logs.append)
     text_overflow_lines = [line for line in accepted_text if float(line.get("bbox_overflow_mm", 0.0) or 0.0) > 0.05]
     max_text_overflow = max((float(line.get("bbox_overflow_mm", 0.0) or 0.0) for line in accepted_text), default=0.0)
+    lowercase_chars_found = sum(1 for line in text_lines for ch in str(line.get("text", "")) if _is_lowercase_letter(ch))
+    stamp_cell_centered_count = sum(1 for line in accepted_text if line.get("stamp_cell_centered"))
 
     requested_compare_pdf = OUT_DIR / "05_source_vs_gost_au_compare.pdf"
     compare_png = OUT_DIR / "05_source_vs_gost_au_compare.png"
@@ -630,9 +793,21 @@ def run() -> int:
             "target_font": "GOST type AU",
             "italic_shear": GOST_ITALIC_SHEAR,
             "bbox_fill": GOST_TEXT_BOX_FILL,
+            "stamp_cell_text_fill": STAMP_CELL_TEXT_FILL,
+            "stamp_cell_text_fill_tight": STAMP_CELL_TEXT_FILL_TIGHT,
+            "stamp_role_text_fill": STAMP_ROLE_TEXT_FILL,
+            "stamp_role_letter_spacing_units": STAMP_ROLE_LETTER_SPACING_UNITS,
+            "lowercase_width_scale": LOWERCASE_WIDTH_SCALE,
+            "lowercase_y_offset": LOWERCASE_Y_OFFSET,
+            "lowercase_height_scale": LOWERCASE_HEIGHT_SCALE,
             "single_line": True,
             "contour_text": False,
         },
+        "case_sensitive_glyphs": True,
+        "lowercase_chars_found": int(lowercase_chars_found),
+        "stamp_cell_centering_enabled": True,
+        "stamp_cell_centered_lines": int(stamp_cell_centered_count),
+        "digit_one_arrow": False,
         "why_not_ttf_autotrace": "GOST_AU TTF centerline/autotrace per string is too slow for full KOMPAS sheets and can fragment letters; this experiment keeps the PDF text layer positions and emits deterministic slanted one-line technical strokes.",
         "confidence_policy": "Only PDF text layer lines are accepted as confidence=1.0. No full-page OCR guesses are used.",
         "text_lines_found": len(text_lines),

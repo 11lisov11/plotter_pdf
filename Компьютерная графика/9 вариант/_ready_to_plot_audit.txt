@@ -1,5 +1,0 @@
-variant=C:\plotter_pdf\Компьютерная графика\9 вариант
-ok=True
-packages=18
-failed=0
-warnings=0

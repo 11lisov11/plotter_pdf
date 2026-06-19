@@ -88,12 +88,23 @@ def _local_artifact_path(package_dir: Path, raw: str, fallback_name: str) -> str
     return str(package_dir)
 
 
+def _ready_artifact_names(item_name: str, suffix: str) -> list[str]:
+    item_name = str(item_name or "page_01").strip() or "page_01"
+    return [
+        f"{item_name}_new_algorithm{suffix}",
+        f"{item_name}{suffix}",
+    ]
+
+
 def _resolve_ready_nc(package_dir: Path, raw: str, item_name: str) -> Path | None:
     item_name = str(item_name or "page_01").strip() or "page_01"
-    fallback_names = [f"{item_name}.nc"]
+    fallback_names = _ready_artifact_names(item_name, ".nc")
 
     raw_text = str(raw or "").strip()
     candidates: list[Path] = []
+    for preferred in fallback_names[:1]:
+        candidates.append(package_dir / preferred)
+        candidates.append(package_dir / "pages" / preferred)
     if raw_text:
         candidate = Path(raw_text)
         candidates.append(candidate if candidate.is_absolute() else package_dir / candidate)
@@ -110,7 +121,7 @@ def _resolve_ready_nc(package_dir: Path, raw: str, item_name: str) -> Path | Non
             return candidate
         if candidate.name:
             local = package_dir / candidate.name
-            if local.exists():
+            if local.exists() and _is_within(local, package_dir):
                 return local
     return None
 
@@ -265,8 +276,12 @@ def find_first_ready_package(variant_dir: Path, *, kind: str = "a4", item: str |
             kind=item_kind,
             item=str(row.get("item") or "page_01"),
             nc=str(nc),
-            gcode=_local_artifact_path(package_dir, str(row.get("gcode") or ""), f"{item_name}.gcode"),
-            preview_pdf=_local_artifact_path(package_dir, str(row.get("preview_pdf") or ""), f"{item_name}.pdf"),
+            gcode=_local_artifact_path(package_dir, "", _ready_artifact_names(item_name, ".gcode")[0])
+            if (package_dir / _ready_artifact_names(item_name, ".gcode")[0]).exists()
+            else _local_artifact_path(package_dir, str(row.get("gcode") or ""), f"{item_name}.gcode"),
+            preview_pdf=_local_artifact_path(package_dir, "", f"{item_name}_new_algorithm_clean_preview.pdf")
+            if (package_dir / f"{item_name}_new_algorithm_clean_preview.pdf").exists()
+            else _local_artifact_path(package_dir, str(row.get("preview_pdf") or ""), f"{item_name}.pdf"),
             preview_svg=_local_artifact_path(package_dir, str(row.get("preview_svg") or ""), f"{item_name}.svg"),
             bounds=str(row.get("bounds") or ""),
             line_count=_line_count(nc),

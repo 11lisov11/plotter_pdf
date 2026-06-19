@@ -1,0 +1,23 @@
+{
+  "source_pdf": "C:\\plotter_pdf\\Компьютерная графика\\9 вариант\\1.pdf",
+  "background_pdf": "C:\\plotter_pdf\\Компьютерная графика\\9 вариант\\1_pack\\a4_clean_source.pdf",
+  "used_clean_source_background": true,
+  "font": "C:\\plotter_pdf\\assets\\single_line_fonts\\lc_opengost-ar.lff",
+  "font_license": "SIL Open Font License 1.1 (declared in LFF header)",
+  "text_lines": 53,
+  "rendered_polylines": 243,
+  "missing_chars": [],
+  "fill": 0.86,
+  "stamp_fill": 0.62,
+  "shear": 0.24,
+  "background_cleanup": {
+    "removed_background_text_segments": 3301,
+    "kept_background_segments": 626
+  },
+  "outputs": {
+    "pdf": "C:\\plotter_pdf\\Компьютерная графика\\новый тест букв\\07_lff_opengost_text_preview.pdf",
+    "png": "C:\\plotter_pdf\\Компьютерная графика\\новый тест букв\\07_lff_opengost_text_preview.png",
+    "stamp_crop": "C:\\plotter_pdf\\Компьютерная графика\\новый тест букв\\07_lff_opengost_stamp_crop.png",
+    "text_only_gcode": "C:\\plotter_pdf\\Компьютерная графика\\новый тест букв\\07_lff_opengost_text_only.nc"
+  }
+}
