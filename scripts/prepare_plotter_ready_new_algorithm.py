@@ -834,6 +834,124 @@ def _center_text_line_in_table_row(line: dict[str, Any], rules: list[HorizontalR
     return patched
 
 
+
+
+def _is_new_algorithm_specification_source(source_pdf: Path) -> bool:
+    try:
+        text = str(source_pdf.parent if source_pdf.name.casefold() == "source.pdf" else source_pdf).casefold()
+    except Exception:
+        return False
+    normalized = re.sub(r"[\\/_.\-]+", " ", text)
+    return bool(re.search(r"(^|\s)сп(\s|$)", normalized) or "специфик" in normalized)
+
+def _merge_grid_intervals(intervals: list[tuple[float, float]], *, gap_eps: float = 0.55) -> list[tuple[float, float]]:
+    if not intervals:
+        return []
+    merged: list[list[float]] = []
+    for start, end in sorted((min(float(a), float(b)), max(float(a), float(b))) for a, b in intervals):
+        if end - start <= 0.35:
+            continue
+        if not merged or start > merged[-1][1] + gap_eps:
+            merged.append([start, end])
+        else:
+            merged[-1][1] = max(merged[-1][1], end)
+    return [(float(start), float(end)) for start, end in merged]
+
+
+def _snap_axis_grid_segments(
+    segments: list[tuple[float, float, float]],
+    *,
+    coord_eps: float,
+    gap_eps: float,
+    horizontal: bool,
+) -> list[Polyline]:
+    if not segments:
+        return []
+    clusters: list[dict[str, Any]] = []
+    for coord, span0, span1 in sorted(segments, key=lambda item: item[0]):
+        coord = float(coord)
+        span0 = float(span0)
+        span1 = float(span1)
+        weight = max(0.1, abs(span1 - span0))
+        if not clusters or abs(coord - float(clusters[-1]["coord"])) > coord_eps:
+            clusters.append({"coord": coord, "weight": weight, "intervals": [(span0, span1)]})
+            continue
+        cluster = clusters[-1]
+        old_weight = float(cluster["weight"])
+        new_weight = old_weight + weight
+        cluster["coord"] = (float(cluster["coord"]) * old_weight + coord * weight) / new_weight
+        cluster["weight"] = new_weight
+        cluster["intervals"].append((span0, span1))
+
+    out: list[Polyline] = []
+    for cluster in clusters:
+        coord = float(cluster["coord"])
+        for start, end in _merge_grid_intervals(list(cluster["intervals"]), gap_eps=gap_eps):
+            if horizontal:
+                out.append([(start, coord), (end, coord)])
+            else:
+                out.append([(coord, start), (coord, end)])
+    return out
+
+
+def _snap_specification_table_grid_polylines(polylines: list[Polyline], logs: list[str]) -> list[Polyline]:
+    """Normalize KOMPAS specification table grid into single straight centerlines.
+
+    KOMPAS/PDF exports often expose table strokes as tiny outline fragments or
+    nearly-parallel duplicate edges.  If those are sent to the plotter directly,
+    the specification grid looks ragged.  This pass is intentionally limited to
+    almost-horizontal/almost-vertical segments and leaves text/diagonal geometry
+    alone.
+    """
+    horizontal_segments: list[tuple[float, float, float]] = []
+    vertical_segments: list[tuple[float, float, float]] = []
+    kept: list[Polyline] = []
+    classified = 0
+
+    for polyline in polylines:
+        if len(polyline) < 2:
+            continue
+        for a, b in zip(polyline, polyline[1:]):
+            ax, ay = float(a[0]), float(a[1])
+            bx, by = float(b[0]), float(b[1])
+            dx = bx - ax
+            dy = by - ay
+            adx = abs(dx)
+            ady = abs(dy)
+            if adx <= 0.35 and ady <= 0.35:
+                continue
+            if adx >= 1.2 and ady <= max(0.24, adx * 0.006):
+                horizontal_segments.append(((ay + by) * 0.5, min(ax, bx), max(ax, bx)))
+                classified += 1
+                continue
+            if ady >= 1.2 and adx <= max(0.24, ady * 0.006):
+                vertical_segments.append(((ax + bx) * 0.5, min(ay, by), max(ay, by)))
+                classified += 1
+                continue
+            kept.append([(ax, ay), (bx, by)])
+
+    snapped_horizontal = _snap_axis_grid_segments(
+        horizontal_segments,
+        coord_eps=0.42,
+        gap_eps=0.62,
+        horizontal=True,
+    )
+    snapped_vertical = _snap_axis_grid_segments(
+        vertical_segments,
+        coord_eps=0.42,
+        gap_eps=0.62,
+        horizontal=False,
+    )
+    snapped = [*kept, *snapped_horizontal, *snapped_vertical]
+    logs.append(
+        "Specification grid snap: "
+        f"classified_segments={classified}; "
+        f"horizontal={len(horizontal_segments)}->{len(snapped_horizontal)}; "
+        f"vertical={len(vertical_segments)}->{len(snapped_vertical)}; "
+        f"kept_non_axis={len(kept)}; total={len(polylines)}->{len(snapped)}."
+    )
+    return snapped
+
 def _line_to_lff_opengost_polys(
     font: lff_text.LffFont,
     line: dict[str, Any],
@@ -1339,9 +1457,11 @@ def _build_clean_source_opengost_source(
         geometry, background_meta, page_w_mm, page_h_mm = _clean_background_polylines_from_pdf(clean_source_pdf, text_doc, logs)
     finally:
         text_doc.close()
-    table_rules = _horizontal_table_rules_from_polylines(geometry)
     text_lines_for_cleanup, _cleanup_lines_found, _cleanup_lines_skipped = _text_lines_for_source(source_pdf)
     geometry = _remove_existing_text_geometry(geometry, text_lines_for_cleanup, logs.append)
+    if _is_new_algorithm_specification_source(source_pdf):
+        geometry = _snap_specification_table_grid_polylines(geometry, logs)
+    table_rules = _horizontal_table_rules_from_polylines(geometry)
     text_polys, accepted_text, missing_chars, text_lines_found, text_lines_skipped = _make_experiment_lff_text_strokes(
         source_pdf,
         logs,
@@ -1410,7 +1530,6 @@ def _build_source(pack: Path, source_pdf: Path, report: dict[str, Any], settings
     work_dir.mkdir(parents=True, exist_ok=True)
     geometry, page_w_mm, page_h_mm, geometry_svg = _geometry_polylines_from_pdf(source_pdf, work_dir, logs)
     geometry, cleanup_meta = _cleanup_source_geometry(source_pdf, geometry, page_w_mm, page_h_mm, report, logs)
-    table_rules = _horizontal_table_rules_from_polylines(geometry)
     dense_onepass_source = bool(report.get("a3_two_pass"))
     if dense_onepass_source:
         geometry_segments = sum(max(0, len(poly) - 1) for poly in geometry)
@@ -1421,6 +1540,9 @@ def _build_source(pack: Path, source_pdf: Path, report: dict[str, Any], settings
         )
     text_lines, text_lines_found, text_lines_skipped = _text_lines_for_source(source_pdf)
     geometry = _remove_existing_text_geometry(geometry, text_lines, logs.append)
+    if _is_new_algorithm_specification_source(source_pdf):
+        geometry = _snap_specification_table_grid_polylines(geometry, logs)
+    table_rules = _horizontal_table_rules_from_polylines(geometry)
     text_polys, accepted_text, missing_chars = _make_lff_opengost_text_strokes(
         text_lines,
         page_w_mm,
