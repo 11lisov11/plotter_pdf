@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import argparse
 import csv
@@ -82,6 +82,7 @@ SERVICE_TEXT_PARTS = (
 
 @dataclass(frozen=True)
 class Settings:
+    drawing_mode: str = "computer_graphics"
     x_compensation_mm: float = 0.0
     a3_pass_01_x_offset_mm: float = 0.0
     a3_pass_01_y_offset_mm: float = 0.0
@@ -127,6 +128,27 @@ class SourceBuild:
     preserve_source_frame: bool = False
     dense_onepass_source: bool = False
 
+
+
+def _normalize_drawing_mode(value: str | None, variant_root: Path | None = None) -> str:
+    raw = str(value or "auto").strip().casefold().replace("-", "_")
+    if raw in {"computer", "computer_graphics", "cg", "компьютерная_графика"}:
+        return "computer_graphics"
+    if raw in {"descriptive", "descriptive_geometry", "nachert", "начерт", "начертательная_геометрия"}:
+        return "descriptive_geometry"
+    if raw not in {"", "auto"}:
+        raise ValueError(f"Unknown drawing mode: {value}")
+    if variant_root is not None and "начерт" in str(variant_root).casefold():
+        return "descriptive_geometry"
+    return "computer_graphics"
+
+
+def _is_computer_graphics_mode(settings: Settings) -> bool:
+    return str(settings.drawing_mode or "computer_graphics") == "computer_graphics"
+
+
+def _is_descriptive_geometry_mode(settings: Settings) -> bool:
+    return str(settings.drawing_mode or "computer_graphics") == "descriptive_geometry"
 
 def _dist(a: Point, b: Point) -> float:
     return math.hypot(float(a[0]) - float(b[0]), float(a[1]) - float(b[1]))
@@ -549,9 +571,126 @@ LFF_STAMP_WORDS = {
 
 def _lff_line_text(line: dict[str, Any]) -> str:
     text = str(line.get("text", "") or "").strip()
-    if text == "5":
-        return "□5"
-    return text
+    return re.sub(r"^[□▯◻▫\s]+(?=\d)", "", text)
+
+
+DIMENSION_TEXT_ALLOWED_WORDS = {
+    "r",
+    "р",
+    "m",
+    "x",
+    "х",
+    "ф",
+    "lh",
+    "rh",
+    "отв",
+    "отв.",
+    "фаска",
+    "фаски",
+}
+
+TITLE_BLOCK_TEXT_MARKERS = (
+    "изм",
+    "лист",
+    "листов",
+    "докум",
+    "подп",
+    "дата",
+    "лит",
+    "масса",
+    "масштаб",
+    "разраб",
+    "пров",
+    "контр",
+    "утв",
+    "пгупс",
+    "сталь",
+    "гост",
+)
+
+
+def _line_font_size_pt(line: dict[str, Any]) -> float | None:
+    for key in ("font_size_pt_median", "font_size_pt", "size"):
+        value = line.get(key)
+        try:
+            size = float(value)
+        except (TypeError, ValueError):
+            continue
+        if 1.0 <= size <= 80.0:
+            return size
+    return None
+
+
+def _normalized_text_for_rules(text: str) -> str:
+    return re.sub(r"\s+", "", str(text or "").casefold().replace(",", "."))
+
+
+def _looks_like_dimension_annotation(line: dict[str, Any]) -> bool:
+    text = _lff_line_text(line)
+    compact = _normalized_text_for_rules(text)
+    if not compact or not any(ch.isdigit() for ch in compact):
+        return False
+    if len(compact) > 18:
+        return False
+    if any(marker in compact for marker in TITLE_BLOCK_TEXT_MARKERS):
+        return False
+    words = re.findall(r"[a-zа-яё]+", compact, flags=re.IGNORECASE)
+    for word in words:
+        if word.casefold() not in DIMENSION_TEXT_ALLOWED_WORDS:
+            return False
+    allowed = set("0123456789.,+-°'\"/()[]")
+    allowed.update("rRрРmMxXhHlLнНоОтТвВфФØø⌀φΦ×хХ")
+    return all((ch in allowed) or ch.isspace() for ch in text)
+
+
+def _looks_like_title_block_zone(line: dict[str, Any], page_w_mm: float, page_h_mm: float) -> bool:
+    text = _normalized_text_for_rules(_lff_line_text(line))
+    if any(marker in text for marker in TITLE_BLOCK_TEXT_MARKERS):
+        return True
+    bbox = _line_bbox_mm(line)
+    if bbox is None:
+        return False
+    x0, y0, x1, y1 = bbox
+    cx = (x0 + x1) * 0.5
+    cy = (y0 + y1) * 0.5
+    page_w = max(1.0, float(page_w_mm))
+    page_h = max(1.0, float(page_h_mm))
+    if page_h >= page_w:
+        if cy >= page_h - 70.0:
+            return True
+        if cx <= 24.0 and cy >= 25.0:
+            return True
+    else:
+        if cy >= page_h - 72.0 and cx >= page_w - 205.0:
+            return True
+        if cy <= 48.0 and cx <= 135.0:
+            return True
+    return False
+
+
+def _dimension_text_box_height_override_mm(
+    line: dict[str, Any],
+    page_w_mm: float,
+    page_h_mm: float,
+    *,
+    current_box_height_mm: float,
+    fill: float,
+) -> float | None:
+    if not _looks_like_dimension_annotation(line):
+        return None
+    if _looks_like_title_block_zone(line, page_w_mm, page_h_mm):
+        return None
+    font_size_pt = _line_font_size_pt(line)
+    if font_size_pt is not None:
+        target_draw_height = font_size_pt * 25.4 / 72.0 * 1.18
+    else:
+        target_draw_height = current_box_height_mm * float(fill)
+    target_draw_height = max(3.2, min(6.0, float(target_draw_height)))
+    target_box_height = target_draw_height / max(0.35, float(fill))
+    current_draw_height = current_box_height_mm * float(fill)
+    if current_draw_height < target_draw_height * 0.88 or current_draw_height > target_draw_height * 1.12:
+        return target_box_height
+    return None
 
 
 def _line_bbox_mm(line: dict[str, Any]) -> tuple[float, float, float, float] | None:
@@ -583,6 +722,118 @@ def _looks_like_lff_stamp_cell(line: dict[str, Any], page_w_mm: float, page_h_mm
     return height < 8.0 and width < 80.0
 
 
+HorizontalRule = tuple[float, float, float]
+
+
+def _horizontal_table_rules_from_polylines(polylines: list[Polyline]) -> list[HorizontalRule]:
+    rules: list[HorizontalRule] = []
+    for polyline in polylines:
+        if len(polyline) < 2:
+            continue
+        for a, b in zip(polyline, polyline[1:]):
+            ax, ay = float(a[0]), float(a[1])
+            bx, by = float(b[0]), float(b[1])
+            dx = abs(bx - ax)
+            dy = abs(by - ay)
+            if dx < 4.5 or dy > 0.12:
+                continue
+            rules.append(((ay + by) * 0.5, min(ax, bx), max(ax, bx)))
+    return rules
+
+
+def _dedupe_rule_ys(values: list[float], *, eps: float = 0.22) -> list[float]:
+    if not values:
+        return []
+    out: list[float] = []
+    cluster: list[float] = []
+    for value in sorted(values):
+        if not cluster or abs(value - cluster[-1]) <= eps:
+            cluster.append(value)
+            continue
+        out.append(sum(cluster) / len(cluster))
+        cluster = [value]
+    if cluster:
+        out.append(sum(cluster) / len(cluster))
+    return out
+
+
+def _horizontal_overlap(a0: float, a1: float, b0: float, b1: float) -> float:
+    return max(0.0, min(float(a1), float(b1)) - max(float(a0), float(b0)))
+
+
+def _table_row_band_for_line(line: dict[str, Any], rules: list[HorizontalRule]) -> tuple[float, float] | None:
+    if not rules:
+        return None
+    bbox = _line_bbox_mm(line)
+    if bbox is None:
+        return None
+    text = _lff_line_text(line)
+    if not text:
+        return None
+    x0, y0, x1, y1 = bbox
+    width = max(0.1, x1 - x0)
+    height = max(0.1, y1 - y0)
+    if height > 14.0:
+        return None
+    u = _unit(tuple(line.get("dir", (1.0, 0.0))))  # type: ignore[arg-type]
+    if abs(u[1]) > 0.22 or abs(u[0]) < 0.72:
+        return None
+    cx = (x0 + x1) * 0.5
+    cy = (y0 + y1) * 0.5
+    relevant_ys: list[float] = []
+    for rule_y, rule_x0, rule_x1 in rules:
+        rule_width = float(rule_x1) - float(rule_x0)
+        if rule_width < 4.5:
+            continue
+        overlap = _horizontal_overlap(x0, x1, rule_x0 - 0.8, rule_x1 + 0.8)
+        contains_center = (float(rule_x0) - 1.5) <= cx <= (float(rule_x1) + 1.5)
+        if not contains_center and overlap < min(width * 0.35, 2.5):
+            continue
+        relevant_ys.append(float(rule_y))
+    ys = _dedupe_rule_ys(relevant_ys)
+    if len(ys) < 3:
+        return None
+    upper_candidates = [value for value in ys if value < cy - 0.2]
+    lower_candidates = [value for value in ys if value > cy + 0.2]
+    if not upper_candidates or not lower_candidates:
+        return None
+    upper = max(upper_candidates)
+    lower = min(lower_candidates)
+    gap = lower - upper
+    if gap < 3.2 or gap > 18.5:
+        return None
+    nearby = [value for value in ys if upper - gap * 3.0 <= value <= lower + gap * 3.0]
+    if len(nearby) < 3:
+        return None
+    return upper, lower
+
+
+def _center_text_line_in_table_row(line: dict[str, Any], rules: list[HorizontalRule]) -> dict[str, Any]:
+    band = _table_row_band_for_line(line, rules)
+    if band is None:
+        return line
+    bbox = _line_bbox_mm(line)
+    if bbox is None:
+        return line
+    x0, y0, x1, y1 = bbox
+    upper, lower = band
+    row_height = lower - upper
+    current_height = max(0.1, y1 - y0)
+    target_height = min(current_height, max(0.1, row_height * 0.86))
+    row_center = (upper + lower) * 0.5
+    new_y0 = row_center - target_height * 0.5
+    new_y1 = row_center + target_height * 0.5
+    if abs(new_y0 - y0) <= 0.05 and abs(new_y1 - y1) <= 0.05:
+        return line
+    patched = dict(line)
+    patched["bbox_mm"] = [round(float(x0), 4), round(float(new_y0), 4), round(float(x1), 4), round(float(new_y1), 4)]
+    patched["table_row_centered"] = {
+        "row_band_mm": [round(float(upper), 4), round(float(lower), 4)],
+        "dy_mm": round(float(((new_y0 + new_y1) - (y0 + y1)) * 0.5), 4),
+    }
+    return patched
+
+
 def _line_to_lff_opengost_polys(
     font: lff_text.LffFont,
     line: dict[str, Any],
@@ -590,6 +841,7 @@ def _line_to_lff_opengost_polys(
     page_w_mm: float,
     page_h_mm: float,
     missing: set[str],
+    normalize_dimension_text: bool = False,
 ) -> list[Polyline]:
     text = _lff_line_text(line)
     if not text:
@@ -608,6 +860,21 @@ def _line_to_lff_opengost_polys(
     box_width = max(0.1, t_max - t_min)
     box_height = max(0.1, s_max - s_min)
 
+    fill = LFF_STAMP_FILL if _looks_like_lff_stamp_cell(line, page_w_mm, page_h_mm) else LFF_FILL
+    if normalize_dimension_text:
+        override_height = _dimension_text_box_height_override_mm(
+            line,
+            page_w_mm,
+            page_h_mm,
+            current_box_height_mm=box_height,
+            fill=fill,
+        )
+        if override_height is not None:
+            s_mid = (s_min + s_max) * 0.5
+            half = max(0.1, float(override_height) * 0.5)
+            s_min, s_max = s_mid - half, s_mid + half
+            box_height = max(0.1, s_max - s_min)
+
     font_polys, text_width = lff_text.text_to_lff_polylines(
         font,
         text,
@@ -617,7 +884,6 @@ def _line_to_lff_opengost_polys(
     if not font_polys or text_width <= 1e-6:
         return []
 
-    fill = LFF_STAMP_FILL if _looks_like_lff_stamp_cell(line, page_w_mm, page_h_mm) else LFF_FILL
     font_height = lff_text.FONT_EM_MAX - lff_text.FONT_EM_MIN
     scale = box_height * fill / font_height
     if text_width * scale > box_width * 0.98:
@@ -626,13 +892,22 @@ def _line_to_lff_opengost_polys(
     rendered_height = font_height * scale
     local_x0 = (box_width - rendered_width) * 0.5
     local_y0 = (box_height - rendered_height) * 0.5
+    glyph_y_values = [float(y) for font_poly in font_polys for _x, y in font_poly]
+    if glyph_y_values:
+        glyph_y_min = min(glyph_y_values)
+        glyph_y_max = max(glyph_y_values)
+        glyph_local_min = local_y0 + (lff_text.FONT_EM_MAX - glyph_y_max) * scale
+        glyph_local_max = local_y0 + (lff_text.FONT_EM_MAX - glyph_y_min) * scale
+        visual_center_shift = (box_height * 0.5) - ((glyph_local_min + glyph_local_max) * 0.5)
+    else:
+        visual_center_shift = 0.0
 
     result: list[Polyline] = []
     for font_poly in font_polys:
         mapped: Polyline = []
         for x, y in font_poly:
             local_x = local_x0 + float(x) * scale
-            local_y = local_y0 + (lff_text.FONT_EM_MAX - float(y)) * scale
+            local_y = local_y0 + (lff_text.FONT_EM_MAX - float(y)) * scale + visual_center_shift
             mapped.append((u[0] * (t_min + local_x) + v[0] * (s_min + local_y), u[1] * (t_min + local_x) + v[1] * (s_min + local_y)))
         if len(mapped) >= 2:
             result.append(mapped)
@@ -677,6 +952,9 @@ def _make_lff_opengost_text_strokes(
     logger,
     *,
     use_stamp_overrides: bool = True,
+    center_a3_top_left_title: bool = False,
+    normalize_dimension_text: bool = False,
+    table_rules: list[HorizontalRule] | None = None,
 ) -> tuple[list[Polyline], list[dict[str, Any]], set[str]]:
     if use_stamp_overrides:
         _install_stamp_role_cell_overrides()
@@ -686,8 +964,15 @@ def _make_lff_opengost_text_strokes(
     strokes: list[Polyline] = []
     accepted: list[dict[str, Any]] = []
     missing: set[str] = set()
+    table_centered = 0
     for source_line in text_lines:
-        source_line = source_line if use_stamp_overrides else _center_a3_top_left_title_line(source_line)
+        if center_a3_top_left_title:
+            source_line = _center_a3_top_left_title_line(source_line)
+        if table_rules:
+            centered_line = _center_text_line_in_table_row(source_line, table_rules)
+            if centered_line is not source_line:
+                table_centered += 1
+            source_line = centered_line
         routed_lines = gost._stamp_centered_lines(source_line) if use_stamp_overrides else [source_line]
         for line in routed_lines:
             line_polys = _line_to_lff_opengost_polys(
@@ -696,6 +981,7 @@ def _make_lff_opengost_text_strokes(
                 page_w_mm=page_w_mm,
                 page_h_mm=page_h_mm,
                 missing=missing,
+                normalize_dimension_text=normalize_dimension_text,
             )
             if not line_polys:
                 missing.add(str(line.get("text", "")))
@@ -713,6 +999,8 @@ def _make_lff_opengost_text_strokes(
                     f"dx={float(meta.get('dx_mm', 0.0)):.3f} mm; "
                     f"dy={float(meta.get('dy_mm', 0.0)):.3f} mm."
                 )
+    if table_centered:
+        logger(f"OpenGOST LFF table row vertical centering: adjusted {table_centered} text line(s).")
     return strokes, accepted, missing
 
 
@@ -883,6 +1171,9 @@ def _clean_background_polylines_from_pdf(
 def _make_experiment_lff_text_strokes(
     source_pdf: Path,
     logs: list[str],
+    *,
+    normalize_dimension_text: bool = False,
+    table_rules: list[HorizontalRule] | None = None,
 ) -> tuple[list[Polyline], list[dict[str, Any]], set[str], int, int]:
     if not LFF_FONT_PATH.exists():
         return [], [], {"LFF_FONT_UNAVAILABLE"}, 0, 0
@@ -893,8 +1184,11 @@ def _make_experiment_lff_text_strokes(
     text_doc = fitz.open(source_pdf)
     try:
         page = text_doc[0]
+        page_w_mm = float(page.rect.width) * lff_text.PT_TO_MM
+        page_h_mm = float(page.rect.height) * lff_text.PT_TO_MM
         lines = lff_text._extract_text_lines(page)
         skipped = 0
+        table_centered = 0
         for raw_line in lines:
             line = dict(raw_line)
             line["text"] = _repair_pdf_text_mojibake(line.get("text", ""))
@@ -903,18 +1197,27 @@ def _make_experiment_lff_text_strokes(
             if lff_text._is_service_or_footer_text(text, rect, page.rect):
                 skipped += 1
                 continue
-            line_fill = LFF_STAMP_FILL if lff_text._looks_like_stamp_cell(text, rect, page.rect) else LFF_FILL
-            page_polys = lff_text._line_to_page_polylines(
+            line_mm = dict(line)
+            line_mm["bbox_mm"] = [
+                float(rect.x0) * lff_text.PT_TO_MM,
+                float(rect.y0) * lff_text.PT_TO_MM,
+                float(rect.x1) * lff_text.PT_TO_MM,
+                float(rect.y1) * lff_text.PT_TO_MM,
+            ]
+            if table_rules:
+                centered_line = _center_text_line_in_table_row(line_mm, table_rules)
+                if centered_line is not line_mm:
+                    table_centered += 1
+                line_mm = centered_line
+            line_fill = LFF_STAMP_FILL if _looks_like_lff_stamp_cell(line_mm, page_w_mm, page_h_mm) else LFF_FILL
+            mm_polys = _line_to_lff_opengost_polys(
                 font,
-                line,
-                fill=line_fill,
-                shear=LFF_SHEAR,
+                line_mm,
+                page_w_mm=page_w_mm,
+                page_h_mm=page_h_mm,
                 missing=missing,
+                normalize_dimension_text=normalize_dimension_text,
             )
-            if not page_polys:
-                missing.add(text)
-                continue
-            mm_polys = [_pt_poly_to_mm(poly) for poly in page_polys if len(poly) >= 2]
             if not mm_polys:
                 missing.add(text)
                 continue
@@ -932,6 +1235,8 @@ def _make_experiment_lff_text_strokes(
                 f"OpenGOST LFF experiment text: '{lff_text._line_display_text(line)}' -> "
                 f"{len(mm_polys)} stroke(s), font={LFF_FONT_PATH.name}, fill={line_fill:.2f}, shear={LFF_SHEAR:.2f}"
             )
+        if table_centered:
+            logs.append(f"OpenGOST LFF table row vertical centering: adjusted {table_centered} text line(s).")
         return strokes, accepted, missing, len(lines), skipped
     finally:
         text_doc.close()
@@ -1021,6 +1326,7 @@ def _build_clean_source_opengost_source(
     pack: Path,
     source_pdf: Path,
     clean_source_pdf: Path,
+    settings: Settings,
 ) -> SourceBuild:
     logs: list[str] = [
         "source route: clean_source_background + OpenGOST LFF experiment renderer; "
@@ -1033,11 +1339,14 @@ def _build_clean_source_opengost_source(
         geometry, background_meta, page_w_mm, page_h_mm = _clean_background_polylines_from_pdf(clean_source_pdf, text_doc, logs)
     finally:
         text_doc.close()
+    table_rules = _horizontal_table_rules_from_polylines(geometry)
     text_lines_for_cleanup, _cleanup_lines_found, _cleanup_lines_skipped = _text_lines_for_source(source_pdf)
     geometry = _remove_existing_text_geometry(geometry, text_lines_for_cleanup, logs.append)
     text_polys, accepted_text, missing_chars, text_lines_found, text_lines_skipped = _make_experiment_lff_text_strokes(
         source_pdf,
         logs,
+        normalize_dimension_text=_is_computer_graphics_mode(settings),
+        table_rules=table_rules,
     )
     source_polys = [*geometry, *text_polys]
     source_segments = sum(max(0, len(poly) - 1) for poly in source_polys)
@@ -1095,13 +1404,14 @@ def _build_clean_source_opengost_source(
 def _build_source(pack: Path, source_pdf: Path, report: dict[str, Any], settings: Settings) -> SourceBuild:
     clean_source_pdf = _clean_source_background_for_pack(pack, source_pdf, report)
     if clean_source_pdf is not None:
-        return _build_clean_source_opengost_source(pack, source_pdf, clean_source_pdf)
+        return _build_clean_source_opengost_source(pack, source_pdf, clean_source_pdf, settings)
     logs: list[str] = []
     work_dir = pack / "_new_algorithm_source"
     work_dir.mkdir(parents=True, exist_ok=True)
     geometry, page_w_mm, page_h_mm, geometry_svg = _geometry_polylines_from_pdf(source_pdf, work_dir, logs)
     geometry, cleanup_meta = _cleanup_source_geometry(source_pdf, geometry, page_w_mm, page_h_mm, report, logs)
-    dense_onepass_source = bool(report.get("a3_two_pass")) and VARIANT9_DIR.casefold() in str(source_pdf).casefold()
+    table_rules = _horizontal_table_rules_from_polylines(geometry)
+    dense_onepass_source = bool(report.get("a3_two_pass"))
     if dense_onepass_source:
         geometry_segments = sum(max(0, len(poly) - 1) for poly in geometry)
         logs.append(
@@ -1117,6 +1427,9 @@ def _build_source(pack: Path, source_pdf: Path, report: dict[str, Any], settings
         page_h_mm,
         logs.append,
         use_stamp_overrides=not dense_onepass_source,
+        center_a3_top_left_title=bool(dense_onepass_source and _is_computer_graphics_mode(settings)),
+        normalize_dimension_text=_is_computer_graphics_mode(settings),
+        table_rules=table_rules,
     )
     if dense_onepass_source:
         logs.append("A3 dense text placement: A4 stamp cell overrides disabled; using real PDF text bbox coordinates.")
@@ -1274,6 +1587,28 @@ def _map_to_item(source_polys: list[Polyline], transform: Transform, settings: S
     return _dedup_segments(final)
 
 
+def _stitch_touching_polylines(
+    polylines: list[Polyline],
+    settings: Settings,
+    logs: list[str],
+    *,
+    label: str,
+) -> list[Polyline]:
+    before_paths = len(polylines)
+    before_segments = sum(max(0, len(poly) - 1) for poly in polylines)
+    stitched = stitch_gcode_polylines.stitch_polylines(polylines, eps=settings.stitch_eps_mm)
+    ordered = stitch_gcode_polylines.nearest_order(stitched)
+    after_paths = len(ordered)
+    after_segments = sum(max(0, len(poly) - 1) for poly in ordered)
+    if after_paths != before_paths:
+        logs.append(
+            f"{label}: endpoint-only stitch {before_paths}->{after_paths} paths; "
+            f"segments {before_segments}->{after_segments}; eps={settings.stitch_eps_mm:.3f} mm; "
+            "nearest-order enabled after stitching; no collinear simplifier applied."
+        )
+    return ordered
+
+
 def _strip_work_area_outer_border_segments(
     polylines: list[Polyline],
     logs: list[str],
@@ -1342,12 +1677,13 @@ def _map_to_item_dense_onepass(
     settings: Settings,
     logs: list[str],
 ) -> list[Polyline]:
+    computer_graphics_frame_rules = _is_computer_graphics_mode(settings)
     mapped_tagged: list[tuple[Polyline, bool]] = []
     for poly in source_polys:
         if len(poly) < 2:
             continue
         mapped_poly = [_transform_point(point, transform) for point in poly]
-        mapped_tagged.append((mapped_poly, (not transform.rotate_180) and _is_a3_top_left_title_fragment_source(poly)))
+        mapped_tagged.append((mapped_poly, computer_graphics_frame_rules and (not transform.rotate_180) and _is_a3_top_left_title_fragment_source(poly)))
     if abs(float(settings.x_compensation_mm)) > 1e-9:
         mapped_tagged = [(_translate([poly], settings.x_compensation_mm, 0.0)[0], tag) for poly, tag in mapped_tagged]
     if not transform.rotate_180:
@@ -1384,13 +1720,22 @@ def _map_to_item_dense_onepass(
                 f"bbox_min_before=({bx0:.3f},{by0:.3f}); work_min=({work_x0:.3f},{work_y0:.3f})."
             )
             clipped = backend.clip_polylines_to_work_area(clipped, logger=logs.append)
-    clipped = _strip_work_area_outer_border_segments(clipped, logs)
+    if computer_graphics_frame_rules:
+        clipped = _strip_work_area_outer_border_segments(clipped, logs)
+    else:
+        logs.append("A3 descriptive-geometry frame profile: work-area outer-border strip disabled; standard task frame kept.")
     clipped_segments = sum(max(0, len(poly) - 1) for poly in clipped)
-    final = _dedup_segments(clipped)
+    deduped = _dedup_segments(clipped)
+    final = _stitch_touching_polylines(
+        deduped,
+        settings,
+        logs,
+        label="A3 dense onepass continuity",
+    )
     final_segments = sum(max(0, len(poly) - 1) for poly in final)
     logs.append(
         "A3 dense onepass route: "
-        "old collinear-overlap simplifier and stitch/nearest-order are disabled; "
+        "old collinear-overlap simplifier is disabled; endpoint-only stitch and nearest-order are enabled; "
         f"pre_clip_segments={pre_clip_segments}; clipped_segments={clipped_segments}; "
         f"dense_lff_segments_preserved={final_segments}; dedup_removed={max(0, clipped_segments - final_segments)}."
     )
@@ -1477,7 +1822,13 @@ def _map_a4_preserving_source_frame(source_build: SourceBuild, settings: Setting
     # calls simplify_polyline() on rebuilt paths and collapses the onepass LFF
     # arcs/letters from ~4.6k segments to ~0.8k segments, which is exactly what
     # made page_01_new_algorithm differ from the accepted 07_lff...dedup_xfixed file.
-    final = _dedup_segments(mapped)
+    deduped = _dedup_segments(mapped)
+    final = _stitch_touching_polylines(
+        deduped,
+        settings,
+        logs,
+        label="A4 clean-source onepass continuity",
+    )
     post_segments = sum(max(0, len(poly) - 1) for poly in final)
     logs.append(
         "A4 clean-source onepass route: "
@@ -1918,6 +2269,46 @@ def _rebuild_packages(variant_root: Path) -> None:
     )
 
 
+
+def _remove_variant_root_artifacts(variant_root: Path) -> None:
+    for artifact_name in (
+        "_new_algorithm_summary.csv",
+        "_prepared_summary.csv",
+        "_prepared_reports.json",
+        "_audit.json",
+        "_audit.txt",
+        "_audit",
+        "_audit_contact.png",
+        "_new_algorithm_a3_passes_contact.png",
+        "_new_algorithm_pages_contact.png",
+    ):
+        artifact = variant_root / artifact_name
+        if not artifact.exists():
+            continue
+        if artifact.is_dir() and not artifact.is_symlink():
+            shutil.rmtree(artifact)
+        else:
+            artifact.unlink()
+
+    # Old prepare_folder1_packages output used root-level folders named after the
+    # source PDF. New clean output lives only in *_pack folders, so generated
+    # non-pack folders containing plotter artifacts are removed in clean mode.
+    for child in list(variant_root.iterdir()):
+        if not child.is_dir() or child.name.endswith("_pack"):
+            continue
+        generated_markers = (
+            list(child.glob("*.gcode"))
+            or list(child.glob("*.nc"))
+            or list(child.glob("*.svg"))
+            or list(child.glob("summary.csv"))
+            or list(child.glob("source_vs_gcode_compare.*"))
+            or (child / "pages").exists()
+            or (child / "logs").exists()
+            or (child / "_candidates").exists()
+        )
+        if generated_markers:
+            shutil.rmtree(child)
+
 def prepare_variant(variant_root: Path, *, rebuild: bool, settings: Settings) -> list[dict[str, Any]]:
     variant_root = variant_root.resolve()
     packs = sorted(variant_root.glob("*_pack"), key=lambda path: path.name.casefold())
@@ -1936,25 +2327,14 @@ def prepare_variant(variant_root: Path, *, rebuild: bool, settings: Settings) ->
             writer.writeheader()
             writer.writerows(rows)
     else:
-        for artifact_name in (
-            "_new_algorithm_summary.csv",
-            "_prepared_summary.csv",
-            "_prepared_reports.json",
-            "_audit.json",
-            "_audit.txt",
-            "_audit_contact.png",
-            "_new_algorithm_a3_passes_contact.png",
-            "_new_algorithm_pages_contact.png",
-        ):
-            artifact = variant_root / artifact_name
-            if artifact.exists():
-                artifact.unlink()
+        _remove_variant_root_artifacts(variant_root)
     return rows
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Build source-driven new-algorithm plotter G-code and previews.")
     parser.add_argument("--variant-root", type=Path, default=DEFAULT_VARIANT_ROOT)
+    parser.add_argument("--drawing-mode", choices=["auto", "computer_graphics", "descriptive_geometry"], default="auto", help="Frame/layout profile: computer_graphics for KOMPAS drawing sheets, descriptive_geometry for Начерт tasks.")
     parser.add_argument("--rebuild", action="store_true", help="Rebuild package metadata before source-driven output.")
     parser.add_argument("--x-compensation-mm", type=float, default=0.0)
     parser.add_argument("--a3-pass-01-x-offset-mm", type=float, default=0.0, help="Extra plotter-only X offset for A3 pass_01; default keeps current output unchanged.")
@@ -1968,6 +2348,7 @@ def main() -> int:
     )
     args = parser.parse_args()
     settings = Settings(
+        drawing_mode=_normalize_drawing_mode(args.drawing_mode, args.variant_root),
         x_compensation_mm=float(args.x_compensation_mm),
         a3_pass_01_x_offset_mm=float(args.a3_pass_01_x_offset_mm),
         a3_pass_01_y_offset_mm=float(args.a3_pass_01_y_offset_mm),
@@ -1977,6 +2358,7 @@ def main() -> int:
     )
     rows = prepare_variant(args.variant_root, rebuild=bool(args.rebuild), settings=settings)
     ok_rows = [row for row in rows if bool(row.get("ok"))]
+    print(f"drawing_mode={settings.drawing_mode}")
     print(f"new_algorithm_v2_files={len(ok_rows)}")
     if settings.keep_debug_artifacts:
         print(f"summary={args.variant_root / '_new_algorithm_summary.csv'}")
