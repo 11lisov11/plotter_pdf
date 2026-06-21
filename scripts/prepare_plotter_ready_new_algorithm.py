@@ -844,6 +844,50 @@ def _is_new_algorithm_specification_source(source_pdf: Path) -> bool:
     normalized = re.sub(r"[\\/_.\-]+", " ", text)
     return bool(re.search(r"(^|\s)сп(\s|$)", normalized) or "специфик" in normalized)
 
+
+def _looks_like_specification_table_geometry(polylines: list[Polyline]) -> bool:
+    """Detect a specification sheet by its table grid, not by a pack name only."""
+
+    horizontal: list[float] = []
+    vertical: list[float] = []
+    axis_segments = 0
+    for polyline in polylines:
+        if len(polyline) < 2:
+            continue
+        xs = [point[0] for point in polyline]
+        ys = [point[1] for point in polyline]
+        min_x, max_x = min(xs), max(xs)
+        min_y, max_y = min(ys), max(ys)
+        width = max_x - min_x
+        height = max_y - min_y
+        if width >= 18.0 and height <= 0.55:
+            horizontal.append((min_y + max_y) * 0.5)
+            axis_segments += 1
+        elif height >= 18.0 and width <= 0.55:
+            vertical.append((min_x + max_x) * 0.5)
+            axis_segments += 1
+
+    def cluster_count(values: list[float], tolerance: float = 0.9) -> int:
+        if not values:
+            return 0
+        clusters = 1
+        current = sorted(values)[0]
+        for value in sorted(values)[1:]:
+            if abs(value - current) > tolerance:
+                clusters += 1
+                current = value
+            else:
+                current = (current + value) * 0.5
+        return clusters
+
+    horizontal_rows = cluster_count(horizontal)
+    vertical_columns = cluster_count(vertical)
+    return axis_segments >= 30 and horizontal_rows >= 14 and vertical_columns >= 5
+
+
+def _is_new_algorithm_specification(source_pdf: Path, polylines: list[Polyline]) -> bool:
+    return _is_new_algorithm_specification_source(source_pdf) or _looks_like_specification_table_geometry(polylines)
+
 def _merge_grid_intervals(intervals: list[tuple[float, float]], *, gap_eps: float = 0.55) -> list[tuple[float, float]]:
     if not intervals:
         return []
@@ -1459,7 +1503,8 @@ def _build_clean_source_opengost_source(
         text_doc.close()
     text_lines_for_cleanup, _cleanup_lines_found, _cleanup_lines_skipped = _text_lines_for_source(source_pdf)
     geometry = _remove_existing_text_geometry(geometry, text_lines_for_cleanup, logs.append)
-    if _is_new_algorithm_specification_source(source_pdf):
+    is_specification = _is_new_algorithm_specification(source_pdf, geometry)
+    if is_specification:
         geometry = _snap_specification_table_grid_polylines(geometry, logs)
     table_rules = _horizontal_table_rules_from_polylines(geometry)
     text_polys, accepted_text, missing_chars, text_lines_found, text_lines_skipped = _make_experiment_lff_text_strokes(
@@ -1540,7 +1585,8 @@ def _build_source(pack: Path, source_pdf: Path, report: dict[str, Any], settings
         )
     text_lines, text_lines_found, text_lines_skipped = _text_lines_for_source(source_pdf)
     geometry = _remove_existing_text_geometry(geometry, text_lines, logs.append)
-    if _is_new_algorithm_specification_source(source_pdf):
+    is_specification = _is_new_algorithm_specification(source_pdf, geometry)
+    if is_specification:
         geometry = _snap_specification_table_grid_polylines(geometry, logs)
     table_rules = _horizontal_table_rules_from_polylines(geometry)
     text_polys, accepted_text, missing_chars = _make_lff_opengost_text_strokes(
@@ -1548,7 +1594,7 @@ def _build_source(pack: Path, source_pdf: Path, report: dict[str, Any], settings
         page_w_mm,
         page_h_mm,
         logs.append,
-        use_stamp_overrides=not dense_onepass_source,
+        use_stamp_overrides=not dense_onepass_source and not is_specification,
         center_a3_top_left_title=bool(dense_onepass_source and _is_computer_graphics_mode(settings)),
         normalize_dimension_text=_is_computer_graphics_mode(settings),
         table_rules=table_rules,
