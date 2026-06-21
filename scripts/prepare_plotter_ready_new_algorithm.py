@@ -809,6 +809,8 @@ def _table_row_band_for_line(line: dict[str, Any], rules: list[HorizontalRule]) 
 
 
 def _center_text_line_in_table_row(line: dict[str, Any], rules: list[HorizontalRule]) -> dict[str, Any]:
+    if line.get("skip_table_row_center"):
+        return line
     band = _table_row_band_for_line(line, rules)
     if band is None:
         return line
@@ -832,6 +834,54 @@ def _center_text_line_in_table_row(line: dict[str, Any], rules: list[HorizontalR
         "dy_mm": round(float(((new_y0 + new_y1) - (y0 + y1)) * 0.5), 4),
     }
     return patched
+
+
+def _mark_multiline_table_cell_lines(lines: list[dict[str, Any]], rules: list[HorizontalRule]) -> list[dict[str, Any]]:
+    """Do not collapse multi-line cells into one centered baseline.
+
+    KOMPAS specification headers and title-block cells can contain two lines in
+    one table cell (for example "Приме-" / "чание").  Per-line row centering
+    alone moves both lines to the same row center and makes them overlap.  Mark
+    such neighboring lines so their original PDF vertical placement is kept.
+    """
+
+    if not rules or len(lines) < 2:
+        return lines
+    bands: list[tuple[int, tuple[float, float], tuple[float, float, float, float]]] = []
+    for index, line in enumerate(lines):
+        band = _table_row_band_for_line(line, rules)
+        bbox = _line_bbox_mm(line)
+        if band is None or bbox is None:
+            continue
+        bands.append((index, band, bbox))
+    skip: set[int] = set()
+    for pos, (idx_a, band_a, bbox_a) in enumerate(bands):
+        ax0, ay0, ax1, ay1 = bbox_a
+        aw = max(0.1, ax1 - ax0)
+        acx = (ax0 + ax1) * 0.5
+        for idx_b, band_b, bbox_b in bands[pos + 1 :]:
+            if abs(float(band_a[0]) - float(band_b[0])) > 0.25 or abs(float(band_a[1]) - float(band_b[1])) > 0.25:
+                continue
+            bx0, by0, bx1, by1 = bbox_b
+            bw = max(0.1, bx1 - bx0)
+            bcx = (bx0 + bx1) * 0.5
+            horizontal_overlap = _horizontal_overlap(ax0, ax1, bx0, bx1)
+            same_cell_x = horizontal_overlap >= min(aw, bw) * 0.35 or abs(acx - bcx) <= max(aw, bw) * 0.45
+            vertically_separate = min(abs(ay0 - by0), abs(ay1 - by1), abs(((ay0 + ay1) - (by0 + by1)) * 0.5)) > 1.0
+            if same_cell_x and vertically_separate:
+                skip.add(idx_a)
+                skip.add(idx_b)
+    if not skip:
+        return lines
+    marked: list[dict[str, Any]] = []
+    for index, line in enumerate(lines):
+        if index in skip:
+            patched = dict(line)
+            patched["skip_table_row_center"] = True
+            marked.append(patched)
+        else:
+            marked.append(line)
+    return marked
 
 
 
@@ -983,7 +1033,7 @@ def _snap_specification_table_grid_polylines(polylines: list[Polyline], logs: li
     snapped_vertical = _snap_axis_grid_segments(
         vertical_segments,
         coord_eps=0.42,
-        gap_eps=0.62,
+        gap_eps=18.0,
         horizontal=False,
     )
     snapped = [*kept, *snapped_horizontal, *snapped_vertical]
@@ -1127,7 +1177,10 @@ def _make_lff_opengost_text_strokes(
     accepted: list[dict[str, Any]] = []
     missing: set[str] = set()
     table_centered = 0
-    for source_line in text_lines:
+    prepared_text_lines = list(text_lines)
+    if table_rules:
+        prepared_text_lines = _mark_multiline_table_cell_lines(prepared_text_lines, table_rules)
+    for source_line in prepared_text_lines:
         if center_a3_top_left_title:
             source_line = _center_a3_top_left_title_line(source_line)
         if table_rules:
@@ -1351,6 +1404,7 @@ def _make_experiment_lff_text_strokes(
         lines = lff_text._extract_text_lines(page)
         skipped = 0
         table_centered = 0
+        prepared_lines: list[dict[str, Any]] = []
         for raw_line in lines:
             line = dict(raw_line)
             line["text"] = _repair_pdf_text_mojibake(line.get("text", ""))
@@ -1366,6 +1420,12 @@ def _make_experiment_lff_text_strokes(
                 float(rect.x1) * lff_text.PT_TO_MM,
                 float(rect.y1) * lff_text.PT_TO_MM,
             ]
+            prepared_lines.append(line_mm)
+        if table_rules:
+            prepared_lines = _mark_multiline_table_cell_lines(prepared_lines, table_rules)
+        for line_mm in prepared_lines:
+            text = str(line_mm["text"])
+            rect = fitz.Rect(line_mm.get("bbox", (0, 0, 0, 0)))  # type: ignore[arg-type]
             if table_rules:
                 centered_line = _center_text_line_in_table_row(line_mm, table_rules)
                 if centered_line is not line_mm:
@@ -1388,13 +1448,13 @@ def _make_experiment_lff_text_strokes(
                 {
                     "text": text,
                     "bbox": [round(float(v), 4) for v in rect],
-                    "dir": line.get("dir"),
+                    "dir": line_mm.get("dir"),
                     "font": str(LFF_FONT_PATH),
                     "fill": line_fill,
                 }
             )
             logs.append(
-                f"OpenGOST LFF experiment text: '{lff_text._line_display_text(line)}' -> "
+                f"OpenGOST LFF experiment text: '{lff_text._line_display_text(line_mm)}' -> "
                 f"{len(mm_polys)} stroke(s), font={LFF_FONT_PATH.name}, fill={line_fill:.2f}, shear={LFF_SHEAR:.2f}"
             )
         if table_centered:
@@ -1594,7 +1654,7 @@ def _build_source(pack: Path, source_pdf: Path, report: dict[str, Any], settings
         page_w_mm,
         page_h_mm,
         logs.append,
-        use_stamp_overrides=not dense_onepass_source and not is_specification,
+        use_stamp_overrides=not dense_onepass_source,
         center_a3_top_left_title=bool(dense_onepass_source and _is_computer_graphics_mode(settings)),
         normalize_dimension_text=_is_computer_graphics_mode(settings),
         table_rules=table_rules,
