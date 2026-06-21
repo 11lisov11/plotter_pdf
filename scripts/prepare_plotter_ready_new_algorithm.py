@@ -364,6 +364,10 @@ def _source_pdf_for_pack(pack: Path, report: dict[str, Any]) -> Path | None:
         path = Path(raw)
         if path.exists():
             return path
+    for candidate_name in ("source.pdf", "source_kompas.pdf"):
+        candidate = pack / candidate_name
+        if candidate.exists():
+            return candidate
     candidate = pack.parent / f"{pack.name.removesuffix('_pack')}.pdf"
     if candidate.exists():
         return candidate
@@ -1588,7 +1592,11 @@ def _line_to_lff_opengost_polys(
     box_width = max(0.1, t_max - t_min)
     box_height = max(0.1, s_max - s_min)
 
-    fill = LFF_STAMP_FILL if _looks_like_lff_stamp_cell(line, page_w_mm, page_h_mm) else LFF_FILL
+    default_fill = LFF_STAMP_FILL if _looks_like_lff_stamp_cell(line, page_w_mm, page_h_mm) else LFF_FILL
+    try:
+        fill = float(line.get("text_box_fill", default_fill) or default_fill)
+    except (TypeError, ValueError):
+        fill = default_fill
     if normalize_dimension_text:
         override_height = _dimension_text_box_height_override_mm(
             line,
@@ -1618,7 +1626,22 @@ def _line_to_lff_opengost_polys(
         scale = box_width * 0.98 / text_width
     rendered_width = text_width * scale
     rendered_height = font_height * scale
-    local_x0 = (box_width - rendered_width) * 0.5
+    free_x = max(0.0, box_width - rendered_width)
+    text_align = str(line.get("text_align", "center") or "center").casefold()
+    if text_align == "left":
+        try:
+            left_pad = float(line.get("text_left_pad_mm", 0.65) or 0.65)
+        except (TypeError, ValueError):
+            left_pad = 0.65
+        local_x0 = min(max(0.0, left_pad), free_x)
+    elif text_align == "right":
+        try:
+            right_pad = float(line.get("text_right_pad_mm", 0.65) or 0.65)
+        except (TypeError, ValueError):
+            right_pad = 0.65
+        local_x0 = max(0.0, free_x - max(0.0, right_pad))
+    else:
+        local_x0 = free_x * 0.5
     local_y0 = (box_height - rendered_height) * 0.5
     glyph_y_values = [float(y) for font_poly in font_polys for _x, y in font_poly]
     if glyph_y_values:
@@ -1712,6 +1735,79 @@ def _center_a3_top_left_title_line(line: dict[str, Any]) -> dict[str, Any]:
     return patched
 
 
+def _center_top_service_designation_line(line: dict[str, Any]) -> dict[str, Any]:
+    if not _is_top_service_designation_line(line):
+        return line
+    bbox = _line_bbox_mm(line)
+    if bbox is None:
+        return line
+    frame_x0, frame_y0, frame_x1, frame_y1 = 24.0, 5.5033, 90.5090, 19.4730
+    pad_x = 1.25
+    pad_y = 1.10
+    patched = dict(line)
+    patched["bbox_mm"] = [
+        round(frame_x0 + pad_x, 3),
+        round(frame_y0 + pad_y, 3),
+        round(frame_x1 - pad_x, 3),
+        round(frame_y1 - pad_y, 3),
+    ]
+    patched["top_service_designation_centered"] = {
+        "source_bbox_mm": [round(float(v), 3) for v in bbox],
+        "frame_bbox_mm": [round(frame_x0, 3), round(frame_y0, 3), round(frame_x1, 3), round(frame_y1, 3)],
+    }
+    return patched
+
+
+def _should_preserve_specification_title_stamp_line(line: dict[str, Any]) -> bool:
+    return bool(
+        _is_specification_right_title_label_text(line)
+        or _is_specification_left_title_body_text(line)
+        or _is_top_service_designation_line(line)
+    )
+
+
+def _is_a4_left_stamp_person_line(line: dict[str, Any]) -> bool:
+    bbox = _line_bbox_mm(line)
+    if bbox is None:
+        return False
+    x0, y0, x1, y1 = bbox
+    if not (35.0 <= x0 <= 86.0 and 258.0 <= y0 <= 278.5 and x1 <= 92.0):
+        return False
+    text = _lff_line_text(line).strip()
+    if not text or not re.search(r"[A-Za-zА-Яа-яЁё]", text):
+        return False
+    key = gost._stamp_lookup_key(text)
+    if key in {gost._stamp_lookup_key(label) for label in gost.STAMP_ROLE_LABELS}:
+        return False
+    if key in {
+        "изм",
+        "лист",
+        "nдокум",
+        "nдок",
+        "№докум",
+        "№док",
+        "подп",
+        "дата",
+        "лит",
+        "масса",
+        "масштаб",
+        "листов",
+    }:
+        return False
+    return True
+
+
+def _apply_a4_left_stamp_person_alignment(line: dict[str, Any]) -> dict[str, Any]:
+    if not _is_a4_left_stamp_person_line(line):
+        return line
+    patched = dict(line)
+    patched["text_align"] = "left"
+    patched["text_left_pad_mm"] = 0.75
+    patched["text_box_fill"] = min(float(patched.get("text_box_fill", LFF_STAMP_FILL) or LFF_STAMP_FILL), LFF_STAMP_FILL)
+    patched["a4_left_stamp_person_left_aligned"] = True
+    return patched
+
+
 def _make_lff_opengost_text_strokes(
     text_lines: list[dict[str, Any]],
     page_w_mm: float,
@@ -1738,14 +1834,15 @@ def _make_lff_opengost_text_strokes(
         prepared_text_lines = _mark_multiline_table_cell_lines(prepared_text_lines, table_rules)
     for source_line in prepared_text_lines:
         if _is_top_service_designation_line(source_line):
+            source_line = _center_top_service_designation_line(source_line)
             logger(
-                "Top service designation LFF overlay skipped; using source geometry: "
+                "Top service designation centered in upper frame: "
                 f"'{lff_text._line_display_text(source_line)}'."
             )
-            continue
         if center_a3_top_left_title:
             source_line = _center_a3_top_left_title_line(source_line)
-        if table_rules:
+        source_line = _apply_a4_left_stamp_person_alignment(source_line)
+        if table_rules and not _should_preserve_specification_title_stamp_line(source_line):
             centered_line = _center_text_line_in_table_row(source_line, table_rules)
             if centered_line is not source_line:
                 table_centered += 1
@@ -1920,7 +2017,6 @@ def _clean_background_polylines_from_pdf(
         text_rects = [
             lff_text._expanded_rect(lff_text._line_render_rect(line), 0.35)
             for line in lff_text._extract_text_lines(text_page)
-            if not _is_top_service_designation_fitz_line(line)
         ]
         polylines: list[Polyline] = []
         removed_segments = 0
@@ -1998,15 +2094,15 @@ def _make_experiment_lff_text_strokes(
             prepared_lines = _mark_multiline_table_cell_lines(prepared_lines, table_rules)
         for line_mm in prepared_lines:
             if _is_top_service_designation_line(line_mm):
-                skipped += 1
+                line_mm = _center_top_service_designation_line(line_mm)
                 logs.append(
-                    "Top service designation LFF overlay skipped; using clean/source geometry: "
+                    "Top service designation centered in upper frame: "
                     f"'{lff_text._line_display_text(line_mm)}'."
                 )
-                continue
+            line_mm = _apply_a4_left_stamp_person_alignment(line_mm)
             text = str(line_mm["text"])
             rect = fitz.Rect(line_mm.get("bbox", (0, 0, 0, 0)))  # type: ignore[arg-type]
-            if table_rules:
+            if table_rules and not _should_preserve_specification_title_stamp_line(line_mm):
                 centered_line = _center_text_line_in_table_row(line_mm, table_rules)
                 if centered_line is not line_mm:
                     table_centered += 1
@@ -2078,11 +2174,7 @@ def _remove_existing_text_geometry(
     boxes: list[tuple[float, float, float, float, float, float]] = []
     for line in text_lines:
         if _is_top_service_designation_line(line):
-            logger(
-                "Top service designation preserved from source geometry: "
-                f"'{lff_text._line_display_text(line)}'."
-            )
-            continue
+            logger(f"Top service designation source geometry removed before centered LFF overlay: '{lff_text._line_display_text(line)}'.")
         bbox = _line_bbox_mm(line)
         if bbox is None:
             continue

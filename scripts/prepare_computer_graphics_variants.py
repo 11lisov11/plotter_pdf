@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import shutil
@@ -6,6 +6,7 @@ import time
 from pathlib import Path
 
 import prepare_folder1_packages as prep
+import prepare_plotter_ready_new_algorithm as new_algo
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -13,22 +14,31 @@ DEFAULT_ROOT = PROJECT_ROOT / "Компьютерная графика"
 
 
 def _copy_source_pdf_to_package(package_dir: Path, source_pdf: Path) -> None:
-    # Keep the original next to the generated package without deleting audit files.
-    # report.json/summary.csv/logs/pages/compare are part of the drawing contract.
+    # Keep a human-readable source copy. The public package is intentionally
+    # compact: source.pdf, plot_preview.pdf and plotter.nc are produced by the
+    # new algorithm below; debug reports stay opt-in there.
     source_copy = package_dir / source_pdf.name
     source_copy.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(source_pdf, source_copy)
+
+
+def _new_algorithm_settings(*, keep_debug_artifacts: bool) -> new_algo.Settings:
+    return new_algo.Settings(
+        drawing_mode="computer_graphics",
+        keep_debug_artifacts=bool(keep_debug_artifacts),
+    )
 
 
 def _iter_variant_pdfs(variant_dir: Path) -> list[Path]:
     return sorted([path for path in variant_dir.glob("*.pdf") if path.is_file()], key=lambda p: p.name.casefold())
 
 
-def _prepare_variant(variant_dir: Path) -> None:
+def _prepare_variant(variant_dir: Path, *, keep_debug_artifacts: bool = False) -> None:
     pdfs = _iter_variant_pdfs(variant_dir)
     if not pdfs:
         raise FileNotFoundError(f"No PDF files found in {variant_dir}")
 
+    settings = _new_algorithm_settings(keep_debug_artifacts=keep_debug_artifacts)
     for idx, source_pdf in enumerate(pdfs, start=1):
         package_dir = variant_dir / f"{source_pdf.stem}_pack"
         print(f"[{idx}/{len(pdfs)}] processing: {source_pdf.name}")
@@ -37,14 +47,15 @@ def _prepare_variant(variant_dir: Path) -> None:
         if bool(report.get("custom_tiled", False)):
             raise RuntimeError(
                 f"Unexpected custom_tiled output for {source_pdf.name}. "
-                "Variants 20/22 must be prepared as A4 single-page or A3 two-pass."
+                "Computer Graphics variants must be prepared as A4 single-page or A3 two-pass."
             )
         _copy_source_pdf_to_package(package_dir, source_pdf)
+        new_algo._prepare_one_pack(package_dir, settings)
         print(f"    done: {'A3-2pass' if is_a3 else 'A4'} -> {package_dir.name}")
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Prepare full drawing packages for Computer Graphics variants.")
+    parser = argparse.ArgumentParser(description="Prepare clean plotter packages for Computer Graphics variants.")
     parser.add_argument(
         "--root",
         default=str(DEFAULT_ROOT),
@@ -54,7 +65,12 @@ def main() -> int:
         "--variants",
         nargs="*",
         default=[],
-        help='Variant folder names to process, for example: "20 вариант" "22 вариант"',
+        help='Variant folder names to process, for example: "9 вариант" "26 вариант"',
+    )
+    parser.add_argument(
+        "--keep-debug-artifacts",
+        action="store_true",
+        help="Keep reports, logs and intermediate previews instead of publishing only clean plotter files.",
     )
     args = parser.parse_args()
 
@@ -72,7 +88,7 @@ def main() -> int:
     started_at = time.time()
     for variant_dir in variant_dirs:
         print(f"== {variant_dir.name} ==")
-        _prepare_variant(variant_dir)
+        _prepare_variant(variant_dir, keep_debug_artifacts=bool(args.keep_debug_artifacts))
     elapsed = time.time() - started_at
     print(f"done in {elapsed / 60.0:.1f} min")
     return 0
