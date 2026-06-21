@@ -11,11 +11,50 @@ from typing import Iterable
 import fitz
 
 import prepare_folder1_packages as prep
+import prepare_plotter_ready_new_algorithm as new_algo
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_ROOT = PROJECT_ROOT / "\u041d\u0430\u0447\u0435\u0440\u0442"
 
+
+
+def _new_algorithm_settings(*, keep_debug_artifacts: bool) -> new_algo.Settings:
+    return new_algo.Settings(
+        drawing_mode="descriptive_geometry",
+        keep_debug_artifacts=bool(keep_debug_artifacts),
+    )
+
+
+def _publish_descriptive_geometry_package(package_dir: Path, *, keep_debug_artifacts: bool) -> None:
+    new_algo._prepare_one_pack(
+        package_dir,
+        _new_algorithm_settings(keep_debug_artifacts=keep_debug_artifacts),
+    )
+
+
+def _clean_descriptive_geometry_variant_root(variant_dir: Path) -> None:
+    for artifact_name in (
+        "_prepared_summary.csv",
+        "_prepared_reports.json",
+        "_audit.json",
+        "_audit.txt",
+        "_audit",
+        "_audit_contact.png",
+        "_ready_to_plot_audit.json",
+        "_ready_to_plot_audit.txt",
+        "_new_algorithm_summary.csv",
+        "_new_algorithm_a3_passes_contact.png",
+        "_new_algorithm_pages_contact.png",
+        "_generated_pdf",
+    ):
+        artifact = variant_dir / artifact_name
+        if not artifact.exists():
+            continue
+        if artifact.is_dir() and not artifact.is_symlink():
+            shutil.rmtree(artifact)
+        else:
+            artifact.unlink()
 
 def _prune_package_outputs(package_dir: Path, *, is_a3: bool, source_pdf: Path) -> None:
     # Keep the full production package contract.  Older compact packages removed
@@ -152,7 +191,20 @@ def _iter_variant_sources(variant_dir: Path, generated_dir: Path) -> list[tuple[
             task_number = _task_number_from_name(frw.stem)
             if task_number is None:
                 raise RuntimeError(f"Cannot parse task number from FRW name: {frw.name}")
-            source_pdf, meta = _prepare_frw_source_pdf(frw, generated_dir)
+            try:
+                source_pdf, meta = _prepare_frw_source_pdf(frw, generated_dir)
+            except Exception as exc:
+                fallback_pdf = generated_dir / f"{frw.stem}.pdf"
+                if not fallback_pdf.exists():
+                    raise
+                source_pdf = fallback_pdf
+                meta = {
+                    "source_kind": "generated_pdf_after_frw_conversion_failure",
+                    "task_number": task_number,
+                    "frw": str(frw),
+                    "generated_pdf": str(fallback_pdf),
+                    "conversion_error": str(exc),
+                }
             entries.append((task_number, frw.stem, source_pdf, meta))
         return entries
 
@@ -253,7 +305,7 @@ def _task_number_from_row_package_dir(row: prep.ArtifactRow) -> int | None:
         return None
 
 
-def _prepare_variant(variant_dir: Path, *, only_tasks: set[int] | None = None) -> None:
+def _prepare_variant(variant_dir: Path, *, only_tasks: set[int] | None = None, keep_debug_artifacts: bool = False) -> None:
     started_at = time.time()
     generated_dir = variant_dir / "_generated_pdf"
     generated_dir.mkdir(parents=True, exist_ok=True)
@@ -289,6 +341,7 @@ def _prepare_variant(variant_dir: Path, *, only_tasks: set[int] | None = None) -
         if rows:
             prep._write_csv(package_dir / "summary.csv", rows)
         _prune_package_outputs(package_dir, is_a3=bool(report.get("a3_two_pass", False)), source_pdf=source_pdf)
+        _publish_descriptive_geometry_package(package_dir, keep_debug_artifacts=keep_debug_artifacts)
         all_rows.extend(rows)
         all_reports.append(report)
         source_index.append(
@@ -324,6 +377,8 @@ def _prepare_variant(variant_dir: Path, *, only_tasks: set[int] | None = None) -
         source_index=source_index,
         started_at=started_at,
     )
+    if not keep_debug_artifacts and not only_tasks:
+        _clean_descriptive_geometry_variant_root(variant_dir)
 
 
 def _iter_variant_dirs(root_dir: Path, only_variants: Iterable[str]) -> list[Path]:
@@ -350,6 +405,7 @@ def main() -> int:
     parser.add_argument("--root", default=str(DEFAULT_ROOT), help="Root folder with variant subfolders.")
     parser.add_argument("--only-variant", action="append", default=[], help="Optional variant filter; numeric tokens match exact variant number.")
     parser.add_argument("--only-task", type=int, action="append", default=[], help="Optional task number filter.")
+    parser.add_argument("--keep-debug-artifacts", action="store_true", help="Keep reports, logs, candidates and generated PDFs instead of publishing only clean plotter packages.")
     args = parser.parse_args()
 
     root_dir = Path(args.root).resolve()
@@ -364,7 +420,11 @@ def main() -> int:
     started_at = time.time()
     for index, variant_dir in enumerate(variant_dirs, start=1):
         print(f"[{index}/{len(variant_dirs)}] {variant_dir.name}")
-        _prepare_variant(variant_dir, only_tasks=set(int(v) for v in args.only_task))
+        _prepare_variant(
+            variant_dir,
+            only_tasks=set(int(v) for v in args.only_task),
+            keep_debug_artifacts=bool(args.keep_debug_artifacts),
+        )
 
     elapsed = time.time() - started_at
     print(f"done in {elapsed / 60.0:.1f} min")

@@ -302,13 +302,27 @@ def _is_computer_graphics_variant20_or22_source(source_pdf: Path) -> bool:
 
 def _path_casefold_text(path: Path) -> str:
     try:
-        return str(path).casefold()
+        raw = str(path)
     except Exception:
         return ""
+    variants = [raw]
+    for encoding in ("cp1251", "latin1"):
+        try:
+            repaired = raw.encode(encoding, errors="strict").decode("utf-8", errors="strict")
+        except Exception:
+            continue
+        if repaired and repaired not in variants:
+            variants.append(repaired)
+    return "\n".join(item.casefold() for item in variants)
+
+
+def _path_has_text(path: Path, *needles: str) -> bool:
+    haystack = _path_casefold_text(path)
+    return any(str(needle).casefold() in haystack for needle in needles if str(needle).strip())
 
 
 def _is_nachert_source(source_pdf: Path) -> bool:
-    return "начерт" in _path_casefold_text(source_pdf)
+    return _path_has_text(source_pdf, "\u043d\u0430\u0447\u0435\u0440\u0442")
 
 
 def _force_kompas_full_frame_source(source_pdf: Path) -> bool:
@@ -798,8 +812,10 @@ def _prefer_direct_fit_full_for_nachert_a4(source_pdf: Path) -> bool:
 
 
 def _preserve_nachert_header_source_for_variant(source_pdf: Path) -> bool:
-    parts = {str(part).casefold() for part in source_pdf.parts}
-    return "начерт" in parts and ("1 вариант" in parts or "3 вариант" in parts or "4 варинт" in parts)
+    # Descriptive geometry task frames carry required user-visible data:
+    # miniature, student name and group number. Preserve this header for every
+    # Nachert variant instead of only historic hand-tuned folders.
+    return _is_nachert_source(source_pdf)
 
 
 def _is_nachert_variant4_source(source_pdf: Path) -> bool:
@@ -2156,6 +2172,48 @@ def _extract_a4_header_text_lines_from_pdf(
         if page_index < 0 or page_index >= int(doc.page_count):
             return []
         page = doc[page_index]
+        is_nachert = _is_nachert_source(source_pdf)
+        if is_nachert:
+            lines: list[dict[str, Any]] = []
+            seen: set[tuple[str, int, int, int, int]] = set()
+            for block in page.get_text("dict").get("blocks", []):
+                if block.get("type") != 0:
+                    continue
+                for line in block.get("lines", []) or []:
+                    line_bbox = list(line.get("bbox", []) or [])
+                    if len(line_bbox) < 4:
+                        continue
+                    text = re.sub(r"\s+", " ", "".join(str(span.get("text", "")) for span in line.get("spans", [])).strip())
+                    if not text or not any(ch.isalnum() for ch in text):
+                        continue
+                    lx0_mm, ly0_mm, lx1_mm, ly1_mm = [float(v) * 25.4 / 72.0 for v in line_bbox]
+                    if ly0_mm > 58.0 or ly1_mm < 1.5:
+                        continue
+                    # Exclude labels inside the miniature, keep short FIO/group
+                    # strings in the header text band.
+                    if lx1_mm < 22.0 or lx0_mm < 16.0:
+                        continue
+                    if (lx1_mm - lx0_mm) < 1.4 or (ly1_mm - ly0_mm) < 1.0:
+                        continue
+                    key = (
+                        text,
+                        round(lx0_mm * 100),
+                        round(ly0_mm * 100),
+                        round(lx1_mm * 100),
+                        round(ly1_mm * 100),
+                    )
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    lines.append(
+                        {
+                            "text": text,
+                            "bbox_mm": (float(lx0_mm), float(ly0_mm), float(lx1_mm), float(ly1_mm)),
+                        }
+                    )
+            lines.sort(key=lambda row: (float(row["bbox_mm"][1]), float(row["bbox_mm"][0]), str(row["text"])))
+            return lines
+
         best: list[dict[str, Any]] = []
         best_width = 0.0
         for block in page.get_text("dict").get("blocks", []):
@@ -2912,9 +2970,11 @@ def _render_a4_header_text_polylines(
                 actual_w = max(1e-6, float(ax1 - ax0))
                 actual_h = max(1e-6, float(ay1 - ay0))
             pad_x_ratio = 0.0 if tight_layout else 0.03
-            pad_y_ratio = 0.0 if tight_layout else 0.06
             pad_x_u = max(0.0, (float(target_w) - actual_w) * pad_x_ratio)
-            pad_y_u = max(0.0, (float(target_h) - actual_h) * pad_y_ratio)
+            if tight_layout:
+                pad_y_u = max(0.0, (float(target_h) - actual_h) * 0.5)
+            else:
+                pad_y_u = max(0.0, (float(target_h) - actual_h) * 0.06)
             shift_x = float(target_x0) - float(ax0) + float(pad_x_u)
             shift_y = float(target_y0) - float(ay0) + float(pad_y_u)
             line_polys = [[(float(x) + float(shift_x), float(y) + float(shift_y)) for x, y in poly] for poly in line_polys]
@@ -6952,10 +7012,7 @@ def _prepare_compact_source_overlay_candidate(
 
 
 def _is_computer_graphics_source(source_pdf: Path) -> bool:
-    try:
-        return "компьютерная графика" in str(source_pdf).casefold()
-    except Exception:
-        return False
+    return _path_has_text(source_pdf, "\u043a\u043e\u043c\u043f\u044c\u044e\u0442\u0435\u0440\u043d\u0430\u044f \u0433\u0440\u0430\u0444\u0438\u043a\u0430")
 
 
 def _cleanup_mupdf_a4_source_polylines(

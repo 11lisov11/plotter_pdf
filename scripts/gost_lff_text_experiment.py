@@ -1,4 +1,4 @@
-"""Try LibreCAD OpenGOST LFF single-line text on a real KOMPAS PDF.
+﻿"""Try LibreCAD OpenGOST LFF single-line text on a real KOMPAS PDF.
 
 This is intentionally an experiment, not a replacement for the production
 plotter pipeline yet.  It renders PDF text with the LibreCAD LFF line font so
@@ -61,6 +61,19 @@ def _manual_glyph_for(char: str) -> Glyph | None:
             for i in range(37)
         ]
         return Glyph("0", [polyline], 0.0, 4.5)
+    if char == "8":
+        cx = 2.25
+        cy = 4.50
+        rx = 3.55
+        ry = 4.15
+        polyline = [
+            (
+                cx + rx * math.sin(2.0 * math.pi * i / 72.0) * math.cos(2.0 * math.pi * i / 72.0),
+                cy + ry * math.sin(2.0 * math.pi * i / 72.0),
+            )
+            for i in range(73)
+        ]
+        return Glyph("8", [polyline], 0.0, 4.5)
     if char == "□":
         polyline = [(0.20, 2.20), (3.85, 2.20), (3.85, 5.85), (0.20, 5.85), (0.20, 2.20)]
         return Glyph("□", [polyline], 0.0, 4.05)
@@ -276,27 +289,16 @@ def _extract_text_lines(page: fitz.Page) -> list[dict[str, object]]:
                 bbox = fitz.Rect(span["bbox"])
                 if bbox.is_empty or bbox.width <= 0.5 or bbox.height <= 0.5:
                     continue
-                lines.append({"text": text, "bbox": bbox, "dir": direction})
+                lines.append({"text": text, "bbox": bbox, "dir": direction, "size": span.get("size"), "font": span.get("font")})
     return lines
 
 
 def _line_display_text(line: dict[str, object]) -> str:
-    text = str(line["text"]).strip()
-    # KOMPAS may expose the square dimension sign in "□5" as vector geometry
-    # and only return the digit in PDF text extraction. Render the sign
-    # deliberately so it is controlled by the same single-line font path.
-    if text == "5":
-        return "□5"
-    return text
+    return str(line["text"]).strip()
 
 
 def _line_render_rect(line: dict[str, object]) -> fitz.Rect:
-    rect = fitz.Rect(line["bbox"])  # type: ignore[arg-type]
-    if _line_display_text(line) == "□5":
-        h = max(1.0, float(rect.height))
-        return fitz.Rect(rect.x0 - h * 1.45, rect.y0 - h * 0.18, rect.x1 + h * 0.10, rect.y1 + h * 0.08)
-    return rect
-
+    return fitz.Rect(line["bbox"])  # type: ignore[arg-type]
 
 def _looks_like_stamp_cell(text: str, rect: fitz.Rect, page_rect: fitz.Rect) -> bool:
     normalized = text.strip().lower().replace(" ", "")

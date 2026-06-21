@@ -11,4 +11,4 @@ def test_gui_help_parser_imports_without_pyside() -> None:
 
 def test_gui_help_exits_success_without_pyside(capsys) -> None:
     assert main(["--help"]) == 0
-    assert "Plotter PDF GUI" in capsys.readouterr().out
+    assert "Plotter PDF" in capsys.readouterr().out

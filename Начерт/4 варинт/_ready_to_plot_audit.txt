@@ -1,5 +1,0 @@
-variant=C:\plotter_pdf\Начерт\4 варинт
-ok=True
-packages=5
-failed=0
-warnings=0

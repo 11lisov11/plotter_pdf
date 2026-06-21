@@ -686,7 +686,7 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
         self.assertFalse(mod._is_small_condition_image_rect_mm(5.0, 5.0, 40.0, 80.0))
         self.assertFalse(mod._is_small_condition_image_rect_mm(5.0, 5.0, 10.0, 10.0))
 
-    def test_variant4_nachert_a4_preserves_source_header_route(self) -> None:
+    def test_nachert_a4_preserves_source_header_route_for_all_variants(self) -> None:
         mod = _load_module()
         self.assertTrue(
             mod._preserve_nachert_header_source_for_variant(
@@ -698,7 +698,7 @@ class PrepareFolder1PackagesModuleTests(unittest.TestCase):
                 Path(r"C:\plotter_pdf\Начерт\1 вариант\Задача 1_pack\source_kompas.pdf")
             )
         )
-        self.assertFalse(
+        self.assertTrue(
             mod._preserve_nachert_header_source_for_variant(
                 Path(r"C:\plotter_pdf\Начерт\24 варинт\Задача 4.pdf")
             )

@@ -15,6 +15,7 @@ venv/
 .vscode/
 .ruff_cache/
 .mypy_cache/
+.plotter_cache/
 *.egg-info/
 
 # Generated outputs

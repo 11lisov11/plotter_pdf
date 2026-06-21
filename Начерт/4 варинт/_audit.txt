@@ -1,6 +1,0 @@
-4 варинт
-Задача 8_pack: quality=0.962598; layout=0.967634; fidelity=0.928929
-Задача 4_pack: quality=0.968654; layout=0.973860; fidelity=0.934906
-Задача 6_pack: quality=0.970974; layout=0.975825; fidelity=0.936792
-Задача 5_pack: quality=0.975198; layout=0.980493; fidelity=0.941273
-Задача 7_pack: quality=0.978757; layout=0.984307; fidelity=0.984307

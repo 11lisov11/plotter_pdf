@@ -1,13 +1,15 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import csv
+import html
 import json
 import math
 import re
 import shutil
 import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -25,6 +27,7 @@ from scripts import render_gcode_preview
 from scripts import stitch_gcode_polylines
 
 backend = prep.backend
+METADATA_CACHE_ROOT = ROOT / ".plotter_cache" / "package_metadata"
 
 CG_DIR = "".join(
     chr(c)
@@ -132,13 +135,13 @@ class SourceBuild:
 
 def _normalize_drawing_mode(value: str | None, variant_root: Path | None = None) -> str:
     raw = str(value or "auto").strip().casefold().replace("-", "_")
-    if raw in {"computer", "computer_graphics", "cg", "компьютерная_графика"}:
+    if raw in {"computer", "computer_graphics", "cg", "РєРѕРјРїСЊСЋС‚РµСЂРЅР°СЏ_РіСЂР°С„РёРєР°"}:
         return "computer_graphics"
-    if raw in {"descriptive", "descriptive_geometry", "nachert", "начерт", "начертательная_геометрия"}:
+    if raw in {"descriptive", "descriptive_geometry", "nachert", "РЅР°С‡РµСЂС‚", "РЅР°С‡РµСЂС‚Р°С‚РµР»СЊРЅР°СЏ_РіРµРѕРјРµС‚СЂРёСЏ"}:
         return "descriptive_geometry"
     if raw not in {"", "auto"}:
         raise ValueError(f"Unknown drawing mode: {value}")
-    if variant_root is not None and "начерт" in str(variant_root).casefold():
+    if variant_root is not None and "РЅР°С‡РµСЂС‚" in str(variant_root).casefold():
         return "descriptive_geometry"
     return "computer_graphics"
 
@@ -332,10 +335,27 @@ def _write_new_gcode(path: Path, polylines: list[Polyline], settings: Settings) 
 
 
 def _load_report(pack: Path) -> dict[str, Any]:
+    for report_path in (pack / "report.json", _metadata_cache_path(pack)):
+        if report_path.exists():
+            return json.loads(report_path.read_text(encoding="utf-8"))
+    return {}
+
+
+def _metadata_cache_path(pack: Path) -> Path:
+    try:
+        rel = pack.resolve().relative_to(ROOT)
+    except ValueError:
+        rel = Path(pack.name)
+    return METADATA_CACHE_ROOT / rel / "report.json"
+
+
+def _cache_pack_metadata(pack: Path) -> None:
     report_path = pack / "report.json"
     if not report_path.exists():
-        return {}
-    return json.loads(report_path.read_text(encoding="utf-8"))
+        return
+    cached = _metadata_cache_path(pack)
+    cached.parent.mkdir(parents=True, exist_ok=True)
+    _copy_if_different(report_path, cached)
 
 
 def _source_pdf_for_pack(pack: Path, report: dict[str, Any]) -> Path | None:
@@ -379,7 +399,7 @@ def _repair_pdf_text_mojibake(text: object) -> str:
         repaired = raw.encode("cp1251").decode("utf-8")
     except UnicodeError:
         return raw
-    if "�" in repaired:
+    if "пїЅ" in repaired:
         return raw
     return repaired
 
@@ -388,6 +408,82 @@ def _repair_text_line(line: dict[str, Any]) -> dict[str, Any]:
     repaired = dict(line)
     repaired["text"] = _repair_pdf_text_mojibake(repaired.get("text", ""))
     return repaired
+
+
+def _broken_pdf_text_ratio(lines: list[dict[str, Any]]) -> float:
+    total = 0
+    broken = 0
+    for line in lines:
+        text = str(line.get("text", "") or "")
+        total += len(text)
+        broken += text.count("пїЅ")
+    if total <= 0:
+        return 0.0
+    return broken / total
+
+
+def _parse_float_attr(attrs: str, name: str) -> float | None:
+    match = re.search(rf'{re.escape(name)}="([-0-9.]+)"', attrs)
+    if not match:
+        return None
+    try:
+        return float(match.group(1))
+    except ValueError:
+        return None
+
+
+def _extract_poppler_bbox_text_lines(pdf_path: Path) -> list[dict[str, Any]]:
+    pdftotext = shutil.which("pdftotext")
+    if not pdftotext:
+        return []
+    with tempfile.TemporaryDirectory(prefix="plotter_poppler_text_") as tmp:
+        out_path = Path(tmp) / "bbox.html"
+        result = subprocess.run(
+            [pdftotext, "-bbox-layout", "-enc", "UTF-8", str(pdf_path), str(out_path)],
+            cwd=ROOT,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+        if result.returncode != 0 or not out_path.exists():
+            return []
+        payload = out_path.read_text(encoding="utf-8", errors="replace")
+    pt_to_mm = 25.4 / 72.0
+    lines: list[dict[str, Any]] = []
+    for match in re.finditer(r"<line\b([^>]*)>(.*?)</line>", payload, flags=re.DOTALL | re.IGNORECASE):
+        attrs, body = match.groups()
+        x0 = _parse_float_attr(attrs, "xMin")
+        y0 = _parse_float_attr(attrs, "yMin")
+        x1 = _parse_float_attr(attrs, "xMax")
+        y1 = _parse_float_attr(attrs, "yMax")
+        if None in (x0, y0, x1, y1):
+            continue
+        words = [
+            _repair_pdf_text_mojibake(html.unescape(word_match.group(1)))
+            for word_match in re.finditer(r"<word\b[^>]*>(.*?)</word>", body, flags=re.DOTALL | re.IGNORECASE)
+        ]
+        text = " ".join(word.strip() for word in words if word.strip())
+        text = " ".join(text.split())
+        if not text:
+            continue
+        bbox_pt = [float(x0), float(y0), float(x1), float(y1)]
+        bbox_mm = [round(value * pt_to_mm, 4) for value in bbox_pt]
+        width = abs(float(x1) - float(x0))
+        height = abs(float(y1) - float(y0))
+        direction = [0.0, -1.0] if height > max(width * 1.4, 1.0) else [1.0, 0.0]
+        lines.append(
+            {
+                "text": text,
+                "confidence": 1.0,
+                "source": "pdftotext_bbox_layout",
+                "bbox_pt": bbox_pt,
+                "bbox_mm": bbox_mm,
+                "dir": direction,
+                "font_names": ["GOSTTypeA"],
+                "font_size_pt_median": max(1.0, min(width, height) if direction == [0.0, -1.0] else height),
+            }
+        )
+    return lines
 
 
 def _is_service_text(line: dict[str, Any], service_regions: list[tuple[float, float, float, float]]) -> bool:
@@ -407,6 +503,10 @@ def _is_service_text(line: dict[str, Any], service_regions: list[tuple[float, fl
 
 def _text_lines_for_source(source_pdf: Path) -> tuple[list[dict[str, Any]], int, int]:
     raw_lines = gost._extract_pdf_text_lines(source_pdf)
+    if _broken_pdf_text_ratio(raw_lines) > 0.12:
+        poppler_lines = _extract_poppler_bbox_text_lines(source_pdf)
+        if poppler_lines:
+            raw_lines = poppler_lines
     service_regions = _service_regions(source_pdf)
     accepted: list[dict[str, Any]] = []
     skipped = 0
@@ -428,6 +528,15 @@ def _text_lines_for_source(source_pdf: Path) -> tuple[list[dict[str, Any]], int,
 def _install_stamp_role_cell_overrides() -> None:
     gost.STAMP_ROLE_CELL_BBOXES_MM.update(
         {
+            "Р Р°Р·СЂР°Р±.": [20.45, 262.38, 37.40, 267.76],
+            "РџСЂРѕРІ.": [20.45, 267.38, 37.40, 272.76],
+            "Рў.РєРѕРЅС‚СЂ.": [20.45, 272.38, 37.40, 277.76],
+            "Рќ.РєРѕРЅС‚СЂ.": [20.45, 282.38, 37.40, 287.76],
+            "РЈС‚РІ.": [20.45, 287.38, 37.40, 292.30],
+        }
+    )
+    gost.STAMP_ROLE_CELL_BBOXES_MM.update(
+        {
             "Разраб.": [20.45, 262.38, 37.40, 267.76],
             "Пров.": [20.45, 267.38, 37.40, 272.76],
             "Т.контр.": [20.45, 272.38, 37.40, 277.76],
@@ -435,7 +544,6 @@ def _install_stamp_role_cell_overrides() -> None:
             "Утв.": [20.45, 287.38, 37.40, 292.30],
         }
     )
-
 
 def _unit(vector: Point) -> Point:
     x, y = vector
@@ -552,60 +660,60 @@ def _make_ttf_centerline_text_strokes(text_lines: list[dict[str, Any]], logger) 
 
 
 LFF_STAMP_WORDS = {
-    "изм.",
-    "лист",
-    "листов",
-    "№докум.",
-    "подп.",
-    "дата",
-    "лит.",
-    "масса",
-    "масштаб",
-    "разраб.",
-    "пров.",
-    "т.контр.",
-    "н.контр.",
-    "утв.",
+    "РёР·Рј.",
+    "Р»РёСЃС‚",
+    "Р»РёСЃС‚РѕРІ",
+    "в„–РґРѕРєСѓРј.",
+    "РїРѕРґРї.",
+    "РґР°С‚Р°",
+    "Р»РёС‚.",
+    "РјР°СЃСЃР°",
+    "РјР°СЃС€С‚Р°Р±",
+    "СЂР°Р·СЂР°Р±.",
+    "РїСЂРѕРІ.",
+    "С‚.РєРѕРЅС‚СЂ.",
+    "РЅ.РєРѕРЅС‚СЂ.",
+    "СѓС‚РІ.",
 }
 
 
 def _lff_line_text(line: dict[str, Any]) -> str:
     text = str(line.get("text", "") or "").strip()
-    return re.sub(r"^[□▯◻▫\s]+(?=\d)", "", text)
+    return re.sub(r"^[в–Ўв–Їв—»в–«\s]+(?=\d)", "", text)
 
 
 DIMENSION_TEXT_ALLOWED_WORDS = {
     "r",
-    "р",
+    "СЂ",
     "m",
     "x",
-    "х",
-    "ф",
+    "С…",
+    "С„",
     "lh",
     "rh",
-    "отв",
-    "отв.",
-    "фаска",
-    "фаски",
+    "РѕС‚РІ",
+    "РѕС‚РІ.",
+    "С„Р°СЃРєР°",
+    "С„Р°СЃРєРё",
 }
 
 TITLE_BLOCK_TEXT_MARKERS = (
-    "изм",
-    "лист",
-    "листов",
-    "докум",
-    "подп",
-    "дата",
-    "лит",
-    "масса",
-    "масштаб",
-    "разраб",
-    "пров",
-    "контр",
-    "утв",
-    "пгупс",
-    "сталь",
-    "гост",
+    "РёР·Рј",
+    "Р»РёСЃС‚",
+    "Р»РёСЃС‚РѕРІ",
+    "РґРѕРєСѓРј",
+    "РїРѕРґРї",
+    "РґР°С‚Р°",
+    "Р»РёС‚",
+    "РјР°СЃСЃР°",
+    "РјР°СЃС€С‚Р°Р±",
+    "СЂР°Р·СЂР°Р±",
+    "РїСЂРѕРІ",
+    "РєРѕРЅС‚СЂ",
+    "СѓС‚РІ",
+    "РїРіСѓРїСЃ",
+    "СЃС‚Р°Р»СЊ",
+    "РіРѕСЃС‚",
 )
 
 
@@ -634,12 +742,12 @@ def _looks_like_dimension_annotation(line: dict[str, Any]) -> bool:
         return False
     if any(marker in compact for marker in TITLE_BLOCK_TEXT_MARKERS):
         return False
-    words = re.findall(r"[a-zа-яё]+", compact, flags=re.IGNORECASE)
+    words = re.findall(r"[a-zР°-СЏС‘]+", compact, flags=re.IGNORECASE)
     for word in words:
         if word.casefold() not in DIMENSION_TEXT_ALLOWED_WORDS:
             return False
-    allowed = set("0123456789.,+-°'\"/()[]")
-    allowed.update("rRрРmMxXhHlLнНоОтТвВфФØø⌀φΦ×хХ")
+    allowed = set("0123456789.,+-В°'\"/()[]")
+    allowed.update("rRСЂР mMxXhHlLРЅРќРѕРћС‚РўРІР’С„Р¤ГГёвЊЂП†О¦Г—С…РҐ")
     return all((ch in allowed) or ch.isspace() for ch in text)
 
 
@@ -808,8 +916,253 @@ def _table_row_band_for_line(line: dict[str, Any], rules: list[HorizontalRule]) 
     return upper, lower
 
 
+def _is_title_block_label_text(line: dict[str, Any]) -> bool:
+    text = _lff_line_text(line).replace(" ", "").replace(".", "").replace(":", "").casefold()
+    if not text:
+        return False
+    labels_utf = {
+        "\u0438\u0437\u043c",
+        "\u043b\u0438\u0441\u0442",
+        "n\u0434\u043e\u043a\u0443\u043c",
+        "n\u0434\u043e\u043a",
+        "\u2116\u0434\u043e\u043a\u0443\u043c",
+        "\u2116\u0434\u043e\u043a",
+        "\u043f\u043e\u0434\u043f",
+        "\u0434\u0430\u0442\u0430",
+        "\u0440\u0430\u0437\u0440\u0430\u0431",
+        "\u043f\u0440\u043e\u0432",
+        "\u0442\u043a\u043e\u043d\u0442\u0440",
+        "\u043d\u043a\u043e\u043d\u0442\u0440",
+        "\u0443\u0442\u0432",
+        "\u043b\u0438\u0442",
+        "\u043c\u0430\u0441\u0441\u0430",
+        "\u043c\u0430\u0441\u0448\u0442\u0430\u0431",
+        "\u043b\u0438\u0441\u0442\u043e\u0432",
+    }
+    if text in labels_utf:
+        return True
+    labels = {
+        "РёР·Рј",
+        "Р»РёСЃС‚",
+        "nРґРѕРєСѓРј",
+        "nРґРѕРє",
+        "в„–РґРѕРєСѓРј",
+        "в„–РґРѕРє",
+        "РїРѕРґРї",
+        "РґР°С‚Р°",
+        "СЂР°Р·СЂР°Р±",
+        "РїСЂРѕРІ",
+        "С‚РєРѕРЅС‚СЂ",
+        "РЅРєРѕРЅС‚СЂ",
+        "СѓС‚РІ",
+        "Р»РёС‚",
+        "РјР°СЃСЃР°",
+        "РјР°СЃС€С‚Р°Р±",
+        "Р»РёСЃС‚РѕРІ",
+    }
+    return text in labels
+
+
+def _is_specification_left_title_body_text(line: dict[str, Any]) -> bool:
+    bbox = _line_bbox_mm(line)
+    if bbox is None:
+        return False
+    x0, y0, _x1, _y1 = bbox
+    if not (x0 < 90.0 and y0 >= 266.5):
+        return False
+    text = _lff_line_text(line).replace(" ", "").replace(".", "").replace(":", "").casefold()
+    return text in {
+        "\u0440\u0430\u0437\u0440\u0430\u0431",
+        "\u043f\u0440\u043e\u0432",
+        "\u0442\u043a\u043e\u043d\u0442\u0440",
+        "\u043d\u043a\u043e\u043d\u0442\u0440",
+        "\u0443\u0442\u0432",
+    }
+
+
+def _specification_left_title_header_override_lines(line: dict[str, Any]) -> list[dict[str, Any]] | None:
+    bbox = _line_bbox_mm(line)
+    if bbox is None:
+        return None
+    x0, y0, _x1, _y1 = bbox
+    if not (x0 < 90.0 and 252.0 <= y0 <= 270.5):
+        return None
+    text_key = _lff_line_text(line).replace(" ", "").replace(".", "").replace(":", "").casefold()
+    cells: dict[str, tuple[str, list[float]]] = {
+        "\u0438\u0437\u043c": ("\u0418\u0437\u043c.", [21.35, 257.38, 25.70, 262.93]),
+        "\u043b\u0438\u0441\u0442": ("\u041b\u0438\u0441\u0442", [27.05, 257.38, 36.95, 262.93]),
+        "\u2116\u0434\u043e\u043a\u0443\u043c": ("\u2116 \u0434\u043e\u043a\u0443\u043c.", [38.00, 257.38, 61.20, 262.93]),
+        "n\u0434\u043e\u043a\u0443\u043c": ("\u2116 \u0434\u043e\u043a\u0443\u043c.", [38.00, 257.38, 61.20, 262.93]),
+        "\u043f\u043e\u0434\u043f": ("\u041f\u043e\u0434\u043f.", [62.35, 257.38, 74.90, 262.93]),
+        "\u0434\u0430\u0442\u0430": ("\u0414\u0430\u0442\u0430", [75.95, 257.38, 84.90, 262.93]),
+    }
+    combined: dict[str, list[str]] = {
+        "\u0438\u0437\u043c\u043b\u0438\u0441\u0442": ["\u0438\u0437\u043c", "\u043b\u0438\u0441\u0442"],
+        "\u043f\u043e\u0434\u043f\u0434\u0430\u0442\u0430": ["\u043f\u043e\u0434\u043f", "\u0434\u0430\u0442\u0430"],
+    }
+    keys = combined.get(text_key, [text_key])
+    out: list[dict[str, Any]] = []
+    for key in keys:
+        cell = cells.get(key)
+        if cell is None:
+            return None
+        cell_text, cell_bbox = cell
+        patched = dict(line)
+        patched["text"] = cell_text
+        patched["bbox_mm"] = [round(float(v), 3) for v in cell_bbox]
+        patched["stamp_cell_centered"] = True
+        patched["spec_left_header_cell"] = True
+        patched["text_box_fill"] = LFF_STAMP_FILL
+        out.append(patched)
+    return out
+
+
+def _is_specification_right_title_label_text(line: dict[str, Any]) -> bool:
+    text = _lff_line_text(line).replace(" ", "").replace(".", "").replace(":", "").casefold()
+    return text in {
+        "\u043b\u0438\u0442",
+        "\u043c\u0430\u0441\u0441\u0430",
+        "\u043c\u0430\u0441\u0448\u0442\u0430\u0431",
+        "\u043b\u0438\u0441\u0442",
+        "\u043b\u0438\u0441\u0442\u043e\u0432",
+    }
+
+
+def _is_specification_underlined_heading_text(line: dict[str, Any]) -> bool:
+    text = _lff_line_text(line).replace(" ", "").replace(".", "").replace(":", "").casefold()
+    return text in {
+        "\u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430\u0446\u0438\u044f",
+        "\u0434\u0435\u0442\u0430\u043b\u0438",
+        "\u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u044b",
+    }
+
+
+def _nearest_table_band_around_heading(
+    bbox: tuple[float, float, float, float],
+    underline_y: float,
+    rules: list[HorizontalRule],
+) -> tuple[float, float] | None:
+    x0, y0, x1, _y1 = bbox
+    center_x = (x0 + x1) * 0.5
+    upper_candidates: list[float] = []
+    lower_candidates: list[float] = []
+    for y, rx0, rx1 in rules:
+        if not (rx0 - 1.0 <= center_x <= rx1 + 1.0 or _horizontal_overlap(x0, x1, rx0, rx1) > 0.5):
+            continue
+        if y < y0 - 0.6:
+            upper_candidates.append(float(y))
+        elif y > underline_y + 0.8:
+            lower_candidates.append(float(y))
+    if not upper_candidates or not lower_candidates:
+        return None
+    upper = max(upper_candidates)
+    lower = min(lower_candidates)
+    if lower - upper < 5.0:
+        return None
+    return upper, lower
+
+
+def _adjust_specification_underlined_heading_layout(
+    geometry: list[Polyline],
+    text_lines: list[dict[str, Any]],
+    rules: list[HorizontalRule],
+    logs: list[str],
+) -> tuple[list[Polyline], list[dict[str, Any]]]:
+    if not geometry or not text_lines:
+        return geometry, text_lines
+
+    underline_segments: list[tuple[int, float, float, float]] = []
+    for index, polyline in enumerate(geometry):
+        if len(polyline) != 2:
+            continue
+        ax, ay = float(polyline[0][0]), float(polyline[0][1])
+        bx, by = float(polyline[1][0]), float(polyline[1][1])
+        dx = abs(bx - ax)
+        dy = abs(by - ay)
+        if dy <= 0.12 and 5.0 <= dx <= 70.0:
+            underline_segments.append((index, (ay + by) * 0.5, min(ax, bx), max(ax, bx)))
+
+    if not underline_segments:
+        return geometry, text_lines
+
+    adjusted_geometry = [list(polyline) for polyline in geometry]
+    adjusted_lines: list[dict[str, Any]] = []
+    used_underlines: set[int] = set()
+    adjusted_count = 0
+
+    for line in text_lines:
+        bbox = _line_bbox_mm(line)
+        if bbox is None or not _is_specification_underlined_heading_text(line):
+            adjusted_lines.append(line)
+            continue
+        x0, y0, x1, y1 = bbox
+        width = max(0.1, x1 - x0)
+        height = max(0.1, y1 - y0)
+        center_x = (x0 + x1) * 0.5
+        best: tuple[float, int, float, float, float] | None = None
+        for index, uy, ux0, ux1 in underline_segments:
+            if index in used_underlines:
+                continue
+            underline_width = ux1 - ux0
+            if not (width * 0.65 <= underline_width <= max(width * 2.35, width + 24.0)):
+                continue
+            if not (y1 - 0.2 <= uy <= y1 + 9.0):
+                continue
+            underline_center_x = (ux0 + ux1) * 0.5
+            if abs(underline_center_x - center_x) > max(8.0, width * 0.45):
+                continue
+            score = abs(uy - y1) + abs(underline_center_x - center_x) * 0.12
+            if best is None or score < best[0]:
+                best = (score, index, uy, ux0, ux1)
+        if best is None:
+            adjusted_lines.append(line)
+            continue
+
+        _score, underline_index, underline_y, _ux0, _ux1 = best
+        band = _nearest_table_band_around_heading(bbox, underline_y, rules)
+        if band is None:
+            band = _table_row_band_for_line(line, rules)
+        if band is None:
+            adjusted_lines.append(line)
+            continue
+        upper, lower = band
+        row_height = lower - upper
+        if row_height <= height + 1.0:
+            adjusted_lines.append(line)
+            continue
+
+        target_gap = min(1.15, max(0.65, height * 0.16))
+        group_height = height + target_gap
+        row_center = (upper + lower) * 0.5
+        new_y0 = row_center - group_height * 0.5
+        new_y1 = new_y0 + height
+        new_underline_y = new_y1 + target_gap
+
+        patched = dict(line)
+        patched["bbox_mm"] = [round(float(x0), 4), round(float(new_y0), 4), round(float(x1), 4), round(float(new_y1), 4)]
+        patched["skip_table_row_center"] = True
+        patched["underlined_heading_centered"] = {
+            "row_band_mm": [round(float(upper), 4), round(float(lower), 4)],
+            "old_underline_y_mm": round(float(underline_y), 4),
+            "new_underline_y_mm": round(float(new_underline_y), 4),
+            "gap_mm": round(float(target_gap), 4),
+        }
+        adjusted_lines.append(patched)
+
+        dy = new_underline_y - underline_y
+        adjusted_geometry[underline_index] = [(float(px), float(py) + dy) for px, py in adjusted_geometry[underline_index]]
+        used_underlines.add(underline_index)
+        adjusted_count += 1
+
+    if adjusted_count:
+        logs.append(f"Specification underlined heading layout: adjusted {adjusted_count} heading/underline pair(s).")
+    return adjusted_geometry, adjusted_lines
+
+
 def _center_text_line_in_table_row(line: dict[str, Any], rules: list[HorizontalRule]) -> dict[str, Any]:
     if line.get("skip_table_row_center"):
+        return line
+    if _is_title_block_label_text(line):
         return line
     band = _table_row_band_for_line(line, rules)
     if band is None:
@@ -825,6 +1178,13 @@ def _center_text_line_in_table_row(line: dict[str, Any], rules: list[HorizontalR
     row_center = (upper + lower) * 0.5
     new_y0 = row_center - target_height * 0.5
     new_y1 = row_center + target_height * 0.5
+    if 60.0 <= row_center <= 235.0 and 6.0 <= row_height <= 18.5:
+        visual_up_shift = min(1.65, max(0.85, row_height * 0.13))
+    else:
+        visual_up_shift = min(0.35, max(0.0, row_height * 0.05))
+        visual_up_shift = min(visual_up_shift, max(0.0, new_y0 - upper - 0.35))
+    new_y0 -= visual_up_shift
+    new_y1 -= visual_up_shift
     if abs(new_y0 - y0) <= 0.05 and abs(new_y1 - y1) <= 0.05:
         return line
     patched = dict(line)
@@ -832,6 +1192,7 @@ def _center_text_line_in_table_row(line: dict[str, Any], rules: list[HorizontalR
     patched["table_row_centered"] = {
         "row_band_mm": [round(float(upper), 4), round(float(lower), 4)],
         "dy_mm": round(float(((new_y0 + new_y1) - (y0 + y1)) * 0.5), 4),
+        "visual_up_shift_mm": round(float(visual_up_shift), 4),
     }
     return patched
 
@@ -840,7 +1201,7 @@ def _mark_multiline_table_cell_lines(lines: list[dict[str, Any]], rules: list[Ho
     """Do not collapse multi-line cells into one centered baseline.
 
     KOMPAS specification headers and title-block cells can contain two lines in
-    one table cell (for example "Приме-" / "чание").  Per-line row centering
+    one table cell (for example "РџСЂРёРјРµ-" / "С‡Р°РЅРёРµ").  Per-line row centering
     alone moves both lines to the same row center and makes them overlap.  Mark
     such neighboring lines so their original PDF vertical placement is kept.
     """
@@ -884,6 +1245,47 @@ def _mark_multiline_table_cell_lines(lines: list[dict[str, Any]], rules: list[Ho
     return marked
 
 
+def _split_specification_position_designation_lines(lines: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Split KOMPAS specification rows merged as "1 MCH00..." into cells.
+
+    Broken ToUnicode maps often make the PDF text extractor report the position
+    number and designation as one text line spanning two table cells.  Rendering
+    that full string into one bbox squeezes the designation badly.  Split only
+    the narrow left-body specification rows where the pattern is unambiguous.
+    """
+
+    out: list[dict[str, Any]] = []
+    for line in lines:
+        text = _lff_line_text(line)
+        bbox = _line_bbox_mm(line)
+        match = re.match(r"^\s*(\d{1,2})\s+(\S.*\d)\s*$", text)
+        if bbox is None or match is None:
+            out.append(line)
+            continue
+        x0, y0, x1, y1 = bbox
+        width = x1 - x0
+        if not (28.0 <= x0 <= 42.0 and 18.0 <= width <= 58.0):
+            out.append(line)
+            continue
+        pos_text, designation_text = match.groups()
+        pos_width = min(6.8, max(4.2, width * 0.15))
+        gap = min(2.8, max(1.4, width * 0.06))
+        split_x = x0 + pos_width + gap
+        if split_x >= x1 - 8.0:
+            out.append(line)
+            continue
+        pos_line = dict(line)
+        pos_line["text"] = pos_text
+        pos_line["bbox_mm"] = [round(float(x0), 4), round(float(y0), 4), round(float(x0 + pos_width), 4), round(float(y1), 4)]
+        pos_line["split_from_spec_line"] = text
+        designation_line = dict(line)
+        designation_line["text"] = designation_text
+        designation_line["bbox_mm"] = [round(float(split_x), 4), round(float(y0), 4), round(float(x1), 4), round(float(y1), 4)]
+        designation_line["split_from_spec_line"] = text
+        out.extend([pos_line, designation_line])
+    return out
+
+
 
 
 def _is_new_algorithm_specification_source(source_pdf: Path) -> bool:
@@ -892,7 +1294,7 @@ def _is_new_algorithm_specification_source(source_pdf: Path) -> bool:
     except Exception:
         return False
     normalized = re.sub(r"[\\/_.\-]+", " ", text)
-    return bool(re.search(r"(^|\s)сп(\s|$)", normalized) or "специфик" in normalized)
+    return bool(re.search(r"(^|\s)\u0441\u043f(\s|$)", normalized) or "\u0441\u043f\u0435\u0446\u0438\u0444\u0438\u043a" in normalized)
 
 
 def _looks_like_specification_table_geometry(polylines: list[Polyline]) -> bool:
@@ -935,8 +1337,52 @@ def _looks_like_specification_table_geometry(polylines: list[Polyline]) -> bool:
     return axis_segments >= 30 and horizontal_rows >= 14 and vertical_columns >= 5
 
 
+def _looks_like_specification_text_source(source_pdf: Path) -> bool:
+    try:
+        lines, _found, _skipped = _text_lines_for_source(source_pdf)
+    except Exception:
+        return False
+
+    normalized_tokens: set[str] = set()
+    joined_parts: list[str] = []
+    for line in lines:
+        text = _lff_line_text(line).casefold().replace("\u2116", "n")
+        cleaned = re.sub(r"[^0-9a-z\u0430-\u044f\u0451]+", "", text)
+        if cleaned:
+            normalized_tokens.add(cleaned)
+            joined_parts.append(cleaned)
+    joined = " ".join(joined_parts)
+
+    header_score = 0
+    for token in (
+        "\u0437\u043e\u043d\u0430",
+        "\u043f\u043e\u0437",
+        "\u043e\u0431\u043e\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0435",
+        "\u043d\u0430\u0438\u043c\u0435\u043d\u043e\u0432\u0430\u043d\u0438\u0435",
+        "\u043a\u043e\u043b",
+        "\u043f\u0440\u0438\u043c\u0435\u0447\u0430\u043d\u0438\u0435",
+    ):
+        if token in normalized_tokens:
+            header_score += 1
+
+    section_score = 0
+    for token in (
+        "\u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430\u0446\u0438\u044f",
+        "\u0434\u0435\u0442\u0430\u043b\u0438",
+        "\u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u044b",
+    ):
+        if token in normalized_tokens or token in joined:
+            section_score += 1
+
+    return header_score >= 4 or (header_score >= 2 and section_score >= 1) or section_score >= 2
+
+
 def _is_new_algorithm_specification(source_pdf: Path, polylines: list[Polyline]) -> bool:
-    return _is_new_algorithm_specification_source(source_pdf) or _looks_like_specification_table_geometry(polylines)
+    if _is_new_algorithm_specification_source(source_pdf):
+        return True
+    if not _looks_like_specification_table_geometry(polylines):
+        return False
+    return _looks_like_specification_text_source(source_pdf)
 
 def _merge_grid_intervals(intervals: list[tuple[float, float]], *, gap_eps: float = 0.55) -> list[tuple[float, float]]:
     if not intervals:
@@ -1037,6 +1483,7 @@ def _snap_specification_table_grid_polylines(polylines: list[Polyline], logs: li
         horizontal=False,
     )
     snapped = [*kept, *snapped_horizontal, *snapped_vertical]
+    snapped = _restore_specification_left_title_block_rows(snapped, logs)
     logs.append(
         "Specification grid snap: "
         f"classified_segments={classified}; "
@@ -1045,6 +1492,75 @@ def _snap_specification_table_grid_polylines(polylines: list[Polyline], logs: li
         f"kept_non_axis={len(kept)}; total={len(polylines)}->{len(snapped)}."
     )
     return snapped
+
+
+def _restore_specification_left_title_block_rows(polylines: list[Polyline], logs: list[str]) -> list[Polyline]:
+    if not polylines:
+        return polylines
+    try:
+        min_x, _min_y, _max_x, max_y = _bounds(polylines)
+    except Exception:
+        return polylines
+
+    bottom_y0 = float(max_y) - 46.0
+    bottom_y1 = float(max_y) + 0.6
+    left_x_limit = float(min_x) + 86.0
+    vertical_xs: list[float] = []
+    row_ys: list[float] = []
+    horizontal_segments: list[tuple[float, float, float]] = []
+
+    for polyline in polylines:
+        if len(polyline) < 2:
+            continue
+        for a, b in zip(polyline, polyline[1:]):
+            ax, ay = float(a[0]), float(a[1])
+            bx, by = float(b[0]), float(b[1])
+            sx0, sx1 = sorted((ax, bx))
+            sy0, sy1 = sorted((ay, by))
+            dx = abs(bx - ax)
+            dy = abs(by - ay)
+            if dy <= 0.12 and dx >= 3.0 and bottom_y0 <= ((ay + by) * 0.5) <= bottom_y1:
+                y = (ay + by) * 0.5
+                row_ys.append(y)
+                horizontal_segments.append((y, sx0, sx1))
+            elif dx <= 0.12 and dy >= 8.0 and sx0 <= left_x_limit and sy1 >= bottom_y0 and sy0 <= bottom_y1:
+                vertical_xs.append((ax + bx) * 0.5)
+
+    xs = [x for x in _dedupe_rule_ys(vertical_xs, eps=0.35) if float(min_x) - 0.8 <= x <= left_x_limit]
+    ys = [y for y in _dedupe_rule_ys(row_ys, eps=0.25) if bottom_y0 <= y <= bottom_y1]
+    if len(xs) < 3 or len(ys) < 3:
+        return polylines
+
+    title_x0 = float(min(xs))
+    title_x1 = float(max(xs))
+    if title_x1 - title_x0 < 20.0:
+        return polylines
+
+    rebuilt: list[Polyline] = []
+    removed_fragments = 0
+    for polyline in polylines:
+        if len(polyline) == 2:
+            ax, ay = float(polyline[0][0]), float(polyline[0][1])
+            bx, by = float(polyline[1][0]), float(polyline[1][1])
+            sx0, sx1 = sorted((ax, bx))
+            dx = abs(bx - ax)
+            dy = abs(by - ay)
+            mid_y = (ay + by) * 0.5
+            inside_title_rows = bottom_y0 <= mid_y <= bottom_y1
+            inside_title_x = sx0 >= title_x0 - 0.8 and sx1 <= title_x1 + 0.8
+            if dy <= 0.12 and dx >= 1.0 and inside_title_rows and inside_title_x:
+                removed_fragments += 1
+                continue
+        rebuilt.append(polyline)
+
+    additions = [[(title_x0, float(y)), (title_x1, float(y))] for y in ys]
+    logs.append(
+        "Specification title-block row restore: "
+        f"rebuilt {len(additions)} full left-stamp horizontal row(s); "
+        f"removed_fragments={removed_fragments}."
+    )
+    return [*rebuilt, *additions]
+
 
 def _line_to_lff_opengost_polys(
     font: lff_text.LffFont,
@@ -1126,6 +1642,45 @@ def _line_to_lff_opengost_polys(
     return result
 
 
+def _is_top_service_designation_line(line: dict[str, Any]) -> bool:
+    text = _lff_line_text(line)
+    key = re.sub(r"\s+", "", str(text or "")).casefold().replace(",", ".")
+    if not re.search(r"\d", key):
+        return False
+    if not (
+        "\u043c\u0447" in key
+        or "\u043a\u043d\u0433" in key
+        or "mch" in key
+        or "kng" in key
+    ):
+        return False
+    bbox = _line_bbox_mm(line)
+    if bbox is None:
+        return False
+    x0, y0, x1, y1 = bbox
+    if not (18.0 <= x0 <= 105.0 and x1 <= 110.0 and y0 <= 18.0 and y1 <= 30.0):
+        return False
+    return True
+
+
+def _is_top_service_designation_fitz_line(line: dict[str, object]) -> bool:
+    try:
+        rect = fitz.Rect(line["bbox"])  # type: ignore[arg-type]
+    except Exception:
+        return False
+    line_mm = {
+        "text": _repair_pdf_text_mojibake(str(line.get("text", ""))),
+        "bbox_mm": [
+            float(rect.x0) * lff_text.PT_TO_MM,
+            float(rect.y0) * lff_text.PT_TO_MM,
+            float(rect.x1) * lff_text.PT_TO_MM,
+            float(rect.y1) * lff_text.PT_TO_MM,
+        ],
+        "dir": line.get("dir", (1.0, 0.0)),
+    }
+    return _is_top_service_designation_line(line_mm)
+
+
 def _center_a3_top_left_title_line(line: dict[str, Any]) -> dict[str, Any]:
     bbox_raw = line.get("bbox_mm")
     if not isinstance(bbox_raw, (list, tuple)) or len(bbox_raw) < 4:
@@ -1179,8 +1734,15 @@ def _make_lff_opengost_text_strokes(
     table_centered = 0
     prepared_text_lines = list(text_lines)
     if table_rules:
+        prepared_text_lines = _split_specification_position_designation_lines(prepared_text_lines)
         prepared_text_lines = _mark_multiline_table_cell_lines(prepared_text_lines, table_rules)
     for source_line in prepared_text_lines:
+        if _is_top_service_designation_line(source_line):
+            logger(
+                "Top service designation LFF overlay skipped; using source geometry: "
+                f"'{lff_text._line_display_text(source_line)}'."
+            )
+            continue
         if center_a3_top_left_title:
             source_line = _center_a3_top_left_title_line(source_line)
         if table_rules:
@@ -1188,7 +1750,16 @@ def _make_lff_opengost_text_strokes(
             if centered_line is not source_line:
                 table_centered += 1
             source_line = centered_line
-        routed_lines = gost._stamp_centered_lines(source_line) if use_stamp_overrides else [source_line]
+        if use_stamp_overrides and table_rules:
+            left_header_lines = _specification_left_title_header_override_lines(source_line)
+            if left_header_lines is not None:
+                routed_lines = left_header_lines
+            elif _is_specification_right_title_label_text(source_line) or _is_specification_left_title_body_text(source_line):
+                routed_lines = [source_line]
+            else:
+                routed_lines = gost._stamp_centered_lines(source_line)
+        else:
+            routed_lines = gost._stamp_centered_lines(source_line) if use_stamp_overrides else [source_line]
         for line in routed_lines:
             line_polys = _line_to_lff_opengost_polys(
                 font,
@@ -1349,6 +1920,7 @@ def _clean_background_polylines_from_pdf(
         text_rects = [
             lff_text._expanded_rect(lff_text._line_render_rect(line), 0.35)
             for line in lff_text._extract_text_lines(text_page)
+            if not _is_top_service_designation_fitz_line(line)
         ]
         polylines: list[Polyline] = []
         removed_segments = 0
@@ -1422,8 +1994,16 @@ def _make_experiment_lff_text_strokes(
             ]
             prepared_lines.append(line_mm)
         if table_rules:
+            prepared_lines = _split_specification_position_designation_lines(prepared_lines)
             prepared_lines = _mark_multiline_table_cell_lines(prepared_lines, table_rules)
         for line_mm in prepared_lines:
+            if _is_top_service_designation_line(line_mm):
+                skipped += 1
+                logs.append(
+                    "Top service designation LFF overlay skipped; using clean/source geometry: "
+                    f"'{lff_text._line_display_text(line_mm)}'."
+                )
+                continue
             text = str(line_mm["text"])
             rect = fitz.Rect(line_mm.get("bbox", (0, 0, 0, 0)))  # type: ignore[arg-type]
             if table_rules:
@@ -1497,6 +2077,12 @@ def _remove_existing_text_geometry(
 ) -> list[Polyline]:
     boxes: list[tuple[float, float, float, float, float, float]] = []
     for line in text_lines:
+        if _is_top_service_designation_line(line):
+            logger(
+                "Top service designation preserved from source geometry: "
+                f"'{lff_text._line_display_text(line)}'."
+            )
+            continue
         bbox = _line_bbox_mm(line)
         if bbox is None:
             continue
@@ -1570,7 +2156,7 @@ def _build_clean_source_opengost_source(
     text_polys, accepted_text, missing_chars, text_lines_found, text_lines_skipped = _make_experiment_lff_text_strokes(
         source_pdf,
         logs,
-        normalize_dimension_text=_is_computer_graphics_mode(settings),
+        normalize_dimension_text=(_is_computer_graphics_mode(settings) and not is_specification),
         table_rules=table_rules,
     )
     source_polys = [*geometry, *text_polys]
@@ -1649,6 +2235,9 @@ def _build_source(pack: Path, source_pdf: Path, report: dict[str, Any], settings
     if is_specification:
         geometry = _snap_specification_table_grid_polylines(geometry, logs)
     table_rules = _horizontal_table_rules_from_polylines(geometry)
+    if is_specification:
+        geometry, text_lines = _adjust_specification_underlined_heading_layout(geometry, text_lines, table_rules, logs)
+        table_rules = _horizontal_table_rules_from_polylines(geometry)
     text_polys, accepted_text, missing_chars = _make_lff_opengost_text_strokes(
         text_lines,
         page_w_mm,
@@ -1656,7 +2245,7 @@ def _build_source(pack: Path, source_pdf: Path, report: dict[str, Any], settings
         logs.append,
         use_stamp_overrides=not dense_onepass_source,
         center_a3_top_left_title=bool(dense_onepass_source and _is_computer_graphics_mode(settings)),
-        normalize_dimension_text=_is_computer_graphics_mode(settings),
+        normalize_dimension_text=(_is_computer_graphics_mode(settings) and not is_specification),
         table_rules=table_rules,
     )
     if dense_onepass_source:
@@ -1669,10 +2258,21 @@ def _build_source(pack: Path, source_pdf: Path, report: dict[str, Any], settings
             f"polylines={len(source_polys)}; dense_segments={source_segments}; "
             "generic backend dedup/stitch disabled after text to preserve LFF text strokes."
         )
-    else:
-        source_polys = backend.deduplicate_segments(source_polys, logger=logs.append)
-        source_polys = backend.deduplicate_collinear_overlaps(source_polys, logger=logs.append)
+    elif is_specification:
         source_segments = sum(max(0, len(poly) - 1) for poly in source_polys)
+        logs.append(
+            "OpenGOST specification source: "
+            f"polylines={len(source_polys)}; dense_segments={source_segments}; "
+            "generic backend dedup disabled after text to preserve LFF digits, dots and loops."
+        )
+    else:
+        source_polys = _dedup_segments(source_polys, precision=3)
+        source_segments = sum(max(0, len(poly) - 1) for poly in source_polys)
+        logs.append(
+            "OpenGOST A4 source: "
+            f"polylines={len(source_polys)}; dense_segments={source_segments}; "
+            "collinear-overlap simplifier disabled after text to preserve LFF arcs/digits."
+        )
     artifacts = {"geometry_svg": str(geometry_svg)}
     artifacts.update(_write_source_artifacts(work_dir, source_polys, page_w_mm, page_h_mm))
     report_payload = {
@@ -1899,6 +2499,49 @@ def _is_a3_top_left_title_fragment_source(poly: Polyline) -> bool:
     return 20.0 <= float(x0) <= 95.0 and float(x1) <= 95.5 and float(y0) <= 25.0 and float(y1) <= 25.0
 
 
+def _nudge_a4_top_title_text_inside_frame(source_polys: list[Polyline], logs: list[str]) -> list[Polyline]:
+    if not source_polys:
+        return source_polys
+    try:
+        src_x0, src_y0, _src_x1, _src_y1 = _source_frame_bbox(source_polys)
+    except Exception:
+        return source_polys
+
+    candidate_indexes: list[int] = []
+    candidate_min_y: float | None = None
+    for index, poly in enumerate(source_polys):
+        if len(poly) < 2:
+            continue
+        px0, py0, px1, py1 = _bounds([poly])
+        if not (float(py0) < float(src_y0) - 0.05 and float(py1) <= float(src_y0) + 13.0):
+            continue
+        if not (float(src_x0) - 2.0 <= float(px0) <= float(src_x0) + 88.0 and float(px1) <= float(src_x0) + 92.0):
+            continue
+        candidate_indexes.append(index)
+        candidate_min_y = float(py0) if candidate_min_y is None else min(candidate_min_y, float(py0))
+
+    if candidate_min_y is None or not candidate_indexes:
+        return source_polys
+    target_min_y = float(src_y0) + 1.20
+    dy = target_min_y - float(candidate_min_y)
+    if dy <= 0.05 or dy > 10.0:
+        return source_polys
+
+    shifted: list[Polyline] = []
+    selected = set(candidate_indexes)
+    for index, poly in enumerate(source_polys):
+        if index in selected:
+            shifted.append([(float(x), float(y) + dy) for x, y in poly])
+        else:
+            shifted.append(poly)
+    logs.append(
+        "A4 top title text nudge: "
+        f"moved {len(candidate_indexes)} polyline(s) down by {dy:.3f} mm "
+        f"to keep the service title inside the fitted frame."
+    )
+    return shifted
+
+
 def _map_to_item_dense_onepass(
     source_polys: list[Polyline],
     transform: Transform,
@@ -2088,19 +2731,113 @@ def _map_a4_preserving_source_frame(source_build: SourceBuild, settings: Setting
     }
 
 
+def _prepare_a4_lff_safe_clean_bbox_fit_polylines(
+    source_polys: list[Polyline],
+    *,
+    logs: list[str],
+) -> tuple[list[Polyline], dict[str, Any]]:
+    stripped, frame_meta = prep._strip_outer_bbox_frame_segments(source_polys)
+    if not bool(frame_meta.get("applied")):
+        return [], {
+            "applied": False,
+            "reason": "source_outer_frame_not_found",
+            **frame_meta,
+        }
+
+    work_x0, work_x1, work_y0, work_y1 = prep._machine_work_area_bounds_mm()
+    src_x0, src_y0, src_x1, src_y1 = [float(v) for v in frame_meta["source_bbox"]]
+    source_w = max(1e-9, src_x1 - src_x0)
+    source_h = max(1e-9, src_y1 - src_y0)
+    work_w = max(1e-9, work_x1 - work_x0)
+    work_h = max(1e-9, work_y1 - work_y0)
+    content_scale = min(1.0, work_w / source_w, work_h / source_h)
+    dx = ((work_x0 + work_x1) * 0.5) - (((src_x0 + src_x1) * 0.5) * content_scale)
+    dy = ((work_y0 + work_y1) * 0.5) - (((src_y0 + src_y1) * 0.5) * content_scale)
+
+    mapped_inner = [
+        [(float(x) * content_scale + dx, float(y) * content_scale + dy) for x, y in poly]
+        for poly in stripped
+        if len(poly) >= 2
+    ]
+    pre_clip_segments = sum(max(0, len(poly) - 1) for poly in mapped_inner)
+    pre_clip_bbox = _bounds(mapped_inner) if mapped_inner else (0.0, 0.0, 0.0, 0.0)
+    clip_logs: list[str] = []
+    clipped_inner = backend.clip_polylines_to_work_area(mapped_inner, logger=clip_logs.append)
+    post_clip_segments = sum(max(0, len(poly) - 1) for poly in clipped_inner)
+    clipped_segments = max(0, int(pre_clip_segments) - int(post_clip_segments))
+    if clip_logs:
+        logs.extend(f"KOMPAS A4 LFF-safe 1:1 clip: {line}" for line in clip_logs)
+
+    final_polys: list[Polyline] = [
+        [(work_x0, work_y0), (work_x1, work_y0), (work_x1, work_y1), (work_x0, work_y1), (work_x0, work_y0)],
+        *clipped_inner,
+    ]
+    final_polys = _dedup_segments(final_polys, precision=3)
+    logs.append(
+        "KOMPAS A4 LFF-safe clean-bbox route: source-page fit disabled; "
+        f"source_frame_bbox={[round(float(v), 4) for v in frame_meta['source_bbox']]}; "
+        f"content_scale={content_scale:.6f}; "
+        f"translate=({dx:.4f},{dy:.4f}) mm; "
+        f"pre_clip_bbox={[round(float(v), 4) for v in pre_clip_bbox]}; "
+        f"clipped_segments={clipped_segments}; "
+        "work_area_frame=full; collinear simplifier disabled to preserve OpenGOST LFF glyphs."
+    )
+    return final_polys, {
+        "applied": True,
+        "mode": "kompas_a4_lff_safe_clean_bbox_fit",
+        "source_bbox": frame_meta["source_bbox"],
+        "removed_segments": int(frame_meta.get("removed_segments", 0)),
+        "content_scale": round(float(content_scale), 6),
+        "translate_x_mm": round(float(dx), 6),
+        "translate_y_mm": round(float(dy), 6),
+        "pre_clip_bbox": [round(float(v), 4) for v in pre_clip_bbox],
+        "clipped_segments": int(clipped_segments),
+        "work_area_bounds": [round(float(v), 4) for v in (work_x0, work_x1, work_y0, work_y1)],
+    }
+
+
 def _prepare_a4_page(source_build: SourceBuild, settings: Settings, logs: list[str]) -> tuple[list[Polyline], dict[str, Any]]:
     if source_build.preserve_source_frame:
         return _map_a4_preserving_source_frame(source_build, settings, logs)
-    final_polys, fit_meta = prep._prepare_kompas_a4_clean_bbox_fit_polylines(source_build.polylines, logs=logs)
-    if not final_polys:
+    is_specification = _is_new_algorithm_specification(source_build.source_pdf, source_build.polylines)
+    if is_specification:
         work_x0, work_x1, work_y0, work_y1 = prep._machine_work_area_bounds_mm()
         sx0, sy0, sx1, sy1 = _bounds(source_build.polylines)
         src_w = max(1e-9, sx1 - sx0)
         src_h = max(1e-9, sy1 - sy0)
         scale = min((work_x1 - work_x0) / src_w, (work_y1 - work_y0) / src_h)
-        tx = ((work_x0 + work_x1) * 0.5) - (((sx0 + sx1) * 0.5) * scale)
+        tx = ((work_x0 + work_x1) * 0.5) - (((sx0 + sx1) * 0.5) * scale) + settings.x_compensation_mm
         ty = ((work_y0 + work_y1) * 0.5) - (((sy0 + sy1) * 0.5) * scale)
         mapped = [[(float(x) * scale + tx, float(y) * scale + ty) for x, y in poly] for poly in source_build.polylines]
+        clipped = backend.clip_polylines_to_work_area(mapped, logger=logs.append)
+        stitched = stitch_gcode_polylines.stitch_polylines(clipped, eps=settings.stitch_eps_mm)
+        ordered = stitch_gcode_polylines.nearest_order(stitched)
+        fit_meta = {
+            "applied": True,
+            "mode": "a4_specification_direct_lff_fit_no_simplify",
+            "content_scale": round(float(scale), 6),
+            "translate_x_mm": round(float(tx), 6),
+            "translate_y_mm": round(float(ty), 6),
+            "source_bbox": [round(float(v), 4) for v in (sx0, sy0, sx1, sy1)],
+            "work_area_bounds": [round(float(v), 4) for v in (work_x0, work_x1, work_y0, work_y1)],
+        }
+        logs.append(
+            "A4 specification direct LFF fit: old KOMPAS fit/dedup disabled; "
+            f"scale={scale:.6f}; translate=({tx:.4f},{ty:.4f}) mm; "
+            f"polylines={len(ordered)}."
+        )
+        return ordered, fit_meta
+    a4_source_polys = _nudge_a4_top_title_text_inside_frame(source_build.polylines, logs)
+    final_polys, fit_meta = _prepare_a4_lff_safe_clean_bbox_fit_polylines(a4_source_polys, logs=logs)
+    if not final_polys:
+        work_x0, work_x1, work_y0, work_y1 = prep._machine_work_area_bounds_mm()
+        sx0, sy0, sx1, sy1 = _bounds(a4_source_polys)
+        src_w = max(1e-9, sx1 - sx0)
+        src_h = max(1e-9, sy1 - sy0)
+        scale = min((work_x1 - work_x0) / src_w, (work_y1 - work_y0) / src_h)
+        tx = ((work_x0 + work_x1) * 0.5) - (((sx0 + sx1) * 0.5) * scale)
+        ty = ((work_y0 + work_y1) * 0.5) - (((sy0 + sy1) * 0.5) * scale)
+        mapped = [[(float(x) * scale + tx, float(y) * scale + ty) for x, y in poly] for poly in a4_source_polys]
         final_polys = backend.clip_polylines_to_work_area(mapped, logger=logs.append)
         fit_meta = {
             "applied": True,
@@ -2110,13 +2847,22 @@ def _prepare_a4_page(source_build: SourceBuild, settings: Settings, logs: list[s
             "translate_y_mm": round(float(ty), 6),
         }
     final_polys = _translate(final_polys, settings.x_compensation_mm, 0.0)
-    final_polys = backend.deduplicate_segments(final_polys, logger=logs.append)
-    final_polys = backend.deduplicate_collinear_overlaps(final_polys, logger=logs.append)
-    stitched = stitch_gcode_polylines.stitch_polylines(final_polys, eps=settings.stitch_eps_mm)
-    ordered = stitch_gcode_polylines.nearest_order(stitched)
-    final = _dedup_segments(ordered)
-    final = backend.deduplicate_collinear_overlaps(final, logger=logs.append)
-    return _dedup_segments(final), fit_meta
+    if is_specification:
+        stitched = stitch_gcode_polylines.stitch_polylines(final_polys, eps=settings.stitch_eps_mm)
+        ordered = stitch_gcode_polylines.nearest_order(stitched)
+        logs.append(
+            "A4 specification LFF route: final generic dedup/collinear simplifiers disabled "
+            "to preserve digits, dots and closed text loops."
+        )
+        return ordered, fit_meta
+    final_polys = _dedup_segments(final_polys, precision=3)
+    final = _stitch_touching_polylines(
+        final_polys,
+        settings,
+        logs,
+        label="A4 OpenGOST LFF-safe continuity",
+    )
+    return _dedup_segments(final, precision=3), fit_meta
 
 def _output_items(report: dict[str, Any]) -> list[str]:
     if bool(report.get("a3_two_pass")):
@@ -2356,8 +3102,12 @@ def _publish_clean_pack_outputs(
     keep_names: set[str] = set()
 
     source_out = pack / "source.pdf"
-    _copy_if_different(source_pdf, source_out)
-    keep_names.add(source_out.name)
+    try:
+        _copy_if_different(source_pdf, source_out)
+    except PermissionError:
+        pass
+    if source_out.exists():
+        keep_names.add(source_out.name)
 
     preview_out = _write_user_plot_preview(pack, rows, source_build, settings)
     if preview_out is not None:
@@ -2537,13 +3287,44 @@ def _remove_variant_root_artifacts(variant_root: Path) -> None:
         if generated_markers:
             shutil.rmtree(child)
 
-def prepare_variant(variant_root: Path, *, rebuild: bool, settings: Settings) -> list[dict[str, Any]]:
+
+def _cache_variant_pack_metadata(variant_root: Path) -> None:
+    for pack in sorted(variant_root.glob("*_pack"), key=lambda path: path.name.casefold()):
+        _cache_pack_metadata(pack)
+
+
+def _remove_pack_build_artifacts(variant_root: Path) -> None:
+    for pack in sorted(variant_root.glob("*_pack"), key=lambda path: path.name.casefold()):
+        if not pack.exists() or not pack.is_dir():
+            continue
+        for child in list(pack.iterdir()):
+            _safe_remove_pack_child(pack, child)
+
+
+def prepare_variant(
+    variant_root: Path,
+    *,
+    rebuild: bool,
+    rebuild_metadata: bool,
+    settings: Settings,
+) -> list[dict[str, Any]]:
     variant_root = variant_root.resolve()
     packs = sorted(variant_root.glob("*_pack"), key=lambda path: path.name.casefold())
-    needs_metadata = rebuild or not packs or any(not (pack / "report.json").exists() for pack in packs)
+    _cache_variant_pack_metadata(variant_root)
+    needs_metadata = rebuild_metadata or not packs or any(not _load_report(pack) for pack in packs)
     if needs_metadata:
-        _rebuild_packages(variant_root)
+        _remove_variant_root_artifacts(variant_root)
+        try:
+            _rebuild_packages(variant_root)
+        finally:
+            _cache_variant_pack_metadata(variant_root)
+            _remove_variant_root_artifacts(variant_root)
+            if not settings.keep_debug_artifacts:
+                _remove_pack_build_artifacts(variant_root)
         packs = sorted(variant_root.glob("*_pack"), key=lambda path: path.name.casefold())
+    elif rebuild and not settings.keep_debug_artifacts:
+        _remove_variant_root_artifacts(variant_root)
+        _remove_pack_build_artifacts(variant_root)
     rows: list[dict[str, Any]] = []
     for pack in packs:
         rows.extend(_prepare_one_pack(pack, settings))
@@ -2562,8 +3343,9 @@ def prepare_variant(variant_root: Path, *, rebuild: bool, settings: Settings) ->
 def main() -> int:
     parser = argparse.ArgumentParser(description="Build source-driven new-algorithm plotter G-code and previews.")
     parser.add_argument("--variant-root", type=Path, default=DEFAULT_VARIANT_ROOT)
-    parser.add_argument("--drawing-mode", choices=["auto", "computer_graphics", "descriptive_geometry"], default="auto", help="Frame/layout profile: computer_graphics for KOMPAS drawing sheets, descriptive_geometry for Начерт tasks.")
-    parser.add_argument("--rebuild", action="store_true", help="Rebuild package metadata before source-driven output.")
+    parser.add_argument("--drawing-mode", choices=["auto", "computer_graphics", "descriptive_geometry"], default="auto", help="Frame/layout profile: computer_graphics for KOMPAS drawing sheets, descriptive_geometry for РќР°С‡РµСЂС‚ tasks.")
+    parser.add_argument("--rebuild", action="store_true", help="Rebuild clean new-algorithm outputs from existing package metadata.")
+    parser.add_argument("--rebuild-metadata", action="store_true", help="Run the legacy package splitter first when report.json metadata is missing or stale.")
     parser.add_argument("--x-compensation-mm", type=float, default=0.0)
     parser.add_argument("--a3-pass-01-x-offset-mm", type=float, default=0.0, help="Extra plotter-only X offset for A3 pass_01; default keeps current output unchanged.")
     parser.add_argument("--a3-pass-01-y-offset-mm", type=float, default=0.0, help="Extra plotter-only Y offset for A3 pass_01; default keeps current output unchanged.")
@@ -2584,7 +3366,12 @@ def main() -> int:
         a3_pass_02_y_offset_mm=float(args.a3_pass_02_y_offset_mm),
         keep_debug_artifacts=bool(args.keep_debug_artifacts),
     )
-    rows = prepare_variant(args.variant_root, rebuild=bool(args.rebuild), settings=settings)
+    rows = prepare_variant(
+        args.variant_root,
+        rebuild=bool(args.rebuild),
+        rebuild_metadata=bool(args.rebuild_metadata),
+        settings=settings,
+    )
     ok_rows = [row for row in rows if bool(row.get("ok"))]
     print(f"drawing_mode={settings.drawing_mode}")
     print(f"new_algorithm_v2_files={len(ok_rows)}")
@@ -2597,3 +3384,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

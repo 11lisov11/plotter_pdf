@@ -278,11 +278,37 @@ STAMP_CELL_CENTER_OVERRIDES_MM: dict[str, list[tuple[str, list[float]]]] = {
 }
 
 
+def _stamp_lookup_key(text: str) -> str:
+    return "".join(ch for ch in str(text).casefold() if not ch.isspace() and ch not in ".:")
+
+
+def _stamp_center_overrides_for_text(text: str) -> list[tuple[str, list[float]]] | None:
+    overrides = STAMP_CELL_CENTER_OVERRIDES_MM.get(text)
+    if overrides:
+        return overrides
+    key = _stamp_lookup_key(text)
+    for candidate, candidate_overrides in STAMP_CELL_CENTER_OVERRIDES_MM.items():
+        if _stamp_lookup_key(candidate) == key:
+            return candidate_overrides
+    return None
+
+
+def _stamp_role_bbox_for_text(text: str) -> list[float] | None:
+    role_bbox = STAMP_ROLE_CELL_BBOXES_MM.get(text)
+    if role_bbox:
+        return role_bbox
+    key = _stamp_lookup_key(text)
+    for candidate, candidate_bbox in STAMP_ROLE_CELL_BBOXES_MM.items():
+        if _stamp_lookup_key(candidate) == key:
+            return candidate_bbox
+    return None
+
+
 def _stamp_centered_lines(line: dict[str, Any]) -> list[dict[str, Any]]:
     text = str(line.get("text", ""))
-    overrides = STAMP_CELL_CENTER_OVERRIDES_MM.get(text)
+    overrides = _stamp_center_overrides_for_text(text)
     if not overrides:
-        role_bbox = STAMP_ROLE_CELL_BBOXES_MM.get(text)
+        role_bbox = _stamp_role_bbox_for_text(text)
         if role_bbox:
             patched = dict(line)
             patched["bbox_mm"] = [round(float(v), 3) for v in role_bbox]
