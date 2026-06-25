@@ -28,6 +28,8 @@ def _plotter_cli_command() -> list[str]:
 
 
 def _append_sheet_args(args: list[str], settings: JobSettings) -> None:
+    args.extend(["--machine-profile", settings.machine_profile])
+    args.extend(["--calibration-layout", settings.calibration_layout])
     args.extend(["--sheet-format", settings.sheet_format])
     if settings.sheet_width_mm is not None:
         args.extend(["--sheet-width-mm", str(settings.sheet_width_mm)])

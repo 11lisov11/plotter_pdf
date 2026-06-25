@@ -1,0 +1,43 @@
+{
+  "source": "C:\\plotter_pdf\\_plotter_jobs\\photo_girl_only_source\\girl_only_rgba.png",
+  "placement_mm": {
+    "x0": 0.0,
+    "y_top": -42.753,
+    "width": 180.0,
+    "height": 194.494
+  },
+  "final_gcode": "C:\\plotter_pdf\\_plotter_jobs\\photo_girl_ai_artist_handdrawn_pack\\girl_ai_handdrawn_sketch_a4.gcode",
+  "final_nc": "C:\\plotter_pdf\\_plotter_jobs\\photo_girl_ai_artist_handdrawn_pack\\girl_ai_handdrawn_sketch_a4.nc",
+  "final_preview_png": "C:\\plotter_pdf\\_plotter_jobs\\photo_girl_ai_artist_handdrawn_pack\\girl_ai_handdrawn_sketch_a4_preview.png",
+  "stages": [
+    {
+      "stage": "stage_01_readable_outlines",
+      "polylines": 5,
+      "draw_length_mm": 1378.947
+    },
+    {
+      "stage": "stage_02_hair_strokes",
+      "polylines": 108,
+      "draw_length_mm": 6758.896
+    },
+    {
+      "stage": "stage_03_body_hand_marks",
+      "polylines": 92,
+      "draw_length_mm": 809.605
+    },
+    {
+      "stage": "stage_04_dark_accents",
+      "polylines": 32,
+      "draw_length_mm": 753.371
+    }
+  ],
+  "total_polylines": 237,
+  "total_draw_length_mm": 9700.819,
+  "estimate": {
+    "moves": 4405,
+    "draw_mm": 9700.819,
+    "travel_mm": 1980.413,
+    "z_mm": 5640.6,
+    "time_min": 3.197
+  }
+}

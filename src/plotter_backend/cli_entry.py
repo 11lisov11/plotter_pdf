@@ -161,8 +161,19 @@ def build_cli_parser(backend: Any) -> argparse.ArgumentParser:
     parser.add_argument(
         "--sheet-format",
         default="work",
-        choices=["work", "a4", "a3", "notebook", "custom"],
+        choices=["work", "a4", "a3", "a2", "notebook", "custom"],
         help="Active sheet profile inside workspace.",
+    )
+    parser.add_argument(
+        "--machine-profile",
+        default="a4_desktop",
+        help="Machine/work-area profile: a4_desktop (default) or a2_corexy.",
+    )
+    parser.add_argument(
+        "--calibration-layout",
+        default="sheet",
+        choices=["sheet", "a2", "a2_2xa3", "a2_4xa4", "a2_8xa4"],
+        help="Corner calibration layout for the selected machine profile.",
     )
     parser.add_argument("--sheet-width-mm", type=float, default=None, help="Sheet width override (mm).")
     parser.add_argument("--sheet-height-mm", type=float, default=None, help="Sheet height override (mm).")
@@ -254,6 +265,7 @@ def build_cli_parser(backend: Any) -> argparse.ArgumentParser:
 
 def apply_cli_runtime_overrides(backend: Any, args) -> None:
     backend.apply_pencil_profile(backend.load_pencil_profile())
+    backend.apply_machine_profile(args.machine_profile, logger=print)
 
     backend.MIN_FIT_SCALE_FOR_DIMENSIONAL_DRAW = 0.98 if args.strict_1to1 else 0.0
     backend.TOOL_MODE = (args.tool or "pen").strip().lower()
@@ -529,6 +541,7 @@ def run_cli_action(backend: Any, args, parser: argparse.ArgumentParser, *, com: 
             send_to_plotter=not args.dry_run,
             output_path=output_path,
             mark_size=args.corner_mark_size,
+            calibration_layout=args.calibration_layout,
         )
         print(msg)
         return 0 if ok else 1

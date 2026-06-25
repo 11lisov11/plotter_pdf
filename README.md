@@ -101,6 +101,36 @@ pip install -r requirements.txt
 python main.py --help
 ```
 
+## Canonical plotter preparation modes
+
+Use one entry point for new preparation work:
+
+```powershell
+python scripts\prepare_plotter_package.py --mode geometry --sheet auto
+python scripts\prepare_plotter_package.py --mode graphics --sheet auto --variant "9 вариант"
+python scripts\prepare_plotter_package.py --mode copy --sheet a4 path\to\drawing.pdf
+python scripts\prepare_plotter_package.py --mode photo --sheet a4 path\to\photo.jpg --photo-quality normal
+```
+
+Modes:
+
+- `geometry` / `1`: начертательная геометрия.
+- `graphics` / `2`: компьютерная графика.
+- `copy` / `3`: полная копия PDF с полыми/контурными буквами, без правил рамок CG/Начерт.
+- `photo` / `4`: фото в карандашной sketch-стилистике или plotter-friendly hatch-штриховке, дополнительно выбирается `--photo-quality fast|normal|detailed`.
+
+Common format flag:
+
+- `--sheet auto`: оставить формат по исходнику/нижнему пайплайну.
+- `--sheet a4`: A4-профиль.
+- `--sheet a3`: A3-профиль.
+
+Before a long run, inspect what will be executed:
+
+```powershell
+python scripts\prepare_plotter_package.py --mode graphics --sheet auto --variant "9 вариант" --plan-only
+```
+
 ## Photo to plotter
 
 Standalone photo pipeline prepares a normal `jpg/png/webp` image as a plotter package without touching
@@ -109,11 +139,26 @@ PDF drawing packages. It generates `photo_plot.gcode`, `photo_plot.nc`, route pr
 and `summary.csv`.
 
 ```powershell
-python scripts\prepare_photo_plot_package.py path\to\photo.jpg --out-dir _plotter_jobs\photo_pack --mode portrait
+python scripts\prepare_photo_plot_package.py path\to\photo.jpg --out-dir _plotter_jobs\photo_pack --mode sketch
 ```
 
-Modes (`portrait` is the default):
+Pencil sketch quality presets:
 
+- `--photo-quality fast`: быстрый пробный рисунок, меньше линий и меньше времени на плоттере.
+- `--photo-quality normal`: основной режим, баланс похожести и времени.
+- `--photo-quality detailed`: больше тональных слоев и линий, дольше рисуется, но фото получается богаче.
+
+```powershell
+python scripts\prepare_photo_plot_package.py фото.jpg --mode sketch --photo-quality fast --out-dir _plotter_jobs\photo_fast_pack
+python scripts\prepare_photo_plot_package.py фото.jpg --mode sketch --photo-quality normal --out-dir _plotter_jobs\photo_normal_pack
+python scripts\prepare_photo_plot_package.py фото.jpg --mode sketch --photo-quality detailed --out-dir _plotter_jobs\photo_detailed_pack
+```
+
+Modes (`sketch` is the default pencil mode, `hatch` is the plottertools/hatched-style tonal mode, `classic` is the older technical tonal-hatching mode):
+
+- `sketch`: pencil-like loose contours and directional strokes, closest to hand sketch references.
+- `hatch`: scratchboard-like tonal hatching inspired by `plottertools/hatched`: brightness levels, one parallel hatch angle, interleaved spacing, and shifted layers.
+- `classic`: density-based tonal cross-hatching; darker photo areas receive more line layers, highlights stay sparse.
 - `hatch`: tonal cross-hatching with multiple darkness levels and optional edge detail.
 - `scribble`: masked wavy scanlines over dark photo regions, useful for portraits and fast tests.
 - `portrait`: artist-like short strokes following local photo contours, for less robotic portraits.
@@ -121,6 +166,8 @@ Modes (`portrait` is the default):
 Useful tuning examples:
 
 ```powershell
+python scripts\prepare_photo_plot_package.py фото.jpg --mode classic --classic-spacing-mm 2.0 --max-side-px 800
+python scripts\prepare_photo_plot_package.py фото.jpg --mode classic --classic-levels 0.14,0.25,0.38,0.52,0.66,0.80
 python scripts\prepare_photo_plot_package.py photo.jpg --mode hatch --hatch-spacing-mm 1.0 --max-side-px 900
 python scripts\prepare_photo_plot_package.py photo.jpg --mode hatch --edge-min-length-mm 5.0
 python scripts\prepare_photo_plot_package.py photo.jpg --mode scribble --scribble-line-spacing-mm 1.2 --scribble-amplitude-mm 1.8 --scribble-threshold 0.18

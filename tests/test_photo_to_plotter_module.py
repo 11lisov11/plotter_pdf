@@ -8,8 +8,11 @@ from PIL import Image
 from src.plotter_backend.photo_to_plotter import (
     PhotoPlotConfig,
     WorkArea,
+    classic_photo_quality_preset,
     generate_photo_plot,
+    hatch_photo_quality_preset,
     order_polylines_nearest,
+    sketch_photo_quality_preset,
 )
 from scripts.prepare_photo_plot_package import build_photo_plot_package, gcode_draw_polylines
 
@@ -49,6 +52,78 @@ def test_generate_hatch_photo_plot_stays_inside_work_area(tmp_path: Path) -> Non
         for x, y in polyline:
             assert area.min_x <= x <= area.max_x
             assert area.min_y <= y <= area.max_y
+
+
+def test_generate_classic_photo_plot_makes_dark_regions_denser(tmp_path: Path) -> None:
+    img = Image.new("L", (80, 48), "white")
+    for y in range(48):
+        for x in range(80):
+            img.putpixel((x, y), 35 if x < 40 else 225)
+    path = tmp_path / "classic.png"
+    img.save(path)
+
+    area = WorkArea(min_x=0.0, max_x=160.0, min_y=-96.0, max_y=0.0)
+    result = generate_photo_plot(
+        path,
+        PhotoPlotConfig(
+            mode="classic",
+            max_side_px=80,
+            margin_mm=0.0,
+            edge_enabled=False,
+            classic_spacing_mm=3.2,
+            classic_levels=(0.12, 0.28, 0.44, 0.60, 0.76),
+            route_optimize=False,
+        ),
+        area,
+    )
+
+    assert result.mode == "classic"
+    assert result.polylines
+    midpoint_x = (result.placement_bounds[0] + result.placement_bounds[1]) * 0.5
+    dark_length = 0.0
+    light_length = 0.0
+    for polyline in result.polylines:
+        for a, b in zip(polyline, polyline[1:]):
+            length = math.hypot(b[0] - a[0], b[1] - a[1])
+            if (a[0] + b[0]) * 0.5 < midpoint_x:
+                dark_length += length
+            else:
+                light_length += length
+
+    assert dark_length > light_length * 4.0
+
+
+def test_classic_photo_quality_presets_order_workload() -> None:
+    fast = classic_photo_quality_preset("fast")
+    normal = classic_photo_quality_preset("normal")
+    detailed = classic_photo_quality_preset("detailed")
+
+    assert fast["max_side_px"] < normal["max_side_px"] < detailed["max_side_px"]
+    assert fast["classic_spacing_mm"] > normal["classic_spacing_mm"] > detailed["classic_spacing_mm"]
+    assert len(fast["classic_levels"]) < len(detailed["classic_levels"])
+    assert len(fast["classic_angles_deg"]) < len(detailed["classic_angles_deg"])
+
+
+def test_hatch_photo_quality_presets_order_workload() -> None:
+    fast = hatch_photo_quality_preset("fast")
+    normal = hatch_photo_quality_preset("normal")
+    detailed = hatch_photo_quality_preset("detailed")
+
+    assert fast["max_side_px"] < normal["max_side_px"] < detailed["max_side_px"]
+    assert fast["hatch_spacing_mm"] > normal["hatch_spacing_mm"] > detailed["hatch_spacing_mm"]
+    assert len(fast["hatch_levels"]) < len(detailed["hatch_levels"])
+    assert fast["hatch_angles_deg"] == normal["hatch_angles_deg"] == detailed["hatch_angles_deg"]
+
+
+def test_sketch_photo_quality_presets_order_pencil_workload() -> None:
+    fast = sketch_photo_quality_preset("fast")
+    normal = sketch_photo_quality_preset("normal")
+    detailed = sketch_photo_quality_preset("detailed")
+
+    assert fast["max_side_px"] < normal["max_side_px"] < detailed["max_side_px"]
+    assert fast["sketch_stroke_spacing_mm"] > normal["sketch_stroke_spacing_mm"] > detailed["sketch_stroke_spacing_mm"]
+    assert fast["sketch_density"] < normal["sketch_density"] < detailed["sketch_density"]
+    assert len(fast["sketch_contour_levels"]) < len(detailed["sketch_contour_levels"])
 
 
 def test_generate_scribble_photo_plot_uses_fewer_long_paths(tmp_path: Path) -> None:

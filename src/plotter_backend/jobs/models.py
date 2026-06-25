@@ -29,6 +29,8 @@ class JobSettings:
     safe_travel_up: bool = False
     quality: str = "normal"
     draw_order: str = "auto"
+    machine_profile: str = "a4_desktop"
+    calibration_layout: str = "sheet"
 
     def normalized_input_path(self) -> Optional[Path]:
         if self.input_path is None:

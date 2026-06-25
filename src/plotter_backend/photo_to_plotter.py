@@ -12,8 +12,135 @@ from PIL import Image, ImageOps
 
 Point = tuple[float, float]
 Polyline = list[Point]
-PhotoMode = Literal["hatch", "scribble", "portrait", "sketch"]
+PhotoMode = Literal["hatch", "scribble", "portrait", "sketch", "classic"]
+PhotoQuality = Literal["fast", "normal", "detailed"]
 PortraitSampling = Literal["grid", "blue_noise"]
+
+
+HATCH_PHOTO_QUALITY_PRESETS: dict[PhotoQuality, dict[str, Any]] = {
+    "fast": {
+        "max_side_px": 650,
+        "hatch_spacing_mm": 1.45,
+        "hatch_levels": (0.28, 0.48, 0.68),
+        "hatch_angles_deg": (-28.0,),
+        "edge_min_length_mm": 18.0,
+        "min_segment_mm": 1.20,
+    },
+    "normal": {
+        "max_side_px": 850,
+        "hatch_spacing_mm": 0.88,
+        "hatch_levels": (0.14, 0.28, 0.42, 0.56, 0.70, 0.82),
+        "hatch_angles_deg": (-28.0,),
+        "edge_min_length_mm": 8.0,
+        "min_segment_mm": 0.60,
+    },
+    "detailed": {
+        "max_side_px": 1200,
+        "hatch_spacing_mm": 0.58,
+        "hatch_levels": (0.10, 0.20, 0.30, 0.42, 0.54, 0.66, 0.78, 0.88),
+        "hatch_angles_deg": (-28.0,),
+        "edge_min_length_mm": 4.0,
+        "min_segment_mm": 0.40,
+    },
+}
+
+
+CLASSIC_PHOTO_QUALITY_PRESETS: dict[PhotoQuality, dict[str, Any]] = {
+    "fast": {
+        "max_side_px": 600,
+        "classic_spacing_mm": 3.0,
+        "classic_levels": (0.24, 0.44, 0.64, 0.82),
+        "classic_angles_deg": (0.0, 45.0, -45.0, 90.0),
+        "classic_smooth_sigma_px": 1.25,
+        "edge_min_length_mm": 14.0,
+    },
+    "normal": {
+        "max_side_px": 800,
+        "classic_spacing_mm": 2.15,
+        "classic_levels": (0.18, 0.34, 0.50, 0.66, 0.82),
+        "classic_angles_deg": (0.0, 45.0, -45.0, 90.0, 22.5),
+        "classic_smooth_sigma_px": 1.15,
+        "edge_min_length_mm": 10.0,
+    },
+    "detailed": {
+        "max_side_px": 900,
+        "classic_spacing_mm": 1.45,
+        "classic_levels": (0.14, 0.26, 0.38, 0.52, 0.66, 0.80),
+        "classic_angles_deg": (0.0, 45.0, -45.0, 90.0, 22.5, -22.5),
+        "classic_smooth_sigma_px": 1.05,
+        "edge_min_length_mm": 6.0,
+    },
+}
+
+
+SKETCH_PHOTO_QUALITY_PRESETS: dict[PhotoQuality, dict[str, Any]] = {
+    "fast": {
+        "max_side_px": 600,
+        "sketch_stroke_spacing_mm": 4.20,
+        "sketch_stroke_length_mm": 12.0,
+        "sketch_threshold": 0.20,
+        "sketch_density": 0.14,
+        "sketch_density_gamma": 1.25,
+        "sketch_min_center_distance_mm": 3.10,
+        "sketch_contour_levels": (0.20, 0.38, 0.58),
+        "edge_min_length_mm": 20.0,
+        "portrait_jitter_mm": 0.45,
+        "scribble_step_mm": 1.15,
+        "min_segment_mm": 1.20,
+    },
+    "normal": {
+        "max_side_px": 800,
+        "sketch_stroke_spacing_mm": 3.15,
+        "sketch_stroke_length_mm": 13.5,
+        "sketch_threshold": 0.18,
+        "sketch_density": 0.22,
+        "sketch_density_gamma": 1.15,
+        "sketch_min_center_distance_mm": 2.25,
+        "sketch_contour_levels": (0.18, 0.32, 0.48, 0.64),
+        "edge_min_length_mm": 13.0,
+        "portrait_jitter_mm": 0.65,
+        "scribble_step_mm": 0.90,
+        "min_segment_mm": 0.90,
+    },
+    "detailed": {
+        "max_side_px": 900,
+        "sketch_stroke_spacing_mm": 2.45,
+        "sketch_stroke_length_mm": 14.5,
+        "sketch_threshold": 0.16,
+        "sketch_density": 0.32,
+        "sketch_density_gamma": 1.05,
+        "sketch_min_center_distance_mm": 1.65,
+        "sketch_contour_levels": (0.15, 0.28, 0.42, 0.58, 0.72),
+        "edge_min_length_mm": 9.0,
+        "portrait_jitter_mm": 0.80,
+        "scribble_step_mm": 0.72,
+        "min_segment_mm": 0.70,
+    },
+}
+
+
+def classic_photo_quality_preset(quality: str) -> dict[str, Any]:
+    key = quality.strip().lower()
+    if key not in CLASSIC_PHOTO_QUALITY_PRESETS:
+        allowed = ", ".join(CLASSIC_PHOTO_QUALITY_PRESETS)
+        raise ValueError(f"unknown classic photo quality: {quality!r}; expected one of: {allowed}")
+    return dict(CLASSIC_PHOTO_QUALITY_PRESETS[key])  # type: ignore[index]
+
+
+def hatch_photo_quality_preset(quality: str) -> dict[str, Any]:
+    key = quality.strip().lower()
+    if key not in HATCH_PHOTO_QUALITY_PRESETS:
+        allowed = ", ".join(HATCH_PHOTO_QUALITY_PRESETS)
+        raise ValueError(f"unknown hatch photo quality: {quality!r}; expected one of: {allowed}")
+    return dict(HATCH_PHOTO_QUALITY_PRESETS[key])  # type: ignore[index]
+
+
+def sketch_photo_quality_preset(quality: str) -> dict[str, Any]:
+    key = quality.strip().lower()
+    if key not in SKETCH_PHOTO_QUALITY_PRESETS:
+        allowed = ", ".join(SKETCH_PHOTO_QUALITY_PRESETS)
+        raise ValueError(f"unknown sketch photo quality: {quality!r}; expected one of: {allowed}")
+    return dict(SKETCH_PHOTO_QUALITY_PRESETS[key])  # type: ignore[index]
 
 
 @dataclass(frozen=True)
@@ -37,18 +164,22 @@ class PhotoPlotConfig:
     hatch_spacing_mm: float = 2.2
     hatch_levels: tuple[float, ...] = (0.34, 0.58, 0.78)
     hatch_angles_deg: tuple[float, ...] = (0.0, -30.0, 30.0)
-    sketch_stroke_spacing_mm: float = 2.55
-    sketch_stroke_length_mm: float = 9.5
+    classic_spacing_mm: float = 2.15
+    classic_levels: tuple[float, ...] = (0.18, 0.34, 0.50, 0.66, 0.82)
+    classic_angles_deg: tuple[float, ...] = (0.0, 45.0, -45.0, 90.0, 22.5)
+    classic_smooth_sigma_px: float = 1.15
+    sketch_stroke_spacing_mm: float = 3.15
+    sketch_stroke_length_mm: float = 13.5
     sketch_threshold: float = 0.18
-    sketch_density: float = 0.42
-    sketch_density_gamma: float = 1.35
-    sketch_min_center_distance_mm: float = 2.15
+    sketch_density: float = 0.22
+    sketch_density_gamma: float = 1.15
+    sketch_min_center_distance_mm: float = 2.25
     sketch_tone_line_spacing_mm: float = 0.0
     sketch_tone_step_mm: float = 0.5
     sketch_tone_amplitude_mm: float = 1.25
     sketch_tonal_contours: bool = True
-    sketch_contour_levels: tuple[float, ...] = (0.24, 0.38, 0.54, 0.70)
-    sketch_pencil_edges: bool = False
+    sketch_contour_levels: tuple[float, ...] = (0.18, 0.32, 0.48, 0.64)
+    sketch_pencil_edges: bool = True
     sketch_pencil_sigma_s: int = 60
     sketch_pencil_sigma_r: float = 0.07
     sketch_pencil_shade_factor: float = 0.045
@@ -250,6 +381,7 @@ def _scan_hatch_segments(
     *,
     angle_deg: float,
     spacing_px: float,
+    offset_px: float = 0.0,
     min_segment_px: float,
     merge_gap_px: float,
 ) -> list[list[Point]]:
@@ -267,7 +399,7 @@ def _scan_hatch_segments(
     min_ry = math.floor(min(p[1] for p in rcorners)) - 1.0
     max_ry = math.ceil(max(p[1] for p in rcorners)) + 1.0
     out: list[list[Point]] = []
-    y = min_ry
+    y = min_ry + (float(offset_px) % spacing)
     sample_step = 1.0
     while y <= max_ry:
         intervals: list[tuple[float, float]] = []
@@ -300,16 +432,26 @@ def _generate_hatch_px(darkness: np.ndarray, config: PhotoPlotConfig, scale_mm_p
     spacing_px = max(1.0, float(config.hatch_spacing_mm) / max(1e-9, scale_mm_per_px))
     min_segment_px = max(1.0, float(config.min_segment_mm) / max(1e-9, scale_mm_per_px))
     merge_gap_px = max(0.0, float(config.merge_gap_mm) / max(1e-9, scale_mm_per_px))
-    levels = tuple(float(v) for v in config.hatch_levels if 0.0 < float(v) < 1.0)
+    levels = tuple(sorted(float(v) for v in config.hatch_levels if 0.0 < float(v) < 1.0))
     angles = tuple(float(v) for v in config.hatch_angles_deg) or (0.0,)
+    if not levels:
+        return []
+
+    tone = cv2.GaussianBlur(darkness.astype(np.float32), (0, 0), sigmaX=1.1)
     out: list[list[Point]] = []
     for idx, level in enumerate(levels):
-        mask = darkness >= level
+        mask = _clean_tonal_mask(tone >= level, scale_mm_per_px, level_index=idx)
+        if not np.any(mask):
+            continue
+        remaining = len(levels) - idx - 1
+        layer_spacing_px = spacing_px * float(2 ** max(0, remaining))
+        layer_offset_px = spacing_px * float(2 ** max(0, remaining - 1) if remaining > 0 else 0)
         out.extend(
             _scan_hatch_segments(
                 mask,
                 angle_deg=angles[idx % len(angles)],
-                spacing_px=spacing_px,
+                spacing_px=layer_spacing_px,
+                offset_px=layer_offset_px,
                 min_segment_px=min_segment_px,
                 merge_gap_px=merge_gap_px,
             )
@@ -341,6 +483,41 @@ def _clean_tonal_mask(mask: np.ndarray, scale_mm_per_px: float, *, level_index: 
     if not np.any(keep):
         keep = raw
     return keep.astype(bool)
+
+
+def _generate_classic_px(darkness: np.ndarray, config: PhotoPlotConfig, scale_mm_per_px: float) -> list[list[Point]]:
+    """Generate classic tonal cross-hatching: darker regions receive more line layers."""
+    base_spacing_px = max(1.0, float(config.classic_spacing_mm) / max(1e-9, scale_mm_per_px))
+    min_segment_px = max(1.0, float(config.min_segment_mm) / max(1e-9, scale_mm_per_px))
+    merge_gap_px = max(0.0, float(config.merge_gap_mm) / max(1e-9, scale_mm_per_px))
+    levels = tuple(float(v) for v in config.classic_levels if 0.0 < float(v) < 1.0)
+    angles = tuple(float(v) for v in config.classic_angles_deg) or (0.0,)
+    if not levels:
+        return []
+
+    smooth_sigma = max(0.0, float(config.classic_smooth_sigma_px))
+    tone = darkness.astype(np.float32)
+    if smooth_sigma > 0.0:
+        tone = cv2.GaussianBlur(tone, (0, 0), sigmaX=smooth_sigma)
+
+    out: list[list[Point]] = []
+    for idx, level in enumerate(levels):
+        mask = _clean_tonal_mask(tone >= level, scale_mm_per_px, level_index=idx)
+        if not np.any(mask):
+            continue
+        # Later layers are only reached by darker tones. Keeping their spacing a
+        # little tighter makes shadows visibly denser without filling highlights.
+        layer_spacing_px = base_spacing_px * max(0.72, 1.0 - 0.045 * idx)
+        out.extend(
+            _scan_hatch_segments(
+                mask,
+                angle_deg=angles[idx % len(angles)],
+                spacing_px=layer_spacing_px,
+                min_segment_px=min_segment_px,
+                merge_gap_px=merge_gap_px,
+            )
+        )
+    return out
 
 
 def _generate_tonal_contours_px(darkness: np.ndarray, config: PhotoPlotConfig, scale_mm_per_px: float) -> list[list[Point]]:
@@ -922,7 +1099,7 @@ def generate_photo_plot(
     work_area: WorkArea | None = None,
 ) -> PhotoPlotResult:
     cfg = config or PhotoPlotConfig()
-    if cfg.mode not in {"hatch", "scribble", "portrait", "sketch"}:
+    if cfg.mode not in {"hatch", "scribble", "portrait", "sketch", "classic"}:
         raise ValueError(f"unsupported photo plot mode: {cfg.mode}")
     area = work_area or WorkArea()
     path = Path(image_path)
@@ -935,7 +1112,9 @@ def generate_photo_plot(
         content_mask = _portrait_content_mask(darkness, cfg, scale)
         drawing_darkness = _apply_mask_to_darkness(darkness, content_mask)
 
-    if cfg.mode == "hatch":
+    if cfg.mode == "classic":
+        px_polylines = _generate_classic_px(drawing_darkness, cfg, scale)
+    elif cfg.mode == "hatch":
         px_polylines = _generate_hatch_px(drawing_darkness, cfg, scale)
     elif cfg.mode == "scribble":
         px_polylines = _generate_scribble_px(drawing_darkness, cfg, scale)

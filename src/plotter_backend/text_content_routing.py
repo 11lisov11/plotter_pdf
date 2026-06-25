@@ -37,6 +37,48 @@ _TABLE_UNIT_TOKENS = {
     "mv",
     "\u043a\u0432",
 }
+_STAMP_LABELS = {
+    "\u0438\u0437\u043c",
+    "\u0438\u0437\u043c.",
+    "\u043b\u0438\u0441\u0442",
+    "\u043b\u0438\u0441\u0442\u043e\u0432",
+    "\u2116",
+    "\u2116\u0434\u043e\u043a\u0443\u043c",
+    "\u2116\u0434\u043e\u043a\u0443\u043c.",
+    "\u2116 \u0434\u043e\u043a\u0443\u043c",
+    "\u2116 \u0434\u043e\u043a\u0443\u043c.",
+    "\u043f\u043e\u0434\u043f",
+    "\u043f\u043e\u0434\u043f.",
+    "\u0434\u0430\u0442\u0430",
+    "\u0440\u0430\u0437\u0440\u0430\u0431",
+    "\u0440\u0430\u0437\u0440\u0430\u0431.",
+    "\u043f\u0440\u043e\u0432",
+    "\u043f\u0440\u043e\u0432.",
+    "\u0442.\u043a\u043e\u043d\u0442\u0440",
+    "\u0442.\u043a\u043e\u043d\u0442\u0440.",
+    "\u043d.\u043a\u043e\u043d\u0442\u0440",
+    "\u043d.\u043a\u043e\u043d\u0442\u0440.",
+    "\u0443\u0442\u0432",
+    "\u0443\u0442\u0432.",
+    "\u043b\u0438\u0442",
+    "\u043b\u0438\u0442.",
+    "\u043c\u0430\u0441\u0441\u0430",
+    "\u043c\u0430\u0441\u0448\u0442\u0430\u0431",
+    "\u0444\u043e\u0440\u043c\u0430\u0442",
+    "\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u043b",
+    "\u043f\u0433\u0443\u043f\u0441",
+}
+_TECH_DESIGNATION_RE = re.compile(
+    r"^[A-Za-z\u0410-\u042f\u0430-\u044f\u0401\u0451]{1,8}\d{0,4}(?:[.-]\d{1,4}){2,8}(?:-\d{1,4})?$"
+)
+_GROUP_CODE_RE = re.compile(r"^[A-Za-z\u0410-\u042f\u0430-\u044f\u0401\u0451]{1,6}-?\d{2,4}-\d{1,4}$")
+
+
+def _tech_designation_prefix_is_strong(text: str) -> bool:
+    prefix = re.split(r"[.-]", str(text or ""), maxsplit=1)[0]
+    if not prefix:
+        return False
+    return any(ch.isdigit() for ch in prefix) or (prefix.upper() == prefix and prefix.lower() != prefix)
 
 
 def _split_words(text: str) -> list[str]:
@@ -53,6 +95,51 @@ def _looks_short_numeric(text: str) -> bool:
 
 def _looks_unit_token(text: str) -> bool:
     return str(text or "").casefold() in _TABLE_UNIT_TOKENS
+
+
+def _normalize_stamp_token(text: str) -> str:
+    return re.sub(r"\s+", " ", str(text or "").strip(), flags=re.UNICODE).casefold()
+
+
+def _normalize_designation_token(text: str) -> str:
+    token = str(text or "").strip()
+    token = re.sub(r"\s+", ".", token, flags=re.UNICODE)
+    token = re.sub(r"\.{2,}", ".", token)
+    return token.strip(".")
+
+
+def text_looks_title_block_technical(text: str) -> bool:
+    src = str(text or "").strip()
+    if not src:
+        return False
+
+    normalized = _normalize_stamp_token(src)
+    compact_label = normalized.replace(" ", "")
+    if normalized in _STAMP_LABELS or compact_label in _STAMP_LABELS:
+        return True
+
+    designation = _normalize_designation_token(src)
+    if (
+        (_TECH_DESIGNATION_RE.fullmatch(designation) and _tech_designation_prefix_is_strong(designation))
+        or _GROUP_CODE_RE.fullmatch(designation)
+    ):
+        return True
+
+    words = [_compact_token(word) for word in _split_words(src)]
+    words = [word for word in words if word]
+    if 1 <= len(words) <= 3:
+        if all(
+            _normalize_stamp_token(word) in _STAMP_LABELS
+            or _GROUP_CODE_RE.fullmatch(_normalize_designation_token(word))
+            or (
+                _TECH_DESIGNATION_RE.fullmatch(_normalize_designation_token(word))
+                and _tech_designation_prefix_is_strong(_normalize_designation_token(word))
+            )
+            for word in words
+        ):
+            return True
+
+    return False
 
 
 def text_has_caption_keyword(text: str) -> bool:
@@ -178,6 +265,9 @@ def classify_text_content_role(
         return ROLE_BODY_HANDWRITING
 
     words = _split_words(src)
+
+    if text_looks_title_block_technical(src):
+        return ROLE_PRINT_SHORT_TECH
 
     if text_looks_formula_like(
         compact,

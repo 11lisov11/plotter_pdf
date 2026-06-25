@@ -10,6 +10,8 @@ DEFAULT_SETTINGS: dict[str, Any] = {
     "output_dir": "_plotter_jobs",
     "com": "",
     "baud": "115200",
+    "machine_profile": "a4_desktop",
+    "calibration_layout": "sheet",
     "sheet_format": "a4",
     "sheet_width_mm": None,
     "sheet_height_mm": None,

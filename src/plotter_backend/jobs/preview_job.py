@@ -9,15 +9,37 @@ from pathlib import Path
 from .models import JobResult, JobSettings
 from .prepare_job import prepare_gcode_job
 
+try:
+    from src.plotter_backend.machine import profiles as machine_profiles_mod
+except ImportError:  # pragma: no cover - package entry point fallback
+    from plotter_backend.machine import profiles as machine_profiles_mod
+
 
 _WORD_RE = re.compile(r"([A-Z])\s*(-?\d+(?:\.\d+)?)", re.IGNORECASE)
 _SHEET_SIZES_MM = {
     "a4": (210.0, 297.0),
-    "a3": (297.0, 420.0),
+    "a3": (420.0, 297.0),
+    "a2": (420.0, 594.0),
     "work": (180.0, 280.0),
     "notebook": (180.0, 280.0),
 }
 _WORKSPACE_BOUNDS = (0.0, 180.0, -285.0, -5.0)
+_PROJECT_ROOT = Path(__file__).resolve().parents[3]
+_MACHINE_PROFILE_PATH = _PROJECT_ROOT / "config" / "machine_profiles.json"
+
+
+def _workspace_bounds(settings: JobSettings) -> tuple[float, float, float, float]:
+    try:
+        profile = machine_profiles_mod.resolve_machine_profile(settings.machine_profile, _MACHINE_PROFILE_PATH)
+        work = machine_profiles_mod.profile_work_area(profile)
+        return (
+            work["min_x_mm"] + work["offset_x_mm"],
+            work["max_x_mm"] + work["offset_x_mm"],
+            work["min_y_mm"] + work["offset_y_mm"],
+            work["max_y_mm"] + work["offset_y_mm"],
+        )
+    except Exception:
+        return _WORKSPACE_BOUNDS
 
 
 def _detect_pen_z(lines: list[str]) -> tuple[float | None, float | None]:
@@ -152,22 +174,29 @@ def _open_preview(path: Path) -> None:
         os.startfile(str(path))  # type: ignore[attr-defined]
 
 
-def _polyline_bounds(polylines: list[list[tuple[float, float]]]) -> tuple[float, float, float, float]:
+def _polyline_bounds(
+    polylines: list[list[tuple[float, float]]],
+    fallback: tuple[float, float, float, float] = _WORKSPACE_BOUNDS,
+) -> tuple[float, float, float, float]:
     xs = [x for poly in polylines for x, _y in poly]
     ys = [y for poly in polylines for _x, y in poly]
     if not xs or not ys:
-        return _WORKSPACE_BOUNDS
+        return fallback
     return min(xs), max(xs), min(ys), max(ys)
 
 
 def _sheet_size(settings: JobSettings) -> tuple[float, float]:
     if settings.sheet_format == "custom" and settings.sheet_width_mm and settings.sheet_height_mm:
         return float(settings.sheet_width_mm), float(settings.sheet_height_mm)
-    return _SHEET_SIZES_MM.get(str(settings.sheet_format).lower(), _SHEET_SIZES_MM["a4"])
+    fmt = str(settings.sheet_format).lower()
+    if fmt == "work":
+        wx0, wx1, wy0, wy1 = _workspace_bounds(settings)
+        return wx1 - wx0, wy1 - wy0
+    return _SHEET_SIZES_MM.get(fmt, _SHEET_SIZES_MM["a4"])
 
 
 def _sheet_bounds(settings: JobSettings) -> tuple[float, float, float, float]:
-    wx0, wx1, wy0, wy1 = _WORKSPACE_BOUNDS
+    wx0, wx1, wy0, wy1 = _workspace_bounds(settings)
     ww = wx1 - wx0
     wh = wy1 - wy0
     sw, sh = _sheet_size(settings)
@@ -230,9 +259,10 @@ def _write_interactive_preview(
     html_path: Path,
     settings: JobSettings,
 ) -> None:
+    workspace = _workspace_bounds(settings)
     sheet = _sheet_bounds(settings)
-    drawing = _polyline_bounds(polylines)
-    union = _union_bounds(_WORKSPACE_BOUNDS, sheet, drawing)
+    drawing = _polyline_bounds(polylines, fallback=workspace)
+    union = _union_bounds(workspace, sheet, drawing)
     ux0, ux1, uy0, uy1 = union
     pad = 12.0
     view_x = ux0 - pad
@@ -241,7 +271,7 @@ def _write_interactive_preview(
     view_h = (uy1 - uy0) + pad * 2.0
 
     sheet_x, sheet_y, sheet_w, sheet_h = _display_rect(sheet)
-    work_x, work_y, work_w, work_h = _display_rect(_WORKSPACE_BOUNDS)
+    work_x, work_y, work_w, work_h = _display_rect(workspace)
     cols, rows = _grid_shape(settings)
     pass_col = min(max(1, int(settings.pass_col or 1)), cols)
     pass_row = min(max(1, int(settings.pass_row or 1)), rows)
@@ -357,8 +387,9 @@ def _write_interactive_preview(
     settings: JobSettings,
     job_bounds: tuple[float, float, float, float] | None = None,
 ) -> None:
-    drawing = job_bounds or _polyline_bounds(polylines)
-    union = _union_bounds(_WORKSPACE_BOUNDS, drawing)
+    workspace = _workspace_bounds(settings)
+    drawing = job_bounds or _polyline_bounds(polylines, fallback=workspace)
+    union = _union_bounds(workspace, drawing)
     ux0, ux1, uy0, uy1 = union
     pad = 10.0
     view_x = ux0 - pad
@@ -367,7 +398,7 @@ def _write_interactive_preview(
     view_h = (uy1 - uy0) + pad * 2.0
 
     draw_x, draw_y, draw_w, draw_h = _display_rect(drawing)
-    work_x, work_y, work_w, work_h = _display_rect(_WORKSPACE_BOUNDS)
+    work_x, work_y, work_w, work_h = _display_rect(workspace)
     cols = max(1, int(settings.pass_cols or 1))
     rows = max(1, int(settings.pass_rows or 1))
     if str(settings.sheet_format).lower() == "a3" and cols == 1 and rows == 1:

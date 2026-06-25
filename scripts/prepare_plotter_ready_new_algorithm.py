@@ -1751,6 +1751,7 @@ def _center_top_service_designation_line(line: dict[str, Any]) -> dict[str, Any]
         round(frame_x1 - pad_x, 3),
         round(frame_y1 - pad_y, 3),
     ]
+    patched["text_align"] = "center"
     patched["top_service_designation_centered"] = {
         "source_bbox_mm": [round(float(v), 3) for v in bbox],
         "frame_bbox_mm": [round(frame_x0, 3), round(frame_y0, 3), round(frame_x1, 3), round(frame_y1, 3)],
@@ -1834,11 +1835,11 @@ def _make_lff_opengost_text_strokes(
         prepared_text_lines = _mark_multiline_table_cell_lines(prepared_text_lines, table_rules)
     for source_line in prepared_text_lines:
         if _is_top_service_designation_line(source_line):
-            source_line = _center_top_service_designation_line(source_line)
             logger(
-                "Top service designation centered in upper frame: "
+                "Top service designation rerouted through centered LFF overlay: "
                 f"'{lff_text._line_display_text(source_line)}'."
             )
+            source_line = _center_top_service_designation_line(source_line)
         if center_a3_top_left_title:
             source_line = _center_a3_top_left_title_line(source_line)
         source_line = _apply_a4_left_stamp_person_alignment(source_line)
@@ -1945,6 +1946,36 @@ def _cleanup_source_geometry(
         f"a3={bool(report.get('a3_two_pass'))}."
     )
     return geometry, meta
+
+
+def _strip_top_service_designation_geometry(polylines: list[Polyline], logs: list[str]) -> list[Polyline]:
+    kept: list[Polyline] = []
+    removed = 0
+    for polyline in polylines:
+        if len(polyline) < 2:
+            continue
+        xs = [float(point[0]) for point in polyline]
+        ys = [float(point[1]) for point in polyline]
+        x0, x1 = min(xs), max(xs)
+        y0, y1 = min(ys), max(ys)
+        width = x1 - x0
+        height = y1 - y0
+        axis_aligned_frame_line = (height <= 0.12 and width >= 8.0) or (width <= 0.12 and height >= 8.0)
+        inside_top_service_box = (
+            -1.0 <= x0 <= 112.0
+            and x1 <= 112.0
+            and -1.0 <= y0 <= 32.0
+            and y1 <= 32.0
+            and width <= 105.0
+            and height <= 31.0
+        )
+        if inside_top_service_box and not axis_aligned_frame_line:
+            removed += 1
+            continue
+        kept.append(polyline)
+    if removed:
+        logs.append(f"Top service designation geometry stripped: removed {removed} polyline(s).")
+    return kept
 
 
 def _write_source_artifacts(
@@ -2094,11 +2125,11 @@ def _make_experiment_lff_text_strokes(
             prepared_lines = _mark_multiline_table_cell_lines(prepared_lines, table_rules)
         for line_mm in prepared_lines:
             if _is_top_service_designation_line(line_mm):
-                line_mm = _center_top_service_designation_line(line_mm)
                 logs.append(
-                    "Top service designation centered in upper frame: "
+                    "Top service designation rerouted through centered LFF overlay: "
                     f"'{lff_text._line_display_text(line_mm)}'."
                 )
+                line_mm = _center_top_service_designation_line(line_mm)
             line_mm = _apply_a4_left_stamp_person_alignment(line_mm)
             text = str(line_mm["text"])
             rect = fitz.Rect(line_mm.get("bbox", (0, 0, 0, 0)))  # type: ignore[arg-type]
@@ -2241,16 +2272,30 @@ def _build_clean_source_opengost_source(
         text_doc.close()
     text_lines_for_cleanup, _cleanup_lines_found, _cleanup_lines_skipped = _text_lines_for_source(source_pdf)
     geometry = _remove_existing_text_geometry(geometry, text_lines_for_cleanup, logs.append)
+    geometry = _strip_top_service_designation_geometry(geometry, logs)
     is_specification = _is_new_algorithm_specification(source_pdf, geometry)
     if is_specification:
         geometry = _snap_specification_table_grid_polylines(geometry, logs)
     table_rules = _horizontal_table_rules_from_polylines(geometry)
-    text_polys, accepted_text, missing_chars, text_lines_found, text_lines_skipped = _make_experiment_lff_text_strokes(
-        source_pdf,
-        logs,
+    text_lines_for_render = text_lines_for_cleanup
+    if is_specification:
+        geometry, text_lines_for_render = _adjust_specification_underlined_heading_layout(
+            geometry,
+            text_lines_for_render,
+            table_rules,
+            logs,
+        )
+        table_rules = _horizontal_table_rules_from_polylines(geometry)
+    text_polys, accepted_text, missing_chars = _make_lff_opengost_text_strokes(
+        text_lines_for_render,
+        page_w_mm,
+        page_h_mm,
+        logs.append,
         normalize_dimension_text=(_is_computer_graphics_mode(settings) and not is_specification),
         table_rules=table_rules,
     )
+    text_lines_found = _cleanup_lines_found
+    text_lines_skipped = _cleanup_lines_skipped
     source_polys = [*geometry, *text_polys]
     source_segments = sum(max(0, len(poly) - 1) for poly in source_polys)
     logs.append(
@@ -2323,6 +2368,7 @@ def _build_source(pack: Path, source_pdf: Path, report: dict[str, Any], settings
         )
     text_lines, text_lines_found, text_lines_skipped = _text_lines_for_source(source_pdf)
     geometry = _remove_existing_text_geometry(geometry, text_lines, logs.append)
+    geometry = _strip_top_service_designation_geometry(geometry, logs)
     is_specification = _is_new_algorithm_specification(source_pdf, geometry)
     if is_specification:
         geometry = _snap_specification_table_grid_polylines(geometry, logs)

@@ -55,3 +55,15 @@ def test_copy_source_pdf_to_package_keeps_a3_audit_files(tmp_path: Path) -> None
         "logs",
         "Task Name.pdf",
     } <= {item.name for item in package_dir.iterdir()}
+
+
+def test_iter_variant_dirs_skips_service_folders_by_default(tmp_path: Path) -> None:
+    variant = tmp_path / "9 вариант"
+    service = tmp_path / "новый тест букв"
+    empty = tmp_path / "Маховики"
+    variant.mkdir()
+    service.mkdir()
+    empty.mkdir()
+
+    assert mod._iter_variant_dirs(tmp_path, set()) == [variant]
+    assert mod._iter_variant_dirs(tmp_path, {service.name.casefold()}) == [service]

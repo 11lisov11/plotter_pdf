@@ -3,6 +3,8 @@
   "com": "",
   "draw_order": "auto",
   "handwriting": false,
+  "machine_profile": "a4_desktop",
+  "calibration_layout": "sheet",
   "open_preview": false,
   "output_dir": "_plotter_jobs",
   "pass_col": 1,

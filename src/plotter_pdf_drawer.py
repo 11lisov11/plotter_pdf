@@ -67,6 +67,7 @@ try:
     from src.plotter_backend.geometry import svg_path as geometry_svg_path_mod
     from src.plotter_backend.geometry import transform as geometry_transform_mod
     from src.plotter_backend.geometry import work_area as geometry_work_area_mod
+    from src.plotter_backend.machine import profiles as machine_profiles_mod
     from src.plotter_backend.gcode import bounds as gcode_bounds_mod
     from src.plotter_backend.gcode import finalize as gcode_finalize_mod
     from src.plotter_backend.gcode import penlift as gcode_penlift_mod
@@ -101,6 +102,7 @@ except Exception:
     from plotter_backend.geometry import svg_path as geometry_svg_path_mod
     from plotter_backend.geometry import transform as geometry_transform_mod
     from plotter_backend.geometry import work_area as geometry_work_area_mod
+    from plotter_backend.machine import profiles as machine_profiles_mod
     from plotter_backend.gcode import bounds as gcode_bounds_mod
     from plotter_backend.gcode import finalize as gcode_finalize_mod
     from plotter_backend.gcode import penlift as gcode_penlift_mod
@@ -143,6 +145,11 @@ CONFIG_DIR = WORK_ROOT / "config"
 BUNDLE_CONFIG_DIR = ROOT_DIR / "config"
 AXIS_PROFILE_PATH = CONFIG_DIR / "axis_profile.json"
 AXIS_PROFILE_FALLBACK_PATH = BUNDLE_CONFIG_DIR / "axis_profile.json"
+MACHINE_PROFILE_PATH = CONFIG_DIR / "machine_profiles.json"
+MACHINE_PROFILE_FALLBACK_PATH = BUNDLE_CONFIG_DIR / "machine_profiles.json"
+MACHINE_PROFILE_NAME = "a4_desktop"
+MACHINE_PROFILE_LABEL = "Current A4 desktop plotter"
+CALIBRATION_LAYOUT = "sheet"
 LOCAL_TMP_ROOT = WORK_ROOT / "_tmp"
 
 DEFAULT_COM_PORT = "COM6"
@@ -554,6 +561,7 @@ SHEET_PRESETS_MM = {
     "work": None,  # full configured work zone
     "a4": (210.0, 297.0),
     "a3": (420.0, 297.0),
+    "a2": (420.0, 594.0),
     "notebook": (DEFAULT_NOTEBOOK_WIDTH_MM, DEFAULT_NOTEBOOK_HEIGHT_MM),
 }
 SHEET_ANCHOR_CHOICES = {"center", "lower_left", "upper_left", "lower_right", "upper_right"}
@@ -669,6 +677,42 @@ def load_axis_profile() -> None:
 
 
 load_axis_profile()
+
+
+def available_machine_profile_names() -> Tuple[str, ...]:
+    return machine_profiles_mod.available_profile_names(MACHINE_PROFILE_PATH, MACHINE_PROFILE_FALLBACK_PATH)
+
+
+def apply_machine_profile(profile_name: str = "a4_desktop", logger=print) -> dict:
+    global MACHINE_PROFILE_NAME, MACHINE_PROFILE_LABEL
+    global WORK_AREA_MIN_X, WORK_AREA_MAX_X, WORK_AREA_MIN_Y, WORK_AREA_MAX_Y
+    global WORK_OFFSET_X_MM, WORK_OFFSET_Y_MM, ACTIVE_WORK_AREA_BOUNDS
+
+    profile = machine_profiles_mod.resolve_machine_profile(
+        profile_name,
+        MACHINE_PROFILE_PATH,
+        MACHINE_PROFILE_FALLBACK_PATH,
+    )
+    work = machine_profiles_mod.profile_work_area(profile)
+
+    MACHINE_PROFILE_NAME = str(profile.get("name") or profile_name)
+    MACHINE_PROFILE_LABEL = str(profile.get("label") or MACHINE_PROFILE_NAME)
+    WORK_AREA_MIN_X = float(work["min_x_mm"])
+    WORK_AREA_MAX_X = float(work["max_x_mm"])
+    WORK_AREA_MIN_Y = float(work["min_y_mm"])
+    WORK_AREA_MAX_Y = float(work["max_y_mm"])
+    WORK_OFFSET_X_MM = float(work.get("offset_x_mm", 0.0))
+    WORK_OFFSET_Y_MM = float(work.get("offset_y_mm", 0.0))
+    ACTIVE_WORK_AREA_BOUNDS = None
+
+    if logger:
+        logger(
+            "Machine profile: "
+            f"{MACHINE_PROFILE_NAME} ({MACHINE_PROFILE_LABEL}); "
+            f"base work area {WORK_AREA_MAX_X - WORK_AREA_MIN_X:.1f}x{WORK_AREA_MAX_Y - WORK_AREA_MIN_Y:.1f} mm, "
+            f"offset=({WORK_OFFSET_X_MM:.2f},{WORK_OFFSET_Y_MM:.2f})"
+        )
+    return profile
 
 
 def tag_name(tag: str) -> str:
@@ -8702,19 +8746,118 @@ def build_a3_corner_mark_polylines(mark_size: float = 2.0) -> List[List[Tuple[fl
     return build_active_area_corner_mark_polylines(mark_size=mark_size)
 
 
+CALIBRATION_LAYOUT_GRIDS = {
+    "a2": (1, 1),
+    "a2_2xa3": (1, 2),
+    "a2_4xa4": (2, 2),
+    "a2_8xa4": (2, 4),
+}
+
+
+def _normalise_calibration_layout(layout: str | None) -> str:
+    raw = (layout or "sheet").strip().lower().replace("-", "_").replace(" ", "_")
+    aliases = {
+        "default": "sheet",
+        "work": "sheet",
+        "current": "sheet",
+        "2xa3": "a2_2xa3",
+        "2_a3": "a2_2xa3",
+        "4xa4": "a2_4xa4",
+        "4_a4": "a2_4xa4",
+        "8xa4": "a2_8xa4",
+        "8_a4": "a2_8xa4",
+    }
+    return aliases.get(raw, raw)
+
+
+def _dedupe_mark_polylines(polylines: List[List[Tuple[float, float]]]) -> List[List[Tuple[float, float]]]:
+    seen: set[Tuple[Tuple[float, float], Tuple[float, float]]] = set()
+    result: List[List[Tuple[float, float]]] = []
+    for polyline in polylines:
+        if len(polyline) < 2:
+            continue
+        a = (round(float(polyline[0][0]), 4), round(float(polyline[0][1]), 4))
+        b = (round(float(polyline[-1][0]), 4), round(float(polyline[-1][1]), 4))
+        key = (a, b) if a <= b else (b, a)
+        if key in seen:
+            continue
+        seen.add(key)
+        result.append(polyline)
+    return result
+
+
+def _build_grid_corner_mark_polylines_for_bounds(
+    bounds: Tuple[float, float, float, float],
+    *,
+    cols: int,
+    rows: int,
+    mark_size: float,
+) -> List[List[Tuple[float, float]]]:
+    min_x, max_x, min_y, max_y = bounds
+    cols = max(1, int(cols))
+    rows = max(1, int(rows))
+    width = max_x - min_x
+    height = max_y - min_y
+    if width <= 0.0 or height <= 0.0:
+        return []
+
+    marks: List[List[Tuple[float, float]]] = []
+    for row in range(rows):
+        cell_min_y = min_y + height * row / rows
+        cell_max_y = min_y + height * (row + 1) / rows
+        for col in range(cols):
+            cell_min_x = min_x + width * col / cols
+            cell_max_x = min_x + width * (col + 1) / cols
+            marks.extend(
+                _build_corner_mark_polylines_for_bounds(
+                    (cell_min_x, cell_max_x, cell_min_y, cell_max_y),
+                    mark_size=mark_size,
+                )
+            )
+    return _dedupe_mark_polylines(marks)
+
+
+def build_calibration_layout_corner_mark_polylines(
+    layout: str = "sheet",
+    mark_size: float = 2.0,
+) -> List[List[Tuple[float, float]]]:
+    normalised = _normalise_calibration_layout(layout)
+    if normalised == "sheet":
+        return build_area_corner_mark_polylines(mark_size=mark_size)
+    grid = CALIBRATION_LAYOUT_GRIDS.get(normalised)
+    if grid is None:
+        raise ValueError(
+            "Unknown calibration layout "
+            f"{layout!r}; use sheet, a2, a2_2xa3, a2_4xa4 or a2_8xa4."
+        )
+    cols, rows = grid
+    return _build_grid_corner_mark_polylines_for_bounds(
+        work_area_bounds(),
+        cols=cols,
+        rows=rows,
+        mark_size=mark_size,
+    )
+
+
 def active_calibration_profile_name() -> str:
     fmt = str(ACTIVE_SHEET_CONFIG.get("sheet_format") or "work").strip().lower()
+    prefix = MACHINE_PROFILE_NAME
+    layout = _normalise_calibration_layout(CALIBRATION_LAYOUT)
+    if layout != "sheet":
+        return f"{prefix}_{layout}"
     if fmt == "a4":
-        return "a4"
+        return f"{prefix}_a4"
     if fmt == "a3":
         if int(PASS_COLS) > 1 or int(PASS_ROWS) > 1:
-            return f"a3_pass_{min(max(1, int(PASS_COL)), max(1, int(PASS_COLS)))}"
-        return "a3"
+            return f"{prefix}_a3_pass_{min(max(1, int(PASS_COL)), max(1, int(PASS_COLS)))}"
+        return f"{prefix}_a3"
+    if fmt == "a2":
+        return f"{prefix}_a2"
     if fmt == "custom":
-        return "custom"
+        return f"{prefix}_custom"
     if fmt == "notebook":
-        return "notebook"
-    return "work"
+        return f"{prefix}_notebook"
+    return f"{prefix}_work"
 
 
 def build_area_corner_mark_polylines(mark_size: float = 2.0) -> List[List[Tuple[float, float]]]:
@@ -10181,18 +10324,23 @@ def run_corner_calibration_pipeline(
     send_to_plotter: bool = True,
     output_path: Optional[Path] = None,
     mark_size: float = 2.0,
+    calibration_layout: str = "sheet",
 ) -> Tuple[bool, str]:
     try:
+        global CALIBRATION_LAYOUT
+        CALIBRATION_LAYOUT = _normalise_calibration_layout(calibration_layout)
         log(
             "Calibration profile: "
             f"{active_calibration_profile_name()}, "
+            f"machine={MACHINE_PROFILE_NAME}, "
+            f"layout={CALIBRATION_LAYOUT}, "
             f"sheet={ACTIVE_SHEET_CONFIG.get('sheet_format')}, "
             f"anchor={ACTIVE_SHEET_CONFIG.get('anchor')}, "
             f"offset=({float(ACTIVE_SHEET_CONFIG.get('offset_x_mm') or 0.0):.2f},"
             f"{float(ACTIVE_SHEET_CONFIG.get('offset_y_mm') or 0.0):.2f}), "
             f"pass={int(PASS_COL)}/{int(PASS_COLS)} x {int(PASS_ROW)}/{int(PASS_ROWS)}"
         )
-        marks = build_area_corner_mark_polylines(mark_size=mark_size)
+        marks = build_calibration_layout_corner_mark_polylines(CALIBRATION_LAYOUT, mark_size=mark_size)
         if not marks:
             return False, "Invalid work area limits."
 

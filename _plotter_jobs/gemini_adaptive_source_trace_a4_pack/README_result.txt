@@ -1,0 +1,14 @@
+ADAPTIVE SOURCE TRACE A4 package
+source: C:\Users\USER\Downloads\f3370dc25e274d3fa82ef06fc8258ba5_gemini-3.1-flash-image-preview.jpg
+nc: C:\plotter_pdf\_plotter_jobs\gemini_adaptive_source_trace_a4_pack\gemini_adaptive_source_trace_a4.nc
+gcode: C:\plotter_pdf\_plotter_jobs\gemini_adaptive_source_trace_a4_pack\gemini_adaptive_source_trace_a4.gcode
+preview_black_actual_png: C:\plotter_pdf\_plotter_jobs\gemini_adaptive_source_trace_a4_pack\gemini_adaptive_source_trace_a4_preview_black_actual.png
+preview_black_actual_pdf: C:\plotter_pdf\_plotter_jobs\gemini_adaptive_source_trace_a4_pack\gemini_adaptive_source_trace_a4_preview_black_actual.pdf
+preview_pressure_gray_png: C:\plotter_pdf\_plotter_jobs\gemini_adaptive_source_trace_a4_pack\gemini_adaptive_source_trace_a4_preview_pressure_gray.png
+preview_pressure_gray_pdf: C:\plotter_pdf\_plotter_jobs\gemini_adaptive_source_trace_a4_pack\gemini_adaptive_source_trace_a4_preview_pressure_gray.pdf
+paths_total: 639
+kind_counts: {'outer_border': 1, 'source_stroke': 638}
+draw_length_m: 12.74
+travel_length_m: 3.67
+estimated_time_min_ideal: 11.8
+algorithm_note: adaptive local threshold extracts actual pencil strokes from source, then skeletonizes and filters paper grain.

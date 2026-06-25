@@ -119,6 +119,26 @@ class TextContentRoutingModuleTests(unittest.TestCase):
         )
         self.assertEqual(role, text_content_routing.ROLE_PRINT_SHORT_TECH)
 
+    def test_title_block_designations_prefer_print_role(self) -> None:
+        for text in ("МЧ00.19.00.08", "КНГ.09.01.02", "МЧ00 19 00 07", "ЭТ-520-3"):
+            with self.subTest(text=text):
+                role = text_content_routing.classify_text_content_role(
+                    text,
+                    font_size=10.0,
+                    text_contains_formula_script_fn=lambda value: False,
+                )
+                self.assertEqual(role, text_content_routing.ROLE_PRINT_SHORT_TECH)
+
+    def test_title_block_labels_prefer_print_role(self) -> None:
+        for text in ("ПГУПС", "Изм.", "№ докум.", "Подп.", "Дата", "Масштаб", "Листов"):
+            with self.subTest(text=text):
+                role = text_content_routing.classify_text_content_role(
+                    text,
+                    font_size=8.0,
+                    text_contains_formula_script_fn=lambda value: False,
+                )
+                self.assertEqual(role, text_content_routing.ROLE_PRINT_SHORT_TECH)
+
     def test_classify_body_role(self) -> None:
         role = text_content_routing.classify_text_content_role(
             "\u0421\u043e\u0441\u0442\u0430\u0432\u0438\u043c \u0441\u0438\u0441\u0442\u0435\u043c\u0443 \u0443\u0440\u0430\u0432\u043d\u0435\u043d\u0438\u0439",

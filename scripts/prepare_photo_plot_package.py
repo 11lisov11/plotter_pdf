@@ -19,8 +19,11 @@ from src.plotter_backend.photo_to_plotter import (  # noqa: E402
     PhotoPlotConfig,
     PhotoPlotResult,
     WorkArea,
+    classic_photo_quality_preset,
     generate_photo_plot,
+    hatch_photo_quality_preset,
     polylines_bounds,
+    sketch_photo_quality_preset,
 )
 
 
@@ -376,45 +379,55 @@ def build_photo_plot_package(
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Prepare a standalone photo-to-plotter package using sketch, hatch, scribble, or portrait rendering."
+        description="Prepare a standalone photo-to-plotter package using pencil sketch, classic, hatch, scribble, or portrait rendering."
     )
     parser.add_argument("image", type=Path, help="Input photo/image file.")
     parser.add_argument("--out-dir", type=Path, default=None, help="Output package directory.")
-    parser.add_argument("--mode", choices=["sketch", "hatch", "scribble", "portrait"], default=PhotoPlotConfig().mode)
+    parser.add_argument("--mode", choices=["sketch", "classic", "hatch", "scribble", "portrait"], default=PhotoPlotConfig().mode)
+    parser.add_argument(
+        "--photo-quality",
+        choices=["fast", "normal", "detailed"],
+        default="normal",
+        help="Photo quality preset: fast is shortest, normal is balanced, detailed keeps more pencil detail.",
+    )
     parser.add_argument("--margin-mm", type=float, default=5.0)
     parser.add_argument("--target-width-mm", type=float, default=None)
     parser.add_argument("--target-height-mm", type=float, default=None)
-    parser.add_argument("--max-side-px", type=int, default=900)
+    parser.add_argument("--max-side-px", type=int, default=None)
     parser.add_argument("--contrast", type=float, default=1.12)
     parser.add_argument("--gamma", type=float, default=1.05)
     parser.add_argument("--blur-px", type=int, default=3)
-    parser.add_argument("--hatch-spacing-mm", type=float, default=PhotoPlotConfig().hatch_spacing_mm)
+    parser.add_argument("--hatch-spacing-mm", type=float, default=None)
     parser.add_argument("--hatch-levels", default=None, help="Comma-separated darkness thresholds, e.g. 0.18,0.34,0.50,0.66")
     parser.add_argument("--hatch-angles", default=None, help="Comma-separated hatch angles in degrees, e.g. 0,45,-45,90")
-    parser.add_argument("--sketch-stroke-spacing-mm", type=float, default=PhotoPlotConfig().sketch_stroke_spacing_mm)
-    parser.add_argument("--sketch-stroke-length-mm", type=float, default=PhotoPlotConfig().sketch_stroke_length_mm)
-    parser.add_argument("--sketch-threshold", type=float, default=PhotoPlotConfig().sketch_threshold)
-    parser.add_argument("--sketch-density", type=float, default=PhotoPlotConfig().sketch_density)
-    parser.add_argument("--sketch-density-gamma", type=float, default=PhotoPlotConfig().sketch_density_gamma)
-    parser.add_argument("--sketch-min-center-distance-mm", type=float, default=PhotoPlotConfig().sketch_min_center_distance_mm)
+    parser.add_argument("--classic-spacing-mm", type=float, default=None)
+    parser.add_argument("--classic-levels", default=None, help="Comma-separated classic darkness thresholds, e.g. 0.16,0.28,0.40,0.54,0.68,0.80")
+    parser.add_argument("--classic-angles", default=None, help="Comma-separated classic hatch angles in degrees, e.g. 0,45,-45,90,22.5,-22.5")
+    parser.add_argument("--classic-smooth-sigma-px", type=float, default=None)
+    parser.add_argument("--sketch-stroke-spacing-mm", type=float, default=None)
+    parser.add_argument("--sketch-stroke-length-mm", type=float, default=None)
+    parser.add_argument("--sketch-threshold", type=float, default=None)
+    parser.add_argument("--sketch-density", type=float, default=None)
+    parser.add_argument("--sketch-density-gamma", type=float, default=None)
+    parser.add_argument("--sketch-min-center-distance-mm", type=float, default=None)
     parser.add_argument("--sketch-tone-line-spacing-mm", type=float, default=PhotoPlotConfig().sketch_tone_line_spacing_mm)
     parser.add_argument("--sketch-tone-step-mm", type=float, default=PhotoPlotConfig().sketch_tone_step_mm)
     parser.add_argument("--sketch-tone-amplitude-mm", type=float, default=PhotoPlotConfig().sketch_tone_amplitude_mm)
     parser.add_argument("--no-sketch-tonal-contours", action="store_true", help="Disable soft tonal contour lines in sketch mode.")
     parser.add_argument("--sketch-contour-levels", default=None, help="Comma-separated sketch contour thresholds, e.g. 0.16,0.28,0.42,0.58")
     parser.add_argument("--sketch-pencil-edges", action="store_true", help="Use OpenCV pencilSketch as the edge-detail source.")
-    parser.add_argument("--min-segment-mm", type=float, default=0.8)
+    parser.add_argument("--min-segment-mm", type=float, default=None)
     parser.add_argument("--merge-gap-mm", type=float, default=0.55)
     parser.add_argument("--no-edges", action="store_true", help="Disable Canny edge detail overlay.")
-    parser.add_argument("--edge-min-length-mm", type=float, default=PhotoPlotConfig().edge_min_length_mm)
+    parser.add_argument("--edge-min-length-mm", type=float, default=None)
     parser.add_argument("--scribble-line-spacing-mm", type=float, default=1.25)
-    parser.add_argument("--scribble-step-mm", type=float, default=0.75)
+    parser.add_argument("--scribble-step-mm", type=float, default=None)
     parser.add_argument("--scribble-amplitude-mm", type=float, default=1.6)
     parser.add_argument("--scribble-threshold", type=float, default=PhotoPlotConfig().scribble_threshold)
     parser.add_argument("--portrait-stroke-spacing-mm", type=float, default=PhotoPlotConfig().portrait_stroke_spacing_mm)
     parser.add_argument("--portrait-stroke-length-mm", type=float, default=PhotoPlotConfig().portrait_stroke_length_mm)
     parser.add_argument("--portrait-threshold", type=float, default=PhotoPlotConfig().portrait_threshold)
-    parser.add_argument("--portrait-jitter-mm", type=float, default=PhotoPlotConfig().portrait_jitter_mm)
+    parser.add_argument("--portrait-jitter-mm", type=float, default=None)
     parser.add_argument("--portrait-seed", type=int, default=PhotoPlotConfig().portrait_seed)
     parser.add_argument("--no-portrait-cleanup", action="store_true", help="Disable portrait background/component cleanup.")
     parser.add_argument("--portrait-cleanup-threshold", type=float, default=PhotoPlotConfig().portrait_cleanup_threshold)
@@ -437,42 +450,143 @@ def main(argv: list[str] | None = None) -> int:
     out_dir = args.out_dir
     if out_dir is None:
         out_dir = PROJECT_ROOT / "_plotter_jobs" / f"{image.stem}_photo_plot_pack"
+    base_config = PhotoPlotConfig()
+    if args.mode == "classic":
+        quality_defaults = classic_photo_quality_preset(args.photo_quality)
+    elif args.mode == "hatch":
+        quality_defaults = hatch_photo_quality_preset(args.photo_quality)
+    elif args.mode == "sketch":
+        quality_defaults = sketch_photo_quality_preset(args.photo_quality)
+    else:
+        quality_defaults = {}
+    max_side_px = int(
+        args.max_side_px if args.max_side_px is not None else quality_defaults.get("max_side_px", base_config.max_side_px)
+    )
+    hatch_spacing_mm = float(
+        args.hatch_spacing_mm
+        if args.hatch_spacing_mm is not None
+        else quality_defaults.get("hatch_spacing_mm", base_config.hatch_spacing_mm)
+    )
+    hatch_levels = _parse_csv_floats(
+        args.hatch_levels,
+        tuple(quality_defaults.get("hatch_levels", base_config.hatch_levels)),
+    )
+    hatch_angles_deg = _parse_csv_floats(
+        args.hatch_angles,
+        tuple(quality_defaults.get("hatch_angles_deg", base_config.hatch_angles_deg)),
+    )
+    classic_spacing_mm = float(
+        args.classic_spacing_mm
+        if args.classic_spacing_mm is not None
+        else quality_defaults.get("classic_spacing_mm", base_config.classic_spacing_mm)
+    )
+    classic_levels = _parse_csv_floats(
+        args.classic_levels,
+        tuple(quality_defaults.get("classic_levels", base_config.classic_levels)),
+    )
+    classic_angles_deg = _parse_csv_floats(
+        args.classic_angles,
+        tuple(quality_defaults.get("classic_angles_deg", base_config.classic_angles_deg)),
+    )
+    classic_smooth_sigma_px = float(
+        args.classic_smooth_sigma_px
+        if args.classic_smooth_sigma_px is not None
+        else quality_defaults.get("classic_smooth_sigma_px", base_config.classic_smooth_sigma_px)
+    )
+    edge_min_length_mm = float(
+        args.edge_min_length_mm
+        if args.edge_min_length_mm is not None
+        else quality_defaults.get("edge_min_length_mm", base_config.edge_min_length_mm)
+    )
+    sketch_stroke_spacing_mm = float(
+        args.sketch_stroke_spacing_mm
+        if args.sketch_stroke_spacing_mm is not None
+        else quality_defaults.get("sketch_stroke_spacing_mm", base_config.sketch_stroke_spacing_mm)
+    )
+    sketch_stroke_length_mm = float(
+        args.sketch_stroke_length_mm
+        if args.sketch_stroke_length_mm is not None
+        else quality_defaults.get("sketch_stroke_length_mm", base_config.sketch_stroke_length_mm)
+    )
+    sketch_threshold = float(
+        args.sketch_threshold
+        if args.sketch_threshold is not None
+        else quality_defaults.get("sketch_threshold", base_config.sketch_threshold)
+    )
+    sketch_density = float(
+        args.sketch_density
+        if args.sketch_density is not None
+        else quality_defaults.get("sketch_density", base_config.sketch_density)
+    )
+    sketch_density_gamma = float(
+        args.sketch_density_gamma
+        if args.sketch_density_gamma is not None
+        else quality_defaults.get("sketch_density_gamma", base_config.sketch_density_gamma)
+    )
+    sketch_min_center_distance_mm = float(
+        args.sketch_min_center_distance_mm
+        if args.sketch_min_center_distance_mm is not None
+        else quality_defaults.get("sketch_min_center_distance_mm", base_config.sketch_min_center_distance_mm)
+    )
+    sketch_contour_levels = _parse_csv_floats(
+        args.sketch_contour_levels,
+        tuple(quality_defaults.get("sketch_contour_levels", base_config.sketch_contour_levels)),
+    )
+    min_segment_mm = float(
+        args.min_segment_mm
+        if args.min_segment_mm is not None
+        else quality_defaults.get("min_segment_mm", base_config.min_segment_mm)
+    )
+    scribble_step_mm = float(
+        args.scribble_step_mm
+        if args.scribble_step_mm is not None
+        else quality_defaults.get("scribble_step_mm", base_config.scribble_step_mm)
+    )
+    portrait_jitter_mm = float(
+        args.portrait_jitter_mm
+        if args.portrait_jitter_mm is not None
+        else quality_defaults.get("portrait_jitter_mm", base_config.portrait_jitter_mm)
+    )
     config = PhotoPlotConfig(
         mode=args.mode,
         margin_mm=args.margin_mm,
         target_width_mm=args.target_width_mm,
         target_height_mm=args.target_height_mm,
-        max_side_px=args.max_side_px,
+        max_side_px=max_side_px,
         contrast=args.contrast,
         gamma=args.gamma,
         blur_px=args.blur_px,
-        hatch_spacing_mm=args.hatch_spacing_mm,
-        hatch_levels=_parse_csv_floats(args.hatch_levels, PhotoPlotConfig().hatch_levels),
-        hatch_angles_deg=_parse_csv_floats(args.hatch_angles, PhotoPlotConfig().hatch_angles_deg),
-        sketch_stroke_spacing_mm=args.sketch_stroke_spacing_mm,
-        sketch_stroke_length_mm=args.sketch_stroke_length_mm,
-        sketch_threshold=args.sketch_threshold,
-        sketch_density=args.sketch_density,
-        sketch_density_gamma=args.sketch_density_gamma,
-        sketch_min_center_distance_mm=args.sketch_min_center_distance_mm,
+        hatch_spacing_mm=hatch_spacing_mm,
+        hatch_levels=hatch_levels,
+        hatch_angles_deg=hatch_angles_deg,
+        classic_spacing_mm=classic_spacing_mm,
+        classic_levels=classic_levels,
+        classic_angles_deg=classic_angles_deg,
+        classic_smooth_sigma_px=classic_smooth_sigma_px,
+        sketch_stroke_spacing_mm=sketch_stroke_spacing_mm,
+        sketch_stroke_length_mm=sketch_stroke_length_mm,
+        sketch_threshold=sketch_threshold,
+        sketch_density=sketch_density,
+        sketch_density_gamma=sketch_density_gamma,
+        sketch_min_center_distance_mm=sketch_min_center_distance_mm,
         sketch_tone_line_spacing_mm=args.sketch_tone_line_spacing_mm,
         sketch_tone_step_mm=args.sketch_tone_step_mm,
         sketch_tone_amplitude_mm=args.sketch_tone_amplitude_mm,
         sketch_tonal_contours=not bool(args.no_sketch_tonal_contours),
-        sketch_contour_levels=_parse_csv_floats(args.sketch_contour_levels, PhotoPlotConfig().sketch_contour_levels),
+        sketch_contour_levels=sketch_contour_levels,
         sketch_pencil_edges=bool(args.sketch_pencil_edges),
-        min_segment_mm=args.min_segment_mm,
+        min_segment_mm=min_segment_mm,
         merge_gap_mm=args.merge_gap_mm,
         edge_enabled=not bool(args.no_edges),
-        edge_min_length_mm=args.edge_min_length_mm,
+        edge_min_length_mm=edge_min_length_mm,
         scribble_line_spacing_mm=args.scribble_line_spacing_mm,
-        scribble_step_mm=args.scribble_step_mm,
+        scribble_step_mm=scribble_step_mm,
         scribble_amplitude_mm=args.scribble_amplitude_mm,
         scribble_threshold=args.scribble_threshold,
         portrait_stroke_spacing_mm=args.portrait_stroke_spacing_mm,
         portrait_stroke_length_mm=args.portrait_stroke_length_mm,
         portrait_threshold=args.portrait_threshold,
-        portrait_jitter_mm=args.portrait_jitter_mm,
+        portrait_jitter_mm=portrait_jitter_mm,
         portrait_seed=args.portrait_seed,
         portrait_cleanup_enabled=not bool(args.no_portrait_cleanup),
         portrait_cleanup_threshold=args.portrait_cleanup_threshold,

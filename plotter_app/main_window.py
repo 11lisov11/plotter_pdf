@@ -58,6 +58,8 @@ class MainWindow(QMainWindow):
             output_dir=data.get("output_dir") or "_plotter_jobs",
             com=data.get("com") or None,
             baud=str(data.get("baud") or "115200"),
+            machine_profile=str(data.get("machine_profile") or "a4_desktop"),
+            calibration_layout=str(data.get("calibration_layout") or "sheet"),
             sheet_format=str(data.get("sheet_format") or "a4"),
             sheet_width_mm=data.get("sheet_width_mm"),
             sheet_height_mm=data.get("sheet_height_mm"),
@@ -85,8 +87,14 @@ class MainWindow(QMainWindow):
         self.com_combo.setEditable(True)
         self._refresh_com_ports(self.vm.settings.com or "", sync=False)
         self.baud_edit = QLineEdit(str(self.vm.settings.baud))
+        self.machine_combo = QComboBox()
+        self.machine_combo.addItems(["a4_desktop", "a2_corexy"])
+        self.machine_combo.setCurrentText(self.vm.settings.machine_profile)
+        self.calibration_combo = QComboBox()
+        self.calibration_combo.addItems(["sheet", "a2", "a2_2xa3", "a2_4xa4", "a2_8xa4"])
+        self.calibration_combo.setCurrentText(self.vm.settings.calibration_layout)
         self.sheet_combo = QComboBox()
-        self.sheet_combo.addItems(["work", "a4", "a3", "notebook", "custom"])
+        self.sheet_combo.addItems(["work", "a4", "a3", "a2", "notebook", "custom"])
         self.sheet_combo.setCurrentText(self.vm.settings.sheet_format)
         self.tool_combo = QComboBox()
         self.tool_combo.addItems(["pen", "pencil"])
@@ -127,6 +135,8 @@ class MainWindow(QMainWindow):
         form.addRow("Папка результата:", output_row)
         form.addRow("COM-порт:", com_row)
         form.addRow("Скорость:", self.baud_edit)
+        form.addRow("Профиль станка:", self.machine_combo)
+        form.addRow("Калибровка:", self.calibration_combo)
         form.addRow("Лист:", self.sheet_combo)
         form.addRow("Инструмент:", self.tool_combo)
         form.addRow("Качество:", self.quality_combo)
@@ -164,6 +174,8 @@ class MainWindow(QMainWindow):
             self.output_edit,
             self.com_combo,
             self.baud_edit,
+            self.machine_combo,
+            self.calibration_combo,
             self.sheet_combo,
             self.tool_combo,
             self.quality_combo,
@@ -230,6 +242,8 @@ class MainWindow(QMainWindow):
             com_value = raw_com.split(" ", 1)[0].strip()
         self.vm.settings.com = com_value or None
         self.vm.settings.baud = self.baud_edit.text().strip() or "115200"
+        self.vm.settings.machine_profile = self.machine_combo.currentText()
+        self.vm.settings.calibration_layout = self.calibration_combo.currentText()
         self.vm.settings.sheet_format = self.sheet_combo.currentText()
         self.vm.settings.tool = self.tool_combo.currentText()
         self.vm.settings.quality = self.quality_combo.currentText()
