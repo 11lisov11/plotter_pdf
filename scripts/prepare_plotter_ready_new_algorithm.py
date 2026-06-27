@@ -1183,7 +1183,10 @@ def _center_text_line_in_table_row(line: dict[str, Any], rules: list[HorizontalR
     new_y0 = row_center - target_height * 0.5
     new_y1 = row_center + target_height * 0.5
     if 60.0 <= row_center <= 235.0 and 6.0 <= row_height <= 18.5:
-        visual_up_shift = min(1.65, max(0.85, row_height * 0.13))
+        # Main specification rows must be geometrically centered inside their
+        # cells.  The previous upward optical bias made item names/numbers hug
+        # the upper grid line in KOMPAS specification tables.
+        visual_up_shift = 0.0
     else:
         visual_up_shift = min(0.35, max(0.0, row_height * 0.05))
         visual_up_shift = min(visual_up_shift, max(0.0, new_y0 - upper - 0.35))
