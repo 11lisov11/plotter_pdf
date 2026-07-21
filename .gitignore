@@ -37,6 +37,7 @@ config/pencil_wear_test_last.json
 config/gui_settings.json
 
 # Local user samples / fonts (do not version personal inputs)
+A2core/
 Katerine Plus SL.otf
 Katherine Plus.ttf
 ofont.ru_Veles.ttf

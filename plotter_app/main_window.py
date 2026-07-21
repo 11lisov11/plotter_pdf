@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
 
 from src.plotter_backend import discovery as discovery_mod
 from src.plotter_backend.jobs import JobResult, JobSettings
+from src.plotter_backend.machine import profiles as machine_profiles_mod
 
 from .settings import load_gui_settings, save_gui_settings
 from .viewmodels import JobViewModel, SelfCheckViewModel
@@ -37,6 +38,20 @@ class _Worker(QThread):
 
     def run(self) -> None:
         self.finished_result.emit(self._action())
+
+
+_MACHINE_PROFILE_PATH = Path(__file__).resolve().parents[1] / "config" / "machine_profiles.json"
+
+
+def _machine_profile_choices() -> list[tuple[str, str]]:
+    profiles = machine_profiles_mod.load_machine_profiles(_MACHINE_PROFILE_PATH)
+    ordered_names = ["a4_desktop", "a2_corexy"]
+    ordered_names.extend(name for name in sorted(profiles) if name not in ordered_names)
+    return [
+        (name, str(profiles[name].get("label") or name))
+        for name in ordered_names
+        if name in profiles
+    ]
 
 
 class MainWindow(QMainWindow):
@@ -88,8 +103,10 @@ class MainWindow(QMainWindow):
         self._refresh_com_ports(self.vm.settings.com or "", sync=False)
         self.baud_edit = QLineEdit(str(self.vm.settings.baud))
         self.machine_combo = QComboBox()
-        self.machine_combo.addItems(["a4_desktop", "a2_corexy"])
-        self.machine_combo.setCurrentText(self.vm.settings.machine_profile)
+        for profile_name, profile_label in _machine_profile_choices():
+            self.machine_combo.addItem(profile_label, profile_name)
+        machine_index = self.machine_combo.findData(self.vm.settings.machine_profile)
+        self.machine_combo.setCurrentIndex(max(0, machine_index))
         self.calibration_combo = QComboBox()
         self.calibration_combo.addItems(["sheet", "a2", "a2_2xa3", "a2_4xa4", "a2_8xa4"])
         self.calibration_combo.setCurrentText(self.vm.settings.calibration_layout)
@@ -169,12 +186,12 @@ class MainWindow(QMainWindow):
         self.draw_btn.clicked.connect(self._confirm_and_draw)
         self.release_btn.clicked.connect(lambda: self._append_log("Пока используйте CLI-скрипт отпускания моторов: scripts\\release_motors.bat"))
         self.stop_btn.clicked.connect(lambda: QMessageBox.warning(self, "Аварийный стоп", "Для жесткой аварии используйте reset контроллера или отключение питания."))
+        self.machine_combo.currentIndexChanged.connect(self._machine_profile_changed)
         for widget in [
             self.input_edit,
             self.output_edit,
             self.com_combo,
             self.baud_edit,
-            self.machine_combo,
             self.calibration_combo,
             self.sheet_combo,
             self.tool_combo,
@@ -189,6 +206,19 @@ class MainWindow(QMainWindow):
             if signal is not None:
                 signal.connect(self._sync_from_ui)
         self.setCentralWidget(central)
+
+    def _selected_machine_profile(self) -> str:
+        return str(self.machine_combo.currentData() or self.machine_combo.currentText() or "a4_desktop")
+
+    def _machine_profile_changed(self, *_args) -> None:
+        profile_name = self._selected_machine_profile()
+        profile = machine_profiles_mod.resolve_machine_profile(profile_name, _MACHINE_PROFILE_PATH)
+        default_sheet = str((profile.get("paper") or {}).get("default_sheet") or "a4")
+        baud = str((profile.get("connection") or {}).get("baud") or "115200")
+        self.sheet_combo.setCurrentText(default_sheet)
+        self.calibration_combo.setCurrentText("a2" if default_sheet == "a2" else "sheet")
+        self.baud_edit.setText(baud)
+        self._sync_from_ui()
 
     def _pair(self, left: QWidget, right: QWidget) -> QWidget:
         box = QWidget(self)
@@ -242,7 +272,7 @@ class MainWindow(QMainWindow):
             com_value = raw_com.split(" ", 1)[0].strip()
         self.vm.settings.com = com_value or None
         self.vm.settings.baud = self.baud_edit.text().strip() or "115200"
-        self.vm.settings.machine_profile = self.machine_combo.currentText()
+        self.vm.settings.machine_profile = self._selected_machine_profile()
         self.vm.settings.calibration_layout = self.calibration_combo.currentText()
         self.vm.settings.sheet_format = self.sheet_combo.currentText()
         self.vm.settings.tool = self.tool_combo.currentText()

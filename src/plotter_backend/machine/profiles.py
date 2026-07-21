@@ -9,7 +9,7 @@ from typing import Any
 BUILTIN_MACHINE_PROFILES: dict[str, dict[str, Any]] = {
     "a4_desktop": {
         "name": "a4_desktop",
-        "label": "Current A4 desktop plotter",
+        "label": "Станок 1 — настольный плоттер A4",
         "work_area": {
             "min_x_mm": 0.0,
             "max_x_mm": 180.0,
@@ -21,16 +21,45 @@ BUILTIN_MACHINE_PROFILES: dict[str, dict[str, Any]] = {
         "paper": {
             "default_sheet": "a4",
         },
+        "connection": {
+            "protocol": "grbl_1_1",
+            "baud": "115200",
+        },
+        "motion": {
+            "feed_travel_mm_min": 15000.0,
+            "feed_draw_mm_min": 12000.0,
+            "home_x_mm": 0.0,
+            "home_y_mm": 0.0,
+            "go_home_before_draw": True,
+            "go_home_after_draw": True,
+        },
+        "pen": {
+            "lift_mode": "z",
+            "z_up_mm": 0.0,
+            "z_down_mm": 11.9,
+            "z_feed_down_approach_mm_min": 700.0,
+            "z_feed_down_touch_mm_min": 180.0,
+            "z_feed_up_mm_min": 700.0,
+            "z_feed_up_final_mm_min": 220.0,
+            "safe_lift_feed_mm_min": 800.0,
+            "z_soft_down_mm": 0.8,
+            "z_soft_up_mm": 0.5,
+            "z_travel_lift_mm": 3.5,
+            "safe_travel_up": False,
+            "startup_force_lift_mm": 4.0,
+            "fast_handwriting_profile": True,
+            "technical_pen_profile": True,
+        },
     },
     "a2_corexy": {
         "name": "a2_corexy",
-        "label": "A2 CoreXY pen plotter",
+        "label": "Станок 2 — плоттер A2 CoreXY",
         "kinematics": "CoreXY",
         "work_area": {
             "min_x_mm": 0.0,
             "max_x_mm": 390.0,
-            "min_y_mm": -590.0,
-            "max_y_mm": 0.0,
+            "min_y_mm": 0.0,
+            "max_y_mm": 580.0,
             "offset_x_mm": 0.0,
             "offset_y_mm": 0.0,
         },
@@ -38,7 +67,38 @@ BUILTIN_MACHINE_PROFILES: dict[str, dict[str, Any]] = {
             "default_sheet": "a2",
             "a2_mm": [420.0, 594.0],
             "inactive_short_side_mm": 30.0,
-            "inactive_long_side_mm": 4.0,
+            "inactive_long_side_mm": 14.0,
+        },
+        "connection": {
+            "protocol": "grbl_1_1",
+            "baud": "115200",
+            "usb_driver": "CH340",
+            "port_hints": ["CH340", "wch.cn", "USB-SERIAL"],
+        },
+        "motion": {
+            "feed_travel_mm_min": 1500.0,
+            "feed_draw_mm_min": 1500.0,
+            "home_x_mm": 0.0,
+            "home_y_mm": 0.0,
+            "go_home_before_draw": True,
+            "go_home_after_draw": True,
+        },
+        "pen": {
+            "lift_mode": "z",
+            "z_up_mm": 0.0,
+            "z_down_mm": -4.0,
+            "z_feed_down_approach_mm_min": 2000.0,
+            "z_feed_down_touch_mm_min": 2000.0,
+            "z_feed_up_mm_min": 2000.0,
+            "z_feed_up_final_mm_min": 2000.0,
+            "safe_lift_feed_mm_min": 2000.0,
+            "z_soft_down_mm": 0.0,
+            "z_soft_up_mm": 0.0,
+            "z_travel_lift_mm": 4.0,
+            "safe_travel_up": True,
+            "startup_force_lift_mm": 4.0,
+            "fast_handwriting_profile": False,
+            "technical_pen_profile": False,
         },
     },
 }
@@ -77,7 +137,9 @@ def load_machine_profiles(*paths: str | Path) -> dict[str, dict[str, Any]]:
         path = Path(raw_path)
         if not path.exists():
             continue
-        data = json.loads(path.read_text(encoding="utf-8"))
+        # Windows editors and PowerShell commonly save JSON with an UTF-8 BOM.
+        # Accept both forms so the packaged profile can always be loaded.
+        data = json.loads(path.read_text(encoding="utf-8-sig"))
         for name, profile in data.get("profiles", {}).items():
             normalised = _normalise_name(name)
             base = profiles.get(normalised, {"name": normalised})

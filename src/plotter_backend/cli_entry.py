@@ -75,14 +75,14 @@ def build_cli_parser(backend: Any) -> argparse.ArgumentParser:
     parser.add_argument(
         "--feed-travel",
         type=float,
-        default=backend.FEED_TRAVEL,
-        help=f"Feed for rapid moves (default {backend.FEED_TRAVEL})",
+        default=None,
+        help="Feed for rapid moves (default comes from --machine-profile)",
     )
     parser.add_argument(
         "--feed-draw",
         type=float,
-        default=backend.FEED_DRAW,
-        help=f"Feed for drawing moves (default {backend.FEED_DRAW})",
+        default=None,
+        help="Feed for drawing moves (default comes from --machine-profile)",
     )
     parser.add_argument("--z-delay-down", type=float, default=None, help=f"Pen-down settle delay seconds (default {backend.Z_DELAY_DOWN})")
     parser.add_argument("--z-delay-up", type=float, default=None, help=f"Pen-up settle delay seconds (default {backend.Z_DELAY_UP})")
@@ -266,6 +266,11 @@ def build_cli_parser(backend: Any) -> argparse.ArgumentParser:
 def apply_cli_runtime_overrides(backend: Any, args) -> None:
     backend.apply_pencil_profile(backend.load_pencil_profile())
     backend.apply_machine_profile(args.machine_profile, logger=print)
+
+    if args.feed_travel is None:
+        args.feed_travel = float(backend.FEED_TRAVEL)
+    if args.feed_draw is None:
+        args.feed_draw = float(backend.FEED_DRAW)
 
     backend.MIN_FIT_SCALE_FOR_DIMENSIONAL_DRAW = 0.98 if args.strict_1to1 else 0.0
     backend.TOOL_MODE = (args.tool or "pen").strip().lower()
@@ -621,11 +626,10 @@ def run_cli_main(backend: Any, argv: Optional[list[str]] = None) -> int:
         return 2
     if args.no_rdp:
         args.rdp_eps = 0.0
+    apply_cli_runtime_overrides(backend, args)
     if args.feed_travel <= 0 or args.feed_draw <= 0:
         print("Invalid feed: --feed-travel and --feed-draw must be > 0")
         return 1
-
-    apply_cli_runtime_overrides(backend, args)
     did_pencil_command, pencil_error_code = run_cli_pencil_maintenance(backend, args)
     if pencil_error_code is not None:
         return pencil_error_code

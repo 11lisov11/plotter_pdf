@@ -1170,7 +1170,9 @@ class BackendBridge:
 
     def _configure_sheet(self, sheet: SheetConfig, log: LogFn) -> None:
         backend = self._backend()
-        backend.apply_machine_profile(sheet.machine_profile, logger=log)
+        apply_machine_profile = getattr(backend, "apply_machine_profile", None)
+        if callable(apply_machine_profile):
+            apply_machine_profile(sheet.machine_profile, logger=log)
         backend.PASS_COLS = max(1, int(sheet.pass_cols))
         backend.PASS_ROWS = max(1, int(sheet.pass_rows))
         backend.PASS_COL = min(max(1, int(sheet.pass_col)), backend.PASS_COLS)

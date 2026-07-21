@@ -687,6 +687,13 @@ def apply_machine_profile(profile_name: str = "a4_desktop", logger=print) -> dic
     global MACHINE_PROFILE_NAME, MACHINE_PROFILE_LABEL
     global WORK_AREA_MIN_X, WORK_AREA_MAX_X, WORK_AREA_MIN_Y, WORK_AREA_MAX_Y
     global WORK_OFFSET_X_MM, WORK_OFFSET_Y_MM, ACTIVE_WORK_AREA_BOUNDS
+    global DEFAULT_BAUD, FEED_TRAVEL, FEED_DRAW, HOME_X, HOME_Y
+    global GO_HOME_BEFORE_DRAW, GO_HOME_AFTER_DRAW
+    global PEN_LIFT_MODE, Z_UP, Z_DOWN, Z_DELAY, Z_DELAY_DOWN, Z_DELAY_UP
+    global Z_FEED_DOWN_APPROACH, Z_FEED_DOWN_TOUCH, Z_FEED_UP, Z_FEED_UP_FINAL
+    global Z_SOFT_DOWN_MM, Z_SOFT_UP_MM, Z_TRAVEL_LIFT_MM, SAFE_PEN_TRAVEL_UP
+    global STARTUP_FORCE_Z_LIFT_MM, SAFE_LIFT_FEED
+    global PEN_FAST_Z_PROFILE_ENABLED, TECHNICAL_PEN_Z_PROFILE_ENABLED
 
     profile = machine_profiles_mod.resolve_machine_profile(
         profile_name,
@@ -705,12 +712,44 @@ def apply_machine_profile(profile_name: str = "a4_desktop", logger=print) -> dic
     WORK_OFFSET_Y_MM = float(work.get("offset_y_mm", 0.0))
     ACTIVE_WORK_AREA_BOUNDS = None
 
+    connection = profile.get("connection") or {}
+    motion = profile.get("motion") or {}
+    pen = profile.get("pen") or {}
+
+    DEFAULT_BAUD = str(connection.get("baud", DEFAULT_BAUD))
+    FEED_TRAVEL = float(motion.get("feed_travel_mm_min", FEED_TRAVEL))
+    FEED_DRAW = float(motion.get("feed_draw_mm_min", FEED_DRAW))
+    HOME_X = float(motion.get("home_x_mm", HOME_X))
+    HOME_Y = float(motion.get("home_y_mm", HOME_Y))
+    GO_HOME_BEFORE_DRAW = bool(motion.get("go_home_before_draw", GO_HOME_BEFORE_DRAW))
+    GO_HOME_AFTER_DRAW = bool(motion.get("go_home_after_draw", GO_HOME_AFTER_DRAW))
+
+    PEN_LIFT_MODE = str(pen.get("lift_mode", PEN_LIFT_MODE)).strip().lower()
+    Z_UP = float(pen.get("z_up_mm", Z_UP))
+    Z_DOWN = float(pen.get("z_down_mm", Z_DOWN))
+    Z_DELAY_DOWN = max(0.0, float(pen.get("z_delay_down_s", Z_DELAY_DOWN)))
+    Z_DELAY_UP = max(0.0, float(pen.get("z_delay_up_s", Z_DELAY_UP)))
+    Z_DELAY = Z_DELAY_DOWN
+    Z_FEED_DOWN_APPROACH = max(1.0, float(pen.get("z_feed_down_approach_mm_min", Z_FEED_DOWN_APPROACH)))
+    Z_FEED_DOWN_TOUCH = max(1.0, float(pen.get("z_feed_down_touch_mm_min", Z_FEED_DOWN_TOUCH)))
+    Z_FEED_UP = max(1.0, float(pen.get("z_feed_up_mm_min", Z_FEED_UP)))
+    Z_FEED_UP_FINAL = max(1.0, float(pen.get("z_feed_up_final_mm_min", Z_FEED_UP_FINAL)))
+    Z_SOFT_DOWN_MM = max(0.0, float(pen.get("z_soft_down_mm", Z_SOFT_DOWN_MM)))
+    Z_SOFT_UP_MM = max(0.0, float(pen.get("z_soft_up_mm", Z_SOFT_UP_MM)))
+    Z_TRAVEL_LIFT_MM = max(0.0, float(pen.get("z_travel_lift_mm", Z_TRAVEL_LIFT_MM)))
+    SAFE_PEN_TRAVEL_UP = bool(pen.get("safe_travel_up", SAFE_PEN_TRAVEL_UP))
+    STARTUP_FORCE_Z_LIFT_MM = max(0.0, float(pen.get("startup_force_lift_mm", STARTUP_FORCE_Z_LIFT_MM)))
+    SAFE_LIFT_FEED = max(1.0, float(pen.get("safe_lift_feed_mm_min", SAFE_LIFT_FEED)))
+    PEN_FAST_Z_PROFILE_ENABLED = bool(pen.get("fast_handwriting_profile", PEN_FAST_Z_PROFILE_ENABLED))
+    TECHNICAL_PEN_Z_PROFILE_ENABLED = bool(pen.get("technical_pen_profile", TECHNICAL_PEN_Z_PROFILE_ENABLED))
+
     if logger:
         logger(
             "Machine profile: "
             f"{MACHINE_PROFILE_NAME} ({MACHINE_PROFILE_LABEL}); "
             f"base work area {WORK_AREA_MAX_X - WORK_AREA_MIN_X:.1f}x{WORK_AREA_MAX_Y - WORK_AREA_MIN_Y:.1f} mm, "
-            f"offset=({WORK_OFFSET_X_MM:.2f},{WORK_OFFSET_Y_MM:.2f})"
+            f"offset=({WORK_OFFSET_X_MM:.2f},{WORK_OFFSET_Y_MM:.2f}); "
+            f"XY feed={FEED_DRAW:.0f}/{FEED_TRAVEL:.0f} mm/min; Z={Z_UP:.2f}/{Z_DOWN:.2f}"
         )
     return profile
 
@@ -9449,6 +9488,7 @@ def make_final_with_preamble(prepared_gcode: Path, final_gcode: Path) -> None:
         prepared_gcode,
         final_gcode,
         z_up=float(Z_UP),
+        z_down=float(Z_DOWN),
         safe_lift_feed=float(SAFE_LIFT_FEED),
         z_delay_up=float(Z_DELAY_UP),
         home_x=float(HOME_X),

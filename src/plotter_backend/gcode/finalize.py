@@ -15,11 +15,16 @@ def make_final_with_preamble(
     feed_travel: float,
     go_home_before_draw: bool,
     go_home_after_draw: bool,
+    z_down: float | None = None,
     startup_force_z_lift_mm: float = 4.0,
     release_steppers_after_draw: bool = False,
 ) -> None:
     forced_lift = max(0.0, float(startup_force_z_lift_mm))
-    startup_z = float(z_up) + forced_lift
+    # Some plotters lower the pen towards positive Z, while the A2 CoreXY kit
+    # lowers it towards negative Z.  The forced startup lift must move away
+    # from paper in both coordinate systems.
+    down_direction = 1.0 if z_down is None or float(z_down) >= float(z_up) else -1.0
+    startup_z = float(z_up) + down_direction * forced_lift
     lines = [
         "$X",
         # Hold steppers while a job is running (prevents Z from back-driving).

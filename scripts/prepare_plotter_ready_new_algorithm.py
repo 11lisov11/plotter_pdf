@@ -135,13 +135,13 @@ class SourceBuild:
 
 def _normalize_drawing_mode(value: str | None, variant_root: Path | None = None) -> str:
     raw = str(value or "auto").strip().casefold().replace("-", "_")
-    if raw in {"computer", "computer_graphics", "cg", "РєРѕРјРїСЊСЋС‚РµСЂРЅР°СЏ_РіСЂР°С„РёРєР°"}:
+    if raw in {"computer", "computer_graphics", "cg", "компьютерная_графика"}:
         return "computer_graphics"
-    if raw in {"descriptive", "descriptive_geometry", "nachert", "РЅР°С‡РµСЂС‚", "РЅР°С‡РµСЂС‚Р°С‚РµР»СЊРЅР°СЏ_РіРµРѕРјРµС‚СЂРёСЏ"}:
+    if raw in {"descriptive", "descriptive_geometry", "nachert", "начерт", "начертательная_геометрия"}:
         return "descriptive_geometry"
     if raw not in {"", "auto"}:
         raise ValueError(f"Unknown drawing mode: {value}")
-    if variant_root is not None and "РЅР°С‡РµСЂС‚" in str(variant_root).casefold():
+    if variant_root is not None and "начерт" in str(variant_root).casefold():
         return "descriptive_geometry"
     return "computer_graphics"
 
@@ -1182,14 +1182,9 @@ def _center_text_line_in_table_row(line: dict[str, Any], rules: list[HorizontalR
     row_center = (upper + lower) * 0.5
     new_y0 = row_center - target_height * 0.5
     new_y1 = row_center + target_height * 0.5
-    if 60.0 <= row_center <= 235.0 and 6.0 <= row_height <= 18.5:
-        # Main specification rows must be geometrically centered inside their
-        # cells.  The previous upward optical bias made item names/numbers hug
-        # the upper grid line in KOMPAS specification tables.
-        visual_up_shift = 0.0
-    else:
-        visual_up_shift = min(0.35, max(0.0, row_height * 0.05))
-        visual_up_shift = min(visual_up_shift, max(0.0, new_y0 - upper - 0.35))
+    # Table text must remain geometrically centered.  An optical upward bias
+    # made short labels and specification rows visibly hug the upper rule.
+    visual_up_shift = 0.0
     new_y0 -= visual_up_shift
     new_y1 -= visual_up_shift
     if abs(new_y0 - y0) <= 0.05 and abs(new_y1 - y1) <= 0.05:
