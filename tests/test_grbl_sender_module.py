@@ -51,6 +51,18 @@ class GrblSenderModuleTests(unittest.TestCase):
             line = grbl_sender.find_nearest_g0_xy_line(gcode, x=5.2, y=6.1)
             self.assertEqual(line, 6)
 
+    def test_find_nearest_g0_xy_line_supports_controlled_pen_up_travel(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="plotter_grbl_sender_g1_find_") as td:
+            gcode = Path(td) / "a2.nc"
+            gcode.write_text(
+                "G90\nG1 Z-4\nG1 X10 Y10\nG1 Z0\nG1 X20 Y20 F1500\n",
+                encoding="utf-8",
+            )
+
+            line = grbl_sender.find_nearest_g0_xy_line(gcode, x=20.1, y=20.0, z_up=0.0)
+
+            self.assertEqual(line, 5)
+
     def test_write_resume_file_writes_preamble_and_payload(self) -> None:
         with tempfile.TemporaryDirectory(prefix="plotter_grbl_sender_resume_") as td:
             root = Path(td)
@@ -81,7 +93,7 @@ class GrblSenderModuleTests(unittest.TestCase):
             logs: list[str] = []
 
             fake_proc = _FakeProc(["hello\n", "PLOT_TIME_SECONDS=12.5\n"], rc=0)
-            with mock.patch("src.plotter_backend.machine.grbl_sender.subprocess.Popen", return_value=fake_proc):
+            with mock.patch("src.plotter_backend.machine.grbl_sender.subprocess.Popen", return_value=fake_proc) as popen:
                 result = grbl_sender.send_to_grbl(
                     gcode,
                     "COM6",
@@ -94,11 +106,14 @@ class GrblSenderModuleTests(unittest.TestCase):
                     z_up=0.0,
                     safe_lift_feed=1000.0,
                     z_delay_up=0.05,
+                    z_down=-4.0,
                 )
 
             self.assertAlmostEqual(result, 12.5, places=6)
             self.assertTrue(any("Sending to Grbl" in line for line in logs))
             self.assertTrue(any("PLOT_TIME_SECONDS=12.5" in line for line in logs))
+            command = popen.call_args.args[0]
+            self.assertEqual(command[command.index("--z-down") + 1], "-4.0")
 
     def test_send_to_grbl_auto_resume_after_first_failure(self) -> None:
         with tempfile.TemporaryDirectory(prefix="plotter_grbl_sender_resume_run_") as td:

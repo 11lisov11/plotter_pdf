@@ -85,7 +85,7 @@ def grbl_send_manual_commands(
             line = (cmd or "").strip()
             if not line:
                 continue
-            ser.write((line + "\n").encode("ascii", errors="replace"))
+            ser.write((line + "\r").encode("ascii", errors="replace"))
             ser.flush()
             time.sleep(command_delay)
 
@@ -119,7 +119,9 @@ def grbl_safe_park_release(
     home_x: float = 0.0,
     home_y: float = 0.0,
     z_up: float = 0.0,
+    z_down: float | None = None,
     z_feed: float = 2500.0,
+    force_lift_mm: float = 4.0,
     travel_feed: float = 15000.0,
     append_status_query: bool = True,
     serial_timeout_s: float = 1.0,
@@ -139,7 +141,9 @@ def grbl_safe_park_release(
         home_x=home_x,
         home_y=home_y,
         z_up=z_up,
+        z_down=z_down,
         z_feed=z_feed,
+        force_lift_mm=force_lift_mm,
         travel_feed=travel_feed,
     )
     if append_status_query:

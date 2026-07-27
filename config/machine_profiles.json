@@ -68,8 +68,9 @@
         "port_hints": ["CH340", "wch.cn", "USB-SERIAL"]
       },
       "motion": {
-        "feed_travel_mm_min": 1500.0,
+        "feed_travel_mm_min": 3200.0,
         "feed_draw_mm_min": 1500.0,
+        "controlled_g1_motion": true,
         "home_x_mm": 0.0,
         "home_y_mm": 0.0,
         "go_home_before_draw": true,
@@ -88,7 +89,7 @@
         "z_soft_up_mm": 0.0,
         "z_travel_lift_mm": 4.0,
         "safe_travel_up": true,
-        "startup_force_lift_mm": 4.0,
+        "startup_force_lift_mm": 0.0,
         "fast_handwriting_profile": false,
         "technical_pen_profile": false
       }

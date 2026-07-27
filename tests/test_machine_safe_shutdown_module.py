@@ -29,3 +29,11 @@ def test_safe_park_release_hold_keeps_motors_enabled_after_home() -> None:
 
     assert "$1=0" not in commands
     assert commands[-1] == "$1=255"
+
+
+def test_safe_park_release_uses_negative_a2_lift_direction() -> None:
+    commands = build_safe_park_release_commands(z_up=0.0, z_down=-4.0, force_lift_mm=4.0)
+
+    assert "G92 Z-4.0000" in commands
+    assert "G1 Z0.0000 F2500.0" in commands
+    assert "G92 Z4.0000" not in commands

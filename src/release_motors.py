@@ -123,7 +123,7 @@ def main(argv: list[str]) -> int:
         # Best-effort safe teardown: force pen up, return XY home, stop spindle/servo.
         for cmd in _safe_pen_up_commands():
             try:
-                ser.write((cmd + "\n").encode("ascii"))
+                ser.write((cmd + "\r").encode("ascii"))
                 ser.flush()
                 time.sleep(0.12)
             except Exception:
@@ -134,7 +134,7 @@ def main(argv: list[str]) -> int:
             return 1
 
         try:
-            ser.write(b"$1=0\n")
+            ser.write(b"$1=0\r")
             ser.flush()
             time.sleep(0.12)
         except Exception:
@@ -142,7 +142,7 @@ def main(argv: list[str]) -> int:
 
         if ns.sleep:
             try:
-                ser.write(b"$SLP\n")
+                ser.write(b"$SLP\r")
                 ser.flush()
                 time.sleep(0.12)
             except Exception:

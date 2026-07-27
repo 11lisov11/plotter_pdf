@@ -12,6 +12,11 @@ class _BackendProxy:
     def __getattr__(self, name: str):
         return getattr(backend, name)
 
+    def __setattr__(self, name: str, value) -> None:
+        # Runtime CLI overrides must change the actual backend globals used by
+        # geometry/G-code functions, not create shadow attributes on the proxy.
+        setattr(backend, name, value)
+
 
 CLI_BACKEND = _BackendProxy()
 

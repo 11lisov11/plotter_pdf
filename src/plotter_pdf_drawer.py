@@ -149,6 +149,7 @@ MACHINE_PROFILE_PATH = CONFIG_DIR / "machine_profiles.json"
 MACHINE_PROFILE_FALLBACK_PATH = BUNDLE_CONFIG_DIR / "machine_profiles.json"
 MACHINE_PROFILE_NAME = "a4_desktop"
 MACHINE_PROFILE_LABEL = "Current A4 desktop plotter"
+CONTROLLED_G1_MOTION = False
 CALIBRATION_LAYOUT = "sheet"
 LOCAL_TMP_ROOT = WORK_ROOT / "_tmp"
 
@@ -688,6 +689,7 @@ def apply_machine_profile(profile_name: str = "a4_desktop", logger=print) -> dic
     global WORK_AREA_MIN_X, WORK_AREA_MAX_X, WORK_AREA_MIN_Y, WORK_AREA_MAX_Y
     global WORK_OFFSET_X_MM, WORK_OFFSET_Y_MM, ACTIVE_WORK_AREA_BOUNDS
     global DEFAULT_BAUD, FEED_TRAVEL, FEED_DRAW, HOME_X, HOME_Y
+    global CONTROLLED_G1_MOTION
     global GO_HOME_BEFORE_DRAW, GO_HOME_AFTER_DRAW
     global PEN_LIFT_MODE, Z_UP, Z_DOWN, Z_DELAY, Z_DELAY_DOWN, Z_DELAY_UP
     global Z_FEED_DOWN_APPROACH, Z_FEED_DOWN_TOUCH, Z_FEED_UP, Z_FEED_UP_FINAL
@@ -719,6 +721,7 @@ def apply_machine_profile(profile_name: str = "a4_desktop", logger=print) -> dic
     DEFAULT_BAUD = str(connection.get("baud", DEFAULT_BAUD))
     FEED_TRAVEL = float(motion.get("feed_travel_mm_min", FEED_TRAVEL))
     FEED_DRAW = float(motion.get("feed_draw_mm_min", FEED_DRAW))
+    CONTROLLED_G1_MOTION = bool(motion.get("controlled_g1_motion", False))
     HOME_X = float(motion.get("home_x_mm", HOME_X))
     HOME_Y = float(motion.get("home_y_mm", HOME_Y))
     GO_HOME_BEFORE_DRAW = bool(motion.get("go_home_before_draw", GO_HOME_BEFORE_DRAW))
@@ -9063,7 +9066,7 @@ def apply_penlift(
     xy_gcode: Path,
     pen_gcode: Path,
     *,
-    z_down: float = Z_DOWN,
+    z_down: Optional[float] = None,
     dynamic_z_enable: bool = False,
     dynamic_base_z_down: Optional[float] = None,
     dynamic_initial_wear_mm: float = 0.0,
@@ -9071,6 +9074,7 @@ def apply_penlift(
     force_full_lift: bool = False,
 ) -> None:
     script = ROOT_DIR / "src" / "penlift_postprocess.py"
+    z_down_eff = float(Z_DOWN if z_down is None else z_down)
     z_delay_down_eff = float(Z_DELAY_DOWN)
     z_delay_up_eff = float(Z_DELAY_UP)
     z_feed_down_approach_eff = float(Z_FEED_DOWN_APPROACH)
@@ -9104,7 +9108,7 @@ def apply_penlift(
     if force_full_lift or SAFE_PEN_TRAVEL_UP:
         # Full-lift must win even in pencil mode; otherwise a caller asking for
         # a safe contour-to-contour lift still gets the short travel lift.
-        travel_lift_mm = max(travel_lift_mm, abs(float(z_down) - float(Z_UP)) + 0.1)
+        travel_lift_mm = max(travel_lift_mm, abs(z_down_eff - float(Z_UP)) + 0.1)
     elif TOOL_MODE == "pencil":
         # Pencil plotting is much faster and still stable with a short travel lift.
         # Keep lift inside requested operational band (3..4 mm).
@@ -9114,7 +9118,7 @@ def apply_penlift(
         pen_gcode,
         python_executable=sys.executable,
         script_path=script,
-        z_down=float(z_down),
+        z_down=z_down_eff,
         z_up=float(Z_UP),
         pen_lift_mode=PEN_LIFT_MODE,
         pen_spindle_speed=int(PEN_SPINDLE_SPEED),
@@ -9497,8 +9501,23 @@ def make_final_with_preamble(prepared_gcode: Path, final_gcode: Path) -> None:
         go_home_before_draw=bool(GO_HOME_BEFORE_DRAW),
         go_home_after_draw=bool(GO_HOME_AFTER_DRAW),
         startup_force_z_lift_mm=float(STARTUP_FORCE_Z_LIFT_MM),
+        hold_steppers_during_job=bool(MACHINE_PROFILE_NAME != "a2_corexy"),
     )
     rewrite_duplicate_draw_segments_as_penup_travel(final_gcode)
+    if CONTROLLED_G1_MOTION:
+        rewrite_rapid_moves_as_controlled(final_gcode)
+
+
+def rewrite_rapid_moves_as_controlled(gcode_path: Path) -> int:
+    lines = gcode_path.read_text(encoding="utf-8", errors="ignore").splitlines()
+    changed = 0
+    output: List[str] = []
+    for line in lines:
+        rewritten, count = re.subn(r"^(\s*)G0(?:0)?(?=\s|$)", r"\1G1", line, count=1, flags=re.IGNORECASE)
+        output.append(rewritten)
+        changed += count
+    gcode_path.write_text("\n".join(output) + "\n", encoding="utf-8")
+    return changed
 
 
 _GCODE_TOKEN_RE = re.compile(r"([A-Za-z])\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))")
@@ -9726,8 +9745,14 @@ def _write_resume_file(src_gcode: Path, dst_gcode: Path, *, start_line: int) -> 
         dst_gcode,
         start_line=start_line,
         z_up=Z_UP,
+        z_down=Z_DOWN,
         safe_lift_feed=SAFE_LIFT_FEED,
         z_delay_up=Z_DELAY_UP,
+        controlled_motion=CONTROLLED_G1_MOTION,
+        startup_force_lift_mm=STARTUP_FORCE_Z_LIFT_MM,
+        home_x=HOME_X,
+        home_y=HOME_Y,
+        travel_feed=FEED_TRAVEL,
     )
 
 
@@ -9756,6 +9781,12 @@ def send_to_grbl(
         z_up=Z_UP,
         safe_lift_feed=SAFE_LIFT_FEED,
         z_delay_up=Z_DELAY_UP,
+        z_down=Z_DOWN,
+        startup_force_lift_mm=STARTUP_FORCE_Z_LIFT_MM,
+        home_x=HOME_X,
+        home_y=HOME_Y,
+        travel_feed=FEED_TRAVEL,
+        controlled_motion=CONTROLLED_G1_MOTION,
     )
 
 
@@ -10342,7 +10373,7 @@ def run_frame_pipeline(
             frame = clip_polylines_to_work_area(frame, logger=log)
             write_xy_gcode(xy_path, frame, FEED_TRAVEL, FEED_DRAW)
             log("Applying pen-up / pen-down ...")
-            apply_penlift(xy_path, pen_path, force_full_lift=True)
+            apply_penlift(xy_path, pen_path, z_down=Z_DOWN, force_full_lift=True)
             make_final_with_preamble(pen_path, final_path)
             if send_to_plotter:
                 send_to_grbl(final_path, com, baud, log, sleep_after=True)
@@ -10399,7 +10430,7 @@ def run_corner_calibration_pipeline(
 
             write_xy_gcode(xy_path, all_paths, FEED_TRAVEL, FEED_DRAW)
             log("Applying pen-up / pen-down ...")
-            apply_penlift(xy_path, pen_path, force_full_lift=True)
+            apply_penlift(xy_path, pen_path, z_down=Z_DOWN, force_full_lift=True)
             make_final_with_preamble(pen_path, final_path)
 
             if send_to_plotter:

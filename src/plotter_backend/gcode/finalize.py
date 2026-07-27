@@ -17,6 +17,7 @@ def make_final_with_preamble(
     go_home_after_draw: bool,
     z_down: float | None = None,
     startup_force_z_lift_mm: float = 4.0,
+    hold_steppers_during_job: bool = True,
     release_steppers_after_draw: bool = False,
 ) -> None:
     forced_lift = max(0.0, float(startup_force_z_lift_mm))
@@ -25,10 +26,11 @@ def make_final_with_preamble(
     # from paper in both coordinate systems.
     down_direction = 1.0 if z_down is None or float(z_down) >= float(z_up) else -1.0
     startup_z = float(z_up) + down_direction * forced_lift
-    lines = [
-        "$X",
-        # Hold steppers while a job is running (prevents Z from back-driving).
-        "$1=255",
+    lines = ["$X"]
+    if hold_steppers_during_job:
+        # Classic GRBL only. FluidNC uses $ME/$MD in the serial sender.
+        lines.append("$1=255")
+    lines.extend([
         "G21",
         "G90",
         # The controller's remembered Z work coordinate can be stale after an
@@ -45,7 +47,7 @@ def make_final_with_preamble(
             else ""
         ),
         "",
-    ]
+    ])
     g = prepared_gcode.read_text(encoding="utf-8", errors="ignore")
     trailer = [
         "",

@@ -145,27 +145,109 @@ def _clean_gcode_lines(text: str) -> list[str]:
     return out
 
 
-def _safe_pen_up_commands() -> tuple[str, ...]:
+def _detect_firmware(ser) -> str:
+    """Return the controller family without moving any axis."""
+    try:
+        ser.write(b"$I\r")
+        ser.flush()
+    except Exception:
+        return "grbl"
+
+    replies: list[str] = []
+    deadline = time.time() + 1.5
+    while time.time() < deadline:
+        try:
+            raw = ser.readline()
+        except Exception:
+            break
+        if not raw:
+            continue
+        line = raw.decode("ascii", errors="replace").strip()
+        if not line:
+            continue
+        replies.append(line)
+        if line == "ok" or line.startswith("error:"):
+            break
+    return "fluidnc" if "fluidnc" in "\n".join(replies).lower() else "grbl"
+
+
+def _lines_for_firmware(lines: list[str], firmware: str) -> list[str]:
+    if str(firmware).strip().lower() != "fluidnc":
+        return lines
+    # FluidNC rejects classic-GRBL's $1 idle-delay setting with error:3.
+    # Motor enable/disable is handled with $ME/$MD by this sender instead.
+    return [line for line in lines if not line.strip().upper().startswith("$1=")]
+
+
+def _send_control_command(ser, command: str, *, timeout_s: float = 1.5) -> None:
+    ser.write((command + "\r").encode("ascii"))
+    ser.flush()
+    deadline = time.time() + max(0.1, float(timeout_s))
+    while time.time() < deadline:
+        raw = ser.readline()
+        if not raw:
+            continue
+        reply = raw.decode("ascii", errors="replace").strip()
+        if reply == "ok":
+            return
+        if reply.startswith("error:") or reply.startswith("ALARM:"):
+            raise RuntimeError(f"{command}: {reply}")
+    raise RuntimeError(f"No acknowledgement for {command}")
+
+
+def _initialise_controller_motors(ser, firmware: str) -> None:
+    if str(firmware).strip().lower() != "fluidnc":
+        return
+    # Reinitialise drivers before enabling them. FluidNC explicitly recommends
+    # this after motor power was absent or cycled while the controller stayed on.
+    _send_control_command(ser, "$MI", timeout_s=5.0)
+    _send_control_command(ser, "$ME", timeout_s=5.0)
+
+
+def _safe_pen_up_commands(
+    *,
+    z_up: float = 0.0,
+    z_down: float = 11.9,
+    z_feed: float = 800.0,
+    force_lift_mm: float = 4.0,
+) -> tuple[str, ...]:
     # Same protective lift as generated job preambles. A plain G1/G0 Z0 is not
     # enough after abort/reset because the work Z coordinate may be stale.
+    direction = 1.0 if float(z_down) >= float(z_up) else -1.0
+    lift = min(abs(float(z_down) - float(z_up)), max(0.0, float(force_lift_mm)))
+    assumed_z = float(z_up) + direction * lift
     return (
         "$X",
         "G21",
         "G90",
-        "G92 Z4.0000",
-        "G0 Z0.0000 F800.0",
+        f"G92 Z{assumed_z:.4f}",
+        f"G1 Z{float(z_up):.4f} F{float(z_feed):.1f}",
         "G4 P0.10",
-        "G92 Z0.0000",
-        "G0 Z0.0000 F800.0",
+        f"G92 Z{float(z_up):.4f}",
+        f"G1 Z{float(z_up):.4f} F{float(z_feed):.1f}",
         "G4 P0.05",
         "M5",
     )
 
 
-def release_axes(ser, *, sleep: bool = False, wait: bool = True):
+def release_axes(
+    ser,
+    *,
+    sleep: bool = False,
+    wait: bool = True,
+    z_up: float = 0.0,
+    z_down: float = 11.9,
+    z_feed: float = 800.0,
+    force_lift_mm: float = 4.0,
+    home_x: float = 0.0,
+    home_y: float = 0.0,
+    travel_feed: float = 900.0,
+    firmware: str = "grbl",
+    force_unknown_lift: bool = True,
+):
     def _send_no_throw(cmd: str):
         try:
-            ser.write((cmd + '\n').encode('ascii'))
+            ser.write((cmd + '\r').encode('ascii'))
             ser.flush()
         except Exception:
             # Ignore cleanup errors; we are in teardown path.
@@ -191,21 +273,29 @@ def release_axes(ser, *, sleep: bool = False, wait: bool = True):
             pass
 
     # Force pen up (best-effort), stop any spindle/servo.
-    for cmd in _safe_pen_up_commands():
+    for cmd in _safe_pen_up_commands(
+        z_up=z_up,
+        z_down=z_down,
+        z_feed=z_feed,
+        force_lift_mm=force_lift_mm if force_unknown_lift else 0.0,
+    ):
         _send_no_throw(cmd)
     # If streaming was interrupted before the generated file tail, the normal
     # return-home command was never sent. Keep the pen lifted and bring XY back
     # to the work origin before releasing the motors.
-    _send_no_throw("G0 X0.0000 Y0.0000 F900.0")
+    _send_no_throw(
+        f"G1 X{float(home_x):.4f} Y{float(home_y):.4f} F{float(travel_feed):.1f}"
+    )
     if wait:
         try:
             wait_for_idle(ser, timeout_s=45.0)
         except Exception:
             # Teardown must still release motors even if status polling fails.
             pass
-    _send_no_throw("G0 Z0.0000 F800.0")
-    # GRBL-friendly motor release.
-    _send_no_throw("$1=0")
+    _send_no_throw(f"G1 Z{float(z_up):.4f} F{float(z_feed):.1f}")
+    is_fluidnc = str(firmware).strip().lower() == "fluidnc"
+    # FluidNC uses explicit motor commands; classic GRBL uses the idle delay.
+    _send_no_throw("$MD" if is_fluidnc else "$1=0")
     if sleep:
         _send_no_throw("$SLP")
 
@@ -213,9 +303,9 @@ def release_axes(ser, *, sleep: bool = False, wait: bool = True):
     if wait:
         time.sleep(0.1)
     if sleep:
-        _safe_print("Motors released ($1=0, $SLP).")
+        _safe_print(f"Motors released ({'$MD' if is_fluidnc else '$1=0'}, $SLP).")
     else:
-        _safe_print("Motors released ($1=0).")
+        _safe_print(f"Motors released ({'$MD' if is_fluidnc else '$1=0'}).")
 
 
 def _parse_status_state(line: str) -> str:
@@ -309,7 +399,9 @@ def stream_lines_to_grbl(
             if not line:
                 i += 1
                 continue
-            data = (line + "\n").encode("ascii", errors="replace")
+            # A single CR produces exactly one acknowledgement on FluidNC.
+            # CRLF produces two "ok" replies and breaks character-count streaming.
+            data = (line + "\r").encode("ascii", errors="replace")
             line_len = len(data)
             if line_len >= rx_buffer_size:
                 raise RuntimeError(f"Line too long for GRBL RX buffer ({rx_buffer_size}): {line[:120]!r}")
@@ -371,6 +463,13 @@ def main(argv):
     parser.add_argument("--sleep", action="store_true", help="Send $SLP at end (fully disable steppers; requires reset to wake).")
     parser.add_argument("--rx-buffer", type=int, default=128, help="GRBL RX buffer size in bytes (default 128)")
     parser.add_argument("--verbose", action="store_true", help="Print non-ok chatter (status, banners) while streaming")
+    parser.add_argument("--z-up", type=float, default=0.0)
+    parser.add_argument("--z-down", type=float, default=11.9)
+    parser.add_argument("--z-feed", type=float, default=800.0)
+    parser.add_argument("--force-lift-mm", type=float, default=4.0)
+    parser.add_argument("--home-x", type=float, default=0.0)
+    parser.add_argument("--home-y", type=float, default=0.0)
+    parser.add_argument("--travel-feed", type=float, default=900.0)
     parser.add_argument("-h", "--help", action="store_true")
     ns, _ = parser.parse_known_args(argv[1:])
 
@@ -395,9 +494,15 @@ def main(argv):
         return 1
 
     return_code = 0
+    firmware = "grbl"
     try:
+        firmware = _detect_firmware(ser)
+        if firmware == "fluidnc":
+            _safe_print("Controller: FluidNC (using $MI/$ME/$MD; ignoring GRBL $1 settings).")
+            _initialise_controller_motors(ser, firmware)
         # Stream the file fast enough to keep GRBL's planner full (reduces stutter on dense curves).
         lines = _clean_gcode_lines(file_path.read_text(encoding="utf-8", errors="ignore"))
+        lines = _lines_for_firmware(lines, firmware)
         if not lines:
             raise RuntimeError("No G-code lines found in file.")
         _safe_print(f"Streaming {len(lines)} lines ...")
@@ -428,7 +533,33 @@ def main(argv):
     finally:
         # Ensure motors are not held when job ends or fails.
         if ser is not None:
-            release_axes(ser, sleep=bool(ns.sleep))
+            if return_code != 0:
+                # Cancel all already-buffered motion before the one-time emergency
+                # lift. Otherwise queued startup/draw commands can keep running
+                # while teardown adds another relative Z lift.
+                try:
+                    ser.write(b"!")
+                    ser.flush()
+                    time.sleep(0.10)
+                    ser.write(b"\x18")
+                    ser.flush()
+                    time.sleep(0.80)
+                    ser.read(4096)
+                except Exception:
+                    pass
+            release_axes(
+                ser,
+                sleep=bool(ns.sleep),
+                z_up=float(ns.z_up),
+                z_down=float(ns.z_down),
+                z_feed=float(ns.z_feed),
+                force_lift_mm=float(ns.force_lift_mm),
+                home_x=float(ns.home_x),
+                home_y=float(ns.home_y),
+                travel_feed=float(ns.travel_feed),
+                firmware=firmware,
+                force_unknown_lift=bool(return_code != 0),
+            )
             ser.close()
     return return_code
 

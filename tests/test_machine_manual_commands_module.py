@@ -60,8 +60,8 @@ class MachineManualCommandsModuleTests(unittest.TestCase):
         self.assertTrue(fake.closed)
         self.assertIn(b"\r\n", fake.writes)
         self.assertIn(b"\x18", fake.writes)
-        self.assertIn(b"$X\n", fake.writes)
-        self.assertIn(b"G21\n", fake.writes)
+        self.assertIn(b"$X\r", fake.writes)
+        self.assertIn(b"G21\r", fake.writes)
 
     def test_grbl_send_manual_commands_success_without_tail(self) -> None:
         fake = _FakeSerial()
@@ -79,6 +79,7 @@ class MachineManualCommandsModuleTests(unittest.TestCase):
         self.assertTrue(ok)
         self.assertEqual(msg, "ok")
         self.assertEqual(fake.baudrate, 57600)
+        self.assertIn(b"G90\r", fake.writes)
 
     def test_grbl_send_manual_commands_rejects_empty_port(self) -> None:
         ok, msg = manual_commands.grbl_send_manual_commands(

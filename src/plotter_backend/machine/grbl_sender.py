@@ -13,16 +13,18 @@ from ..errors import SerialTransportError, ToolDependencyError
 from . import manual_commands
 
 
-def find_nearest_g0_xy_line(gcode_file: Path, *, x: float, y: float) -> int:
+def find_nearest_g0_xy_line(gcode_file: Path, *, x: float, y: float, z_up: float = 0.0) -> int:
     # Find nearest G0 XY endpoint to current position. Resume at a travel move
     # to avoid dragging pen/pencil through already drawn geometry.
     x_re = re.compile(r"\bX(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)")
     y_re = re.compile(r"\bY(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)")
+    z_re = re.compile(r"\bZ(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)")
 
     cur_x: Optional[float] = None
     cur_y: Optional[float] = None
     best_d = float("inf")
     best_line = 1
+    pen_up = True
 
     with gcode_file.open("r", encoding="utf-8", errors="ignore") as fh:
         for ln, raw in enumerate(fh, 1):
@@ -35,8 +37,13 @@ def find_nearest_g0_xy_line(gcode_file: Path, *, x: float, y: float) -> int:
                 cur_x = float(sx.group(1))
             if sy:
                 cur_y = float(sy.group(1))
+            sz = z_re.search(line)
+            if sz:
+                pen_up = abs(float(sz.group(1)) - float(z_up)) <= 1e-6
 
-            if not line.startswith("G0"):
+            is_rapid = line.startswith("G0")
+            is_controlled_travel = line.startswith("G1") and pen_up
+            if not (is_rapid or is_controlled_travel):
                 continue
             if ("X" not in line) and ("Y" not in line):
                 continue
@@ -58,6 +65,7 @@ def write_resume_file(
     z_up: float,
     safe_lift_feed: float,
     z_delay_up: float,
+    controlled_motion: bool = False,
 ) -> None:
     # Resume file must NOT include G92 (it would shift coordinates). We only
     # restore modal state and force pen up before continuing.
@@ -70,7 +78,7 @@ def write_resume_file(
         "G90",
         "G17",
         "G91.1",
-        f"G0 Z{float(z_up):.4f} F{float(safe_lift_feed):.1f}",
+        f"{'G1' if controlled_motion else 'G0'} Z{float(z_up):.4f} F{float(safe_lift_feed):.1f}",
         f"G4 P{float(z_delay_up):.2f}",
         f"; AUTO-RESUME from line {int(start_line)} of {src_gcode.name}",
         "",
@@ -95,10 +103,32 @@ def send_to_grbl(
     z_up: float,
     safe_lift_feed: float,
     z_delay_up: float,
+    z_down: float = 11.9,
+    startup_force_lift_mm: float = 4.0,
+    home_x: float = 0.0,
+    home_y: float = 0.0,
+    travel_feed: float = 900.0,
+    controlled_motion: bool = False,
 ) -> float:
     sender = root_dir / "src" / "send_grbl_file.py"
     if not sender.exists():
         raise ToolDependencyError("send_grbl_file.py not found")
+    sender_profile_args = [
+        "--z-up",
+        str(float(z_up)),
+        "--z-down",
+        str(float(z_down)),
+        "--z-feed",
+        str(float(safe_lift_feed)),
+        "--force-lift-mm",
+        str(float(startup_force_lift_mm)),
+        "--home-x",
+        str(float(home_x)),
+        "--home-y",
+        str(float(home_y)),
+        "--travel-feed",
+        str(float(travel_feed)),
+    ]
 
     def _load_sender_module():
         # In frozen/embedded runs, launching sys.executable may reopen the wrapper.
@@ -141,6 +171,7 @@ def send_to_grbl(
             sender_mod._PRINT_ENABLED = True
             sender_mod._safe_print = _forward_print
             argv = ["send_grbl_file.py", com, baud, str(gcode_file)]
+            argv.extend(sender_profile_args)
             if sleep_after:
                 argv.append("--sleep")
             rc = int(sender_mod.main(argv))
@@ -169,8 +200,12 @@ def send_to_grbl(
                 hold=False,
                 home=True,
                 z_up=z_up,
+                z_down=z_down,
                 z_feed=safe_lift_feed,
-                travel_feed=15000.0,
+                force_lift_mm=startup_force_lift_mm,
+                home_x=home_x,
+                home_y=home_y,
+                travel_feed=travel_feed,
                 append_status_query=True,
                 serial_timeout_s=1.0,
                 wake_delay_s=0.10,
@@ -196,6 +231,7 @@ def send_to_grbl(
             ) from exc
     else:
         cmd = [sys.executable, str(sender), com, baud, str(gcode_file)]
+        cmd.extend(sender_profile_args)
         if sleep_after:
             cmd.append("--sleep")
         started = time.perf_counter()
@@ -247,7 +283,7 @@ def send_to_grbl(
     logger("Sender failed. Waiting for machine to become Idle, then auto-resuming from current position...")
     grbl_wait_for_idle(com, baud, logger)
     wx, wy, _wz = grbl_get_wpos_xyz(com, baud)
-    start_line = find_nearest_g0_xy_line(gcode_file, x=wx, y=wy)
+    start_line = find_nearest_g0_xy_line(gcode_file, x=wx, y=wy, z_up=z_up)
     resume_path = ensure_local_tmp_root() / f"resume_{gcode_file.stem}_from_{start_line}.nc"
     write_resume_file(
         gcode_file,
@@ -256,6 +292,7 @@ def send_to_grbl(
         z_up=z_up,
         safe_lift_feed=safe_lift_feed,
         z_delay_up=z_delay_up,
+        controlled_motion=controlled_motion,
     )
     logger(f"Auto-resume: WPos=({wx:.3f},{wy:.3f}), start_line={start_line}, file={resume_path}")
     resumed = send_to_grbl(
@@ -273,5 +310,11 @@ def send_to_grbl(
         z_up=z_up,
         safe_lift_feed=safe_lift_feed,
         z_delay_up=z_delay_up,
+        z_down=z_down,
+        startup_force_lift_mm=startup_force_lift_mm,
+        home_x=home_x,
+        home_y=home_y,
+        travel_feed=travel_feed,
+        controlled_motion=controlled_motion,
     )
     return max(0.0, elapsed) + max(0.0, resumed)

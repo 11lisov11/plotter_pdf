@@ -12,7 +12,9 @@ def build_safe_park_release_commands(
     home_x: float = 0.0,
     home_y: float = 0.0,
     z_up: float = 0.0,
+    z_down: float | None = None,
     z_feed: float = 2500.0,
+    force_lift_mm: float = 4.0,
     travel_feed: float = 15000.0,
     unlock: bool = True,
     energize_before_motion: bool = True,
@@ -27,6 +29,10 @@ def build_safe_park_release_commands(
         commands.append("$X")
     if energize_before_motion:
         commands.append("$1=255")
+    if z_down is not None:
+        direction = 1.0 if float(z_down) >= float(z_up) else -1.0
+        lift = min(abs(float(z_down) - float(z_up)), max(0.0, float(force_lift_mm)))
+        commands.append(f"G92 Z{float(z_up) + direction * lift:.4f}")
     commands.extend(
         [
             "G90",

@@ -50,6 +50,8 @@ def parse_draw_segments(
     work_min_y: float,
     work_width: float,
     work_height: float,
+    z_up: float = 0.0,
+    z_down: float = 11.9,
 ) -> tuple[list[tuple[float, float, float, float]], list[tuple[float, float]]]:
     x: float | None = None
     y: float | None = None
@@ -63,16 +65,19 @@ def parse_draw_segments(
         if not line:
             continue
 
-        values = _numbers(line)
-        if "Z" in values:
-            saw_z = True
-            pen_down = values["Z"] > 1.0
-
         match = COMMAND_RE.match(line)
         if not match:
             continue
 
         command = match.group(1).upper()
+        values = _numbers(line)
+        if "Z" in values:
+            saw_z = True
+            z_value = values["Z"]
+            pen_down = (
+                not math.isclose(z_value, z_up, abs_tol=1e-6)
+                and abs(z_value - z_down) <= abs(z_value - z_up)
+            )
         nx = values.get("X", x)
         ny = values.get("Y", y)
         if nx is None or ny is None:
@@ -117,6 +122,46 @@ def _bounds(points: Iterable[tuple[float, float]]) -> tuple[float, float, float,
     return min(xs), min(ys), max(xs), max(ys)
 
 
+def _transformed_work_bounds(
+    *,
+    transform: str,
+    work_min_x: float,
+    work_min_y: float,
+    work_width: float,
+    work_height: float,
+) -> tuple[float, float, float, float]:
+    corners = [
+        _transform_point(
+            x,
+            y,
+            transform=transform,
+            work_min_x=work_min_x,
+            work_min_y=work_min_y,
+            work_width=work_width,
+            work_height=work_height,
+        )
+        for x, y in (
+            (work_min_x, work_min_y),
+            (work_min_x + work_width, work_min_y),
+            (work_min_x + work_width, work_min_y + work_height),
+            (work_min_x, work_min_y + work_height),
+        )
+    ]
+    return _bounds(corners)
+
+
+def _outside_bounds(
+    data_bounds: tuple[float, float, float, float],
+    work_bounds: tuple[float, float, float, float],
+) -> bool:
+    return (
+        data_bounds[0] < work_bounds[0] - 1e-6
+        or data_bounds[1] < work_bounds[1] - 1e-6
+        or data_bounds[2] > work_bounds[2] + 1e-6
+        or data_bounds[3] > work_bounds[3] + 1e-6
+    )
+
+
 def _draw_preview(
     *,
     segments: list[tuple[float, float, float, float]],
@@ -125,9 +170,9 @@ def _draw_preview(
     title: str,
     work_width: float,
     work_height: float,
+    work_bounds: tuple[float, float, float, float],
     points: list[tuple[float, float]],
 ) -> None:
-    work_bounds = (0.0, -work_height, work_width, 0.0)
     data_bounds = _bounds(points)
     min_x = min(work_bounds[0], data_bounds[0]) - 8.0
     min_y = min(work_bounds[1], data_bounds[1]) - 8.0
@@ -147,7 +192,7 @@ def _draw_preview(
         return fitz.Point(margin + (x - min_x) * scale, margin + (max_y - y) * scale)
 
     page.draw_rect(
-        fitz.Rect(point(0.0, 0.0), point(work_width, -work_height)),
+        fitz.Rect(point(work_bounds[0], work_bounds[3]), point(work_bounds[2], work_bounds[1])),
         color=(1.0, 0.35, 0.0),
         width=0.8,
         dashes="[4 3] 0",
@@ -157,7 +202,7 @@ def _draw_preview(
 
     page.insert_text(fitz.Point(24, 16), title, fontsize=8, color=(0.1, 0.2, 0.8))
     page.insert_text(
-        point(2.0, -work_height + 7.0),
+        point(work_bounds[0] + 2.0, work_bounds[1] + 7.0),
         f"work area {work_width:g}x{work_height:g} mm",
         fontsize=7,
         color=(1.0, 0.35, 0.0),
@@ -178,6 +223,8 @@ def render_gcode_preview(
     work_height: float,
     work_min_x: float = 0.0,
     work_min_y: float = -285.0,
+    z_up: float = 0.0,
+    z_down: float = 11.9,
 ) -> tuple[Path, Path, tuple[float, float, float, float], int]:
     if output_prefix is None:
         output_prefix = gcode_path.with_suffix("")
@@ -191,8 +238,17 @@ def render_gcode_preview(
         work_min_y=work_min_y,
         work_width=work_width,
         work_height=work_height,
+        z_up=z_up,
+        z_down=z_down,
     )
     bounds = _bounds(points)
+    work_bounds = _transformed_work_bounds(
+        transform=transform,
+        work_min_x=work_min_x,
+        work_min_y=work_min_y,
+        work_width=work_width,
+        work_height=work_height,
+    )
     title = f"{gcode_path.name} | transform={transform}"
     _draw_preview(
         segments=segments,
@@ -201,6 +257,7 @@ def render_gcode_preview(
         title=title,
         work_width=work_width,
         work_height=work_height,
+        work_bounds=work_bounds,
         points=points,
     )
     return output_pdf, output_png, bounds, len(segments)
@@ -228,6 +285,8 @@ def main() -> int:
         default=-285.0,
         help="Machine Y coordinate of the top calibration edge. Default matches corner calibration: -285.",
     )
+    parser.add_argument("--z-up", type=float, default=0.0, help="Pen-up Z coordinate.")
+    parser.add_argument("--z-down", type=float, default=11.9, help="Pen-down Z coordinate.")
     args = parser.parse_args()
 
     output_pdf, output_png, bounds, segment_count = render_gcode_preview(
@@ -238,15 +297,19 @@ def main() -> int:
         work_height=args.work_height,
         work_min_x=args.work_min_x,
         work_min_y=args.work_min_y,
+        z_up=args.z_up,
+        z_down=args.z_down,
     )
     width = bounds[2] - bounds[0]
     height = bounds[3] - bounds[1]
-    outside = (
-        bounds[0] < -1e-6
-        or bounds[2] > args.work_width + 1e-6
-        or bounds[1] < -args.work_height - 1e-6
-        or bounds[3] > 1e-6
+    work_bounds = _transformed_work_bounds(
+        transform=args.paper_transform,
+        work_min_x=args.work_min_x,
+        work_min_y=args.work_min_y,
+        work_width=args.work_width,
+        work_height=args.work_height,
     )
+    outside = _outside_bounds(bounds, work_bounds)
 
     print(f"segments={segment_count}")
     print(f"bounds=x({bounds[0]:.3f},{bounds[2]:.3f}) y({bounds[1]:.3f},{bounds[3]:.3f}) size=({width:.3f},{height:.3f})")

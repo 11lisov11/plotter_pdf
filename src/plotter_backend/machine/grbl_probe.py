@@ -69,7 +69,7 @@ def parse_grbl_triplet(tag: str, text: str) -> Optional[Tuple[float, float, floa
 def grbl_query_offsets(backend: Any, ser) -> Tuple[Tuple[float, float, float], Tuple[float, float, float]]:
     # Returns (G54, G92)
     try:
-        ser.write(b"$#\n")
+        ser.write(b"$#\r")
         ser.flush()
     except Exception:
         return (0.0, 0.0, 0.0), (0.0, 0.0, 0.0)

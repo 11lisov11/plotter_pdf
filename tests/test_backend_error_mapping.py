@@ -58,6 +58,34 @@ class BackendErrorMappingTests(unittest.TestCase):
                 ok, msg = backend.run_corner_calibration_pipeline(lambda *_args: None, send_to_plotter=False)
             self.assertTrue(ok, msg)
             self.assertTrue(bool(captured.get("force_full_lift")))
+            self.assertEqual(captured.get("z_down"), backend.Z_DOWN)
+
+    def test_apply_penlift_uses_active_profile_z_down_when_omitted(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="plotter_dynamic_z_") as td:
+            root = Path(td)
+            xy_path = root / "xy.nc"
+            pen_path = root / "pen.nc"
+            xy_path.write_text("G21\nG90\n", encoding="utf-8")
+            with (
+                mock.patch.object(backend, "Z_DOWN", -4.0),
+                mock.patch.object(backend.gcode_penlift_mod, "run_penlift_postprocess") as postprocess,
+            ):
+                backend.apply_penlift(xy_path, pen_path)
+
+            self.assertEqual(postprocess.call_args.kwargs["z_down"], -4.0)
+
+    def test_rewrite_rapid_moves_as_controlled_preserves_feed_and_other_commands(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="plotter_controlled_motion_") as td:
+            path = Path(td) / "a2.nc"
+            path.write_text("G0 X10 Y20 F1500\nG00 Z0 F2000\nG1 X20 Y20 F1500\n", encoding="utf-8")
+
+            changed = backend.rewrite_rapid_moves_as_controlled(path)
+            text = path.read_text(encoding="utf-8")
+
+            self.assertEqual(changed, 2)
+            self.assertIn("G1 X10 Y20 F1500", text)
+            self.assertIn("G1 Z0 F2000", text)
+            self.assertEqual(text.count("G1 X20 Y20 F1500"), 1)
 
     def test_run_pipeline_surfaces_conversion_error_class(self) -> None:
         with tempfile.TemporaryDirectory(prefix="plotter_err_map_conv_") as td:

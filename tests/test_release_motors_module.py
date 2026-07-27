@@ -60,6 +60,8 @@ class ReleaseMotorsModuleTests(unittest.TestCase):
         self.assertLess(cmds.index("G0 X0.0000 Y0.0000 F900.0"), max(idx for idx, cmd in enumerate(cmds) if cmd == "?"))
         self.assertLess(cmds.index("G0 X0.0000 Y0.0000 F900.0"), cmds.index("$1=0"))
         self.assertLess(max(idx for idx, cmd in enumerate(cmds) if cmd == "?"), cmds.index("$1=0"))
+        terminated = [raw for raw in fake.writes if raw not in {b"?", b"\x18"}]
+        self.assertTrue(all(raw.endswith(b"\r") and not raw.endswith(b"\r\n") for raw in terminated))
         self.assertTrue(fake.closed)
 
     def test_release_motors_does_not_release_when_idle_is_not_confirmed(self) -> None:
