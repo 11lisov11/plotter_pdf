@@ -1,91 +1,65 @@
 {
-  "scope_version": 1,
-  "updated": "2026-04-25",
-  "definition": "Digital ready-to-plot scope. This manifest defines which generated drawing packages are production artifacts for plotting and which PDFs are reference-only inputs.",
+  "scope_version": 2,
+  "updated": "2026-08-08",
+  "definition": "Production packages are rebuilt from source PDFs by the canonical mode runner. Debug and acceptance artifacts are local unless explicitly approved for Git.",
+  "canonical_entry": "python scripts/prepare_plotter_package.py",
+  "modes": {
+    "geometry": {
+      "root": "Начерт",
+      "engine": "scripts/prepare_nachert_packages.py"
+    },
+    "graphics": {
+      "root": "Компьютерная графика",
+      "engine": "scripts/prepare_computer_graphics_variants.py"
+    },
+    "copy": {
+      "engine": "src/plotter_pdf_drawer.py"
+    },
+    "photo": {
+      "engine": "scripts/prepare_photo_plot_package.py"
+    }
+  },
   "production_roots": [
     {
-      "path": "Компьютерная графика/8 вариант",
-      "expected_packages": 17,
-      "class": "kompas_full_frame"
+      "path": "Компьютерная графика",
+      "variant_glob": "* вариант",
+      "package_glob": "**/*_pack"
     },
     {
-      "path": "Компьютерная графика/20 вариант",
-      "expected_packages": 13,
-      "class": "kompas_full_frame"
-    },
-    {
-      "path": "Компьютерная графика/22 вариант",
-      "expected_packages": 13,
-      "class": "kompas_full_frame"
-    },
-    {
-      "path": "Начерт/1 вариант",
-      "expected_packages": 10,
-      "class": "standard_frame"
-    },
-    {
-      "path": "Начерт/4 варинт",
-      "expected_packages": 5,
-      "class": "standard_frame"
-    },
-    {
-      "path": "Начерт/24 варинт",
-      "expected_packages": 10,
-      "class": "standard_frame"
-    }
-  ],
-  "reference_only": [
-    {
-      "path": "Компьютерная графика/Задание",
-      "reason": "Source/reference PDFs for assignments. They are not plotter production packages."
-    },
-    {
-      "path": "Начерт/*/_generated_pdf",
-      "reason": "Intermediate source PDFs used by the preparation scripts. Production output is the sibling *_pack directory."
-    },
-    {
-      "path": "_tmp",
-      "reason": "Temporary diagnostics and previews. Do not include in the release artifact set."
+      "path": "Начерт",
+      "variant_glob": "* вариант",
+      "package_glob": "**/*_pack"
     }
   ],
   "artifact_contract": {
-    "a4": [
-      "a4_clean_source.pdf",
-      "page_01.pdf",
-      "page_01.gcode",
-      "report.json",
-      "summary.csv",
-      "logs",
-      "pages",
-      "source_vs_gcode_compare.pdf",
-      "source_vs_gcode_compare.png"
-    ],
-    "a3_two_pass": [
-      "pass_01.pdf",
-      "pass_01.gcode",
-      "pass_02.pdf",
-      "pass_02.gcode",
-      "combined_preview.pdf",
-      "report.json",
-      "summary.csv",
-      "logs",
-      "pages",
-      "source_vs_gcode_compare.pdf",
-      "source_vs_gcode_compare.png"
-    ]
-  },
-  "acceptance": {
-    "expected_package_count": 68,
-    "validator_roots": [
-      "Компьютерная графика",
-      "Начерт"
-    ],
-    "required_validator_result": {
-      "ok": true,
-      "failed_count": 0,
-      "warning_count": 0
+    "a4": {
+      "required_roles": ["source_pdf", "gcode_preview_pdf", "plotter_gcode"],
+      "plotter_files": 1
     },
-    "pytest_command": "python -m pytest -q",
-    "plotter_hardware": "Not included in this digital release gate. COM/GRBL sending and physical calibration are separate acceptance steps."
+    "a3_two_pass": {
+      "required_roles": ["source_pdf", "combined_gcode_preview_pdf", "pass_01_gcode", "pass_02_gcode"],
+      "plotter_files": 2
+    },
+    "a2": {
+      "required_roles": ["source_pdf", "gcode_preview_pdf", "plotter_gcode"],
+      "plotter_files": 1,
+      "machine_profile": "a2_corexy",
+      "confirmed_work_area_mm": [390.0, 580.0]
+    }
+  },
+  "optional_debug_artifacts": [
+    "report.json",
+    "summary.csv",
+    "logs",
+    "pages",
+    "candidates",
+    "audit.json",
+    "audit.txt",
+    "audit_contact.png"
+  ],
+  "acceptance": {
+    "software": ["ruff", "pytest", "coverage", "preview_from_final_gcode"],
+    "hardware": ["corner_calibration", "simple_geometry", "frame_and_stamp", "one_to_one_scale", "safe_stop", "motor_release"],
+    "hardware_tests_default": "skipped"
   }
 }

@@ -7,6 +7,9 @@ from typing import Any
 
 DEFAULT_SETTINGS: dict[str, Any] = {
     "input_path": "",
+    "input_paths": [],
+    "input_pages": [],
+    "input_rotations": [],
     "output_dir": "_plotter_jobs",
     "com": "",
     "baud": "115200",
@@ -27,6 +30,13 @@ DEFAULT_SETTINGS: dict[str, Any] = {
     "quality": "normal",
     "draw_order": "auto",
     "open_preview": False,
+    "layout_mode": "auto",
+    "layout_page": 1,
+    "layout_margin_mm": 0.0,
+    "layout_gap_mm": 0.0,
+    "output_rotation_deg": 0,
+    "mirror_x": False,
+    "mirror_y": False,
 }
 
 

@@ -172,7 +172,7 @@ def build_cli_parser(backend: Any) -> argparse.ArgumentParser:
     parser.add_argument(
         "--calibration-layout",
         default="sheet",
-        choices=["sheet", "a2", "a2_2xa3", "a2_4xa4", "a2_8xa4"],
+        choices=["sheet", "a2", "a2_2xa3", "a2_4xa4"],
         help="Corner calibration layout for the selected machine profile.",
     )
     parser.add_argument("--sheet-width-mm", type=float, default=None, help="Sheet width override (mm).")
@@ -185,6 +185,25 @@ def build_cli_parser(backend: Any) -> argparse.ArgumentParser:
     )
     parser.add_argument("--sheet-offset-x-mm", type=float, default=0.0, help="Shift active sheet area in X (mm).")
     parser.add_argument("--sheet-offset-y-mm", type=float, default=0.0, help="Shift active sheet area in Y (mm).")
+    parser.add_argument(
+        "--output-rotation",
+        type=int,
+        choices=[0, 90, 180, 270],
+        default=0,
+        help="Rotate final fitted geometry inside the active work area.",
+    )
+    parser.add_argument(
+        "--mirror-x",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Mirror final geometry along X.",
+    )
+    parser.add_argument(
+        "--mirror-y",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Mirror final geometry along Y.",
+    )
     parser.add_argument("--plan-sheet", action="store_true", help="Print pass plan for selected sheet and continue.")
     parser.add_argument("--pass-cols", type=int, default=1, help="How many passes along X for current sheet.")
     parser.add_argument("--pass-rows", type=int, default=1, help="How many passes along Y for current sheet.")
@@ -294,6 +313,9 @@ def apply_cli_runtime_overrides(backend: Any, args) -> None:
     backend.PASS_ROWS = max(1, int(args.pass_rows))
     backend.PASS_COL = min(max(1, int(args.pass_col)), backend.PASS_COLS)
     backend.PASS_ROW = min(max(1, int(args.pass_row)), backend.PASS_ROWS)
+    backend.OUTPUT_ROTATION_DEG = int(args.output_rotation) % 360
+    backend.OUTPUT_MIRROR_X = bool(args.mirror_x)
+    backend.OUTPUT_MIRROR_Y = bool(args.mirror_y)
 
     if args.pencil_base_z_down is not None:
         backend.PENCIL_BASE_Z_DOWN = float(args.pencil_base_z_down)

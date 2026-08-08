@@ -26,6 +26,11 @@ def test_mode_aliases_are_canonical() -> None:
     assert mod.normalize_mode("фото") == "photo"
 
 
+def test_a2_sheet_alias_is_available_without_changing_legacy_modes() -> None:
+    assert mod.normalize_sheet("a2") == "a2"
+    assert mod.normalize_sheet("А2") == "a2"
+
+
 def test_graphics_plan_uses_computer_graphics_engine() -> None:
     args, extra = _parse(["--mode", "graphics", "--sheet", "a4", "--variant", "9 вариант", "--plan-only"])
     plan = mod.build_plan(args, extra)
@@ -77,3 +82,16 @@ def test_photo_plan_uses_quality_and_render_flags(tmp_path: Path) -> None:
     assert "classic" in plan.command
     assert "--photo-quality" in plan.command
     assert "detailed" in plan.command
+
+
+def test_photo_a2_plan_uses_safe_a2_work_area(tmp_path: Path) -> None:
+    source = tmp_path / "photo.jpg"
+    source.write_bytes(b"stub")
+    args, extra = _parse(["--mode", "photo", "--sheet", "a2", str(source)])
+    plan = mod.build_plan(args, extra)
+
+    assert plan.sheet == "a2"
+    width_index = plan.command.index("--target-width-mm")
+    height_index = plan.command.index("--target-height-mm")
+    assert plan.command[width_index + 1] == "380"
+    assert plan.command[height_index + 1] == "570"

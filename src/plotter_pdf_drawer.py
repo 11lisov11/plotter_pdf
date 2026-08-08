@@ -580,6 +580,11 @@ PASS_COLS = 1
 PASS_ROWS = 1
 PASS_COL = 1
 PASS_ROW = 1
+OUTPUT_ROTATION_DEG = 0
+OUTPUT_MIRROR_X = False
+OUTPUT_MIRROR_Y = False
+MACHINE_SOURCE_MIRROR_X = False
+MACHINE_SOURCE_MIRROR_Y = False
 
 # Tool / pencil wear model.
 TOOL_MODE = "pen"  # "pen" | "pencil"
@@ -696,6 +701,7 @@ def apply_machine_profile(profile_name: str = "a4_desktop", logger=print) -> dic
     global Z_SOFT_DOWN_MM, Z_SOFT_UP_MM, Z_TRAVEL_LIFT_MM, SAFE_PEN_TRAVEL_UP
     global STARTUP_FORCE_Z_LIFT_MM, SAFE_LIFT_FEED
     global PEN_FAST_Z_PROFILE_ENABLED, TECHNICAL_PEN_Z_PROFILE_ENABLED
+    global MACHINE_SOURCE_MIRROR_X, MACHINE_SOURCE_MIRROR_Y
 
     profile = machine_profiles_mod.resolve_machine_profile(
         profile_name,
@@ -717,6 +723,10 @@ def apply_machine_profile(profile_name: str = "a4_desktop", logger=print) -> dic
     connection = profile.get("connection") or {}
     motion = profile.get("motion") or {}
     pen = profile.get("pen") or {}
+    paper = profile.get("paper") or {}
+
+    MACHINE_SOURCE_MIRROR_X = bool(paper.get("source_mirror_x", False))
+    MACHINE_SOURCE_MIRROR_Y = bool(paper.get("source_mirror_y", False))
 
     DEFAULT_BAUD = str(connection.get("baud", DEFAULT_BAUD))
     FEED_TRAVEL = float(motion.get("feed_travel_mm_min", FEED_TRAVEL))
@@ -6530,6 +6540,57 @@ def transform_polylines_for_active_sheet_pass(
     return transformed
 
 
+def transform_polylines_for_output_orientation(
+    polylines: List[List[Tuple[float, float]]],
+    logger=print,
+) -> List[List[Tuple[float, float]]]:
+    rotation_deg = int(OUTPUT_ROTATION_DEG) % 360
+    mirror_x = bool(MACHINE_SOURCE_MIRROR_X) ^ bool(OUTPUT_MIRROR_X)
+    mirror_y = bool(MACHINE_SOURCE_MIRROR_Y) ^ bool(OUTPUT_MIRROR_Y)
+    if not polylines or (rotation_deg == 0 and not mirror_x and not mirror_y):
+        return polylines
+    if rotation_deg not in {0, 90, 180, 270}:
+        raise ValueError(f"Unsupported output rotation: {rotation_deg}")
+
+    min_x, max_x, min_y, max_y = work_area_bounds()
+    center_x = (min_x + max_x) * 0.5
+    center_y = (min_y + max_y) * 0.5
+    angle = math.radians(rotation_deg)
+    cosine = round(math.cos(angle))
+    sine = round(math.sin(angle))
+    transformed: List[List[Tuple[float, float]]] = []
+    for polyline in polylines:
+        row: List[Tuple[float, float]] = []
+        for raw_x, raw_y in polyline:
+            x = float(raw_x) - center_x
+            y = float(raw_y) - center_y
+            rotated_x = x * cosine - y * sine
+            rotated_y = x * sine + y * cosine
+            if mirror_x:
+                rotated_x = -rotated_x
+            if mirror_y:
+                rotated_y = -rotated_y
+            row.append((center_x + rotated_x, center_y + rotated_y))
+        transformed.append(row)
+
+    transformed_bounds = bounds_polylines(transformed)
+    width = max(1e-9, transformed_bounds[1] - transformed_bounds[0])
+    height = max(1e-9, transformed_bounds[3] - transformed_bounds[2])
+    scale = min(1.0, (max_x - min_x) / width, (max_y - min_y) / height)
+    if scale < 1.0 - 1e-9:
+        transformed = [
+            [(center_x + (x - center_x) * scale, center_y + (y - center_y) * scale) for x, y in polyline]
+            for polyline in transformed
+        ]
+    if logger:
+        logger(
+            "Output orientation: "
+            f"rotation={rotation_deg} deg, mirror_x={'on' if mirror_x else 'off'}, "
+            f"mirror_y={'on' if mirror_y else 'off'}, fit_scale={scale:.5f}."
+        )
+    return transformed
+
+
 def clamp_to_work_area(
     x: float,
     y: float,
@@ -7545,6 +7606,22 @@ def stitch_polylines(
     # Join polyline fragments that share endpoints to reduce pen up/down churn.
     if not polylines or eps <= 0 or not STITCH_ENABLED:
         return polylines
+
+    # PDF converters often encode a single visible side as A->B->A.  If these
+    # round trips reach endpoint stitching unchanged, four rectangle sides can
+    # be joined in the wrong order and create a drawn corner-to-corner diagonal.
+    # Keep the visible side once before any topology optimization.
+    normalized_polylines: List[List[Tuple[float, float]]] = []
+    for polyline in polylines:
+        if (
+            len(polyline) == 3
+            and points_distance(polyline[0], polyline[-1]) <= 1e-6
+            and points_distance(polyline[0], polyline[1]) > 1e-6
+        ):
+            normalized_polylines.append([polyline[0], polyline[1]])
+        else:
+            normalized_polylines.append(polyline)
+    polylines = normalized_polylines
 
     if EXACT_GEOMETRY_MODE and gap_eps is None and angle_tol_deg is None:
         # In exact-copy mode, do not "bridge" near endpoints.
@@ -8792,7 +8869,6 @@ CALIBRATION_LAYOUT_GRIDS = {
     "a2": (1, 1),
     "a2_2xa3": (1, 2),
     "a2_4xa4": (2, 2),
-    "a2_8xa4": (2, 4),
 }
 
 
@@ -8806,8 +8882,6 @@ def _normalise_calibration_layout(layout: str | None) -> str:
         "2_a3": "a2_2xa3",
         "4xa4": "a2_4xa4",
         "4_a4": "a2_4xa4",
-        "8xa4": "a2_8xa4",
-        "8_a4": "a2_8xa4",
     }
     return aliases.get(raw, raw)
 
@@ -8870,7 +8944,7 @@ def build_calibration_layout_corner_mark_polylines(
     if grid is None:
         raise ValueError(
             "Unknown calibration layout "
-            f"{layout!r}; use sheet, a2, a2_2xa3, a2_4xa4 or a2_8xa4."
+            f"{layout!r}; use sheet, a2, a2_2xa3 or a2_4xa4."
         )
     cols, rows = grid
     return _build_grid_corner_mark_polylines_for_bounds(
@@ -8879,6 +8953,20 @@ def build_calibration_layout_corner_mark_polylines(
         rows=rows,
         mark_size=mark_size,
     )
+
+
+def calibration_layout_point_count(layout: str = "sheet") -> int:
+    normalised = _normalise_calibration_layout(layout)
+    if normalised == "sheet":
+        return 4
+    grid = CALIBRATION_LAYOUT_GRIDS.get(normalised)
+    if grid is None:
+        raise ValueError(
+            "Unknown calibration layout "
+            f"{layout!r}; use sheet, a2, a2_2xa3 or a2_4xa4."
+        )
+    cols, rows = grid
+    return (cols + 1) * (rows + 1)
 
 
 def active_calibration_profile_name() -> str:
@@ -10079,6 +10167,7 @@ def run_pipeline(
             )
             polylines = fit_polylines_to_area(polylines, fit_min_x, fit_max_x, fit_min_y, fit_max_y, logger=log)
             polylines = transform_polylines_for_active_sheet_pass(polylines, logger=log)
+            polylines = transform_polylines_for_output_orientation(polylines, logger=log)
             fit_segments = sum(max(0, len(p) - 1) for p in polylines)
             polylines = clip_polylines_to_work_area(polylines, logger=log)
             if not polylines:
@@ -10414,6 +10503,7 @@ def run_corner_calibration_pipeline(
         marks = build_calibration_layout_corner_mark_polylines(CALIBRATION_LAYOUT, mark_size=mark_size)
         if not marks:
             return False, "Invalid work area limits."
+        corner_count = calibration_layout_point_count(CALIBRATION_LAYOUT)
 
         with tempfile.TemporaryDirectory(dir=str(ensure_local_tmp_root()), ignore_cleanup_errors=True) as td:
             work = Path(td)
@@ -10435,12 +10525,18 @@ def run_corner_calibration_pipeline(
 
             if send_to_plotter:
                 send_to_grbl(final_path, com, baud, log, sleep_after=True)
-                return_msg = "Done: 4-corner calibration sent."
+                return_msg = (
+                    f"Done: calibration sent; layout={CALIBRATION_LAYOUT}, "
+                    f"corners={corner_count}."
+                )
             else:
                 target = output_path or Path("corner_calibration_prepared.nc")
                 target.write_text(final_path.read_text(encoding="utf-8"), encoding="utf-8")
                 log(f"Saved: {target}")
-                return_msg = f"Done: calibration file saved to {target}"
+                return_msg = (
+                    f"Done: calibration file saved to {target}; "
+                    f"layout={CALIBRATION_LAYOUT}, corners={corner_count}."
+                )
         return True, return_msg
     except Exception as exc:
         return False, _format_backend_exception(exc)

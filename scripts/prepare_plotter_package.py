@@ -55,6 +55,9 @@ SHEET_ALIASES = {
     "a3": "a3",
     "а3": "a3",
     "3": "a3",
+    "a2": "a2",
+    "а2": "a2",
+    "2": "a2",
 }
 
 
@@ -84,7 +87,7 @@ def normalize_sheet(value: str) -> str:
     try:
         return SHEET_ALIASES[key]
     except KeyError as exc:
-        raise ValueError(f"unknown sheet: {value!r}; expected auto|a4|a3") from exc
+        raise ValueError(f"unknown sheet: {value!r}; expected auto|a4|a3|a2") from exc
 
 
 def _project_path(value: str | None, default: Path) -> Path:
@@ -196,6 +199,8 @@ def _build_photo_command(args: argparse.Namespace, sheet: str, passthrough: list
         cmd.extend(["--target-width-mm", "170", "--target-height-mm", "270"])
     elif sheet == "a3":
         cmd.extend(["--target-width-mm", "170", "--target-height-mm", "270"])
+    elif sheet == "a2":
+        cmd.extend(["--target-width-mm", "380", "--target-height-mm", "570"])
     cmd.extend(passthrough)
     note = "Фото: отдельный фото-пайплайн; детализация задаётся --photo-quality fast|normal|detailed."
     if sheet == "a3":
@@ -227,7 +232,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("input", nargs="?", help="Input PDF/image for copy/photo modes.")
     parser.add_argument("--mode", required=True, help="geometry|graphics|copy|photo, or 1|2|3|4.")
-    parser.add_argument("--sheet", default="auto", help="auto|a4|a3. Common format flag for all four modes.")
+    parser.add_argument("--sheet", default="auto", help="auto|a4|a3|a2. Common format flag for all four modes.")
     parser.add_argument("--root", default=None, help="Root folder for geometry/graphics modes.")
     parser.add_argument("--variant", action="append", default=[], help="Variant filter. Can be used multiple times.")
     parser.add_argument("--task", type=int, action="append", default=[], help="Task number filter for geometry mode.")

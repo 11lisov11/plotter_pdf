@@ -357,16 +357,19 @@ def validate_gcode_file(
 
 
 def collect_variant_dirs(roots: Iterable[Path]) -> list[Path]:
+    def has_clean_packages(path: Path) -> bool:
+        return path.is_dir() and any(child.is_dir() and child.name.endswith("_pack") for child in path.iterdir())
+
     result: list[Path] = []
     for root in roots:
         root = root.resolve()
-        if (root / "_prepared_summary.csv").exists():
+        if (root / "_prepared_summary.csv").exists() or (root.exists() and has_clean_packages(root)):
             result.append(root)
             continue
         if not root.exists():
             continue
         for child in sorted(root.iterdir(), key=lambda p: p.name.casefold()):
-            if child.is_dir() and (child / "_prepared_summary.csv").exists():
+            if child.is_dir() and ((child / "_prepared_summary.csv").exists() or has_clean_packages(child)):
                 result.append(child)
     return result
 
@@ -667,10 +670,50 @@ def _group_rows_by_package(rows: list[dict[str, str]]) -> dict[Path, list[dict[s
     return grouped
 
 
+def validate_minimal_package(package_dir: Path) -> PackageValidation:
+    problems: list[str] = []
+    warnings: list[str] = []
+    candidates = [package_dir / "plotter.nc"]
+    pass_paths = [package_dir / "plotter_pass_01.nc", package_dir / "plotter_pass_02.nc"]
+    if any(path.exists() for path in pass_paths):
+        candidates = pass_paths
+
+    gcode_results: dict[str, GcodeValidation] = {}
+    for gcode_path in candidates:
+        if not gcode_path.exists():
+            problems.append(f"missing plotter file: {gcode_path.name}")
+            continue
+        result = validate_gcode_file(gcode_path, work_area=_validation_work_area_for_gcode(gcode_path))
+        gcode_results[gcode_path.name] = result
+        for problem in result.problems:
+            message = f"{gcode_path.name}: {problem}"
+            if "duplicate draw segments=" in problem or "collinear overlapping draw segments=" in problem:
+                warnings.append(message)
+            else:
+                problems.append(message)
+        warnings.extend(f"{gcode_path.name}: {warning}" for warning in result.warnings)
+
+    return PackageValidation(
+        package_dir=str(package_dir),
+        ok=not problems,
+        problems=problems,
+        warnings=warnings,
+        gcode=gcode_results,
+    )
+
+
 def validate_variant(variant_dir: Path, *, write_reports: bool = True) -> dict[str, object]:
-    rows = _read_summary_rows(variant_dir)
-    grouped = _group_rows_by_package(rows)
-    packages = [validate_package(package_dir, package_rows) for package_dir, package_rows in sorted(grouped.items())]
+    summary_path = variant_dir / "_prepared_summary.csv"
+    if summary_path.exists():
+        rows = _read_summary_rows(variant_dir)
+        grouped = _group_rows_by_package(rows)
+        packages = [validate_package(package_dir, package_rows) for package_dir, package_rows in sorted(grouped.items())]
+    else:
+        package_dirs = sorted(
+            (path for path in variant_dir.iterdir() if path.is_dir() and path.name.endswith("_pack")),
+            key=lambda path: path.name.casefold(),
+        )
+        packages = [validate_minimal_package(package_dir) for package_dir in package_dirs]
     failed = [pkg for pkg in packages if not pkg.ok]
     warnings = [warning for pkg in packages for warning in pkg.warnings]
     payload = {

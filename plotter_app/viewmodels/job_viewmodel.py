@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Callable
 
-from src.plotter_backend.jobs import JobResult, JobSettings, draw_job, prepare_gcode_job, preview_job
+from src.plotter_backend.jobs import JobResult, JobSettings, build_pdf_layout_job, draw_job, prepare_gcode_job, preview_job
 
 
 class JobViewModel:
@@ -20,6 +20,16 @@ class JobViewModel:
 
     def set_input_path(self, value: str | Path) -> None:
         self.settings.input_path = Path(value) if str(value).strip() else None
+        self.settings.input_paths = [str(value)] if str(value).strip() else []
+        self.settings.input_pages = [0] if str(value).strip() else []
+        self.settings.input_rotations = [0] if str(value).strip() else []
+        self.preflight_ok = False
+
+    def set_layout_items(self, items: list[tuple[str | Path, int, int]]) -> None:
+        self.settings.input_paths = [str(path) for path, _page, _rotation in items]
+        self.settings.input_pages = [int(page) for _path, page, _rotation in items]
+        self.settings.input_rotations = [int(rotation) % 360 for _path, _page, rotation in items]
+        self.settings.input_path = Path(items[0][0]) if items else None
         self.preflight_ok = False
 
     def set_output_dir(self, value: str | Path) -> None:
@@ -32,8 +42,8 @@ class JobViewModel:
         self.hardware_confirmed = bool(confirmed)
 
     def has_input(self) -> bool:
-        path = self.settings.normalized_input_path()
-        return path is not None and path.exists()
+        items = self.settings.normalized_layout_items()
+        return bool(items) and all(path.exists() for path, _page, _rotation in items)
 
     def can_preview(self) -> bool:
         return self.has_input() and not self.operation_running
@@ -65,6 +75,9 @@ class JobViewModel:
         result = self._run(preview_job)
         self.preflight_ok = bool(result.ok)
         return result
+
+    def build_layout_preview(self) -> JobResult:
+        return self._run(build_pdf_layout_job)
 
     def generate_gcode(self) -> JobResult:
         self.settings.preview = False

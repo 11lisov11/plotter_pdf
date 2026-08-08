@@ -22,6 +22,8 @@ venv/
 _tmp/
 build/
 dist/
+_plotter_jobs/product_acceptance/
+preview_exports/
 PlotterStudio.spec
 outputs/
 output_pages_6_end/

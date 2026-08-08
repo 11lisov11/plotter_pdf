@@ -62,9 +62,13 @@ BUILTIN_MACHINE_PROFILES: dict[str, dict[str, Any]] = {
             "max_y_mm": 580.0,
             "offset_x_mm": 0.0,
             "offset_y_mm": 0.0,
+            "origin": "lower_left",
+            "x_positive": "right",
+            "y_positive": "up",
         },
         "paper": {
             "default_sheet": "a2",
+            "source_mirror_y": True,
             "a2_mm": [420.0, 594.0],
             "inactive_short_side_mm": 30.0,
             "inactive_long_side_mm": 14.0,

@@ -7,6 +7,7 @@ from pathlib import Path
 
 from .job_report import summarize_existing_gcode, write_job_report
 from .models import JobResult, JobSettings
+from .pdf_layout import PdfLayoutBuild, build_pdf_layout
 
 
 def _project_root() -> Path:
@@ -38,31 +39,56 @@ def _append_sheet_args(args: list[str], settings: JobSettings) -> None:
     args.extend(["--sheet-anchor", settings.sheet_anchor])
     args.extend(["--sheet-offset-x-mm", str(settings.sheet_offset_x_mm)])
     args.extend(["--sheet-offset-y-mm", str(settings.sheet_offset_y_mm)])
-    pass_cols = max(1, int(settings.pass_cols))
-    pass_rows = max(1, int(settings.pass_rows))
-    args.extend(["--pass-cols", str(pass_cols)])
-    args.extend(["--pass-rows", str(pass_rows)])
-    args.extend(["--pass-col", str(max(1, int(settings.pass_col)))])
-    args.extend(["--pass-row", str(max(1, int(settings.pass_row)))])
-    if str(settings.sheet_format).strip().lower() == "a3" and pass_cols == 1 and pass_rows == 1:
-        args.append("--auto-pass-grid")
+    cols = max(1, int(settings.pass_cols))
+    rows = max(1, int(settings.pass_rows))
+    args.extend(["--pass-cols", str(cols)])
+    args.extend(["--pass-rows", str(rows)])
+    args.extend(["--pass-col", str(min(max(1, int(settings.pass_col)), cols))])
+    args.extend(["--pass-row", str(min(max(1, int(settings.pass_row)), rows))])
+    args.extend(["--output-rotation", str(int(settings.output_rotation_deg) % 360)])
+    args.append("--mirror-x" if settings.mirror_x else "--no-mirror-x")
+    args.append("--mirror-y" if settings.mirror_y else "--no-mirror-y")
     args.extend(["--tool", settings.tool])
     args.extend(["--quality", settings.quality])
     args.extend(["--draw-order", settings.draw_order])
-    args.append("--safe-travel-up" if settings.safe_travel_up else "--no-safe-travel-up")
+    if settings.safe_travel_up is not None:
+        args.append("--safe-travel-up" if settings.safe_travel_up else "--no-safe-travel-up")
     args.append("--handwriting" if settings.handwriting else "--no-handwriting")
 
 
+def _resolve_input(settings: JobSettings) -> tuple[Path | None, PdfLayoutBuild | None]:
+    if not settings.input_paths:
+        return settings.normalized_input_path(), None
+    build = build_pdf_layout(settings)
+    selected_page = min(max(1, int(settings.layout_page)), build.page_count)
+    return build.page_pdf_paths[selected_page - 1], build
+
+
 def prepare_gcode_job(settings: JobSettings) -> JobResult:
-    input_path = settings.normalized_input_path()
     output_dir = settings.normalized_output_dir()
     output_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        input_path, layout_build = _resolve_input(settings)
+    except Exception as exc:
+        return write_job_report(
+            JobResult(
+                False,
+                f"Не удалось подготовить раскладку PDF: {exc}",
+                output_dir=output_dir,
+                errors=[str(exc)],
+            ),
+            output_dir,
+        )
     if input_path is None:
-        result = JobResult(False, "Нужно выбрать файл чертежа.", output_dir=output_dir, errors=["missing_input"])
-        return write_job_report(result, output_dir)
+        return write_job_report(
+            JobResult(False, "Нужно выбрать файл чертежа.", output_dir=output_dir, errors=["missing_input"]),
+            output_dir,
+        )
     if not input_path.exists():
-        result = JobResult(False, f"Файл не найден: {input_path}", output_dir=output_dir, errors=["input_not_found"])
-        return write_job_report(result, output_dir)
+        return write_job_report(
+            JobResult(False, f"Файл не найден: {input_path}", output_dir=output_dir, errors=["input_not_found"]),
+            output_dir,
+        )
 
     nc_path = output_dir / f"{input_path.stem}_prepared.nc"
     gcode_path = output_dir / f"{input_path.stem}_prepared.gcode"
@@ -80,7 +106,6 @@ def prepare_gcode_job(settings: JobSettings) -> JobResult:
     if settings.com:
         cmd.extend(["--com", str(settings.com)])
     _append_sheet_args(cmd, settings)
-
     proc = subprocess.run(
         cmd,
         cwd=str(_runtime_root()),
@@ -92,28 +117,41 @@ def prepare_gcode_job(settings: JobSettings) -> JobResult:
         check=False,
     )
     if proc.returncode != 0:
-        result = JobResult(
-            False,
-            f"Подготовка завершилась с ошибкой (код {proc.returncode}).",
-            output_dir=output_dir,
-            nc_path=nc_path,
-            gcode_path=gcode_path,
-            errors=[proc.stdout.strip()],
+        return write_job_report(
+            JobResult(
+                False,
+                f"Подготовка завершилась с ошибкой (код {proc.returncode}).",
+                output_dir=output_dir,
+                nc_path=nc_path,
+                gcode_path=gcode_path,
+                errors=[proc.stdout.strip()],
+                layout_pdf_path=layout_build.output_pdf if layout_build else None,
+                layout_preview_pdf_path=layout_build.preview_pdf if layout_build else None,
+                layout_manifest_path=layout_build.manifest_path if layout_build else None,
+                layout_page_paths=layout_build.page_pdf_paths if layout_build else [],
+                layout_page_count=layout_build.page_count if layout_build else 0,
+            ),
+            output_dir,
         )
-        return write_job_report(result, output_dir)
-
     if nc_path.exists():
         shutil.copyfile(nc_path, gcode_path)
     line_count, draw_moves, travel_moves, bounds = summarize_existing_gcode(nc_path)
-    result = JobResult(
-        True,
-        f"G-code подготовлен: {nc_path}",
-        output_dir=output_dir,
-        nc_path=nc_path if nc_path.exists() else None,
-        gcode_path=gcode_path if gcode_path.exists() else None,
-        bounds=bounds,
-        line_count=line_count,
-        draw_moves=draw_moves,
-        travel_moves=travel_moves,
+    return write_job_report(
+        JobResult(
+            True,
+            f"G-code подготовлен: {nc_path}",
+            output_dir=output_dir,
+            nc_path=nc_path if nc_path.exists() else None,
+            gcode_path=gcode_path if gcode_path.exists() else None,
+            bounds=bounds,
+            line_count=line_count,
+            draw_moves=draw_moves,
+            travel_moves=travel_moves,
+            layout_pdf_path=layout_build.output_pdf if layout_build else None,
+            layout_preview_pdf_path=layout_build.preview_pdf if layout_build else None,
+            layout_manifest_path=layout_build.manifest_path if layout_build else None,
+            layout_page_paths=layout_build.page_pdf_paths if layout_build else [],
+            layout_page_count=layout_build.page_count if layout_build else 0,
+        ),
+        output_dir,
     )
-    return write_job_report(result, output_dir)

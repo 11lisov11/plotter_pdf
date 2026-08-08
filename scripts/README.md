@@ -7,6 +7,7 @@ python scripts\prepare_plotter_package.py --mode geometry --sheet auto
 python scripts\prepare_plotter_package.py --mode graphics --sheet auto --variant "9 вариант"
 python scripts\prepare_plotter_package.py --mode copy --sheet a4 drawing.pdf
 python scripts\prepare_plotter_package.py --mode photo --sheet a4 фото.jpg --photo-quality normal
+python scripts\prepare_plotter_package.py --mode copy --sheet a2 drawing.pdf
 ```
 
 Modes:
@@ -21,6 +22,9 @@ Common sheet flag:
 - `--sheet auto`: keep source-driven format decisions.
 - `--sheet a4`: A4 intent/profile.
 - `--sheet a3`: A3 intent/profile.
+- `--sheet a2`: A2 intent/profile. The confirmed drawable window is
+  `390x580 mm`; full-size placement and clipping are controlled by the
+  `a2_corexy` machine profile.
 
 Legacy/internal engines:
 

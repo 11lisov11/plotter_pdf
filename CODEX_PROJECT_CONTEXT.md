@@ -11,8 +11,9 @@ context so the project has one clear source of truth.
 
 - Current working project root: `C:\plotter_pdf`.
 - Clean GitHub mirror used for repository updates: `C:\plotter_pdf_latest`.
-- Main workflow is CLI/headless. Do not restore the old PySide UI unless the user
-  explicitly asks for UI code.
+- Supported workflows are CLI/headless and the current PySide6 Windows GUI.
+- Keep drawing generation in the existing production engines; GUI/layout work
+  must not silently change frame, stamp, text, scale, or A3 pass rules.
 - Main entry points:
   - `main.py`
   - `src/plotter_pdf_drawer.py`
@@ -34,6 +35,10 @@ context so the project has one clear source of truth.
   - `.codex_plotter_project_memory.md`
 
 ## Machine Rules
+
+Two machine profiles are production inputs and must remain separate.
+
+### A4 desktop plotter
 
 - Default USB port: `COM6`.
 - Common Bluetooth port: `COM11`.
@@ -63,6 +68,21 @@ context so the project has one clear source of truth.
   - `G92 Z0`
   - `G92 X0 Y0` after physical placement
 - End jobs with `M5`, `$1=0`, optionally `$SLP` to release/cool motors.
+
+### A2 CoreXY plotter
+
+- Profile: `a2_corexy`.
+- Controller: FluidNC 3.9.x over GRBL-compatible serial protocol.
+- Confirmed work area: `X: 0..390`, `Y: 0..580` mm.
+- Origin: left-lower corner of the confirmed work area.
+- Direction lock: `X+` right, `Y+` up.
+- PDF source geometry is mirrored once on Y by the machine profile. Do not add
+  another manual mirror unless a preview explicitly proves it is required.
+- Physical A2 paper is `420x594` mm, larger than the confirmed work area. Keep
+  geometry at `1:1` and clip only the inactive outer paper bands.
+- Valid full-size calibration layouts: `a2`, `a2_2xa3`, `a2_4xa4`.
+- Eight full-size A4 sheets do not fit on A2 and must not be offered as a
+  production layout.
 
 ## Calibration And Drawing
 
