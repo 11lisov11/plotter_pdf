@@ -1012,6 +1012,11 @@ def _specification_left_title_header_override_lines(line: dict[str, Any]) -> lis
     }
     combined: dict[str, list[str]] = {
         "\u0438\u0437\u043c\u043b\u0438\u0441\u0442": ["\u0438\u0437\u043c", "\u043b\u0438\u0441\u0442"],
+        "\u0438\u0437\u043c\u043b\u0438\u0441\u0442\u2116\u0434\u043e\u043a\u0443\u043c": [
+            "\u0438\u0437\u043c",
+            "\u043b\u0438\u0441\u0442",
+            "\u2116\u0434\u043e\u043a\u0443\u043c",
+        ],
         "\u043f\u043e\u0434\u043f\u0434\u0430\u0442\u0430": ["\u043f\u043e\u0434\u043f", "\u0434\u0430\u0442\u0430"],
     }
     keys = combined.get(text_key, [text_key])
@@ -1462,6 +1467,413 @@ def _is_new_algorithm_specification(source_pdf: Path, polylines: list[Polyline])
     if not _looks_like_specification_table_geometry(polylines):
         return False
     return _looks_like_specification_text_source(source_pdf)
+
+
+_SPECIFICATION_OCR_ENGINE: Any | None = None
+
+
+def _normalize_specification_ocr_text(text: str, bbox_mm: tuple[float, float, float, float]) -> str:
+    """Normalize only unambiguous Cyrillic OCR errors from GOST specification forms."""
+
+    value = re.sub(r"\s+", " ", str(text or "")).strip()
+    value = value.replace("№°", "№").replace("N°", "№").replace("No", "№")
+    compact = value.casefold().replace(" ", "")
+    aliases = {
+        "одозначение": "Обозначение",
+        "разрад.": "Разраб.",
+        "доким.": "докум.",
+        "лum.": "Лит.",
+        "уm6.": "Утв.",
+        "н.контр": "Н.контр.",
+        "приме-чание": "Примечание",
+    }
+    value = aliases.get(value.casefold(), value)
+    if compact == "dhoe" and bbox_mm[0] < 35.0 and bbox_mm[1] < 25.0:
+        value = "Зона"
+
+    value = re.sub(r"(?i)\b[мm][4ч]00", "МЧ00", value)
+    value = re.sub(r"(МЧ00\.\d{2})(\d{2})(?=\.)", r"\1.\2", value)
+    value = re.sub(r"(?i)\s+[cс][6б]\s*$", " СБ", value)
+    value = re.sub(r"(?i)\bгост\b", "ГОСТ", value)
+    value = re.sub(r"(?i)\bм(?=\d)", "М", value)
+    value = value.replace("x", "×").replace("X", "×")
+    return value
+
+
+def _repair_specification_ocr_cells(lines: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Repair table cells where the GOST numeral shape has one deterministic OCR ambiguity."""
+
+    repaired = [dict(line) for line in lines]
+    if not any(_lff_line_text(line).casefold().strip(" .:") == "\u0444\u043e\u0440\u043c\u0430\u0442" for line in repaired):
+        repaired.append(
+            {
+                "text": "\u0424\u043e\u0440\u043c\u0430\u0442",
+                "bbox_mm": [20.35, 7.0, 26.2, 19.0],
+                "dir": [0.0, -1.0],
+                "font": "OpenGOST LFF standard specification header",
+                "ocr_confidence": 1.0,
+                "text_box_fill": LFF_FILL,
+                "skip_table_row_center": True,
+            }
+        )
+
+    expanded: list[dict[str, Any]] = []
+    for line in repaired:
+        bbox = _line_bbox_mm(line)
+        key = _lff_line_text(line).replace(" ", "").replace(".", "").replace(":", "").casefold()
+        labels: tuple[tuple[str, float, float], ...] = ()
+        if bbox is not None and bbox[1] > 250.0 and bbox[0] < 90.0:
+            if key.startswith(("\u0438\u0437\u043c\u043b\u0438\u0441\u0442\u2116\u0434\u043e\u043a", "\u04383\u043c\u043b\u0438\u0441\u0442\u2116\u0434\u043e\u043a")):
+                labels = (
+                    ("\u0418\u0437\u043c.", 21.35, 25.70),
+                    ("\u041b\u0438\u0441\u0442", 27.05, 36.95),
+                    ("\u2116 \u0434\u043e\u043a\u0443\u043c.", 38.00, 61.20),
+                )
+            elif key in {"\u0438\u0437\u043c\u043b\u0438\u0441\u0442", "\u04383\u043c\u043b\u0438\u0441\u0442"}:
+                labels = (
+                    ("\u0418\u0437\u043c.", 21.35, 25.70),
+                    ("\u041b\u0438\u0441\u0442", 27.05, 36.95),
+                )
+            elif key.startswith("\u2116\u0434\u043e\u043a"):
+                labels = (("\u2116 \u0434\u043e\u043a\u0443\u043c.", 38.00, 61.20),)
+        if not labels or bbox is None:
+            expanded.append(line)
+            continue
+        for label, x0, x1 in labels:
+            split_line = dict(line)
+            split_line["text"] = label
+            split_line["bbox_mm"] = [x0, bbox[1], x1, bbox[3]]
+            split_line["dir"] = [1.0, 0.0]
+            split_line["text_box_fill"] = LFF_STAMP_FILL
+            split_line["skip_table_row_center"] = True
+            split_line["stamp_cell_centered"] = True
+            expanded.append(split_line)
+    repaired = expanded
+
+    right_title_spans: list[tuple[float, float]] = []
+    left_title_spans: list[tuple[float, float]] = []
+    for line in repaired:
+        bbox = _line_bbox_mm(line)
+        if bbox is None or bbox[1] <= 250.0:
+            continue
+        key = _lff_line_text(line).replace(" ", "").replace(".", "").replace(":", "").casefold()
+        if bbox[0] > 150.0 and key in {"\u043b\u0438\u0442", "\u043b\u0438\u0441\u0442", "\u043b\u0438\u0441\u0442\u043e\u0432"}:
+            right_title_spans.append((bbox[1], bbox[3]))
+        if bbox[0] < 90.0 and (
+            key in {"\u0438\u0437\u043c", "\u043b\u0438\u0441\u0442", "\u043f\u043e\u0434\u043f", "\u0434\u0430\u0442\u0430"}
+            or key.startswith("\u2116\u0434\u043e\u043a")
+        ):
+            left_title_spans.append((bbox[1], bbox[3]))
+
+    if right_title_spans:
+        right_title_y0 = min(span[0] for span in right_title_spans)
+        right_title_y1 = max(span[1] for span in right_title_spans)
+    elif left_title_spans:
+        right_title_y0 = max(span[1] for span in left_title_spans)
+        right_title_y1 = right_title_y0 + 5.5
+    else:
+        right_title_y0, right_title_y1 = 267.0, 272.5
+
+    normalized_title_lines: list[dict[str, Any]] = []
+    for line in repaired:
+        bbox = _line_bbox_mm(line)
+        key = _lff_line_text(line).replace(" ", "").replace(".", "").replace(":", "").casefold()
+        if bbox is not None and bbox[1] > 250.0 and bbox[0] < 90.0 and (
+            key in {"\u0438\u0437\u043c", "\u043b\u0438\u0441\u0442", "\u043f\u043e\u0434\u043f", "\u0434\u0430\u0442\u0430"}
+            or key.startswith("\u2116\u0434\u043e\u043a")
+        ):
+            fixed = {
+                "\u0438\u0437\u043c": ("\u0418\u0437\u043c.", 21.35, 25.70),
+                "\u043b\u0438\u0441\u0442": ("\u041b\u0438\u0441\u0442", 27.05, 36.95),
+                "\u043f\u043e\u0434\u043f": ("\u041f\u043e\u0434\u043f.", 62.35, 74.90),
+                "\u0434\u0430\u0442\u0430": ("\u0414\u0430\u0442\u0430", 75.95, 84.90),
+            }.get(key, ("\u2116 \u0434\u043e\u043a\u0443\u043c.", 38.00, 61.20))
+            patched = dict(line)
+            patched["text"] = fixed[0]
+            patched["bbox_mm"] = [fixed[1], bbox[1], fixed[2], bbox[3]]
+            patched["dir"] = [1.0, 0.0]
+            patched["text_box_fill"] = LFF_STAMP_FILL
+            patched["skip_table_row_center"] = True
+            patched["stamp_cell_centered"] = True
+            normalized_title_lines.append(patched)
+            continue
+        if bbox is not None and bbox[1] > 250.0 and bbox[0] > 150.0 and key in {
+            "\u043b\u0438\u0442",
+            "\u043b\u0438\u0441\u0442",
+            "\u043b\u0438\u0441\u0442\u043e\u0432",
+        }:
+            continue
+        normalized_title_lines.append(line)
+    for label, label_bbox in (
+        ("\u041b\u0438\u0442.", [155.20, right_title_y0, 170.00, right_title_y1]),
+        ("\u041b\u0438\u0441\u0442", [170.20, right_title_y0, 187.00, right_title_y1]),
+        ("\u041b\u0438\u0441\u0442\u043e\u0432", [187.20, right_title_y0, 204.70, right_title_y1]),
+    ):
+        normalized_title_lines.append(
+            {
+                "text": label,
+                "bbox_mm": label_bbox,
+                "dir": [1.0, 0.0],
+                "font": "OpenGOST LFF standard specification title header",
+                "ocr_confidence": 1.0,
+                "text_box_fill": LFF_STAMP_FILL,
+                "skip_table_row_center": True,
+                "stamp_cell_centered": True,
+            }
+        )
+    repaired = normalized_title_lines
+
+    details_y: float | None = None
+    for line in repaired:
+        if _lff_line_text(line).casefold().strip(" .:") == "\u0434\u0435\u0442\u0430\u043b\u0438":
+            bbox = _line_bbox_mm(line)
+            if bbox is not None:
+                details_y = (bbox[1] + bbox[3]) * 0.5
+                break
+
+    for line in repaired:
+        bbox = _line_bbox_mm(line)
+        if bbox is None:
+            continue
+        x0, y0, x1, y1 = bbox
+        cx = (x0 + x1) * 0.5
+        cy = (y0 + y1) * 0.5
+        text = _lff_line_text(line)
+        if 19.0 <= cx <= 30.5 and re.fullmatch(r"[AА][234]", text):
+            line["text"] = f"A{text[-1]}"
+            line["text_box_fill"] = 0.50
+        if 170.0 <= cx <= 182.5 and text == "7" and (x1 - x0) <= (y1 - y0) * 0.75:
+            line["text"] = "1"
+
+    if details_y is None:
+        return repaired
+    designations = []
+    for line in repaired:
+        bbox = _line_bbox_mm(line)
+        if bbox is None:
+            continue
+        cy = (bbox[1] + bbox[3]) * 0.5
+        if details_y < cy < 245.0 and re.match(r"^\s*\u041c\u0427\d", _lff_line_text(line)):
+            designations.append((cy, line))
+    designations.sort(key=lambda item: item[0])
+    if len(designations) < 3:
+        return repaired
+
+    standard_heading_y: float | None = None
+    for line in repaired:
+        bbox = _line_bbox_mm(line)
+        if bbox is None:
+            continue
+        if _lff_line_text(line).casefold().strip(" .:") == "\u0441\u0442\u0430\u043d\u0434\u0430\u0440\u0442\u043d\u044b\u0435 \u0438\u0437\u0434\u0435\u043b\u0438\u044f":
+            standard_heading_y = (bbox[1] + bbox[3]) * 0.5
+            break
+
+    row_anchors = list(designations)
+    if standard_heading_y is not None:
+        for line in repaired:
+            bbox = _line_bbox_mm(line)
+            if bbox is None:
+                continue
+            x0, y0, x1, y1 = bbox
+            cy = (y0 + y1) * 0.5
+            text = _lff_line_text(line)
+            if (
+                cy > standard_heading_y
+                and 105.0 <= x0 <= 135.0
+                and x1 <= 175.0
+                and re.match(r"^(\u0411\u043e\u043b\u0442|\u0413\u0430\u0439\u043a\u0430|\u0428\u0430\u0439\u0431\u0430|\u0428\u043f\u0438\u043b\u044c\u043a\u0430|\u0412\u0438\u043d\u0442)\b", text)
+            ):
+                row_anchors.append((cy, line))
+    row_anchors.sort(key=lambda item: item[0])
+
+    filtered: list[dict[str, Any]] = []
+    for line in repaired:
+        bbox = _line_bbox_mm(line)
+        if bbox is None:
+            filtered.append(line)
+            continue
+        cx = (bbox[0] + bbox[2]) * 0.5
+        cy = (bbox[1] + bbox[3]) * 0.5
+        if 30.0 <= cx <= 42.5 and cy > details_y and re.fullmatch(r"\d{1,2}|[-\u2014]", _lff_line_text(line)):
+            continue
+        filtered.append(line)
+    repaired = filtered
+
+    for expected, (_anchor_y, anchor) in enumerate(row_anchors, start=1):
+        anchor_bbox = _line_bbox_mm(anchor)
+        if anchor_bbox is None:
+            continue
+        repaired.append(
+            {
+                "text": str(expected),
+                "bbox_mm": [32.5, anchor_bbox[1], 40.5, anchor_bbox[3]],
+                "dir": [1.0, 0.0],
+                "font": "OpenGOST LFF reconstructed specification position",
+                "ocr_confidence": 1.0,
+                "text_box_fill": LFF_STAMP_FILL,
+                "skip_table_row_center": True,
+            }
+        )
+    return repaired
+
+
+def _specification_ocr_text_lines(source_pdf: Path, logs: list[str]) -> list[dict[str, Any]]:
+    """Read a vector-only specification with Cyrillic OCR for later LFF rendering."""
+
+    global _SPECIFICATION_OCR_ENGINE
+    try:
+        import numpy as np
+        from rapidocr import EngineType, LangRec, ModelType, OCRVersion, RapidOCR
+    except ImportError as exc:
+        raise RuntimeError(
+            'Vector-only specifications require the photo extra: pip install -e ".[photo]"'
+        ) from exc
+
+    if _SPECIFICATION_OCR_ENGINE is None:
+        _SPECIFICATION_OCR_ENGINE = RapidOCR(
+            params={
+                "Rec.engine_type": EngineType.ONNXRUNTIME,
+                "Rec.lang_type": LangRec.CYRILLIC,
+                "Rec.model_type": ModelType.MOBILE,
+                "Rec.ocr_version": OCRVersion.PPOCRV5,
+            }
+        )
+
+    with fitz.open(source_pdf) as document:
+        page = document[0]
+        page_w_mm = float(page.rect.width) * lff_text.PT_TO_MM
+        page_h_mm = float(page.rect.height) * lff_text.PT_TO_MM
+        pixmap = page.get_pixmap(matrix=fitz.Matrix(4.0, 4.0), alpha=False, colorspace=fitz.csGRAY)
+        image = np.frombuffer(pixmap.samples, dtype=np.uint8).reshape(pixmap.height, pixmap.width)
+
+    result = _SPECIFICATION_OCR_ENGINE(image)
+    boxes = list(result.boxes) if result is not None and result.boxes is not None else []
+    texts = list(result.txts) if result is not None and result.txts is not None else []
+    scores = list(result.scores) if result is not None and result.scores is not None else []
+    x_scale = page_w_mm / max(1, pixmap.width)
+    y_scale = page_h_mm / max(1, pixmap.height)
+    lines: list[dict[str, Any]] = []
+    rejected = 0
+    for box, raw_text, score in zip(boxes, texts, scores):
+        xs = [float(point[0]) * x_scale for point in box]
+        ys = [float(point[1]) * y_scale for point in box]
+        bbox = (min(xs), min(ys), max(xs), max(ys))
+        if float(score) < 0.58 or bbox[2] < 19.5 or bbox[0] > 205.5:
+            rejected += 1
+            continue
+        text = _normalize_specification_ocr_text(str(raw_text), bbox)
+        if not text:
+            rejected += 1
+            continue
+        is_vertical_header = (
+            bbox[1] < 25.0
+            and bbox[0] < 42.5
+            and (bbox[3] - bbox[1]) > (bbox[2] - bbox[0]) * 1.35
+        )
+        direction = [0.0, -1.0] if is_vertical_header else [1.0, 0.0]
+        line = {
+            "text": text,
+            "bbox_mm": [round(float(value), 4) for value in bbox],
+            "dir": direction,
+            "font": "RapidOCR PP-OCRv5 Cyrillic -> OpenGOST LFF",
+            "ocr_confidence": round(float(score), 4),
+            "skip_table_row_center": True,
+        }
+        if bbox[1] < page_h_mm - 45.0:
+            line["text_box_fill"] = LFF_FILL
+        if _is_service_text(line, []):
+            rejected += 1
+            continue
+        lines.append(line)
+    lines = _repair_specification_ocr_cells(lines)
+    lines.sort(key=lambda line: ((_line_bbox_mm(line) or (0.0, 0.0, 0.0, 0.0))[1], (_line_bbox_mm(line) or (0.0, 0.0, 0.0, 0.0))[0]))
+    if len(lines) < 8:
+        raise RuntimeError(f"Cyrillic specification OCR produced only {len(lines)} reliable lines: {source_pdf}")
+    logs.append(
+        "Specification Cyrillic OCR fallback: "
+        f"accepted={len(lines)}; rejected={rejected}; model=PP-OCRv5 cyrillic; "
+        "OCR supplies text and coordinates only; all glyphs are rendered with OpenGOST LFF."
+    )
+    return lines
+
+
+def _specification_structural_geometry_only(polylines: list[Polyline], logs: list[str]) -> list[Polyline]:
+    """Keep specification rules/underlines and discard all old vector glyph contours."""
+
+    kept: list[Polyline] = []
+    removed = 0
+    for polyline in polylines:
+        for first, second in zip(polyline, polyline[1:]):
+            x0, y0 = float(first[0]), float(first[1])
+            x1, y1 = float(second[0]), float(second[1])
+            dx = abs(x1 - x0)
+            dy = abs(y1 - y0)
+            if (dy <= 0.18 and dx >= 4.0) or (dx <= 0.18 and dy >= 4.0):
+                kept.append([(x0, y0), (x1, y1)])
+            else:
+                removed += 1
+    logs.append(
+        "Vector-only specification structure filter: "
+        f"kept_rules={len(kept)}; removed_old_glyph_segments={removed}."
+    )
+    return kept
+
+
+def _clean_specification_form_geometry(
+    polylines: list[Polyline],
+    page_w_mm: float,
+    page_h_mm: float,
+    logs: list[str],
+) -> list[Polyline]:
+    """Remove the PDF page frame and KOMPAS service tables outside x=20..205 mm."""
+
+    main_x0 = 20.0
+    main_x1 = min(205.0, float(page_w_mm) - 5.0)
+    cleaned: list[Polyline] = []
+    removed = 0
+    for polyline in polylines:
+        for first, second in zip(polyline, polyline[1:]):
+            ax, ay = float(first[0]), float(first[1])
+            bx, by = float(second[0]), float(second[1])
+            span_x = abs(bx - ax)
+            span_y = abs(by - ay)
+            page_perimeter = (
+                (span_x >= 100.0 and (max(ay, by) <= 1.5 or min(ay, by) >= float(page_h_mm) - 1.5))
+                or (span_y >= 150.0 and (max(ax, bx) <= 1.5 or min(ax, bx) >= float(page_w_mm) - 1.5))
+            )
+            if page_perimeter or max(ax, bx) < main_x0 - 0.15 or min(ax, bx) > main_x1 + 0.15:
+                if span_y >= 4.0 and span_x <= 0.25 and abs(((ax + bx) * 0.5) - main_x1) <= 1.0:
+                    cleaned.append([(main_x1, ay), (main_x1, by)])
+                    continue
+                removed += 1
+                continue
+            dx = bx - ax
+            if abs(dx) <= 1e-9:
+                if abs(ax - main_x0) <= 1.0:
+                    ax = bx = main_x0
+                elif abs(ax - main_x1) <= 1.0:
+                    ax = bx = main_x1
+                elif not (main_x0 - 0.15 <= ax <= main_x1 + 0.15):
+                    removed += 1
+                    continue
+                cleaned.append([(ax, ay), (bx, by)])
+                continue
+            t0 = max(0.0, min(1.0, (main_x0 - ax) / dx))
+            t1 = max(0.0, min(1.0, (main_x1 - ax) / dx))
+            enter, leave = sorted((t0, t1))
+            if max(ax, bx) <= main_x1 and min(ax, bx) >= main_x0:
+                enter, leave = 0.0, 1.0
+            if leave - enter <= 1e-8:
+                removed += 1
+                continue
+            start = (ax + dx * enter, ay + (by - ay) * enter)
+            end = (ax + dx * leave, ay + (by - ay) * leave)
+            cleaned.append([start, end])
+    logs.append(
+        "Specification form crop: kept main GOST table x=20..205 mm; "
+        f"removed page-frame/service segments={removed}."
+    )
+    return cleaned
 
 def _merge_grid_intervals(intervals: list[tuple[float, float]], *, gap_eps: float = 0.55) -> list[tuple[float, float]]:
     if not intervals:
@@ -2512,15 +2924,12 @@ def _build_source(pack: Path, source_pdf: Path, report: dict[str, Any], settings
             geometry, specification_background_meta, page_w_mm, page_h_mm = clean_specification
             cleanup_meta = dict(cleanup_meta)
             cleanup_meta["specification_text_layer_background"] = specification_background_meta
-            geometry = _snap_specification_table_grid_polylines(geometry, logs)
-        elif text_lines:
-            geometry = _remove_existing_text_geometry(geometry, text_lines, logs.append)
-            geometry = _snap_specification_table_grid_polylines(geometry, logs)
         else:
-            logs.append(
-                "Specification grid snap skipped: original vector text is the "
-                "only text source and must remain untouched."
-            )
+            text_lines = _specification_ocr_text_lines(source_pdf, logs)
+            geometry = _remove_existing_text_geometry(geometry, text_lines, logs.append)
+            geometry = _specification_structural_geometry_only(geometry, logs)
+        geometry = _clean_specification_form_geometry(geometry, page_w_mm, page_h_mm, logs)
+        geometry = _snap_specification_table_grid_polylines(geometry, logs)
     else:
         geometry = _remove_existing_text_geometry(geometry, text_lines, logs.append)
     if not is_specification:

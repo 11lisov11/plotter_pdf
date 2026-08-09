@@ -21,6 +21,7 @@ dependencies = [
 photo = [
     "opencv-python-headless>=4.10",
     "hershey-fonts>=2.1.0",
+    "rapidocr>=3.9.2,<4",
 ]
 word = [
     "pywin32>=306; platform_system == 'Windows'",

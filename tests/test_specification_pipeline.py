@@ -205,3 +205,103 @@ def test_specification_preview_is_drawn_from_final_nc_in_paper_orientation(tmp_p
         drawings = page.get_drawings()
         assert drawings
         assert any(drawing["rect"].width > 0.0 for drawing in drawings)
+
+
+def test_vector_specification_ocr_text_is_normalized_before_lff_rendering() -> None:
+    bbox = (40.0, 45.0, 95.0, 52.0)
+
+    assert algorithm._normalize_specification_ocr_text("M400.01.00.00 C6", bbox) == "МЧ00.01.00.00 СБ"
+    assert algorithm._normalize_specification_ocr_text("Одозначение", bbox) == "Обозначение"
+
+
+def test_vector_specification_structure_filter_removes_old_glyphs() -> None:
+    logs: list[str] = []
+    geometry = [
+        [(20.0, 10.0), (205.0, 10.0)],
+        [(40.0, 10.0), (40.0, 290.0)],
+        [(80.0, 40.0), (82.0, 45.0), (84.0, 40.0)],
+    ]
+
+    result = algorithm._specification_structural_geometry_only(geometry, logs)
+
+    assert result == [[(20.0, 10.0), (205.0, 10.0)], [(40.0, 10.0), (40.0, 290.0)]]
+    assert any("removed_old_glyph_segments" in entry for entry in logs)
+
+
+def test_specification_form_crop_removes_outer_frame_and_service_side_tables() -> None:
+    logs: list[str] = []
+    geometry = [
+        [(0.0, 0.0), (210.0, 0.0)],
+        [(0.0, 0.0), (0.0, 297.0)],
+        [(8.0, 10.0), (8.0, 290.0)],
+        [(19.0, 20.0), (19.0, 280.0)],
+        [(20.0, 10.0), (205.0, 10.0)],
+        [(20.0, 10.0), (20.0, 290.0)],
+        [(205.6, 10.0), (205.6, 290.0)],
+        [(209.0, 10.0), (209.0, 290.0)],
+    ]
+
+    result = algorithm._clean_specification_form_geometry(geometry, 210.0, 297.0, logs)
+
+    assert result == [
+        [(20.0, 10.0), (205.0, 10.0)],
+        [(20.0, 10.0), (20.0, 290.0)],
+        [(205.0, 10.0), (205.0, 290.0)],
+    ]
+    assert any("page-frame/service" in entry for entry in logs)
+
+
+def test_specification_ocr_repair_sizes_format_and_splits_title_header() -> None:
+    lines = [
+        {"text": "\u0414\u0435\u0442\u0430\u043b\u0438", "bbox_mm": [125.0, 60.0, 155.0, 67.0]},
+        {"text": "A3", "bbox_mm": [20.0, 80.0, 28.0, 87.0]},
+        {"text": "\u041c\u042700.01.00.01", "bbox_mm": [42.0, 80.0, 95.0, 87.0]},
+        {"text": "\u041a\u043e\u0440\u043f\u0443\u0441", "bbox_mm": [112.0, 80.0, 140.0, 87.0]},
+        {"text": "\u041c\u042700.01.00.02", "bbox_mm": [42.0, 88.0, 95.0, 95.0]},
+        {"text": "\u041a\u0440\u044b\u0448\u043a\u0430", "bbox_mm": [112.0, 88.0, 145.0, 95.0]},
+        {"text": "\u041c\u042700.01.00.03", "bbox_mm": [42.0, 96.0, 95.0, 103.0]},
+        {"text": "\u041a\u043b\u0430\u043f\u0430\u043d", "bbox_mm": [112.0, 96.0, 145.0, 103.0]},
+        {"text": "\u0418\u0437\u043c. \u041b\u0438\u0441\u0442 \u2116 \u0434\u043e\u043a\u0438\u043c.", "bbox_mm": [20.0, 261.8, 85.0, 267.4]},
+        {"text": "\u041f\u043e\u0434\u043f.", "bbox_mm": [62.0, 262.0, 73.0, 267.4]},
+        {"text": "\u0414\u0430\u0442\u0430", "bbox_mm": [74.0, 262.2, 85.0, 267.2]},
+        {"text": "\u041b\u0438\u0442.", "bbox_mm": [158.0, 267.1, 167.0, 272.3]},
+        {"text": "\u041b\u0438\u0441\u0442\u043e\u0432", "bbox_mm": [188.0, 267.1, 203.0, 272.3]},
+    ]
+
+    repaired = algorithm._repair_specification_ocr_cells(lines)
+
+    format_line = next(line for line in repaired if line["text"] == "A3")
+    assert format_line["text_box_fill"] == 0.50
+    assert {line["text"] for line in repaired} >= {"\u0418\u0437\u043c.", "\u041b\u0438\u0441\u0442", "\u2116 \u0434\u043e\u043a\u0443\u043c."}
+    assert {line["text"] for line in repaired} >= {"\u041b\u0438\u0442.", "\u041b\u0438\u0441\u0442", "\u041b\u0438\u0441\u0442\u043e\u0432"}
+    left_header = [
+        line
+        for line in repaired
+        if line["text"] in {"\u0418\u0437\u043c.", "\u2116 \u0434\u043e\u043a\u0443\u043c.", "\u041f\u043e\u0434\u043f.", "\u0414\u0430\u0442\u0430"}
+    ]
+    assert all(line["bbox_mm"][1] >= 261.8 for line in left_header)
+    right_header = [line for line in repaired if line["bbox_mm"][0] > 150.0 and line["text"].startswith("\u041b")]
+    assert {line["text"] for line in right_header} == {"\u041b\u0438\u0442.", "\u041b\u0438\u0441\u0442", "\u041b\u0438\u0441\u0442\u043e\u0432"}
+    assert all(line["bbox_mm"][1] == 267.1 for line in right_header)
+    assert [line["text"] for line in repaired if line.get("font") == "OpenGOST LFF reconstructed specification position"] == [
+        "1",
+        "2",
+        "3",
+    ]
+
+
+def test_specification_ocr_repair_recovers_fragmented_title_header() -> None:
+    repaired = algorithm._repair_specification_ocr_cells(
+        [
+            {"text": "\u04183\u043c\u041b\u0438\u0441\u0442", "bbox_mm": [20.5, 262.3, 37.2, 267.6]},
+            {"text": "\u2116 \u0434\u043e\u043a\u0438\u043c.", "bbox_mm": [40.5, 262.0, 57.7, 267.8]},
+            {"text": "\u041b\u0438\u0441\u0442\u043e\u0432", "bbox_mm": [188.1, 267.3, 202.4, 272.6]},
+        ]
+    )
+
+    texts = [line["text"] for line in repaired]
+    assert "\u04183\u043c\u041b\u0438\u0441\u0442" not in texts
+    assert "\u2116 \u0434\u043e\u043a\u0438\u043c." not in texts
+    assert texts.count("\u0418\u0437\u043c.") == 1
+    assert texts.count("\u041b\u0438\u0441\u0442") == 2
+    assert texts.count("\u2116 \u0434\u043e\u043a\u0443\u043c.") == 1
