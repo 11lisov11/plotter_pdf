@@ -495,9 +495,19 @@ def _is_service_text(line: dict[str, Any], service_regions: list[tuple[float, fl
     if not text:
         return True
     folded = text.casefold()
+    bbox = [float(v) for v in line.get("bbox_mm", (0, 0, 0, 0))[:4]]
+    # "Формат" is both a removable KOMPAS footer label and the required first
+    # column header of a specification table. Preserve only the latter, which
+    # is located in the narrow upper-left table header cell.
+    if (
+        folded.rstrip(".:") == "формат".casefold()
+        and len(bbox) == 4
+        and 18.0 <= min(bbox[0], bbox[2]) <= 28.5
+        and max(bbox[1], bbox[3]) <= 22.5
+    ):
+        return False
     if any(part.casefold() in folded for part in SERVICE_TEXT_PARTS):
         return True
-    bbox = [float(v) for v in line.get("bbox_mm", (0, 0, 0, 0))[:4]]
     if len(bbox) != 4:
         return False
     cx = (bbox[0] + bbox[2]) * 0.5
@@ -1288,6 +1298,73 @@ def _split_specification_position_designation_lines(lines: list[dict[str, Any]])
     return out
 
 
+def _split_specification_name_quantity_lines(lines: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Split a name and trailing quantity merged across specification cells.
+
+    Some KOMPAS PDFs expose ``"Втулка 1"`` or
+    ``"Картон А1 ГОСТ 9774-74 1"`` as one text line whose bbox spans the
+    ``Наименование`` and ``Кол.`` columns.  The final standalone integer is a
+    quantity only when the bbox reaches the narrow quantity column; numbers
+    contained inside a designation or product name are left untouched.
+    """
+
+    quantity_boxes = [
+        bbox
+        for line in lines
+        if re.fullmatch(r"\s*\d{1,2}\s*", _lff_line_text(line))
+        and (bbox := _line_bbox_mm(line)) is not None
+        and 170.0 <= bbox[0] <= 181.5
+        and bbox[2] <= 182.5
+        and bbox[1] < 250.0
+    ]
+    if quantity_boxes:
+        quantity_x0 = sum(box[0] for box in quantity_boxes) / len(quantity_boxes)
+        quantity_x1 = sum(box[2] for box in quantity_boxes) / len(quantity_boxes)
+    else:
+        quantity_x0, quantity_x1 = 176.0, 180.6
+
+    out: list[dict[str, Any]] = []
+    for line in lines:
+        text = _lff_line_text(line)
+        bbox = _line_bbox_mm(line)
+        match = re.match(r"^(.+\S)\s+(\d{1,2})\s*$", text)
+        if bbox is None or match is None:
+            out.append(line)
+            continue
+        x0, y0, x1, y1 = bbox
+        if not (
+            100.0 <= x0 <= 125.0
+            and 174.0 <= x1 <= 182.5
+            and x1 - x0 >= 35.0
+            and re.search(r"[A-Za-zА-Яа-яЁё]", match.group(1))
+        ):
+            out.append(line)
+            continue
+
+        name_text, quantity_text = match.groups()
+        name_line = dict(line)
+        name_line["text"] = name_text
+        name_line["bbox_mm"] = [
+            round(float(x0), 4),
+            round(float(y0), 4),
+            round(float(min(169.5, quantity_x0 - 1.0)), 4),
+            round(float(y1), 4),
+        ]
+        name_line["split_from_spec_name_quantity_line"] = text
+
+        quantity_line = dict(line)
+        quantity_line["text"] = quantity_text
+        quantity_line["bbox_mm"] = [
+            round(float(quantity_x0), 4),
+            round(float(y0), 4),
+            round(float(quantity_x1), 4),
+            round(float(y1), 4),
+        ]
+        quantity_line["split_from_spec_name_quantity_line"] = text
+        out.extend([name_line, quantity_line])
+    return out
+
+
 
 
 def _is_new_algorithm_specification_source(source_pdf: Path) -> bool:
@@ -1830,6 +1907,7 @@ def _make_lff_opengost_text_strokes(
     prepared_text_lines = list(text_lines)
     if table_rules:
         prepared_text_lines = _split_specification_position_designation_lines(prepared_text_lines)
+        prepared_text_lines = _split_specification_name_quantity_lines(prepared_text_lines)
         prepared_text_lines = _mark_multiline_table_cell_lines(prepared_text_lines, table_rules)
     for source_line in prepared_text_lines:
         if _is_top_service_designation_line(source_line):
@@ -1997,6 +2075,12 @@ def _write_source_artifacts(
 def _clean_source_background_for_pack(pack: Path, source_pdf: Path, report: dict[str, Any]) -> Path | None:
     if bool(report.get("a3_two_pass")):
         return None
+    if _is_new_algorithm_specification_source(source_pdf):
+        # A saved clean-source file can contain remnants produced by an older
+        # specification text/grid pass. Reusing it makes those remnants part
+        # of the next generation and overlays fresh LFF text on top. Always
+        # rebuild specifications from the current source PDF instead.
+        return None
     candidates = [
         pack / "a4_clean_source.pdf",
         pack / "clean_source.pdf",
@@ -2080,6 +2164,55 @@ def _clean_background_polylines_from_pdf(
         background.close()
 
 
+def _specification_clean_background_from_source(
+    source_pdf: Path,
+    text_lines: list[dict[str, Any]],
+    logs: list[str],
+) -> tuple[list[Polyline], dict[str, int], float, float] | None:
+    """Return a text-free specification grid when a reliable text layer exists.
+
+    KOMPAS specification PDFs can contain both an extractable text layer and
+    vector strokes for the same glyphs.  Removing whole SVG paths by bounding
+    box leaves small glyph fragments behind because a path may contain strokes
+    from several characters.  Reading drawing segments directly from the PDF
+    lets the existing clean-background filter remove those fragments before the
+    single-line LFF text is overlaid.
+
+    A specification without an extractable text layer must keep its original
+    vector glyphs.  In that case this function deliberately returns ``None``;
+    snapping its near-axis strokes would turn letters and digits into grid
+    fragments.
+    """
+
+    if not text_lines:
+        logs.append(
+            "Specification text-layer background route skipped: no reliable "
+            "extractable text; preserve original vector glyph geometry."
+        )
+        return None
+
+    text_doc = fitz.open(source_pdf)
+    try:
+        geometry, meta, page_w_mm, page_h_mm = _clean_background_polylines_from_pdf(
+            source_pdf,
+            text_doc,
+            logs,
+        )
+    finally:
+        text_doc.close()
+    if not geometry:
+        logs.append(
+            "Specification text-layer background route produced no geometry; "
+            "fall back to bounded SVG text cleanup."
+        )
+        return None
+    logs.append(
+        "Specification text-layer background route: clean PDF drawing segments "
+        "will be combined with one LFF text layer."
+    )
+    return geometry, meta, page_w_mm, page_h_mm
+
+
 def _make_experiment_lff_text_strokes(
     source_pdf: Path,
     logs: list[str],
@@ -2120,6 +2253,7 @@ def _make_experiment_lff_text_strokes(
             prepared_lines.append(line_mm)
         if table_rules:
             prepared_lines = _split_specification_position_designation_lines(prepared_lines)
+            prepared_lines = _split_specification_name_quantity_lines(prepared_lines)
             prepared_lines = _mark_multiline_table_cell_lines(prepared_lines, table_rules)
         for line_mm in prepared_lines:
             if _is_top_service_designation_line(line_mm):
@@ -2270,10 +2404,16 @@ def _build_clean_source_opengost_source(
         text_doc.close()
     text_lines_for_cleanup, _cleanup_lines_found, _cleanup_lines_skipped = _text_lines_for_source(source_pdf)
     geometry = _remove_existing_text_geometry(geometry, text_lines_for_cleanup, logs.append)
-    geometry = _strip_top_service_designation_geometry(geometry, logs)
     is_specification = _is_new_algorithm_specification(source_pdf, geometry)
-    if is_specification:
+    if not is_specification:
+        geometry = _strip_top_service_designation_geometry(geometry, logs)
+    if is_specification and text_lines_for_cleanup:
         geometry = _snap_specification_table_grid_polylines(geometry, logs)
+    elif is_specification:
+        logs.append(
+            "Specification grid snap skipped: no reliable text layer, so vector "
+            "glyph strokes must not be classified as table rules."
+        )
     table_rules = _horizontal_table_rules_from_polylines(geometry)
     text_lines_for_render = text_lines_for_cleanup
     if is_specification:
@@ -2365,11 +2505,26 @@ def _build_source(pack: Path, source_pdf: Path, report: dict[str, Any], settings
             "stamp grid is preserved; old collinear-overlap simplifier is disabled for A3 geometry and LFF text."
         )
     text_lines, text_lines_found, text_lines_skipped = _text_lines_for_source(source_pdf)
-    geometry = _remove_existing_text_geometry(geometry, text_lines, logs.append)
-    geometry = _strip_top_service_designation_geometry(geometry, logs)
     is_specification = _is_new_algorithm_specification(source_pdf, geometry)
     if is_specification:
-        geometry = _snap_specification_table_grid_polylines(geometry, logs)
+        clean_specification = _specification_clean_background_from_source(source_pdf, text_lines, logs)
+        if clean_specification is not None:
+            geometry, specification_background_meta, page_w_mm, page_h_mm = clean_specification
+            cleanup_meta = dict(cleanup_meta)
+            cleanup_meta["specification_text_layer_background"] = specification_background_meta
+            geometry = _snap_specification_table_grid_polylines(geometry, logs)
+        elif text_lines:
+            geometry = _remove_existing_text_geometry(geometry, text_lines, logs.append)
+            geometry = _snap_specification_table_grid_polylines(geometry, logs)
+        else:
+            logs.append(
+                "Specification grid snap skipped: original vector text is the "
+                "only text source and must remain untouched."
+            )
+    else:
+        geometry = _remove_existing_text_geometry(geometry, text_lines, logs.append)
+    if not is_specification:
+        geometry = _strip_top_service_designation_geometry(geometry, logs)
     table_rules = _horizontal_table_rules_from_polylines(geometry)
     if is_specification:
         geometry, text_lines = _adjust_specification_underlined_heading_layout(geometry, text_lines, table_rules, logs)
@@ -2939,11 +3094,19 @@ def _prepare_a4_page(source_build: SourceBuild, settings: Settings, logs: list[s
     if is_specification:
         work_x0, work_x1, work_y0, work_y1 = prep._machine_work_area_bounds_mm()
         sx0, sy0, sx1, sy1 = _bounds(source_build.polylines)
-        src_w = max(1e-9, sx1 - sx0)
-        src_h = max(1e-9, sy1 - sy0)
+        # Fit the physical PDF page, not only the surviving geometry bbox.
+        # Vector-only specifications may legitimately have no strokes in a
+        # service gutter; bbox fitting would then enlarge that one sheet and
+        # change its scale relative to every other A4 specification.
+        fit_x0 = min(0.0, sx0)
+        fit_y0 = min(0.0, sy0)
+        fit_x1 = max(float(source_build.page_w_mm), sx1)
+        fit_y1 = max(float(source_build.page_h_mm), sy1)
+        src_w = max(1e-9, fit_x1 - fit_x0)
+        src_h = max(1e-9, fit_y1 - fit_y0)
         scale = min((work_x1 - work_x0) / src_w, (work_y1 - work_y0) / src_h)
-        tx = ((work_x0 + work_x1) * 0.5) - (((sx0 + sx1) * 0.5) * scale) + settings.x_compensation_mm
-        ty = ((work_y0 + work_y1) * 0.5) - (((sy0 + sy1) * 0.5) * scale)
+        tx = ((work_x0 + work_x1) * 0.5) - (((fit_x0 + fit_x1) * 0.5) * scale) + settings.x_compensation_mm
+        ty = ((work_y0 + work_y1) * 0.5) - (((fit_y0 + fit_y1) * 0.5) * scale)
         mapped = [[(float(x) * scale + tx, float(y) * scale + ty) for x, y in poly] for poly in source_build.polylines]
         clipped = backend.clip_polylines_to_work_area(mapped, logger=logs.append)
         stitched = stitch_gcode_polylines.stitch_polylines(clipped, eps=settings.stitch_eps_mm)
@@ -2955,6 +3118,7 @@ def _prepare_a4_page(source_build: SourceBuild, settings: Settings, logs: list[s
             "translate_x_mm": round(float(tx), 6),
             "translate_y_mm": round(float(ty), 6),
             "source_bbox": [round(float(v), 4) for v in (sx0, sy0, sx1, sy1)],
+            "source_page_fit_bbox": [round(float(v), 4) for v in (fit_x0, fit_y0, fit_x1, fit_y1)],
             "work_area_bounds": [round(float(v), 4) for v in (work_x0, work_x1, work_y0, work_y1)],
         }
         logs.append(
@@ -3038,6 +3202,48 @@ def _write_clean_preview_from_final_gcode(out_nc: Path, settings: Settings) -> t
     )
     _render_pdf_to_png(clean_pdf, clean_png, dpi=190)
     return clean_pdf, clean_png
+
+
+def _write_specification_preview_from_final_gcode(
+    out_nc: Path,
+    out_pdf: Path,
+    settings: Settings,
+) -> Path:
+    """Render a clean specification preview from the exact final NC segments."""
+
+    segments, _points = render_gcode_preview.parse_draw_segments(
+        out_nc,
+        transform=settings.paper_transform,
+        work_min_x=0.0,
+        work_min_y=settings.work_min_y,
+        work_width=settings.work_width,
+        work_height=settings.work_height,
+    )
+    work_x0, work_y0, work_x1, work_y1 = render_gcode_preview._transformed_work_bounds(
+        transform=settings.paper_transform,
+        work_min_x=0.0,
+        work_min_y=settings.work_min_y,
+        work_width=settings.work_width,
+        work_height=settings.work_height,
+    )
+    polylines = [
+        [
+            (x0 - work_x0, work_y1 - y0),
+            (x1 - work_x0, work_y1 - y1),
+        ]
+        for x0, y0, x1, y1 in segments
+    ]
+    prep._render_polylines_pdf(
+        polylines=polylines,
+        out_pdf=out_pdf,
+        canvas_bounds_mm=(
+            0.0,
+            work_x1 - work_x0,
+            0.0,
+            work_y1 - work_y0,
+        ),
+    )
+    return out_pdf
 
 
 def _write_item_outputs(pack: Path, item_name: str, polylines: list[Polyline], settings: Settings) -> dict[str, Any]:
@@ -3205,6 +3411,10 @@ def _write_user_plot_preview(
         )
         return out_pdf
     if ok_rows:
+        if _is_new_algorithm_specification(source_build.source_pdf, source_build.polylines):
+            final_nc = _row_path(ok_rows[0], "output_nc")
+            if final_nc and final_nc.exists():
+                return _write_specification_preview_from_final_gcode(final_nc, out_pdf, settings)
         preview = _row_path(ok_rows[0], "clean_preview_pdf") or _row_path(ok_rows[0], "preview_pdf")
         if preview and preview.exists():
             _copy_if_different(preview, out_pdf)
