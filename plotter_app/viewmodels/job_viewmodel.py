@@ -25,11 +25,19 @@ class JobViewModel:
         self.settings.input_rotations = [0] if str(value).strip() else []
         self.preflight_ok = False
 
-    def set_layout_items(self, items: list[tuple[str | Path, int, int]]) -> None:
+    def set_layout_items(self, items: list[tuple[str | Path, int, int]], zones: list[str] | None = None) -> None:
         self.settings.input_paths = [str(path) for path, _page, _rotation in items]
         self.settings.input_pages = [int(page) for _path, page, _rotation in items]
         self.settings.input_rotations = [int(rotation) % 360 for _path, _page, rotation in items]
+        if zones is not None:
+            self.settings.input_zones = [str(zone).strip() for zone in zones[: len(items)]]
+        else:
+            self.settings.input_zones = self.settings.input_zones[: len(items)]
         self.settings.input_path = Path(items[0][0]) if items else None
+        self.preflight_ok = False
+
+    def set_layout_zones(self, zones: list[str]) -> None:
+        self.settings.input_zones = [str(zone).strip() for zone in zones[: len(self.settings.input_paths)]]
         self.preflight_ok = False
 
     def set_output_dir(self, value: str | Path) -> None:

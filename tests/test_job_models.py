@@ -17,3 +17,11 @@ def test_job_result_to_dict_serializes_paths() -> None:
     assert data["ok"] is True
     assert data["gcode_path"] == "a.gcode"
     assert data["line_count"] == 3
+
+
+def test_job_settings_keeps_explicit_zone_assignments() -> None:
+    settings = JobSettings(input_paths=["near.pdf", "far.pdf"], input_zones=["1", "2"])
+    assert settings.normalized_zone_layout_items() == [
+        (Path("near.pdf"), 0, 0, "1"),
+        (Path("far.pdf"), 0, 0, "2"),
+    ]

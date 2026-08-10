@@ -8871,6 +8871,20 @@ CALIBRATION_LAYOUT_GRIDS = {
     "a2_4xa4": (2, 2),
 }
 
+CALIBRATION_LAYOUT_ZONES = {
+    "a3_zone_1": ("a2_2xa3", 1),
+    "a3_zone_2": ("a2_2xa3", 2),
+    "a4_zone_11": ("a2_4xa4", 1),
+    "a4_zone_12": ("a2_4xa4", 2),
+    "a4_zone_21": ("a2_4xa4", 3),
+    "a4_zone_22": ("a2_4xa4", 4),
+}
+
+CALIBRATION_LAYOUT_GROUPS = {
+    "a2_mixed_a3_near": ("a3_zone_1", "a4_zone_21", "a4_zone_22"),
+    "a2_mixed_a3_far": ("a4_zone_11", "a4_zone_12", "a3_zone_2"),
+}
+
 
 def _normalise_calibration_layout(layout: str | None) -> str:
     raw = (layout or "sheet").strip().lower().replace("-", "_").replace(" ", "_")
@@ -8882,8 +8896,42 @@ def _normalise_calibration_layout(layout: str | None) -> str:
         "2_a3": "a2_2xa3",
         "4xa4": "a2_4xa4",
         "4_a4": "a2_4xa4",
+        "a2_a3_zone_1": "a3_zone_1",
+        "a2_a3_zone_2": "a3_zone_2",
+        "a4_zone_1": "a4_zone_11",
+        "a4_zone_2": "a4_zone_12",
+        "a4_zone_3": "a4_zone_21",
+        "a4_zone_4": "a4_zone_22",
+        "a2_a4_zone_1": "a4_zone_11",
+        "a2_a4_zone_2": "a4_zone_12",
+        "a2_a4_zone_3": "a4_zone_21",
+        "a2_a4_zone_4": "a4_zone_22",
     }
     return aliases.get(raw, raw)
+
+
+def calibration_layout_zone_bounds(
+    layout: str,
+    bounds: Optional[Tuple[float, float, float, float]] = None,
+) -> Tuple[float, float, float, float]:
+    normalised = _normalise_calibration_layout(layout)
+    zone = CALIBRATION_LAYOUT_ZONES.get(normalised)
+    if zone is None:
+        raise ValueError(f"Calibration layout {layout!r} is not a numbered zone.")
+    grid_name, zone_number = zone
+    cols, rows = CALIBRATION_LAYOUT_GRIDS[grid_name]
+    min_x, max_x, min_y, max_y = bounds or work_area_bounds()
+    width = max_x - min_x
+    height = max_y - min_y
+    zone_index = int(zone_number) - 1
+    row, col = divmod(zone_index, cols)
+    if row >= rows:
+        raise ValueError(f"Calibration zone {zone_number} is outside layout {grid_name}.")
+    cell_min_x = min_x + width * col / cols
+    cell_max_x = min_x + width * (col + 1) / cols
+    cell_min_y = min_y + height * row / rows
+    cell_max_y = min_y + height * (row + 1) / rows
+    return cell_min_x, cell_max_x, cell_min_y, cell_max_y
 
 
 def _dedupe_mark_polylines(polylines: List[List[Tuple[float, float]]]) -> List[List[Tuple[float, float]]]:
@@ -8940,11 +8988,26 @@ def build_calibration_layout_corner_mark_polylines(
     normalised = _normalise_calibration_layout(layout)
     if normalised == "sheet":
         return build_area_corner_mark_polylines(mark_size=mark_size)
+    if normalised in CALIBRATION_LAYOUT_ZONES:
+        return _build_corner_mark_polylines_for_bounds(
+            calibration_layout_zone_bounds(normalised),
+            mark_size=mark_size,
+        )
+    if normalised in CALIBRATION_LAYOUT_GROUPS:
+        marks: List[List[Tuple[float, float]]] = []
+        for zone in CALIBRATION_LAYOUT_GROUPS[normalised]:
+            marks.extend(
+                _build_corner_mark_polylines_for_bounds(
+                    calibration_layout_zone_bounds(zone),
+                    mark_size=mark_size,
+                )
+            )
+        return _dedupe_mark_polylines(marks)
     grid = CALIBRATION_LAYOUT_GRIDS.get(normalised)
     if grid is None:
         raise ValueError(
             "Unknown calibration layout "
-            f"{layout!r}; use sheet, a2, a2_2xa3 or a2_4xa4."
+            f"{layout!r}; use sheet, a2, a2_2xa3, a2_4xa4 or a numbered A3/A4 zone."
         )
     cols, rows = grid
     return _build_grid_corner_mark_polylines_for_bounds(
@@ -8959,11 +9022,16 @@ def calibration_layout_point_count(layout: str = "sheet") -> int:
     normalised = _normalise_calibration_layout(layout)
     if normalised == "sheet":
         return 4
+    if normalised in CALIBRATION_LAYOUT_ZONES:
+        return 4
+    if normalised in CALIBRATION_LAYOUT_GROUPS:
+        marks = build_calibration_layout_corner_mark_polylines(normalised)
+        return len({(round(line[0][0], 4), round(line[0][1], 4)) for line in marks if line})
     grid = CALIBRATION_LAYOUT_GRIDS.get(normalised)
     if grid is None:
         raise ValueError(
             "Unknown calibration layout "
-            f"{layout!r}; use sheet, a2, a2_2xa3 or a2_4xa4."
+            f"{layout!r}; use sheet, a2, a2_2xa3, a2_4xa4 or a numbered A3/A4 zone."
         )
     cols, rows = grid
     return (cols + 1) * (rows + 1)

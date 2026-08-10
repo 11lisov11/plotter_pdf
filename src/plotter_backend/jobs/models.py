@@ -11,6 +11,7 @@ class JobSettings:
     input_paths: list[str] = field(default_factory=list)
     input_pages: list[int] = field(default_factory=list)
     input_rotations: list[int] = field(default_factory=list)
+    input_zones: list[str] = field(default_factory=list)
     output_dir: Path | str = Path("_plotter_jobs")
     sheet_format: str = "a4"
     sheet_width_mm: Optional[float] = None
@@ -38,6 +39,7 @@ class JobSettings:
     layout_page: int = 1
     layout_margin_mm: float = 0.0
     layout_gap_mm: float = 0.0
+    zone_layout: str = "none"
     output_rotation_deg: int = 0
     mirror_x: bool = False
     mirror_y: bool = False
@@ -60,6 +62,13 @@ class JobSettings:
             rotation = self.input_rotations[index] if index < len(self.input_rotations) else 0
             items.append((Path(raw_path), max(0, int(page_index)), int(rotation) % 360))
         return items
+
+    def normalized_zone_layout_items(self) -> list[tuple[Path, int, int, str]]:
+        items = self.normalized_layout_items()
+        return [
+            (path, page, rotation, str(self.input_zones[index] if index < len(self.input_zones) else "").strip())
+            for index, (path, page, rotation) in enumerate(items)
+        ]
 
 
 @dataclass(slots=True)

@@ -172,7 +172,24 @@ def build_cli_parser(backend: Any) -> argparse.ArgumentParser:
     parser.add_argument(
         "--calibration-layout",
         default="sheet",
-        choices=["sheet", "a2", "a2_2xa3", "a2_4xa4"],
+        choices=[
+            "sheet",
+            "a2",
+            "a2_2xa3",
+            "a2_4xa4",
+            "a3_zone_1",
+            "a3_zone_2",
+            "a4_zone_11",
+            "a4_zone_12",
+            "a4_zone_21",
+            "a4_zone_22",
+            "a2_mixed_a3_near",
+            "a2_mixed_a3_far",
+            "a4_zone_1",
+            "a4_zone_2",
+            "a4_zone_3",
+            "a4_zone_4",
+        ],
         help="Corner calibration layout for the selected machine profile.",
     )
     parser.add_argument("--sheet-width-mm", type=float, default=None, help="Sheet width override (mm).")

@@ -19,12 +19,53 @@ SHEET_SIZES_MM: dict[str, tuple[float, float]] = {
 }
 SHEET_CAPACITY = {"a4": 1, "a3": 2, "a2": 4}
 
+# Slot rectangles use real A2 paper coordinates. The CoreXY reaches
+# 390 x 590 mm, leaving 15 mm at left/right and 2 mm at top/bottom.
+# PDF Y grows down; machine Y grows from the lower-left HOME away from us.
+A2_ZONE_LAYOUTS: dict[str, dict[str, tuple[float, float, float, float]]] = {
+    "a2_single": {"A2": (15.0, 2.0, 405.0, 592.0)},
+    "a3_pair": {
+        "1": (15.0, 297.0, 405.0, 592.0),
+        "2": (15.0, 2.0, 405.0, 297.0),
+    },
+    "a4_quad": {
+        "11": (15.0, 297.0, 210.0, 592.0),
+        "12": (210.0, 297.0, 405.0, 592.0),
+        "21": (15.0, 2.0, 210.0, 297.0),
+        "22": (210.0, 2.0, 405.0, 297.0),
+    },
+    "mixed_a3_near": {
+        "1": (15.0, 297.0, 405.0, 592.0),
+        "21": (15.0, 2.0, 210.0, 297.0),
+        "22": (210.0, 2.0, 405.0, 297.0),
+    },
+    "mixed_a3_far": {
+        "11": (15.0, 297.0, 210.0, 592.0),
+        "12": (210.0, 297.0, 405.0, 592.0),
+        "2": (15.0, 2.0, 405.0, 297.0),
+    },
+}
+
+
+def _normalise_zone_layout(value: str | None) -> str:
+    key = str(value or "none").strip().lower().replace("-", "_")
+    key = {"": "none", "off": "none", "a2": "a2_single", "a3": "a3_pair", "a4": "a4_quad"}.get(key, key)
+    if key != "none" and key not in A2_ZONE_LAYOUTS:
+        raise ValueError(f"Unknown large-plotter zone layout: {value!r}")
+    return key
+
+
+def zone_layout_zones(value: str | None) -> tuple[str, ...]:
+    key = _normalise_zone_layout(value)
+    return tuple(A2_ZONE_LAYOUTS.get(key, {}))
+
 
 @dataclass(frozen=True, slots=True)
 class PdfLayoutItem:
     path: Path
     page_index: int = 0
     rotation_deg: int = 0
+    zone: str = ""
 
 
 @dataclass(slots=True)
@@ -149,9 +190,16 @@ def create_pdf_layout(
     layout_mode: str = "auto",
     margin_mm: float = 0.0,
     gap_mm: float = 0.0,
+    zone_layout: str = "none",
 ) -> PdfLayoutBuild:
+    zone_layout_key = _normalise_zone_layout(zone_layout)
     normalized_items = [
-        PdfLayoutItem(Path(item.path), max(0, int(item.page_index)), _normalise_rotation(item.rotation_deg))
+        PdfLayoutItem(
+            Path(item.path),
+            max(0, int(item.page_index)),
+            _normalise_rotation(item.rotation_deg),
+            str(item.zone or "").strip().upper(),
+        )
         for item in items
     ]
     if not normalized_items:
@@ -162,12 +210,18 @@ def create_pdf_layout(
         if item.path.suffix.lower() != ".pdf":
             raise ValueError(f"Многофайловая раскладка принимает PDF, получено: {item.path.name}")
 
-    fmt = str(sheet_format).strip().lower()
+    fmt = "a2" if zone_layout_key != "none" else str(sheet_format).strip().lower()
     sheet_w_mm, sheet_h_mm = _sheet_size(fmt)
-    capacity = _capacity(fmt)
+    capacity = len(A2_ZONE_LAYOUTS[zone_layout_key]) if zone_layout_key != "none" else _capacity(fmt)
     margin = max(0.0, float(margin_mm))
     gap = max(0.0, float(gap_mm))
-    chunks = [normalized_items[index : index + capacity] for index in range(0, len(normalized_items), capacity)]
+    if zone_layout_key != "none" and len(normalized_items) > capacity:
+        raise ValueError(
+            f"Zone layout {zone_layout_key} has {capacity} slots, but {len(normalized_items)} files were selected."
+        )
+    chunks = [normalized_items] if zone_layout_key != "none" else [
+        normalized_items[index : index + capacity] for index in range(0, len(normalized_items), capacity)
+    ]
     output_pdf.parent.mkdir(parents=True, exist_ok=True)
     for path in (output_pdf, preview_pdf, manifest_path):
         if path.exists():
@@ -178,25 +232,45 @@ def create_pdf_layout(
     source_docs: dict[Path, fitz.Document] = {}
     try:
         for output_page_index, chunk in enumerate(chunks):
-            cols, rows = _choose_grid(
-                chunk,
-                sheet_w_mm=sheet_w_mm,
-                sheet_h_mm=sheet_h_mm,
-                mode=layout_mode,
-                margin_mm=margin,
-                gap_mm=gap,
-            )
-            usable_w = sheet_w_mm - 2.0 * margin - gap * max(0, cols - 1)
-            usable_h = sheet_h_mm - 2.0 * margin - gap * max(0, rows - 1)
-            cell_w = usable_w / cols
-            cell_h = usable_h / rows
+            zone_slots = A2_ZONE_LAYOUTS.get(zone_layout_key, {})
+            assigned: list[tuple[PdfLayoutItem, str]] = []
+            if zone_slots:
+                used_zones: set[str] = set()
+                for item in chunk:
+                    zone = item.zone or next((candidate for candidate in zone_slots if candidate not in used_zones), "")
+                    if zone not in zone_slots:
+                        raise ValueError(f"Zone {zone!r} is not available in layout {zone_layout_key}.")
+                    if zone in used_zones:
+                        raise ValueError(f"More than one file is assigned to zone {zone}.")
+                    used_zones.add(zone)
+                    assigned.append((item, zone))
+                cols, rows = 2, 2
+            else:
+                cols, rows = _choose_grid(
+                    chunk,
+                    sheet_w_mm=sheet_w_mm,
+                    sheet_h_mm=sheet_h_mm,
+                    mode=layout_mode,
+                    margin_mm=margin,
+                    gap_mm=gap,
+                )
+                usable_w = sheet_w_mm - 2.0 * margin - gap * max(0, cols - 1)
+                usable_h = sheet_h_mm - 2.0 * margin - gap * max(0, rows - 1)
+                cell_w = usable_w / cols
+                cell_h = usable_h / rows
+                assigned = [(item, "") for item in chunk]
             target_page = clean_doc.new_page(width=sheet_w_mm * MM_TO_PT, height=sheet_h_mm * MM_TO_PT)
-            for item_index, item in enumerate(chunk):
-                col = item_index % cols
-                row = item_index // cols
-                slot_x0 = margin + col * (cell_w + gap)
-                slot_y0 = margin + row * (cell_h + gap)
-                slot = (slot_x0, slot_y0, slot_x0 + cell_w, slot_y0 + cell_h)
+            for item_index, (item, zone) in enumerate(assigned):
+                if zone:
+                    slot = zone_slots[zone]
+                    col = 1 if zone in {"12", "22"} else 0
+                    row = 1 if zone in {"1", "11", "12"} else 0
+                else:
+                    col = item_index % cols
+                    row = item_index // cols
+                    slot_x0 = margin + col * (cell_w + gap)
+                    slot_y0 = margin + row * (cell_h + gap)
+                    slot = (slot_x0, slot_y0, slot_x0 + cell_w, slot_y0 + cell_h)
                 source_w, source_h = _page_size_mm(item)
                 fitted = _fit_rect_mm(source_w, source_h, slot)
                 source_doc = source_docs.get(item.path)
@@ -214,7 +288,8 @@ def create_pdf_layout(
                 placements.append(
                     {
                         "output_page": output_page_index + 1,
-                        "slot": item_index + 1,
+                        "slot": zone or item_index + 1,
+                        "zone": zone or None,
                         "grid": {"cols": cols, "rows": rows, "col": col + 1, "row": row + 1},
                         "source": str(item.path),
                         "source_page": item.page_index + 1,
@@ -277,6 +352,7 @@ def create_pdf_layout(
                     "sheet_format": fmt,
                     "sheet_size_mm": [sheet_w_mm, sheet_h_mm],
                     "layout_mode": layout_mode,
+                    "zone_layout": zone_layout_key,
                     "margin_mm": margin,
                     "gap_mm": gap,
                     "page_count": clean_doc.page_count,
@@ -296,20 +372,26 @@ def create_pdf_layout(
 
 
 def build_pdf_layout(settings: JobSettings) -> PdfLayoutBuild:
-    items = [PdfLayoutItem(path, page, rotation) for path, page, rotation in settings.normalized_layout_items()]
+    items = [
+        PdfLayoutItem(path, page, rotation, zone)
+        for path, page, rotation, zone in settings.normalized_zone_layout_items()
+    ]
     output_dir = settings.normalized_output_dir()
     output_dir.mkdir(parents=True, exist_ok=True)
     stem = items[0].path.stem if items else "drawing"
-    fmt = str(settings.sheet_format or "a4").lower()
+    zone_layout = _normalise_zone_layout(settings.zone_layout)
+    fmt = "a2" if zone_layout != "none" else str(settings.sheet_format or "a4").lower()
+    suffix = f"zones_{zone_layout}" if zone_layout != "none" else fmt
     return create_pdf_layout(
         items,
         sheet_format=fmt,
-        output_pdf=output_dir / f"{stem}_layout_{fmt}.pdf",
-        preview_pdf=output_dir / f"{stem}_layout_{fmt}_preview.pdf",
-        manifest_path=output_dir / f"{stem}_layout_{fmt}.json",
+        output_pdf=output_dir / f"{stem}_layout_{suffix}.pdf",
+        preview_pdf=output_dir / f"{stem}_layout_{suffix}_preview.pdf",
+        manifest_path=output_dir / f"{stem}_layout_{suffix}.json",
         layout_mode=settings.layout_mode,
         margin_mm=settings.layout_margin_mm,
         gap_mm=settings.layout_gap_mm,
+        zone_layout=zone_layout,
     )
 
 

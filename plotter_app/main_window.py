@@ -37,6 +37,7 @@ from PySide6.QtWidgets import (
 
 from src.plotter_backend import discovery as discovery_mod
 from src.plotter_backend.jobs import JobResult, JobSettings
+from src.plotter_backend.jobs.pdf_layout import zone_layout_zones
 from src.plotter_backend.machine import profiles as machine_profiles_mod
 
 from .settings import load_gui_settings, save_gui_settings
@@ -84,6 +85,23 @@ class PdfPreviewView(QGraphicsView):
 
 _MACHINE_PROFILE_PATH = Path(__file__).resolve().parents[1] / "config" / "machine_profiles.json"
 
+_ZONE_LAYOUT_CHOICES = (
+    ("Обычная раскладка без зон", "none"),
+    ("Большой станок: 1 файл A2", "a2_single"),
+    ("Большой станок: 2 файла A3, зоны 1/2", "a3_pair"),
+    ("Большой станок: 4 файла A4, зоны 11/12/21/22", "a4_quad"),
+    ("Смешанная: A3-1 ближе + A4-21/22 дальше", "mixed_a3_near"),
+    ("Смешанная: A4-11/12 ближе + A3-2 дальше", "mixed_a3_far"),
+)
+
+_ZONE_CALIBRATION = {
+    "a2_single": "a2",
+    "a3_pair": "a2_2xa3",
+    "a4_quad": "a2_4xa4",
+    "mixed_a3_near": "a2_mixed_a3_near",
+    "mixed_a3_far": "a2_mixed_a3_far",
+}
+
 
 def _machine_profile_choices() -> list[tuple[str, str]]:
     profiles = machine_profiles_mod.load_machine_profiles(_MACHINE_PROFILE_PATH)
@@ -111,6 +129,7 @@ class MainWindow(QMainWindow):
             input_paths=[str(value) for value in data.get("input_paths") or []],
             input_pages=[int(value) for value in data.get("input_pages") or []],
             input_rotations=[int(value) for value in data.get("input_rotations") or []],
+            input_zones=[str(value) for value in data.get("input_zones") or []],
             output_dir=data.get("output_dir") or "_plotter_jobs",
             com=data.get("com") or None,
             baud=str(data.get("baud") or "115200"),
@@ -135,6 +154,7 @@ class MainWindow(QMainWindow):
             layout_page=int(data.get("layout_page") or 1),
             layout_margin_mm=float(data.get("layout_margin_mm") or 0.0),
             layout_gap_mm=float(data.get("layout_gap_mm") or 0.0),
+            zone_layout=str(data.get("zone_layout") or "none"),
             output_rotation_deg=int(data.get("output_rotation_deg") or 0),
             mirror_x=bool(data.get("mirror_x")),
             mirror_y=bool(data.get("mirror_y")),
@@ -227,11 +247,18 @@ class MainWindow(QMainWindow):
         ):
             self.layout_combo.addItem(label, value)
         self.layout_combo.setCurrentIndex(max(0, self.layout_combo.findData(self.vm.settings.layout_mode)))
+        self.zone_layout_combo = QComboBox()
+        for label, value in _ZONE_LAYOUT_CHOICES:
+            self.zone_layout_combo.addItem(label, value)
+        self.zone_layout_combo.setCurrentIndex(max(0, self.zone_layout_combo.findData(self.vm.settings.zone_layout)))
+        self.zone_combo = QComboBox()
         self.layout_page = QSpinBox()
         self.layout_page.setRange(1, 99)
         self.layout_page.setValue(max(1, self.vm.settings.layout_page))
         self.margin_spin = self._double_spin(self.vm.settings.layout_margin_mm)
         self.gap_spin = self._double_spin(self.vm.settings.layout_gap_mm)
+        form.addRow("Схема зон:", self.zone_layout_combo)
+        form.addRow("Зона выбранного файла:", self.zone_combo)
         form.addRow("Итоговый формат:", self.sheet_combo)
         form.addRow("Размещение:", self.layout_combo)
         form.addRow("Выходной лист:", self.layout_page)
@@ -243,6 +270,10 @@ class MainWindow(QMainWindow):
         for widget in (self.sheet_combo, self.layout_combo, self.layout_page, self.margin_spin, self.gap_spin):
             signal = getattr(widget, "currentIndexChanged", None) or getattr(widget, "valueChanged", None)
             signal.connect(self._layout_changed)
+        self.zone_layout_combo.currentIndexChanged.connect(self._zone_layout_changed)
+        self.zone_combo.currentIndexChanged.connect(self._assign_selected_zone)
+        self.file_list.currentRowChanged.connect(self._selected_file_changed)
+        self._sync_zone_combo()
         return group
 
     def _build_machine_group(self) -> QGroupBox:
@@ -264,7 +295,26 @@ class MainWindow(QMainWindow):
         com_row.addWidget(refresh)
         self.baud_edit = QLineEdit(self.vm.settings.baud)
         self.calibration_combo = QComboBox()
-        self.calibration_combo.addItems(["sheet", "a2", "a2_2xa3", "a2_4xa4"])
+        self.calibration_combo.addItems(
+            [
+                "sheet",
+                "a2",
+                "a2_2xa3",
+                "a2_4xa4",
+                "a3_zone_1",
+                "a3_zone_2",
+                "a4_zone_11",
+                "a4_zone_12",
+                "a4_zone_21",
+                "a4_zone_22",
+                "a2_mixed_a3_near",
+                "a2_mixed_a3_far",
+                "a4_zone_1",
+                "a4_zone_2",
+                "a4_zone_3",
+                "a4_zone_4",
+            ]
+        )
         self.calibration_combo.setCurrentText(self.vm.settings.calibration_layout)
         self.pass_cols = self._spin(self.vm.settings.pass_cols)
         self.pass_rows = self._spin(self.vm.settings.pass_rows)
@@ -385,13 +435,16 @@ class MainWindow(QMainWindow):
         return box
 
     def _restore_items(self) -> None:
-        for path, page, rotation in self.vm.settings.normalized_layout_items():
+        for path, page, rotation, zone in self.vm.settings.normalized_zone_layout_items():
             if path.is_file() and path.suffix.lower() == ".pdf":
-                self._add_list_item(path, page, rotation)
+                self._add_list_item(path, page, rotation, zone)
 
-    def _add_list_item(self, path: Path, page_index: int, rotation: int) -> None:
+    def _add_list_item(self, path: Path, page_index: int, rotation: int, zone: str = "") -> None:
         item = QListWidgetItem()
-        item.setData(Qt.ItemDataRole.UserRole, {"path": str(path), "page": int(page_index), "rotation": int(rotation) % 360})
+        item.setData(
+            Qt.ItemDataRole.UserRole,
+            {"path": str(path), "page": int(page_index), "rotation": int(rotation) % 360, "zone": str(zone).strip()},
+        )
         self.file_list.addItem(item)
         self._refresh_item_text(item)
 
@@ -399,6 +452,9 @@ class MainWindow(QMainWindow):
     def _refresh_item_text(item: QListWidgetItem) -> None:
         data = item.data(Qt.ItemDataRole.UserRole)
         item.setText(f"{Path(data['path']).name}  •  стр. {int(data['page']) + 1}  •  {int(data['rotation']) % 360}°")
+        zone = str(data.get("zone") or "").strip()
+        zone_text = f"  •  зона {zone}" if zone else ""
+        item.setText(f"{Path(data['path']).name}  •  стр. {int(data['page']) + 1}  •  {int(data['rotation']) % 360}°{zone_text}")
         item.setToolTip(str(data["path"]))
 
     def _items(self) -> list[tuple[Path, int, int]]:
@@ -410,6 +466,21 @@ class MainWindow(QMainWindow):
                 output.append((path, int(data["page"]), int(data["rotation"])))
         return output
 
+    def _item_zones(self) -> list[str]:
+        return [
+            str((self.file_list.item(index).data(Qt.ItemDataRole.UserRole) or {}).get("zone") or "").strip()
+            for index in range(self.file_list.count())
+        ]
+
+    def _available_zones(self) -> tuple[str, ...]:
+        if not hasattr(self, "zone_layout_combo"):
+            return ()
+        return zone_layout_zones(str(self.zone_layout_combo.currentData() or "none"))
+
+    def _next_free_zone(self) -> str:
+        used = set(self._item_zones())
+        return next((zone for zone in self._available_zones() if zone not in used), "")
+
     def _pick_inputs(self) -> None:
         paths, _ = QFileDialog.getOpenFileNames(self, "Выберите PDF", "", "PDF (*.pdf)")
         for raw_path in paths:
@@ -417,7 +488,7 @@ class MainWindow(QMainWindow):
             try:
                 with fitz.open(path) as doc:
                     for page_index in range(doc.page_count):
-                        self._add_list_item(path, page_index, 0)
+                        self._add_list_item(path, page_index, 0, self._next_free_zone())
             except Exception as exc:
                 QMessageBox.warning(self, "Не удалось открыть PDF", f"{path}\n\n{exc}")
         if paths:
@@ -473,7 +544,14 @@ class MainWindow(QMainWindow):
     def _machine_or_sheet_changed(self, *_args) -> None:
         profile = self._selected_machine_profile()
         fmt = str(self.sheet_combo.currentData() or "a4")
-        if profile == "a4_desktop":
+        zone_layout = str(self.zone_layout_combo.currentData() or "none") if hasattr(self, "zone_layout_combo") else "none"
+        if profile == "a2_corexy" and zone_layout != "none":
+            self.sheet_combo.blockSignals(True)
+            self.sheet_combo.setCurrentIndex(self.sheet_combo.findData("a2"))
+            self.sheet_combo.blockSignals(False)
+            cols, rows = 1, 1
+            calibration = _ZONE_CALIBRATION[zone_layout]
+        elif profile == "a4_desktop":
             cols, rows = {"a4": (1, 1), "a3": (2, 1), "a2": (2, 2)}[fmt]
             calibration = "sheet"
         else:
@@ -486,6 +564,78 @@ class MainWindow(QMainWindow):
         self.calibration_combo.setCurrentText(calibration)
         self._layout_changed()
 
+    def _zone_layout_changed(self, *_args) -> None:
+        layout = str(self.zone_layout_combo.currentData() or "none")
+        zones = list(self._available_zones())
+        if layout != "none" and hasattr(self, "machine_combo"):
+            self.machine_combo.blockSignals(True)
+            self.machine_combo.setCurrentIndex(self.machine_combo.findData("a2_corexy"))
+            self.machine_combo.blockSignals(False)
+            self.sheet_combo.blockSignals(True)
+            self.sheet_combo.setCurrentIndex(self.sheet_combo.findData("a2"))
+            self.sheet_combo.blockSignals(False)
+            self.calibration_combo.setCurrentText(_ZONE_CALIBRATION[layout])
+        used: set[str] = set()
+        for index in range(self.file_list.count()):
+            item = self.file_list.item(index)
+            data = dict(item.data(Qt.ItemDataRole.UserRole) or {})
+            zone = str(data.get("zone") or "").strip()
+            if zone not in zones or zone in used:
+                zone = next((candidate for candidate in zones if candidate not in used), "")
+            data["zone"] = zone
+            if zone:
+                used.add(zone)
+            item.setData(Qt.ItemDataRole.UserRole, data)
+            self._refresh_item_text(item)
+        self._sync_zone_combo()
+        self._layout_changed()
+
+    def _selected_file_changed(self, *_args) -> None:
+        self._sync_zone_combo()
+
+    def _sync_zone_combo(self) -> None:
+        if not hasattr(self, "zone_combo"):
+            return
+        item = self.file_list.currentItem()
+        current = str((item.data(Qt.ItemDataRole.UserRole) or {}).get("zone") or "") if item else ""
+        zones = self._available_zones()
+        self.zone_combo.blockSignals(True)
+        self.zone_combo.clear()
+        self.zone_combo.addItem("Не назначена", "")
+        for zone in zones:
+            self.zone_combo.addItem(f"Зона {zone}", zone)
+        self.zone_combo.setCurrentIndex(max(0, self.zone_combo.findData(current)))
+        self.zone_combo.setEnabled(bool(zones and item is not None))
+        self.zone_combo.blockSignals(False)
+        explicit = bool(zones)
+        self.layout_combo.setEnabled(not explicit)
+        self.margin_spin.setEnabled(not explicit)
+        self.gap_spin.setEnabled(not explicit)
+
+    def _assign_selected_zone(self, *_args) -> None:
+        item = self.file_list.currentItem()
+        if item is None:
+            return
+        new_zone = str(self.zone_combo.currentData() or "")
+        data = dict(item.data(Qt.ItemDataRole.UserRole) or {})
+        old_zone = str(data.get("zone") or "")
+        if new_zone == old_zone:
+            return
+        for index in range(self.file_list.count()):
+            other = self.file_list.item(index)
+            if other is item:
+                continue
+            other_data = dict(other.data(Qt.ItemDataRole.UserRole) or {})
+            if new_zone and str(other_data.get("zone") or "") == new_zone:
+                other_data["zone"] = old_zone
+                other.setData(Qt.ItemDataRole.UserRole, other_data)
+                self._refresh_item_text(other)
+                break
+        data["zone"] = new_zone
+        item.setData(Qt.ItemDataRole.UserRole, data)
+        self._refresh_item_text(item)
+        self._layout_changed()
+
     def _layout_changed(self, *_args) -> None:
         self.vm.preflight_ok = False
         self._sync_from_ui()
@@ -495,9 +645,12 @@ class MainWindow(QMainWindow):
         if not hasattr(self, "file_list"):
             return
         items = [(path, page, rotation) for path, page, rotation in self._items()]
+        zones = self._item_zones()
         current_items = self.vm.settings.normalized_layout_items()
         if items != current_items:
-            self.vm.set_layout_items(items)
+            self.vm.set_layout_items(items, zones)
+        elif zones != self.vm.settings.input_zones:
+            self.vm.set_layout_zones(zones)
         if hasattr(self, "output_edit"):
             self.vm.settings.output_dir = self.output_edit.text().strip() or "_plotter_jobs"
         if hasattr(self, "com_combo"):
@@ -520,6 +673,7 @@ class MainWindow(QMainWindow):
         self.vm.settings.layout_page = self.layout_page.value()
         self.vm.settings.layout_margin_mm = self.margin_spin.value()
         self.vm.settings.layout_gap_mm = self.gap_spin.value()
+        self.vm.settings.zone_layout = str(self.zone_layout_combo.currentData() or "none")
         save_gui_settings(asdict(self.vm.settings))
         self._sync_draw_gate()
 
