@@ -33,6 +33,7 @@ corner_calibration_prepared.nc
 *_trimmed.svg
 
 # Local runtime/device state
+backups/
 config/pencil_profile.json
 config/pencil_state.json
 config/pencil_wear_test_last.json
