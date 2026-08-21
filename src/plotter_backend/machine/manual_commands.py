@@ -7,6 +7,16 @@ from ..errors import SerialTransportError, ToolDependencyError
 from .safe_shutdown import build_safe_park_release_commands, safe_park_release_message
 
 
+def _network_serial_url(port: str) -> str | None:
+    value = str(port or "").strip()
+    lowered = value.lower()
+    if lowered.startswith("socket://"):
+        return value
+    if lowered.startswith("tcp://"):
+        return "socket://" + value[len("tcp://") :]
+    return None
+
+
 def grbl_send_manual_commands(
     com: str,
     baud: str,
@@ -53,19 +63,24 @@ def grbl_send_manual_commands(
     wake_read = max(0, int(wake_read_bytes))
     tail_read = max(0, int(tail_read_bytes))
     try:
+        network_url = _network_serial_url(port)
         if serial_factory is not None:
             ser = serial_factory()
+        elif network_url:
+            # FluidNC exposes the same GRBL command channel over Telnet.
+            ser = serial_module.serial_for_url(network_url, baudrate=baud_i, timeout=timeout_s)
         else:
             ser = serial_module.Serial()
-        ser.port = port
-        ser.baudrate = baud_i
-        ser.timeout = timeout_s
-        try:
-            ser.dtr = False
-            ser.rts = False
-        except Exception:
-            pass
-        ser.open()
+        if not network_url or serial_factory is not None:
+            ser.port = port
+            ser.baudrate = baud_i
+            ser.timeout = timeout_s
+            try:
+                ser.dtr = False
+                ser.rts = False
+            except Exception:
+                pass
+            ser.open()
 
         # Wake channel.
         ser.write(b"\r\n")

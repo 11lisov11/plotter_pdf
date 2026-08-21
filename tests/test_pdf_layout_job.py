@@ -95,9 +95,9 @@ def test_a2_zone_layout_places_files_in_selected_a4_zones(tmp_path) -> None:
     assert manifest["sheet_format"] == "a2"
     assert manifest["zone_layout"] == "a4_quad"
     assert by_source["first.pdf"]["zone"] == "22"
-    assert by_source["first.pdf"]["slot_rect_mm"] == [210.0, 2.0, 405.0, 297.0]
+    assert by_source["first.pdf"]["slot_rect_mm"] == [210.0, 7.0, 405.0, 297.0]
     assert by_source["second.pdf"]["zone"] == "11"
-    assert by_source["second.pdf"]["slot_rect_mm"] == [15.0, 297.0, 210.0, 592.0]
+    assert by_source["second.pdf"]["slot_rect_mm"] == [15.0, 297.0, 210.0, 587.0]
 
 
 def test_mixed_zone_layout_supports_one_a3_and_two_a4_files(tmp_path) -> None:
@@ -116,4 +116,4 @@ def test_mixed_zone_layout_supports_one_a3_and_two_a4_files(tmp_path) -> None:
     )
     manifest = json.loads(build.manifest_path.read_text(encoding="utf-8"))
     assert [row["zone"] for row in manifest["placements"]] == ["1", "21", "22"]
-    assert manifest["placements"][0]["slot_rect_mm"] == [15.0, 297.0, 405.0, 592.0]
+    assert manifest["placements"][0]["slot_rect_mm"] == [15.0, 297.0, 405.0, 587.0]

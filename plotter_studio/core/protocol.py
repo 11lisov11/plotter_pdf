@@ -3923,6 +3923,7 @@ class BackendBridge:
                 feed_travel=backend.FEED_TRAVEL,
                 feed_draw=backend.FEED_DRAW,
                 auto_resume=False,
+                calibration_layout=sheet.calibration_layout,
             )
         if not ok:
             return False, msg
@@ -4105,6 +4106,7 @@ class BackendBridge:
                 feed_travel=backend.FEED_TRAVEL,
                 feed_draw=backend.FEED_DRAW,
                 auto_resume=False,
+                calibration_layout=sheet.calibration_layout,
             )
         if not ok:
             return False, msg

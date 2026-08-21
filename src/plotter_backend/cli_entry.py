@@ -633,6 +633,7 @@ def run_cli_action(backend: Any, args, parser: argparse.ArgumentParser, *, com: 
             feed_travel=args.feed_travel,
             feed_draw=args.feed_draw,
             auto_resume=bool(args.auto_resume),
+            calibration_layout=args.calibration_layout,
         )
         if ok and args.preview:
             output_guess = output_path or input_path.with_name(f"{input_path.stem}_prepared.nc")

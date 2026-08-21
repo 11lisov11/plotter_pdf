@@ -50,7 +50,7 @@ def _safe_print(*args, **kwargs) -> None:
 
 
 def usage():
-    _safe_print('Usage: python send_grbl_file.py COMx 115200 path\\to\\file.nc [--sleep]')
+    _safe_print('Usage: python send_grbl_file.py COMx|socket://host:23 115200 path\\to\\file.nc [--sleep]')
 
 
 def _format_duration_hms(seconds: float) -> str:
@@ -64,27 +64,43 @@ def _format_duration_hms(seconds: float) -> str:
     return f"{m:02d}:{sec:02d}"
 
 
+def _network_serial_url(port: str) -> str | None:
+    value = str(port or "").strip()
+    lowered = value.lower()
+    if lowered.startswith("socket://"):
+        return value
+    if lowered.startswith("tcp://"):
+        return "socket://" + value[len("tcp://") :]
+    return None
+
+
 def open_grbl(port: str, baud: int):
     try:
-        # Some boards reset on DTR when opening the serial port.
-        # Create the object first, force DTR/RTS low, then open.
-        ser = serial.Serial()
-        ser.port = port
-        ser.baudrate = baud
-        ser.timeout = 1
-        try:
-            ser.dtr = False
-            ser.rts = False
-        except Exception:
-            pass
-        ser.open()
-    except SerialException as exc:
+        network_url = _network_serial_url(port)
+        if network_url:
+            # FluidNC Telnet speaks the normal GRBL line protocol.
+            ser = serial.serial_for_url(network_url, baudrate=baud, timeout=1)
+        else:
+            # Some boards reset on DTR when opening the serial port.
+            # Create the object first, force DTR/RTS low, then open.
+            ser = serial.Serial()
+            ser.port = port
+            ser.baudrate = baud
+            ser.timeout = 1
+            try:
+                ser.dtr = False
+                ser.rts = False
+            except Exception:
+                pass
+            ser.open()
+    except Exception as exc:
         hint = ""
         try:
             hint = str(build_serial_open_hint(port) or "").strip()
         except Exception:
             hint = ""
-        message = f"Cannot open {port} @ {baud}: {exc}"
+        channel = "network endpoint" if _network_serial_url(port) else "serial port"
+        message = f"Cannot open {channel} {port} @ {baud}: {exc}"
         if hint and hint not in message:
             message = f"{message}\n{hint}"
         raise RuntimeError(message) from exc

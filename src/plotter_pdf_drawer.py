@@ -151,6 +151,9 @@ MACHINE_PROFILE_NAME = "a4_desktop"
 MACHINE_PROFILE_LABEL = "Current A4 desktop plotter"
 CONTROLLED_G1_MOTION = False
 CALIBRATION_LAYOUT = "sheet"
+# On the large A2 machine, adjacent sheets have a physical join. Keep the
+# pen clear of that join instead of letting a drawing stroke scratch across it.
+PAPER_JOINT_CLEARANCE_MM = 1.0
 LOCAL_TMP_ROOT = WORK_ROOT / "_tmp"
 
 DEFAULT_COM_PORT = "COM6"
@@ -8910,6 +8913,131 @@ def _normalise_calibration_layout(layout: str | None) -> str:
     return aliases.get(raw, raw)
 
 
+def _large_plotter_paper_joint_bands() -> List[Tuple[float, float, float, float]]:
+    """Return finite no-draw bands for joins between sheets on the A2 machine.
+
+    The bands exist only inside a multi-sheet A2 layout. Edges of the overall
+    paper field and edges of an individually selected A3/A4 zone are not joins.
+    """
+    if str(MACHINE_PROFILE_NAME).strip().lower() != "a2_corexy":
+        return []
+
+    layout = _normalise_calibration_layout(CALIBRATION_LAYOUT)
+    clearance = max(0.0, float(PAPER_JOINT_CLEARANCE_MM))
+    if clearance <= 0.0:
+        return []
+
+    min_x, max_x, min_y, max_y = work_area_bounds()
+    middle_x = (min_x + max_x) * 0.5
+    middle_y = (min_y + max_y) * 0.5
+    horizontal = (min_x, max_x, middle_y - clearance, middle_y + clearance)
+    vertical_full = (middle_x - clearance, middle_x + clearance, min_y, max_y)
+
+    if layout == "a2_2xa3":
+        return [horizontal]
+    if layout == "a2_4xa4":
+        return [horizontal, vertical_full]
+    if layout == "a2_mixed_a3_near":
+        return [horizontal, (middle_x - clearance, middle_x + clearance, middle_y, max_y)]
+    if layout == "a2_mixed_a3_far":
+        return [horizontal, (middle_x - clearance, middle_x + clearance, min_y, middle_y)]
+    return []
+
+
+def _segment_rect_parameter_interval(
+    start: Tuple[float, float],
+    end: Tuple[float, float],
+    rect: Tuple[float, float, float, float],
+) -> Optional[Tuple[float, float]]:
+    """Return the inclusive segment parameter interval inside an axis-aligned rect."""
+    x0, y0 = float(start[0]), float(start[1])
+    dx, dy = float(end[0]) - x0, float(end[1]) - y0
+    min_x, max_x, min_y, max_y = rect
+    enter, leave = 0.0, 1.0
+    for origin, delta, low, high in ((x0, dx, min_x, max_x), (y0, dy, min_y, max_y)):
+        if abs(delta) <= 1e-12:
+            if origin < low or origin > high:
+                return None
+            continue
+        t0 = (low - origin) / delta
+        t1 = (high - origin) / delta
+        if t0 > t1:
+            t0, t1 = t1, t0
+        enter = max(enter, t0)
+        leave = min(leave, t1)
+        if enter > leave:
+            return None
+    return max(0.0, enter), min(1.0, leave)
+
+
+def _split_polylines_at_large_plotter_paper_joints(
+    polylines: List[List[Tuple[float, float]]],
+    logger=print,
+) -> Tuple[List[List[Tuple[float, float]]], int]:
+    """Split strokes at internal paper joins so penlift crosses them safely."""
+    bands = _large_plotter_paper_joint_bands()
+    if not bands:
+        return polylines, 0
+
+    result: List[List[Tuple[float, float]]] = []
+    breaks = 0
+
+    def point_at(start: Tuple[float, float], end: Tuple[float, float], t: float) -> Tuple[float, float]:
+        return (
+            float(start[0]) + (float(end[0]) - float(start[0])) * t,
+            float(start[1]) + (float(end[1]) - float(start[1])) * t,
+        )
+
+    def append_point(path: List[Tuple[float, float]], point: Tuple[float, float]) -> None:
+        if not path or points_distance(path[-1], point) > 1e-8:
+            path.append(point)
+
+    for polyline in polylines:
+        if len(polyline) < 2:
+            continue
+        current: List[Tuple[float, float]] = []
+        for start, end in zip(polyline, polyline[1:]):
+            intervals = [
+                interval
+                for band in bands
+                if (interval := _segment_rect_parameter_interval(start, end, band)) is not None
+            ]
+            intervals.sort(key=lambda interval: interval[0])
+            merged: List[Tuple[float, float]] = []
+            for left, right in intervals:
+                if right - left <= 1e-9:
+                    continue
+                if merged and left <= merged[-1][1] + 1e-9:
+                    merged[-1] = (merged[-1][0], max(merged[-1][1], right))
+                else:
+                    merged.append((left, right))
+
+            cursor = 0.0
+            for left, right in merged:
+                if cursor < left - 1e-9:
+                    append_point(current, point_at(start, end, cursor))
+                    append_point(current, point_at(start, end, left))
+                if len(current) >= 2:
+                    result.append(current)
+                    current = []
+                    breaks += 1
+                cursor = max(cursor, right)
+            if cursor < 1.0 - 1e-9:
+                append_point(current, point_at(start, end, cursor))
+                append_point(current, point_at(start, end, 1.0))
+
+        if len(current) >= 2:
+            result.append(current)
+
+    if logger and breaks:
+        total_gap = float(PAPER_JOINT_CLEARANCE_MM) * 2.0
+        logger(
+            "Large-plotter paper-joint guard: "
+            f"split {breaks} stroke(s); pen will cross {total_gap:.1f} mm internal sheet join(s) raised."
+        )
+    return result, breaks
+
+
 def calibration_layout_zone_bounds(
     layout: str,
     bounds: Optional[Tuple[float, float, float, float]] = None,
@@ -10293,6 +10421,11 @@ def run_pipeline(
                 exact_eps=max(float(SEGMENT_DEDUP_EPS_MM), 0.05),
                 logger=log,
             )
+            # This is deliberately after all stitching/cleanup, so no later
+            # optimisation can reconnect a stroke across a physical paper gap.
+            polylines, paper_joint_breaks = _split_polylines_at_large_plotter_paper_joints(polylines, logger=log)
+            if not polylines:
+                return False, "No drawable geometry remains after paper-joint safety split."
             after_poly_count = len(polylines)
             if after_poly_count != before_poly_count:
                 log(f"Polyline optimization: {before_poly_count} -> {after_poly_count}")
@@ -10357,7 +10490,7 @@ def run_pipeline(
                 handwriting_mode=HANDWRITING_TEXT_ENABLED,
                 # Technical drawing jobs must fully lift between contours to
                 # avoid dragging on paper and smearing geometry.
-                force_full_lift=(not HANDWRITING_TEXT_ENABLED),
+                force_full_lift=(not HANDWRITING_TEXT_ENABLED) or bool(paper_joint_breaks),
             )
             make_final_with_preamble(pen_path, final_path)
             gcode_lines, gcode_draw, gcode_travel, gcode_bounds = summarize_gcode_file(final_path)
@@ -10481,7 +10614,10 @@ def run_pipeline_with_corner_calibration(
     feed_travel: float = FEED_TRAVEL,
     feed_draw: float = FEED_DRAW,
     auto_resume: bool = True,
+    calibration_layout: str = "sheet",
 ) -> Tuple[bool, str]:
+    global CALIBRATION_LAYOUT
+    CALIBRATION_LAYOUT = _normalise_calibration_layout(calibration_layout)
     if send_to_plotter and not skip_calibration:
         ok, msg = run_corner_calibration_pipeline(
             log,
@@ -10489,6 +10625,7 @@ def run_pipeline_with_corner_calibration(
             baud=baud,
             send_to_plotter=send_to_plotter,
             mark_size=corner_mark_size,
+            calibration_layout=CALIBRATION_LAYOUT,
         )
         if not ok:
             return False, msg

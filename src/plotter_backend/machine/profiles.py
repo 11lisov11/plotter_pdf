@@ -90,8 +90,8 @@ BUILTIN_MACHINE_PROFILES: dict[str, dict[str, Any]] = {
         },
         "pen": {
             "lift_mode": "z",
-            "z_up_mm": 0.0,
-            "z_down_mm": -4.0,
+            "z_up_mm": 1.0,
+            "z_down_mm": -5.0,
             "z_feed_down_approach_mm_min": 2000.0,
             "z_feed_down_touch_mm_min": 2000.0,
             "z_feed_up_mm_min": 2000.0,

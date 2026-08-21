@@ -5,21 +5,37 @@ import time
 from typing import Any, Optional, Tuple
 
 
+def _network_serial_url(port: str) -> Optional[str]:
+    value = str(port or "").strip()
+    lowered = value.lower()
+    if lowered.startswith("socket://"):
+        return value
+    if lowered.startswith("tcp://"):
+        return "socket://" + value[len("tcp://") :]
+    return None
+
+
 def open_serial_no_reset(port: str, baud: int, *, timeout_s: float = 1.0):
     # IMPORTANT: Many GRBL boards reset on DTR when opening the port.
     # Open serial the same way as src/send_grbl_file.py to avoid losing coordinates mid-job.
     import serial  # pyserial
 
-    ser = serial.Serial()
-    ser.port = port
-    ser.baudrate = int(baud)
-    ser.timeout = float(timeout_s)
-    try:
-        ser.dtr = False
-        ser.rts = False
-    except Exception:
-        pass
-    ser.open()
+    network_url = _network_serial_url(port)
+    if network_url:
+        # PySerial's socket:// handler supplies the same read/write interface
+        # as a serial port. There are no DTR/RTS lines to toggle over TCP.
+        ser = serial.serial_for_url(network_url, baudrate=int(baud), timeout=float(timeout_s))
+    else:
+        ser = serial.Serial()
+        ser.port = port
+        ser.baudrate = int(baud)
+        ser.timeout = float(timeout_s)
+        try:
+            ser.dtr = False
+            ser.rts = False
+        except Exception:
+            pass
+        ser.open()
     time.sleep(0.2)
     try:
         ser.reset_input_buffer()

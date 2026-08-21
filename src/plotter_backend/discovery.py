@@ -165,6 +165,13 @@ def detect_com_port(
     ports: Optional[Sequence[object]] = None,
     serial_factory: Optional[Callable[..., object]] = None,
 ) -> str:
+    preferred_endpoint = str(preferred or "").strip()
+    if preferred_endpoint.lower().startswith(("socket://", "tcp://")):
+        # FluidNC exposes the same GRBL protocol over its Telnet socket. Keep
+        # an explicitly selected network endpoint instead of replacing it with
+        # an automatically discovered Windows COM port.
+        return preferred_endpoint
+
     if ports is None:
         try:
             import serial.tools.list_ports  # type: ignore

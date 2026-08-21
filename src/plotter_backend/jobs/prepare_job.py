@@ -28,9 +28,31 @@ def _plotter_cli_command() -> list[str]:
     return [sys.executable, str(_project_root() / "main.py")]
 
 
+def _effective_calibration_layout(settings: JobSettings) -> str:
+    """Make the physical sheet layout authoritative for large-plotter jobs.
+
+    A zone layout describes the paper that is actually laid on the A2 bed.
+    It therefore must also select the matching paper-joint safety rule in the
+    generated G-code, even if a stale GUI setting says something else.
+    """
+    configured = str(settings.calibration_layout or "sheet").strip().lower()
+    if str(settings.machine_profile or "").strip().lower() != "a2_corexy":
+        return configured or "sheet"
+
+    zone_layout = str(settings.zone_layout or "none").strip().lower().replace("-", "_")
+    layout_by_zone = {
+        "a2_single": "a2",
+        "a3_pair": "a2_2xa3",
+        "a4_quad": "a2_4xa4",
+        "mixed_a3_near": "a2_mixed_a3_near",
+        "mixed_a3_far": "a2_mixed_a3_far",
+    }
+    return layout_by_zone.get(zone_layout, configured or "sheet")
+
+
 def _append_sheet_args(args: list[str], settings: JobSettings) -> None:
     args.extend(["--machine-profile", settings.machine_profile])
-    args.extend(["--calibration-layout", settings.calibration_layout])
+    args.extend(["--calibration-layout", _effective_calibration_layout(settings)])
     args.extend(["--sheet-format", settings.sheet_format])
     if settings.sheet_width_mm is not None:
         args.extend(["--sheet-width-mm", str(settings.sheet_width_mm)])
