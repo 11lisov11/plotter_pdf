@@ -1761,7 +1761,6 @@ def _repair_specification_ocr_cells(lines: list[dict[str, Any]]) -> list[dict[st
                 "font": "OpenGOST LFF reconstructed specification position",
                 "ocr_confidence": 1.0,
                 "text_box_fill": LFF_STAMP_FILL,
-                "skip_table_row_center": True,
             }
         )
     return repaired
@@ -1827,7 +1826,6 @@ def _specification_ocr_text_lines(source_pdf: Path, logs: list[str]) -> list[dic
             "dir": direction,
             "font": "RapidOCR PP-OCRv5 Cyrillic -> OpenGOST LFF",
             "ocr_confidence": round(float(score), 4),
-            "skip_table_row_center": True,
         }
         if bbox[1] < page_h_mm - 45.0:
             line["text_box_fill"] = LFF_FILL
@@ -2025,6 +2023,7 @@ def _snap_specification_table_grid_polylines(polylines: list[Polyline], logs: li
     )
     snapped = [*kept, *snapped_horizontal, *snapped_vertical]
     snapped = _restore_specification_left_title_block_rows(snapped, logs)
+    snapped = _restore_specification_position_column_grid_breaks(snapped, logs)
     logs.append(
         "Specification grid snap: "
         f"classified_segments={classified}; "
@@ -2033,6 +2032,59 @@ def _snap_specification_table_grid_polylines(polylines: list[Polyline], logs: li
         f"kept_non_axis={len(kept)}; total={len(polylines)}->{len(snapped)}."
     )
     return snapped
+
+
+def _restore_specification_position_column_grid_breaks(
+    polylines: list[Polyline],
+    logs: list[str],
+) -> list[Polyline]:
+    """Restore table rules cut out underneath specification position numbers.
+
+    Text cleanup removes source glyph outlines before the form grid is snapped.
+    In some KOMPAS exports a two-digit position (for example ``10`` or ``12``)
+    touches the lower rule closely enough that the cleanup leaves a gap exactly
+    across the narrow position column.  That missing rule then makes the row
+    detector join two cells and vertically misplace the number.  Reconnect only
+    gaps bounded by the standard position-column borders; no text geometry or
+    other table cells are changed.
+    """
+
+    horizontal_rows: list[tuple[float, float, float]] = []
+    for polyline in polylines:
+        if len(polyline) < 2:
+            continue
+        for a, b in zip(polyline, polyline[1:]):
+            ax, ay = float(a[0]), float(a[1])
+            bx, by = float(b[0]), float(b[1])
+            if abs(bx - ax) < 1.2 or abs(by - ay) > 0.12:
+                continue
+            horizontal_rows.append(((ay + by) * 0.5, min(ax, bx), max(ax, bx)))
+
+    additions: list[Polyline] = []
+    for row_y in _dedupe_rule_ys([row[0] for row in horizontal_rows], eps=0.24):
+        intervals = [
+            (x0, x1)
+            for y, x0, x1 in horizontal_rows
+            if abs(float(y) - float(row_y)) <= 0.24
+        ]
+        merged = _merge_grid_intervals(intervals, gap_eps=0.62)
+        for left, right in zip(merged, merged[1:]):
+            gap_x0 = float(left[1])
+            gap_x1 = float(right[0])
+            gap_width = gap_x1 - gap_x0
+            if not (4.0 <= gap_width <= 12.0):
+                continue
+            if not (30.0 <= gap_x0 <= 35.5 and 38.0 <= gap_x1 <= 43.5):
+                continue
+            additions.append([(gap_x0, float(row_y)), (gap_x1, float(row_y))])
+
+    if additions:
+        logs.append(
+            "Specification position-column grid repair: restored "
+            f"{len(additions)} horizontal rule gap(s) below numeric cells."
+        )
+        return [*polylines, *additions]
+    return polylines
 
 
 def _restore_specification_left_title_block_rows(polylines: list[Polyline], logs: list[str]) -> list[Polyline]:
