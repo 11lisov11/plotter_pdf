@@ -136,6 +136,8 @@ def _build_graphics_command(args: argparse.Namespace, sheet: str, passthrough: l
         cmd.extend(str(variant) for variant in args.variant)
     if args.keep_debug_artifacts:
         cmd.append("--keep-debug-artifacts")
+    if args.machine_profile:
+        cmd.extend(["--machine-profile", str(args.machine_profile)])
     cmd.extend(passthrough)
     note = "Компьютерная графика: профиль KOMPAS/GOST-штампов и новых LFF-букв."
     if sheet != "auto":
@@ -234,6 +236,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--mode", required=True, help="geometry|graphics|copy|photo, or 1|2|3|4.")
     parser.add_argument("--sheet", default="auto", help="auto|a4|a3|a2. Common format flag for all four modes.")
     parser.add_argument("--root", default=None, help="Root folder for geometry/graphics modes.")
+    parser.add_argument("--machine-profile", default="a4_desktop", help="Target machine profile for graphics mode.")
     parser.add_argument("--variant", action="append", default=[], help="Variant filter. Can be used multiple times.")
     parser.add_argument("--task", type=int, action="append", default=[], help="Task number filter for geometry mode.")
     parser.add_argument("--out-dir", default=None, help="Output folder for copy/photo modes.")

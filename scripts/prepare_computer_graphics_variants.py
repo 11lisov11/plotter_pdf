@@ -39,8 +39,9 @@ def _write_report_for_new_algorithm(package_dir: Path, report: dict) -> None:
     )
 
 
-def _new_algorithm_settings(*, keep_debug_artifacts: bool) -> new_algo.Settings:
-    return new_algo.Settings(
+def _new_algorithm_settings(*, keep_debug_artifacts: bool, machine_profile: str) -> new_algo.Settings:
+    return new_algo.settings_for_machine_profile(
+        machine_profile,
         drawing_mode="computer_graphics",
         keep_debug_artifacts=bool(keep_debug_artifacts),
     )
@@ -62,17 +63,30 @@ def _iter_variant_dirs(root: Path, requested: set[str]) -> list[Path]:
     return [path for path in variant_dirs if _looks_like_variant_dir(path)]
 
 
-def _prepare_variant(variant_dir: Path, *, keep_debug_artifacts: bool = False) -> None:
+def _prepare_variant(
+    variant_dir: Path,
+    *,
+    keep_debug_artifacts: bool = False,
+    machine_profile: str = "a4_desktop",
+) -> None:
     pdfs = _iter_variant_pdfs(variant_dir)
     if not pdfs:
         print(f"    skip: no PDF files found in {variant_dir}")
         return
 
-    settings = _new_algorithm_settings(keep_debug_artifacts=keep_debug_artifacts)
+    settings = _new_algorithm_settings(
+        keep_debug_artifacts=keep_debug_artifacts,
+        machine_profile=machine_profile,
+    )
+    force_large_single_page = str(machine_profile).casefold() == "a2_corexy"
     for idx, source_pdf in enumerate(pdfs, start=1):
         package_dir = variant_dir / f"{source_pdf.stem}_pack"
         print(f"[{idx}/{len(pdfs)}] processing: {source_pdf.name}")
-        report, _rows = prep._prepare_drawing_package(source_pdf, package_dir)
+        report, _rows = prep._prepare_drawing_package(
+            source_pdf,
+            package_dir,
+            force_large_single_page=force_large_single_page,
+        )
         is_a3 = bool(report.get("a3_two_pass", False))
         if bool(report.get("custom_tiled", False)):
             raise RuntimeError(
@@ -81,6 +95,7 @@ def _prepare_variant(variant_dir: Path, *, keep_debug_artifacts: bool = False) -
             )
         _copy_source_pdf_to_package(package_dir, source_pdf)
         _write_report_for_new_algorithm(package_dir, report)
+        new_algo._cache_pack_metadata(package_dir)
         new_algo._prepare_one_pack(package_dir, settings)
         print(f"    done: {'A3-2pass' if is_a3 else 'A4'} -> {package_dir.name}")
 
@@ -104,6 +119,7 @@ def main() -> int:
         action="store_true",
         help="Keep reports, logs and intermediate previews instead of publishing only clean plotter files.",
     )
+    parser.add_argument("--machine-profile", default="a4_desktop", help="Target profile: a4_desktop or a2_corexy.")
     args = parser.parse_args()
 
     root = Path(args.root).resolve()
@@ -118,7 +134,11 @@ def main() -> int:
     started_at = time.time()
     for variant_dir in variant_dirs:
         print(f"== {variant_dir.name} ==")
-        _prepare_variant(variant_dir, keep_debug_artifacts=bool(args.keep_debug_artifacts))
+        _prepare_variant(
+            variant_dir,
+            keep_debug_artifacts=bool(args.keep_debug_artifacts),
+            machine_profile=str(args.machine_profile),
+        )
     elapsed = time.time() - started_at
     print(f"done in {elapsed / 60.0:.1f} min")
     return 0

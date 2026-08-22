@@ -22,7 +22,12 @@ def _dist(a: tuple[float, float], b: tuple[float, float]) -> float:
     return math.hypot(a[0] - b[0], a[1] - b[1])
 
 
-def read_draw_polylines(path: Path) -> list[list[tuple[float, float]]]:
+def read_draw_polylines(
+    path: Path,
+    *,
+    z_up: float = 0.0,
+    z_down: float = 11.9,
+) -> list[list[tuple[float, float]]]:
     x: float | None = None
     y: float | None = None
     pen_down = False
@@ -47,7 +52,11 @@ def read_draw_polylines(path: Path) -> list[list[tuple[float, float]]]:
         values = _words(line)
 
         if "Z" in values:
-            next_pen_down = values["Z"] > 1.0
+            z_value = values["Z"]
+            next_pen_down = (
+                not math.isclose(z_value, z_up, abs_tol=1e-6)
+                and abs(z_value - z_down) <= abs(z_value - z_up)
+            )
             if pen_down and not next_pen_down:
                 finish()
             pen_down = next_pen_down
@@ -154,27 +163,31 @@ def write_gcode(
     feed_travel: float,
     feed_draw: float,
     z_down: float,
+    z_up: float = 0.0,
+    z_feed: float = 2500.0,
+    home_x: float = 0.0,
+    home_y: float = 0.0,
+    home_feed: float = 15000.0,
+    legacy_z_reference: bool = True,
 ) -> None:
-    lines = [
-        "$X",
-        "$1=255",
-        "G21",
-        "G90",
-        "G92 Z4.0000",
-        "G0 Z0.0000 F800.0",
-        "G4 P0.06",
-        "G92 Z0.0000",
-        "G0 Z0.0000 F800.0",
-        "G21",
-        "G90",
-        "G17",
-        "G91.1",
-        "G0 Z0.0000",
-    ]
+    lines = ["$X", "$1=255", "G21", "G90"]
+    if legacy_z_reference:
+        lines.extend(
+            [
+                "G92 Z4.0000",
+                "G0 Z0.0000 F800.0",
+                "G4 P0.06",
+                "G92 Z0.0000",
+                "G0 Z0.0000 F800.0",
+            ]
+        )
+    else:
+        lines.extend([f"G0 Z{z_up:.4f} F{z_feed:.1f}", "G4 P0.06"])
+    lines.extend(["G21", "G90", "G17", "G91.1", f"G0 Z{z_up:.4f}"])
     for polyline in polylines:
         sx, sy = polyline[0]
         lines.append(f"G0 X{sx:.3f} Y{sy:.3f} F{feed_travel:.1f}")
-        lines.append(f"G1 Z{z_down:.4f} F2500.0")
+        lines.append(f"G1 Z{z_down:.4f} F{z_feed:.1f}")
         lines.append("G4 P0.02")
         first = True
         for x, y in polyline[1:]:
@@ -183,9 +196,14 @@ def write_gcode(
                 first = False
             else:
                 lines.append(f"G1 X{x:.3f} Y{y:.3f}")
-        lines.append("G0 Z0.0000 F2500.0")
+        lines.append(f"G0 Z{z_up:.4f} F{z_feed:.1f}")
         lines.append("G4 P0.02")
-    lines.extend(["G0 X0.000 Y0.000 F15000.0", "G0 Z0.0000 F800.0"])
+    lines.extend(
+        [
+            f"G0 X{home_x:.3f} Y{home_y:.3f} F{home_feed:.1f}",
+            f"G0 Z{z_up:.4f} F{z_feed:.1f}",
+        ]
+    )
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 

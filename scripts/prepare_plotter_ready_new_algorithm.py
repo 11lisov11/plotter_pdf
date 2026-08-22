@@ -10,7 +10,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
@@ -86,6 +86,7 @@ SERVICE_TEXT_PARTS = (
 @dataclass(frozen=True)
 class Settings:
     drawing_mode: str = "computer_graphics"
+    machine_profile: str = "a4_desktop"
     x_compensation_mm: float = 0.0
     a3_pass_01_x_offset_mm: float = 0.0
     a3_pass_01_y_offset_mm: float = 0.0
@@ -95,6 +96,12 @@ class Settings:
     feed_travel: float = 15000.0
     feed_draw: float = 2200.0
     z_down: float = 11.9
+    z_up: float = 0.0
+    z_feed: float = 2500.0
+    home_x: float = 0.0
+    home_y: float = 0.0
+    home_feed: float = 15000.0
+    legacy_z_reference: bool = True
     work_width: float = 180.0
     work_height: float = 280.0
     work_min_y: float = -285.0
@@ -152,6 +159,43 @@ def _is_computer_graphics_mode(settings: Settings) -> bool:
 
 def _is_descriptive_geometry_mode(settings: Settings) -> bool:
     return str(settings.drawing_mode or "computer_graphics") == "descriptive_geometry"
+
+
+def settings_for_machine_profile(
+    machine_profile: str = "a4_desktop",
+    *,
+    drawing_mode: str = "computer_graphics",
+    keep_debug_artifacts: bool = False,
+) -> Settings:
+    """Return one coherent new-algorithm configuration for a physical machine."""
+    profile_name = str(machine_profile or "a4_desktop").strip() or "a4_desktop"
+    backend.apply_machine_profile(profile_name, logger=None)
+    if profile_name.casefold() != "a2_corexy":
+        return Settings(
+            drawing_mode=drawing_mode,
+            machine_profile=profile_name,
+            keep_debug_artifacts=bool(keep_debug_artifacts),
+        )
+
+    min_x, max_x, min_y, max_y = backend.base_work_area_bounds()
+    return Settings(
+        drawing_mode=drawing_mode,
+        machine_profile=profile_name,
+        feed_travel=float(backend.FEED_TRAVEL),
+        feed_draw=float(backend.FEED_DRAW),
+        z_down=float(backend.Z_DOWN),
+        z_up=float(backend.Z_UP),
+        z_feed=float(backend.Z_FEED_UP),
+        home_x=float(backend.HOME_X),
+        home_y=float(backend.HOME_Y),
+        home_feed=float(backend.FEED_TRAVEL),
+        legacy_z_reference=False,
+        work_width=float(max_x) - float(min_x),
+        work_height=float(max_y) - float(min_y),
+        work_min_y=float(min_y),
+        paper_transform="plotter_y_mirror",
+        keep_debug_artifacts=bool(keep_debug_artifacts),
+    )
 
 def _dist(a: Point, b: Point) -> float:
     return math.hypot(float(a[0]) - float(b[0]), float(a[1]) - float(b[1]))
@@ -298,12 +342,12 @@ def _translate(polylines: list[Polyline], dx: float, dy: float = 0.0) -> list[Po
     return [[(float(x) + float(dx), float(y) + float(dy)) for x, y in poly] for poly in polylines]
 
 
-def _safe_trailer_text() -> str:
+def _safe_trailer_text(settings: Settings) -> str:
     return "\n".join(
         [
             "; new-source-algorithm safe trailer",
-            "G0 Z3.500 F5000",
-            "G0 X0.000 Y0.000 F5000",
+            f"G0 Z{settings.z_up:.4f} F{settings.z_feed:.1f}",
+            f"G0 X{settings.home_x:.3f} Y{settings.home_y:.3f} F{settings.home_feed:.1f}",
             "M5",
             "$1=0",
             "",
@@ -319,6 +363,12 @@ def _write_new_gcode(path: Path, polylines: list[Polyline], settings: Settings) 
         feed_travel=settings.feed_travel,
         feed_draw=settings.feed_draw,
         z_down=settings.z_down,
+        z_up=settings.z_up,
+        z_feed=settings.z_feed,
+        home_x=settings.home_x,
+        home_y=settings.home_y,
+        home_feed=settings.home_feed,
+        legacy_z_reference=settings.legacy_z_reference,
     )
     payload = path.read_text(encoding="utf-8")
     payload = (
@@ -328,7 +378,7 @@ def _write_new_gcode(path: Path, polylines: list[Polyline], settings: Settings) 
         f"; x_compensation_mm={settings.x_compensation_mm:.3f}\n"
         + payload.rstrip()
         + "\n"
-        + _safe_trailer_text()
+        + _safe_trailer_text(settings)
     )
     path.write_text(payload, encoding="utf-8", newline="\n")
     path.with_suffix(".gcode").write_text(payload, encoding="utf-8", newline="\n")
@@ -3115,6 +3165,189 @@ def _map_to_item(source_polys: list[Polyline], transform: Transform, settings: S
     return _dedup_segments(final)
 
 
+def _map_single_large_plotter_sheet(
+    source_build: SourceBuild,
+    settings: Settings,
+    logs: list[str],
+) -> tuple[list[Polyline], dict[str, Any]]:
+    """Fit one PDF sheet onto the A2 CoreXY once, without A3 pass splitting."""
+    work_x0, work_x1, work_y0, work_y1 = prep._machine_work_area_bounds_mm()
+    src_x0, src_y0, src_x1, src_y1 = _source_frame_bbox(source_build.polylines)
+    src_w = max(1e-9, float(src_x1) - float(src_x0))
+    src_h = max(1e-9, float(src_y1) - float(src_y0))
+    work_w = max(1e-9, float(work_x1) - float(work_x0))
+    work_h = max(1e-9, float(work_y1) - float(work_y0))
+    target_scale = _large_plotter_target_scale(source_build)
+    direct_scale = min(target_scale, work_w / src_w, work_h / src_h)
+    rotated_scale = min(target_scale, work_w / src_h, work_h / src_w)
+    # The A2 CoreXY useful width is 390 mm.  A landscape A3 is 420 mm wide,
+    # but fits at true size when the sheet is placed portrait and the drawing
+    # is rotated on the machine.  Prefer that complete 1:1 placement over an
+    # invisible downscale or an A3 two-pass split.
+    rotate_cw = rotated_scale > direct_scale + 1e-9
+    mapped_w = src_h if rotate_cw else src_w
+    mapped_h = src_w if rotate_cw else src_h
+    scale = rotated_scale if rotate_cw else direct_scale
+    tx = ((float(work_x0) + float(work_x1)) * 0.5) - (mapped_w * scale * 0.5)
+    ty = ((float(work_y0) + float(work_y1)) * 0.5) - (mapped_h * scale * 0.5)
+    mirror_y = bool(getattr(backend, "MACHINE_SOURCE_MIRROR_Y", False))
+
+    mapped: list[Polyline] = []
+    for poly in source_build.polylines:
+        if len(poly) < 2:
+            continue
+        mapped_poly: Polyline = []
+        for x, y in poly:
+            if rotate_cw:
+                # Clockwise rotation in source coordinates, normalized to
+                # the source frame so its complete border remains intact.
+                rx = float(y) - float(src_y0)
+                ry = float(src_x1) - float(x)
+            else:
+                rx = float(x) - float(src_x0)
+                ry = float(y) - float(src_y0)
+            mx = rx * scale + tx
+            my = ry * scale + ty
+            if mirror_y:
+                my = float(work_y0) + float(work_y1) - my
+            mapped_poly.append((mx, my))
+        mapped.append(mapped_poly)
+
+    mapped = _translate(mapped, settings.x_compensation_mm, 0.0)
+    clipped = backend.clip_polylines_to_work_area(mapped, logger=logs.append)
+    deduped = _dedup_segments(clipped, precision=3)
+    final = _stitch_touching_polylines(
+        deduped,
+        settings,
+        logs,
+        label="A2 single-sheet OpenGOST LFF continuity",
+    )
+    logs.append(
+        "A2 single-sheet route: "
+        f"scale={scale:.6f}; target_scale={target_scale:.6f}; "
+        f"rotate_cw={rotate_cw}; mirror_y={mirror_y}; "
+        f"source_frame_bbox={[round(float(v), 4) for v in (src_x0, src_y0, src_x1, src_y1)]}; "
+        "A3 is emitted as one complete plotter file without a paper split."
+    )
+    return _dedup_segments(final, precision=3), {
+        "applied": True,
+        "mode": "a2_single_sheet_uniform_fit",
+        "content_scale": round(float(scale), 6),
+        "target_sheet_scale": round(float(target_scale), 6),
+        "translate_x_mm": round(float(tx), 6),
+        "translate_y_mm": round(float(ty), 6),
+        "rotate_cw": rotate_cw,
+        "mirror_y": mirror_y,
+        "source_bbox": [round(float(v), 4) for v in (src_x0, src_y0, src_x1, src_y1)],
+        "work_area_bounds": [round(float(v), 4) for v in (work_x0, work_x1, work_y0, work_y1)],
+    }
+
+
+def _source_sheet_format(source_build: SourceBuild) -> str:
+    short_side, long_side = sorted((float(source_build.page_w_mm), float(source_build.page_h_mm)))
+    if abs(short_side - 210.0) <= 15.0 and abs(long_side - 297.0) <= 15.0:
+        return "a4"
+    if abs(short_side - 297.0) <= 18.0 and abs(long_side - 420.0) <= 18.0:
+        return "a3"
+    if abs(short_side - 420.0) <= 20.0 and abs(long_side - 594.0) <= 20.0:
+        return "a2"
+    return "other"
+
+
+def _large_plotter_target_scale(source_build: SourceBuild) -> float:
+    """Return the requested sheet reduction: A2 -> A3, A3 stays 1:1."""
+    return math.sqrt(0.5) if _source_sheet_format(source_build) == "a2" else 1.0
+
+
+def _settings_for_source_sheet(source_build: SourceBuild, requested: Settings) -> Settings:
+    """Select the target profile without overriding an explicit desktop request."""
+    source_format = _source_sheet_format(source_build)
+    # The Computer Graphics batch explicitly requests ``a4_desktop`` when an
+    # A3/A2 sheet must be prepared as two A3 passes for the small plotter.
+    # Do not silently reroute that job to the large A2 machine: that turns the
+    # two-pass output into one file and removes the stitched-preview divider.
+    if str(requested.machine_profile).casefold() == "a4_desktop":
+        profile = "a4_desktop"
+    else:
+        profile = "a4_desktop" if source_format == "a4" else "a2_corexy"
+    selected = settings_for_machine_profile(
+        profile,
+        drawing_mode=requested.drawing_mode,
+        keep_debug_artifacts=requested.keep_debug_artifacts,
+    )
+    return replace(
+        selected,
+        x_compensation_mm=requested.x_compensation_mm,
+        a3_pass_01_x_offset_mm=requested.a3_pass_01_x_offset_mm,
+        a3_pass_01_y_offset_mm=requested.a3_pass_01_y_offset_mm,
+        a3_pass_02_x_offset_mm=requested.a3_pass_02_x_offset_mm,
+        a3_pass_02_y_offset_mm=requested.a3_pass_02_y_offset_mm,
+    )
+
+
+def _large_plotter_logical_preview(source_build: SourceBuild) -> tuple[list[Polyline], float, float]:
+    """Render the target paper, not the rotated physical A2-bed coordinates."""
+    scale = _large_plotter_target_scale(source_build)
+    polylines = [
+        [(float(x) * scale, float(y) * scale) for x, y in poly]
+        for poly in source_build.polylines
+        if len(poly) >= 2
+    ]
+    return polylines, float(source_build.page_w_mm) * scale, float(source_build.page_h_mm) * scale
+
+
+def _large_plotter_preview_from_final_gcode(
+    out_nc: Path,
+    source_build: SourceBuild,
+    settings: Settings,
+) -> tuple[list[Polyline], float, float] | None:
+    """Undo only the known A2-bed placement so preview is made from final NC."""
+    raw_polylines = stitch_gcode_polylines.read_draw_polylines(
+        out_nc,
+        z_up=settings.z_up,
+        z_down=settings.z_down,
+    )
+    if not raw_polylines:
+        return None
+
+    work_x0, work_x1, work_y0, work_y1 = prep._machine_work_area_bounds_mm()
+    src_x0, src_y0, src_x1, src_y1 = _source_frame_bbox(source_build.polylines)
+    src_w = max(1e-9, float(src_x1) - float(src_x0))
+    src_h = max(1e-9, float(src_y1) - float(src_y0))
+    work_w = max(1e-9, float(work_x1) - float(work_x0))
+    work_h = max(1e-9, float(work_y1) - float(work_y0))
+    target_scale = _large_plotter_target_scale(source_build)
+    direct_scale = min(target_scale, work_w / src_w, work_h / src_h)
+    rotated_scale = min(target_scale, work_w / src_h, work_h / src_w)
+    rotate_cw = rotated_scale > direct_scale + 1e-9
+    mapped_w = src_h if rotate_cw else src_w
+    mapped_h = src_w if rotate_cw else src_h
+    scale = rotated_scale if rotate_cw else direct_scale
+    tx = ((float(work_x0) + float(work_x1)) * 0.5) - (mapped_w * scale * 0.5)
+    ty = ((float(work_y0) + float(work_y1)) * 0.5) - (mapped_h * scale * 0.5)
+    mirror_y = bool(getattr(backend, "MACHINE_SOURCE_MIRROR_Y", False))
+
+    logical: list[Polyline] = []
+    for poly in raw_polylines:
+        restored: Polyline = []
+        for x, y in poly:
+            my = float(work_y0) + float(work_y1) - float(y) if mirror_y else float(y)
+            rx = (float(x) - tx) / scale
+            ry = (my - ty) / scale
+            if rotate_cw:
+                sx = float(src_x1) - ry
+                sy = float(src_y0) + rx
+            else:
+                sx = float(src_x0) + rx
+                sy = float(src_y0) + ry
+            restored.append((sx * target_scale, sy * target_scale))
+        if len(restored) >= 2:
+            logical.append(restored)
+    if not logical:
+        return None
+    return logical, float(source_build.page_w_mm) * target_scale, float(source_build.page_h_mm) * target_scale
+
+
 def _stitch_touching_polylines(
     polylines: list[Polyline],
     settings: Settings,
@@ -3596,7 +3829,11 @@ def _render_pdf_to_png(pdf_path: Path, png_path: Path, *, dpi: int = 190) -> Non
 def _write_clean_preview_from_final_gcode(out_nc: Path, settings: Settings) -> tuple[Path, Path]:
     # This reads the final new-algorithm G-code only to render a human preview.
     # It is not used as source geometry for building the job.
-    polylines = stitch_gcode_polylines.read_draw_polylines(out_nc)
+    polylines = stitch_gcode_polylines.read_draw_polylines(
+        out_nc,
+        z_up=settings.z_up,
+        z_down=settings.z_down,
+    )
     clean_pdf = out_nc.with_name(out_nc.stem + "_clean_preview.pdf")
     clean_png = out_nc.with_name(out_nc.stem + "_clean_preview.png")
     bx0, by0, bx1, by1 = _bounds(polylines)
@@ -3627,6 +3864,8 @@ def _write_specification_preview_from_final_gcode(
         work_min_y=settings.work_min_y,
         work_width=settings.work_width,
         work_height=settings.work_height,
+        z_up=settings.z_up,
+        z_down=settings.z_down,
     )
     work_x0, work_y0, work_x1, work_y1 = render_gcode_preview._transformed_work_bounds(
         transform=settings.paper_transform,
@@ -3666,6 +3905,8 @@ def _write_item_outputs(pack: Path, item_name: str, polylines: list[Polyline], s
         work_width=settings.work_width,
         work_height=settings.work_height,
         work_min_y=settings.work_min_y,
+        z_up=settings.z_up,
+        z_down=settings.z_down,
     )
     clean_preview_pdf, clean_preview_png = _write_clean_preview_from_final_gcode(out_nc, settings)
     bx0, by0, bx1, by1 = _bounds(polylines)
@@ -3803,6 +4044,24 @@ def _write_user_plot_preview(
 ) -> Path | None:
     out_pdf = pack / "plot_preview.pdf"
     ok_rows = [row for row in rows if bool(row.get("ok"))]
+    if str(settings.machine_profile).casefold() == "a2_corexy":
+        # The physical A2 route can rotate a landscape A3 onto the tall work
+        # area.  Present the finished sheet in its normal reading orientation:
+        # it is exactly the same 1:1 geometry that reaches the plotter, only
+        # shown after the operator turns the paper back to landscape.
+        final_nc = _row_path(ok_rows[0], "output_nc") if ok_rows else None
+        final_preview = (
+            _large_plotter_preview_from_final_gcode(final_nc, source_build, settings)
+            if final_nc and final_nc.exists()
+            else None
+        )
+        preview_polylines, page_w_mm, page_h_mm = final_preview or _large_plotter_logical_preview(source_build)
+        prep._render_polylines_pdf(
+            polylines=preview_polylines,
+            out_pdf=out_pdf,
+            canvas_bounds_mm=(0.0, page_w_mm, 0.0, page_h_mm),
+        )
+        return out_pdf
     has_passes = len(ok_rows) > 1 or any(
         _item_slot_for_published_output(row, index, len(ok_rows))
         for index, row in enumerate(ok_rows)
@@ -3923,8 +4182,10 @@ def _prepare_one_pack(pack: Path, settings: Settings) -> list[dict[str, Any]]:
             }
         ]
     source_build = _build_source(pack, source_pdf, report, settings)
+    active_settings = _settings_for_source_sheet(source_build, settings)
     rows: list[dict[str, Any]] = []
-    for item_name in _output_items(report):
+    item_names = ["page_01"] if str(active_settings.machine_profile).casefold() == "a2_corexy" else _output_items(report)
+    for item_name in item_names:
         logs = [*source_build.logs]
         if item_name.startswith("pass_"):
             transform = _transform_for_item(report, item_name)
@@ -3940,21 +4201,23 @@ def _prepare_one_pack(pack: Path, settings: Settings) -> list[dict[str, Any]]:
                 )
                 continue
             if source_build.dense_onepass_source:
-                final_polys = _map_to_item_dense_onepass(source_build.polylines, transform, settings, logs)
+                final_polys = _map_to_item_dense_onepass(source_build.polylines, transform, active_settings, logs)
                 mode = "a3_dense_onepass_opengost_lff_from_report_logs"
             else:
-                final_polys = _map_to_item(source_build.polylines, transform, settings, logs)
+                final_polys = _map_to_item(source_build.polylines, transform, active_settings, logs)
                 mode = "a3_pass_transform_from_report_logs"
             fit_meta: dict[str, Any] = {
                 "transform": transform.__dict__,
                 "mode": mode,
             }
+        elif str(active_settings.machine_profile).casefold() == "a2_corexy":
+            final_polys, fit_meta = _map_single_large_plotter_sheet(source_build, active_settings, logs)
         else:
-            final_polys, fit_meta = _prepare_a4_page(source_build, settings, logs)
+            final_polys, fit_meta = _prepare_a4_page(source_build, active_settings, logs)
         if item_name.startswith("pass_"):
-            final_polys, a3_offset_meta = _apply_a3_pass_plotter_offset(final_polys, item_name, settings, logs)
+            final_polys, a3_offset_meta = _apply_a3_pass_plotter_offset(final_polys, item_name, active_settings, logs)
             fit_meta["a3_plotter_offset_mm"] = a3_offset_meta
-        outputs = _write_item_outputs(pack, item_name, final_polys, settings)
+        outputs = _write_item_outputs(pack, item_name, final_polys, active_settings)
         row = {
             "package": pack.name,
             "item": item_name,
@@ -3985,18 +4248,25 @@ def _prepare_one_pack(pack: Path, settings: Settings) -> list[dict[str, Any]]:
             encoding="utf-8",
         )
         print(f"new-algorithm-v2: {pack.name}/{item_name}")
-    _publish_clean_pack_outputs(pack, source_pdf, source_build, rows, settings)
+    _publish_clean_pack_outputs(pack, source_pdf, source_build, rows, active_settings)
     return rows
 
 
-def _rebuild_packages(variant_root: Path) -> None:
+def _rebuild_packages(variant_root: Path, machine_profile: str) -> None:
     rel = variant_root
     try:
         rel = variant_root.relative_to(ROOT)
     except ValueError:
         pass
     subprocess.run(
-        [sys.executable, str(ROOT / "scripts" / "prepare_folder1_packages.py"), "--folder", str(rel)],
+        [
+            sys.executable,
+            str(ROOT / "scripts" / "prepare_folder1_packages.py"),
+            "--folder",
+            str(rel),
+            "--machine-profile",
+            str(machine_profile),
+        ],
         cwd=ROOT,
         check=True,
     )
@@ -4070,7 +4340,7 @@ def prepare_variant(
     if needs_metadata:
         _remove_variant_root_artifacts(variant_root)
         try:
-            _rebuild_packages(variant_root)
+            _rebuild_packages(variant_root, settings.machine_profile)
         finally:
             _cache_variant_pack_metadata(variant_root)
             _remove_variant_root_artifacts(variant_root)
@@ -4098,6 +4368,7 @@ def prepare_variant(
 def main() -> int:
     parser = argparse.ArgumentParser(description="Build source-driven new-algorithm plotter G-code and previews.")
     parser.add_argument("--variant-root", type=Path, default=DEFAULT_VARIANT_ROOT)
+    parser.add_argument("--machine-profile", default="a4_desktop", help="Target profile: a4_desktop or a2_corexy.")
     parser.add_argument("--drawing-mode", choices=["auto", "computer_graphics", "descriptive_geometry"], default="auto", help="Frame/layout profile: computer_graphics for KOMPAS drawing sheets, descriptive_geometry for РќР°С‡РµСЂС‚ tasks.")
     parser.add_argument("--rebuild", action="store_true", help="Rebuild clean new-algorithm outputs from existing package metadata.")
     parser.add_argument("--rebuild-metadata", action="store_true", help="Run the legacy package splitter first when report.json metadata is missing or stale.")
@@ -4112,14 +4383,17 @@ def main() -> int:
         help="Keep reports, source SVG/PDF/PNG previews and summary CSV instead of publishing only clean pack files.",
     )
     args = parser.parse_args()
-    settings = Settings(
-        drawing_mode=_normalize_drawing_mode(args.drawing_mode, args.variant_root),
+    settings = replace(
+        settings_for_machine_profile(
+            args.machine_profile,
+            drawing_mode=_normalize_drawing_mode(args.drawing_mode, args.variant_root),
+            keep_debug_artifacts=bool(args.keep_debug_artifacts),
+        ),
         x_compensation_mm=float(args.x_compensation_mm),
         a3_pass_01_x_offset_mm=float(args.a3_pass_01_x_offset_mm),
         a3_pass_01_y_offset_mm=float(args.a3_pass_01_y_offset_mm),
         a3_pass_02_x_offset_mm=float(args.a3_pass_02_x_offset_mm),
         a3_pass_02_y_offset_mm=float(args.a3_pass_02_y_offset_mm),
-        keep_debug_artifacts=bool(args.keep_debug_artifacts),
     )
     rows = prepare_variant(
         args.variant_root,

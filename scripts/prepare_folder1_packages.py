@@ -8479,7 +8479,12 @@ def _prepare_toe_page(
                     pass
     return result
 
-def _prepare_drawing_package(source_pdf: Path, package_dir: Path) -> tuple[dict[str, Any], list[ArtifactRow]]:
+def _prepare_drawing_package(
+    source_pdf: Path,
+    package_dir: Path,
+    *,
+    force_large_single_page: bool = False,
+) -> tuple[dict[str, Any], list[ArtifactRow]]:
     pages_dir = package_dir / "pages"
     logs_dir = package_dir / "logs"
     _ensure_clean_dir(package_dir)
@@ -8491,19 +8496,34 @@ def _prepare_drawing_package(source_pdf: Path, package_dir: Path) -> tuple[dict[
     page_w_mm = float(page.rect.width) * 25.4 / 72.0
     page_h_mm = float(page.rect.height) * 25.4 / 72.0
     forced_a4_single_page = _force_a4_single_page_for_drawing(source_pdf)
-    forced_a3_two_pass = _force_a3_two_pass_for_large_sheet(source_pdf) or _force_variant_a3_two_pass_for_large_sheet(
-        source_pdf,
-        page_w_mm,
-        page_h_mm,
+    large_corexy_single_page = bool(force_large_single_page and _is_computer_graphics_source(source_pdf))
+    forced_a3_two_pass = (not large_corexy_single_page) and (
+        _force_a3_two_pass_for_large_sheet(source_pdf)
+        or _force_variant_a3_two_pass_for_large_sheet(
+            source_pdf,
+            page_w_mm,
+            page_h_mm,
+        )
     )
     literal_one_to_one_tiled = (
         _is_computer_graphics_source(source_pdf)
+        and not large_corexy_single_page
         and not forced_a4_single_page
         and not forced_a3_two_pass
         and max(float(page_w_mm), float(page_h_mm)) > 300.0
     )
-    is_large_custom = (max(page_w_mm, page_h_mm) > 430.0) and not forced_a3_two_pass and not forced_a4_single_page
-    is_a3 = (max(page_w_mm, page_h_mm) > 300.0) and not is_large_custom and not forced_a4_single_page
+    is_large_custom = (
+        (max(page_w_mm, page_h_mm) > 430.0)
+        and not large_corexy_single_page
+        and not forced_a3_two_pass
+        and not forced_a4_single_page
+    )
+    is_a3 = (
+        (max(page_w_mm, page_h_mm) > 300.0)
+        and not large_corexy_single_page
+        and not is_large_custom
+        and not forced_a4_single_page
+    )
 
     rows: list[ArtifactRow] = []
     report: dict[str, Any] = {
@@ -9297,11 +9317,15 @@ def main() -> int:
     parser.add_argument("--folder", default="1", help="Folder with source PDFs, relative to project root.")
     parser.add_argument("--only", nargs="*", default=[], help="Optional substrings to filter source PDF names.")
     parser.add_argument("--skip-existing", action="store_true", help="Skip package dirs that already exist.")
+    parser.add_argument("--machine-profile", default="a4_desktop", help="Target machine profile for package geometry.")
     args = parser.parse_args()
 
     folder = (PROJECT_ROOT / args.folder).resolve()
     if not folder.exists():
         raise FileNotFoundError(f"Folder not found: {folder}")
+    machine_profile = str(args.machine_profile or "a4_desktop").strip() or "a4_desktop"
+    backend.apply_machine_profile(machine_profile, logger=None)
+    force_large_single_page = machine_profile.casefold() == "a2_corexy"
 
     pdfs = _iter_source_pdfs(folder, list(args.only or []))
     if not pdfs:
@@ -9328,7 +9352,11 @@ def main() -> int:
         if pdf_path.name.startswith("TOE_"):
             report, rows = _prepare_toe_package(pdf_path, package_dir)
         else:
-            report, rows = _prepare_drawing_package(pdf_path, package_dir)
+            report, rows = _prepare_drawing_package(
+                pdf_path,
+                package_dir,
+                force_large_single_page=force_large_single_page,
+            )
 
         report["package_dir"] = str(package_dir)
         compare_meta = _generate_package_compare_artifacts(package_dir, report, rows)
