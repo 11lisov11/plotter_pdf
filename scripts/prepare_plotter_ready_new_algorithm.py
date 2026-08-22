@@ -89,7 +89,7 @@ class Settings:
     machine_profile: str = "a4_desktop"
     x_compensation_mm: float = 0.0
     a3_pass_01_x_offset_mm: float = 0.0
-    a3_pass_01_y_offset_mm: float = 0.0
+    a3_pass_01_y_offset_mm: float = 3.0
     a3_pass_02_x_offset_mm: float = 0.0
     a3_pass_02_y_offset_mm: float = 0.0
     stitch_eps_mm: float = 0.08
@@ -3733,44 +3733,11 @@ def _prepare_a4_page(source_build: SourceBuild, settings: Settings, logs: list[s
     if source_build.preserve_source_frame:
         return _map_a4_preserving_source_frame(source_build, settings, logs)
     is_specification = _is_new_algorithm_specification(source_build.source_pdf, source_build.polylines)
-    if is_specification:
-        work_x0, work_x1, work_y0, work_y1 = prep._machine_work_area_bounds_mm()
-        sx0, sy0, sx1, sy1 = _bounds(source_build.polylines)
-        # Fit the physical PDF page, not only the surviving geometry bbox.
-        # Vector-only specifications may legitimately have no strokes in a
-        # service gutter; bbox fitting would then enlarge that one sheet and
-        # change its scale relative to every other A4 specification.
-        fit_x0 = min(0.0, sx0)
-        fit_y0 = min(0.0, sy0)
-        fit_x1 = max(float(source_build.page_w_mm), sx1)
-        fit_y1 = max(float(source_build.page_h_mm), sy1)
-        src_w = max(1e-9, fit_x1 - fit_x0)
-        src_h = max(1e-9, fit_y1 - fit_y0)
-        scale = min((work_x1 - work_x0) / src_w, (work_y1 - work_y0) / src_h)
-        tx = ((work_x0 + work_x1) * 0.5) - (((fit_x0 + fit_x1) * 0.5) * scale) + settings.x_compensation_mm
-        ty = ((work_y0 + work_y1) * 0.5) - (((fit_y0 + fit_y1) * 0.5) * scale)
-        mapped = [[(float(x) * scale + tx, float(y) * scale + ty) for x, y in poly] for poly in source_build.polylines]
-        clipped = backend.clip_polylines_to_work_area(mapped, logger=logs.append)
-        stitched = stitch_gcode_polylines.stitch_polylines(clipped, eps=settings.stitch_eps_mm)
-        ordered = stitch_gcode_polylines.nearest_order(stitched)
-        fit_meta = {
-            "applied": True,
-            "mode": "a4_specification_direct_lff_fit_no_simplify",
-            "content_scale": round(float(scale), 6),
-            "translate_x_mm": round(float(tx), 6),
-            "translate_y_mm": round(float(ty), 6),
-            "source_bbox": [round(float(v), 4) for v in (sx0, sy0, sx1, sy1)],
-            "source_page_fit_bbox": [round(float(v), 4) for v in (fit_x0, fit_y0, fit_x1, fit_y1)],
-            "work_area_bounds": [round(float(v), 4) for v in (work_x0, work_x1, work_y0, work_y1)],
-        }
-        logs.append(
-            "A4 specification direct LFF fit: old KOMPAS fit/dedup disabled; "
-            f"scale={scale:.6f}; translate=({tx:.4f},{ty:.4f}) mm; "
-            f"polylines={len(ordered)}."
-        )
-        return ordered, fit_meta
     a4_source_polys = _nudge_a4_top_title_text_inside_frame(source_build.polylines, logs)
     final_polys, fit_meta = _prepare_a4_lff_safe_clean_bbox_fit_polylines(a4_source_polys, logs=logs)
+    if is_specification:
+        fit_meta["mode"] = "a4_specification_lff_safe_clean_bbox_fit"
+        logs.append("A4 specification: using the shared full-work-area KOMPAS mapping; source-page shrink is disabled.")
     if not final_polys:
         work_x0, work_x1, work_y0, work_y1 = prep._machine_work_area_bounds_mm()
         sx0, sy0, sx1, sy1 = _bounds(a4_source_polys)
@@ -4374,7 +4341,7 @@ def main() -> int:
     parser.add_argument("--rebuild-metadata", action="store_true", help="Run the legacy package splitter first when report.json metadata is missing or stale.")
     parser.add_argument("--x-compensation-mm", type=float, default=0.0)
     parser.add_argument("--a3-pass-01-x-offset-mm", type=float, default=0.0, help="Extra plotter-only X offset for A3 pass_01; default keeps current output unchanged.")
-    parser.add_argument("--a3-pass-01-y-offset-mm", type=float, default=0.0, help="Extra plotter-only Y offset for A3 pass_01; default keeps current output unchanged.")
+    parser.add_argument("--a3-pass-01-y-offset-mm", type=float, default=3.0, help="Plotter-only Y correction for A3 pass_01; default raises the first pass 6 mm relative to the previous -3 mm correction.")
     parser.add_argument("--a3-pass-02-x-offset-mm", type=float, default=0.0, help="Extra plotter-only X offset for A3 pass_02; default keeps current output unchanged.")
     parser.add_argument("--a3-pass-02-y-offset-mm", type=float, default=0.0, help="Extra plotter-only Y offset for A3 pass_02; default keeps current output unchanged.")
     parser.add_argument(
