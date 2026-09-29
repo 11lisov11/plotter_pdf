@@ -28,3 +28,26 @@ def test_job_viewmodel_accepts_multiple_layout_items(tmp_path) -> None:
     assert vm.settings.input_paths == [str(first), str(second)]
     assert vm.settings.input_pages == [0, 1]
     assert vm.settings.input_rotations == [90, 180]
+
+
+def test_job_viewmodel_blocks_draw_without_current_preflight(tmp_path) -> None:
+    input_file = tmp_path / "sample.pdf"
+    input_file.write_bytes(b"%PDF-1.4\n")
+    vm = JobViewModel(JobSettings(input_path=input_file, output_dir=tmp_path, com="COM99", dry_run=False))
+    vm.set_hardware_confirmed(True)
+
+    result = vm.draw()
+
+    assert result.ok is False
+    assert result.errors == ["preflight_required"]
+
+
+def test_generation_signature_changes_with_output_geometry_settings(tmp_path) -> None:
+    input_file = tmp_path / "sample.pdf"
+    input_file.write_bytes(b"%PDF-1.4\n")
+    vm = JobViewModel(JobSettings(input_path=input_file, output_dir=tmp_path))
+    original = vm.generation_signature()
+
+    vm.settings.output_rotation_deg = 90
+
+    assert vm.generation_signature() != original

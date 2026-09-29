@@ -5,6 +5,8 @@ import re
 from pathlib import Path
 from typing import Callable, Tuple
 
+from ..geometry.arc_fit import arc_center_from_radius
+
 
 _TOKEN_RE = re.compile(r"([A-Za-z])\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)")
 
@@ -55,11 +57,14 @@ def summarize_gcode_file(
     min_y = math.inf
     max_y = -math.inf
 
-    cur_x = None
-    cur_y = None
+    cur_x = 0.0
+    cur_y = 0.0
     last_motion = None
     abs_mode = True
     ijk_abs = False
+    unit_scale = 1.0
+    work_offset_x = 0.0
+    work_offset_y = 0.0
 
     with gcode_path.open("r", encoding="utf-8", errors="ignore") as fh:
         for raw in fh:
@@ -71,7 +76,14 @@ def summarize_gcode_file(
             tokens = _TOKEN_RE.findall(line)
             g_values = _values(tokens, "G")
             code = last_motion
+            coordinate_reset = False
             for gval in g_values:
+                if abs(gval - 20.0) <= 1e-9:
+                    unit_scale = 25.4
+                    continue
+                if abs(gval - 21.0) <= 1e-9:
+                    unit_scale = 1.0
+                    continue
                 if abs(gval - 90.0) <= 1e-9:
                     abs_mode = True
                     continue
@@ -87,6 +99,9 @@ def summarize_gcode_file(
                 rounded = int(round(gval))
                 if abs(gval - rounded) > 1e-9:
                     continue
+                if rounded == 92:
+                    coordinate_reset = True
+                    continue
                 if rounded in {0, 1, 2, 3}:
                     code = rounded
                     last_motion = rounded
@@ -95,40 +110,64 @@ def summarize_gcode_file(
             y_values = _values(tokens, "Y")
             i_values = _values(tokens, "I")
             j_values = _values(tokens, "J")
-            x = x_values[-1] if x_values else None
-            y = y_values[-1] if y_values else None
-            i = i_values[-1] if i_values else None
-            j = j_values[-1] if j_values else None
+            r_values = _values(tokens, "R")
+            x = x_values[-1] * unit_scale if x_values else None
+            y = y_values[-1] * unit_scale if y_values else None
+            i = i_values[-1] * unit_scale if i_values else None
+            j = j_values[-1] * unit_scale if j_values else None
+            radius = r_values[-1] * unit_scale if r_values else None
             has_xy = bool(x_values or y_values)
-            if cur_x is None:
-                tx = x
-            elif x is None:
+            if x is None:
                 tx = cur_x
             else:
-                tx = x if abs_mode else (cur_x + x)
-            if cur_y is None:
-                ty = y
-            elif y is None:
+                tx = (x + work_offset_x) if abs_mode else (cur_x + x)
+            if y is None:
                 ty = cur_y
             else:
-                ty = y if abs_mode else (cur_y + y)
+                ty = (y + work_offset_y) if abs_mode else (cur_y + y)
+
+            if coordinate_reset:
+                if x is not None:
+                    work_offset_x = cur_x - x
+                if y is not None:
+                    work_offset_y = cur_y - y
+                continue
 
             # Update bounds. For G2/G3, include arc bulge (not just endpoints).
-            if code in {2, 3} and cur_x is not None and cur_y is not None and tx is not None and ty is not None and i is not None and j is not None:
+            if code in {2, 3} and i is not None and j is not None:
                 start = (cur_x, cur_y)
                 end = (tx, ty)
-                center = (i, j) if ijk_abs else (cur_x + i, cur_y + j)
+                center = (
+                    (i + work_offset_x, j + work_offset_y)
+                    if ijk_abs
+                    else (cur_x + i, cur_y + j)
+                )
                 if points_distance(start, end) <= 1e-6:
                     r = math.hypot(start[0] - center[0], start[1] - center[1])
                     ax0, ax1, ay0, ay1 = (center[0] - r, center[0] + r, center[1] - r, center[1] + r)
                 else:
-                    ax0, ax1, ay0, ay1 = arc_extents_xy(start, end, center, cw=(code == 2))
+                    ax0, ax1, ay0, ay1 = arc_extents_xy(start, end, center, code == 2)
                 min_x = min(min_x, ax0)
                 max_x = max(max_x, ax1)
                 min_y = min(min_y, ay0)
                 max_y = max(max_y, ay1)
                 cur_x, cur_y = end
-            elif has_xy and tx is not None and ty is not None:
+            elif code in {2, 3} and radius is not None:
+                start = (cur_x, cur_y)
+                end = (tx, ty)
+                center = arc_center_from_radius(start, end, radius, cw=code == 2)
+                if center is None:
+                    ax0, ax1, ay0, ay1 = (
+                        min(cur_x, tx), max(cur_x, tx), min(cur_y, ty), max(cur_y, ty)
+                    )
+                else:
+                    ax0, ax1, ay0, ay1 = arc_extents_xy(start, end, center, code == 2)
+                min_x = min(min_x, ax0)
+                max_x = max(max_x, ax1)
+                min_y = min(min_y, ay0)
+                max_y = max(max_y, ay1)
+                cur_x, cur_y = end
+            elif has_xy:
                 min_x = min(min_x, tx)
                 max_x = max(max_x, tx)
                 min_y = min(min_y, ty)

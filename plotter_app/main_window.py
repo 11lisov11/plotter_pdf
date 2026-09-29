@@ -644,6 +644,7 @@ class MainWindow(QMainWindow):
     def _sync_from_ui(self, *_args) -> None:
         if not hasattr(self, "file_list"):
             return
+        previous_generation_signature = self.vm.generation_signature()
         items = [(path, page, rotation) for path, page, rotation in self._items()]
         zones = self._item_zones()
         current_items = self.vm.settings.normalized_layout_items()
@@ -674,6 +675,8 @@ class MainWindow(QMainWindow):
         self.vm.settings.layout_margin_mm = self.margin_spin.value()
         self.vm.settings.layout_gap_mm = self.gap_spin.value()
         self.vm.settings.zone_layout = str(self.zone_layout_combo.currentData() or "none")
+        if self.vm.generation_signature() != previous_generation_signature:
+            self.vm.preflight_ok = False
         save_gui_settings(asdict(self.vm.settings))
         self._sync_draw_gate()
 

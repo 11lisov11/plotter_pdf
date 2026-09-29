@@ -59,6 +59,38 @@ class JobViewModel:
     def can_generate(self) -> bool:
         return self.can_preview()
 
+    def generation_signature(self) -> tuple[object, ...]:
+        settings = self.settings
+        return (
+            tuple((str(path), page, rotation) for path, page, rotation in settings.normalized_layout_items()),
+            tuple(str(zone) for zone in settings.input_zones),
+            str(settings.sheet_format),
+            settings.sheet_width_mm,
+            settings.sheet_height_mm,
+            str(settings.sheet_anchor),
+            float(settings.sheet_offset_x_mm),
+            float(settings.sheet_offset_y_mm),
+            int(settings.pass_cols),
+            int(settings.pass_rows),
+            int(settings.pass_col),
+            int(settings.pass_row),
+            str(settings.tool),
+            bool(settings.handwriting),
+            settings.safe_travel_up,
+            str(settings.quality),
+            str(settings.draw_order),
+            str(settings.machine_profile),
+            str(settings.calibration_layout),
+            str(settings.layout_mode),
+            int(settings.layout_page),
+            float(settings.layout_margin_mm),
+            float(settings.layout_gap_mm),
+            str(settings.zone_layout),
+            int(settings.output_rotation_deg) % 360,
+            bool(settings.mirror_x),
+            bool(settings.mirror_y),
+        )
+
     def can_draw(self) -> bool:
         return (
             self.has_input()
@@ -95,6 +127,16 @@ class JobViewModel:
         return result
 
     def draw(self) -> JobResult:
+        if not self.preflight_ok:
+            result = JobResult(
+                False,
+                "Перед рисованием заново сформируйте или проверьте итоговый G-code.",
+                output_dir=self.settings.normalized_output_dir(),
+                errors=["preflight_required"],
+            )
+            self.last_result = result
+            self.log(result.message)
+            return result
         self.settings.preview = False
         self.settings.dry_run = False
         self.operation_running = True

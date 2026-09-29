@@ -160,6 +160,39 @@ class GcodeStatsModuleTests(unittest.TestCase):
             self.assertEqual(travel, 1)
             self.assertEqual(bounds, (0.0, 10.0, -5.0, 5.0))
 
+    def test_summarize_gcode_file_handles_partial_axes_inches_and_g92(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="plotter_gcode_stats_units_") as td:
+            gcode = Path(td) / "units.nc"
+            gcode.write_text(
+                "G21\nG90\nG0 X10\nG0 Y10\nG92 X0 Y0\nG20\nG1 X1 Y0\n",
+                encoding="utf-8",
+            )
+
+            total, draw, travel, bounds = gcode_stats.summarize_gcode_file(
+                gcode,
+                points_distance=lambda _a, _b: 1.0,
+                arc_extents_xy=lambda *_args, **_kwargs: (0.0, 0.0, 0.0, 0.0),
+            )
+
+            self.assertEqual((total, draw, travel), (7, 1, 2))
+            self.assertEqual(bounds, (10.0, 35.4, 0.0, 10.0))
+
+    def test_summarize_gcode_file_handles_radius_arc(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="plotter_gcode_stats_radius_arc_") as td:
+            gcode = Path(td) / "radius_arc.nc"
+            gcode.write_text("G21\nG90\nG0 X0 Y0\nG3 X10 Y0 R5\n", encoding="utf-8")
+            arc_extents = mock.Mock(return_value=(0.0, 10.0, 0.0, 5.0))
+
+            total, draw, travel, bounds = gcode_stats.summarize_gcode_file(
+                gcode,
+                points_distance=lambda _a, _b: 1.0,
+                arc_extents_xy=arc_extents,
+            )
+
+            self.assertEqual((total, draw, travel), (4, 1, 1))
+            self.assertEqual(bounds, (0.0, 10.0, 0.0, 5.0))
+            arc_extents.assert_called_once()
+
 
 if __name__ == "__main__":
     unittest.main()

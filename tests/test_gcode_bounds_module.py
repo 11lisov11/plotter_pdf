@@ -132,6 +132,41 @@ class GcodeBoundsModuleTests(unittest.TestCase):
 
             self.assertEqual(bounds, (0.0, 10.0, -5.0, 5.0))
 
+    def test_gcode_draw_bounds_handles_inches_and_g92_without_fake_move(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="plotter_gcode_bounds_units_") as td:
+            gcode = Path(td) / "units.nc"
+            gcode.write_text(
+                "G21\nG90\nG0 X10 Y10\nG92 X0 Y0\nM3\nG20\nG1 X1 Y0\n",
+                encoding="utf-8",
+            )
+
+            bounds = gcode_bounds.gcode_draw_bounds(
+                gcode,
+                z_up=0.0,
+                z_down=11.9,
+                points_distance=lambda _a, _b: 1.0,
+                arc_extents_xy=lambda *_args, **_kwargs: (0.0, 0.0, 0.0, 0.0),
+            )
+
+            self.assertEqual(bounds, (10.0, 35.4, 10.0, 10.0))
+
+    def test_gcode_draw_bounds_handles_radius_arc(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="plotter_gcode_bounds_radius_arc_") as td:
+            gcode = Path(td) / "radius_arc.nc"
+            gcode.write_text("G21\nG90\nM3\nG0 X0 Y0\nG2 X10 Y0 R5\n", encoding="utf-8")
+            arc_extents = mock.Mock(return_value=(0.0, 10.0, -5.0, 0.0))
+
+            bounds = gcode_bounds.gcode_draw_bounds(
+                gcode,
+                z_up=0.0,
+                z_down=11.9,
+                points_distance=lambda _a, _b: 1.0,
+                arc_extents_xy=arc_extents,
+            )
+
+            self.assertEqual(bounds, (0.0, 10.0, -5.0, 0.0))
+            arc_extents.assert_called_once()
+
 
 if __name__ == "__main__":
     unittest.main()

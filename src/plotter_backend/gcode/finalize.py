@@ -1,6 +1,81 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
+
+
+_WORD_RE = re.compile(r"([A-Z])\s*([-+]?(?:\d+(?:\.\d*)?|\.\d+))", re.IGNORECASE)
+
+
+def _words(line: str) -> list[tuple[str, float]]:
+    command = re.sub(r"\([^)]*\)", "", line.split(";", 1)[0])
+    return [(letter.upper(), float(value)) for letter, value in _WORD_RE.findall(command)]
+
+
+def _xy_position(lines: list[str], x: float, y: float) -> tuple[float, float]:
+    for line in lines:
+        words = _words(line)
+        if any(letter == "G" and abs(value - 91.0) < 1e-6 for letter, value in words):
+            raise ValueError("A2 safe-home routing requires absolute XY coordinates.")
+        if any(letter == "G" and abs(value - 92.0) < 1e-6 for letter, value in words) and any(
+            letter in {"X", "Y"} for letter, _ in words
+        ):
+            raise ValueError("A2 safe-home routing cannot follow a G92 XY reset.")
+        for letter, value in words:
+            if letter == "X":
+                x = value
+            elif letter == "Y":
+                y = value
+    return x, y
+
+
+def _route_around_home_clamps(
+    body: str,
+    *,
+    z_up: float,
+    z_down: float,
+    home_x: float,
+    home_y: float,
+    safe_y: float,
+    feed_travel: float,
+) -> str:
+    lines = body.splitlines()
+    threshold = (z_up + z_down) * 0.5
+    down_lines = [
+        index
+        for index, line in enumerate(lines)
+        if any(letter == "Z" and value < threshold for letter, value in _words(line))
+    ]
+    if not down_lines:
+        raise ValueError("A2 job has no pen-down command.")
+    first_down, last_down = down_lines[0], down_lines[-1]
+    last_up = next(
+        (
+            index
+            for index in range(last_down + 1, len(lines))
+            if any(letter == "Z" and value >= z_up - 0.05 for letter, value in _words(lines[index]))
+        ),
+        None,
+    )
+    if last_up is None:
+        raise ValueError("A2 job does not lift the pen after its last stroke.")
+
+    first_x, first_y = _xy_position(lines[:first_down], home_x, home_y)
+    last_x, last_y = _xy_position(lines[first_down:last_up + 1], first_x, first_y)
+    if first_y < safe_y - 1e-6 or last_y < safe_y - 1e-6:
+        raise ValueError("A2 drawing starts or ends inside the home clamp corridor.")
+    before = [line for line in lines[:first_down] if not any(axis in {"X", "Y"} for axis, _ in _words(line))]
+    after = [line for line in lines[last_up + 1:] if not any(axis in {"X", "Y"} for axis, _ in _words(line))]
+    travel = f"F{feed_travel:.1f}"
+    return "\n".join([
+        *before,
+        f"G1 X{home_x:.4f} Y{safe_y:.4f} {travel}",
+        f"G1 X{first_x:.4f} Y{first_y:.4f} {travel}",
+        *lines[first_down:last_up + 1],
+        f"G1 X{home_x:.4f} Y{last_y:.4f} {travel}",
+        f"G1 X{home_x:.4f} Y{home_y:.4f} {travel}",
+        *after,
+    ]) + "\n"
 
 
 def make_final_with_preamble(
@@ -19,6 +94,7 @@ def make_final_with_preamble(
     startup_force_z_lift_mm: float = 4.0,
     hold_steppers_during_job: bool = True,
     release_steppers_after_draw: bool = False,
+    home_clearance_y_mm: float | None = None,
 ) -> None:
     forced_lift = max(0.0, float(startup_force_z_lift_mm))
     # Some plotters lower the pen towards positive Z, while the A2 CoreXY kit
@@ -49,6 +125,16 @@ def make_final_with_preamble(
         "",
     ])
     g = prepared_gcode.read_text(encoding="utf-8", errors="ignore")
+    if home_clearance_y_mm is not None:
+        g = _route_around_home_clamps(
+            g,
+            z_up=float(z_up),
+            z_down=float(z_down),
+            home_x=float(home_x),
+            home_y=float(home_y),
+            safe_y=float(home_clearance_y_mm),
+            feed_travel=float(feed_travel),
+        )
     trailer = [
         "",
         f"G0 Z{float(z_up):.4f} F{float(safe_lift_feed):.1f}",

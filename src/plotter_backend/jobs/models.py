@@ -16,9 +16,9 @@ class JobSettings:
     sheet_format: str = "a4"
     sheet_width_mm: Optional[float] = None
     sheet_height_mm: Optional[float] = None
-    sheet_anchor: str = "center"
-    sheet_offset_x_mm: float = 0.0
-    sheet_offset_y_mm: float = 0.0
+    sheet_anchor: Optional[str] = None
+    sheet_offset_x_mm: Optional[float] = None
+    sheet_offset_y_mm: Optional[float] = None
     pass_cols: int = 1
     pass_rows: int = 1
     pass_col: int = 1

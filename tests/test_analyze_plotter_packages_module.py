@@ -291,6 +291,19 @@ def test_analyze_gcode_treats_g92_as_coordinate_reset_not_motion(tmp_path: Path)
     assert metrics.z_cycles == 1
 
 
+def test_analyze_gcode_converts_inch_units_to_millimeters(tmp_path: Path) -> None:
+    gcode = tmp_path / "inch.nc"
+    gcode.write_text(
+        "G21\nG90\nG0 X0 Y0\nM3\nG20\nG1 X1 Y0\nM5\n",
+        encoding="utf-8",
+    )
+
+    metrics = analyzer.analyze_gcode_file(gcode)
+
+    assert metrics.draw_moves == 1
+    assert abs(metrics.draw_length_mm - 25.4) < 1e-9
+
+
 def test_collect_gcode_files_uses_only_nc_and_gcode(tmp_path: Path) -> None:
     keep_nc = tmp_path / "a.nc"
     keep_gcode = tmp_path / "nested" / "b.gcode"
@@ -402,6 +415,34 @@ def test_collect_ready_package_roots_skips_variant_with_failed_ready_audit(tmp_p
     roots = analyzer.collect_ready_package_roots([variant])
 
     assert roots == []
+
+
+def test_collect_ready_package_roots_supports_minimal_pack_contract(tmp_path: Path) -> None:
+    variant = tmp_path / "Компьютерная графика" / "9 вариант"
+    package = variant / "drawing_pack"
+    package.mkdir(parents=True)
+    (package / "plotter.nc").write_text("G90\nG0 X0 Y0\n", encoding="utf-8")
+    (variant / "_ready_to_plot_audit.json").write_text(
+        json.dumps({"ok": True, "failed_packages": []}),
+        encoding="utf-8",
+    )
+
+    roots = analyzer.collect_ready_package_roots([tmp_path / "Компьютерная графика"])
+
+    assert roots == [package]
+
+
+def test_analyzer_detects_negative_z_a2_pen_profile(tmp_path: Path) -> None:
+    gcode = tmp_path / "a2.nc"
+    gcode.write_text(
+        "G90\nG92 Z1\nG1 X0 Y0\nG1 Z-5\nG1 X100 Y100\nG1 Z1\n",
+        encoding="utf-8",
+    )
+
+    metrics = analyzer.analyze_gcode_file(gcode)
+
+    assert metrics.draw_moves == 1
+    assert metrics.draw_length_mm > 100.0
 
 
 def test_main_accepts_positional_gcode_files(tmp_path: Path, capsys) -> None:

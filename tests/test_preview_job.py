@@ -3,6 +3,8 @@ from __future__ import annotations
 import importlib
 from pathlib import Path
 
+import pytest
+
 from src.plotter_backend.jobs.models import JobResult, JobSettings
 
 preview_mod = importlib.import_module("src.plotter_backend.jobs.preview_job")
@@ -86,3 +88,29 @@ def test_old_plotter_preview_applies_physical_y_orientation() -> None:
     )
 
     assert transformed == [[(10.0, -10.0), (20.0, -280.0)]]
+
+
+def test_a2_preview_does_not_silently_fallback_to_a4_bounds(monkeypatch) -> None:
+    def _broken_profile(*_args, **_kwargs):
+        raise ValueError("broken A2 profile")
+
+    monkeypatch.setattr(preview_mod.machine_profiles_mod, "resolve_machine_profile", _broken_profile)
+    with pytest.raises(ValueError, match="broken A2 profile"):
+        preview_mod._workspace_bounds(JobSettings(machine_profile="a2_corexy"))
+
+
+def test_preview_job_reports_failure_when_pdf_preview_cannot_be_built(tmp_path, monkeypatch) -> None:
+    nc_path = tmp_path / "sample.nc"
+    nc_path.write_text("G21\nG90\nG0 Z0\nG0 X0 Y0\n", encoding="utf-8")
+
+    monkeypatch.setattr(
+        preview_mod,
+        "prepare_gcode_job",
+        lambda _settings: JobResult(True, "ok", output_dir=tmp_path, nc_path=nc_path),
+    )
+    monkeypatch.setattr(preview_mod, "_write_preview_files", lambda *_args, **_kwargs: (_ for _ in ()).throw(OSError("disk full")))
+
+    result = preview_mod.preview_job(JobSettings(input_path=Path("drawing.svg"), output_dir=tmp_path))
+
+    assert result.ok is False
+    assert any("disk full" in error for error in result.errors)

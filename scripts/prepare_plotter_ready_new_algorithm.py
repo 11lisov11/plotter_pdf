@@ -107,6 +107,7 @@ class Settings:
     work_min_y: float = -285.0
     paper_transform: str = "plotter_y_mirror"
     keep_debug_artifacts: bool = False
+    safe_start_y_mm: float | None = None
 
 
 @dataclass(frozen=True)
@@ -137,6 +138,7 @@ class SourceBuild:
     artifacts: dict[str, str]
     preserve_source_frame: bool = False
     dense_onepass_source: bool = False
+    exact_pdf_vectors: bool = False
 
 
 
@@ -369,10 +371,16 @@ def _write_new_gcode(path: Path, polylines: list[Polyline], settings: Settings) 
         home_y=settings.home_y,
         home_feed=settings.home_feed,
         legacy_z_reference=settings.legacy_z_reference,
+        safe_start_y=settings.safe_start_y_mm,
     )
     payload = path.read_text(encoding="utf-8")
+    source_description = (
+        "direct cleaned PDF vectors -> exact geometry -> A2 placement"
+        if settings.safe_start_y_mm is not None
+        else "source PDF -> geometry_without_pdf_text -> OpenGOST_LFF_singleline_text -> pass transform"
+    )
     payload = (
-        "; new-algorithm-v2: source PDF -> geometry_without_pdf_text -> OpenGOST_LFF_singleline_text -> pass transform\n"
+        f"; new-algorithm-v2: {source_description}\n"
         "; old page_01/pass_*.nc are not used as source\n"
         f"; text_font={LFF_FONT_PATH}\n"
         f"; x_compensation_mm={settings.x_compensation_mm:.3f}\n"
@@ -3001,7 +3009,67 @@ def _build_clean_source_opengost_source(
         dense_onepass_source=True,
     )
 
+def _build_large_direct_vector_source(pack: Path, source_pdf: Path) -> SourceBuild:
+    """Use the same clean, exact PDF-vector export as the small-plotter drawing route."""
+    logs: list[str] = []
+    with tempfile.TemporaryDirectory(prefix="large_plotter_vectors_") as temporary:
+        temporary_dir = Path(temporary)
+        source_svg = temporary_dir / "source.svg"
+        source_preview = temporary_dir / "source.pdf"
+        ok, message, export_logs = prep._prepare_a3_clean_source_svg(
+            source_pdf,
+            source_svg=source_svg,
+            source_preview_pdf=source_preview,
+        )
+        logs.extend(export_logs)
+        if not ok or any("falling back to Method3" in line for line in export_logs):
+            raise RuntimeError(f"Exact PDF-vector export failed: {message}")
+        with fitz.open(source_pdf) as document:
+            page = document[0]
+            page_w_mm = float(page.rect.width) * 25.4 / 72.0
+            page_h_mm = float(page.rect.height) * 25.4 / 72.0
+        items = backend.extract_polylines(source_svg)
+        page_items, _unit_scale = backend.normalize_path_units_to_page(
+            items, page_w_mm, page_h_mm, logger=logs.append
+        )
+        geometry = [
+            [(float(x), float(y)) for x, y in item.points]
+            for item in page_items
+            if len(item.points) >= 2
+        ]
+    if not geometry:
+        raise RuntimeError("Exact PDF-vector export produced no drawing geometry")
+    logs.append(
+        "A2 exact source: small-plotter clean PDF SVG route, "
+        f"text_as_path=True, polylines={len(geometry)}; no text reconstruction."
+    )
+    return SourceBuild(
+        source_pdf=source_pdf,
+        page_w_mm=page_w_mm,
+        page_h_mm=page_h_mm,
+        polylines=geometry,
+        geometry_polylines=len(geometry),
+        text_polylines=0,
+        text_lines_found=0,
+        text_lines_rendered=0,
+        text_lines_skipped=0,
+        missing_chars=[],
+        logs=logs,
+        artifacts={},
+        preserve_source_frame=True,
+        dense_onepass_source=True,
+        exact_pdf_vectors=True,
+    )
+
+
 def _build_source(pack: Path, source_pdf: Path, report: dict[str, Any], settings: Settings) -> SourceBuild:
+    if (
+        str(settings.machine_profile).casefold() == "a2_corexy"
+        and str(report.get("kind", "drawing")).casefold() == "drawing"
+        and prep._drawing_frame_class(source_pdf) == "neutral_frame"
+        and not _is_new_algorithm_specification_source(source_pdf)
+    ):
+        return _build_large_direct_vector_source(pack, source_pdf)
     clean_source_pdf = _clean_source_background_for_pack(pack, source_pdf, report)
     if clean_source_pdf is not None:
         return _build_clean_source_opengost_source(pack, source_pdf, clean_source_pdf, settings)
@@ -3224,6 +3292,8 @@ def _map_single_large_plotter_sheet(
 ) -> tuple[list[Polyline], dict[str, Any]]:
     """Fit one PDF sheet onto the A2 CoreXY once, without A3 pass splitting."""
     work_x0, work_x1, work_y0, work_y1 = prep._machine_work_area_bounds_mm()
+    if source_build.exact_pdf_vectors and settings.safe_start_y_mm is not None:
+        work_y0 = max(float(work_y0), float(settings.safe_start_y_mm))
     src_x0, src_y0, src_x1, src_y1 = _source_frame_bbox(source_build.polylines)
     src_w = max(1e-9, float(src_x1) - float(src_x0))
     src_h = max(1e-9, float(src_y1) - float(src_y0))
@@ -3307,8 +3377,8 @@ def _source_sheet_format(source_build: SourceBuild) -> str:
 
 
 def _large_plotter_target_scale(source_build: SourceBuild) -> float:
-    """Return the requested sheet reduction: A2 -> A3, A3 stays 1:1."""
-    return math.sqrt(0.5) if _source_sheet_format(source_build) == "a2" else 1.0
+    """Keep source millimetres unchanged; work-area fitting handles only margins."""
+    return 1.0
 
 
 def _settings_for_source_sheet(source_build: SourceBuild, requested: Settings) -> Settings:
@@ -4064,6 +4134,13 @@ def _write_user_plot_preview(
     out_pdf = pack / "plot_preview.pdf"
     ok_rows = [row for row in rows if bool(row.get("ok"))]
     if str(settings.machine_profile).casefold() == "a2_corexy":
+        if source_build.exact_pdf_vectors and ok_rows:
+            # Show physical NC coordinates and actual fitted size, not a
+            # scale-restored logical sheet that conceals the safety margin.
+            preview = _row_path(ok_rows[0], "clean_preview_pdf")
+            if preview and preview.exists():
+                _copy_if_different(preview, out_pdf)
+                return out_pdf
         # The physical A2 route can rotate a landscape A3 onto the tall work
         # area.  Present the finished sheet in its normal reading orientation:
         # it is exactly the same 1:1 geometry that reaches the plotter, only
@@ -4202,6 +4279,8 @@ def _prepare_one_pack(pack: Path, settings: Settings) -> list[dict[str, Any]]:
         ]
     source_build = _build_source(pack, source_pdf, report, settings)
     active_settings = _settings_for_source_sheet(source_build, settings)
+    if source_build.exact_pdf_vectors:
+        active_settings = replace(active_settings, safe_start_y_mm=60.0)
     rows: list[dict[str, Any]] = []
     item_names = ["page_01"] if str(active_settings.machine_profile).casefold() == "a2_corexy" else _output_items(report)
     for item_name in item_names:
@@ -4236,6 +4315,24 @@ def _prepare_one_pack(pack: Path, settings: Settings) -> list[dict[str, Any]]:
         if item_name.startswith("pass_"):
             final_polys, a3_offset_meta = _apply_a3_pass_plotter_offset(final_polys, item_name, active_settings, logs)
             fit_meta["a3_plotter_offset_mm"] = a3_offset_meta
+        if str(active_settings.machine_profile).casefold() == "a2_corexy":
+            # Fail closed instead of publishing a plausible-looking NC file
+            # after clipping/routing has silently discarded major projections.
+            source_draw_length_mm = _draw_len(source_build.polylines)
+            final_draw_length_mm = _draw_len(final_polys)
+            retained_ratio = (
+                final_draw_length_mm / source_draw_length_mm
+                if source_draw_length_mm > 1e-9
+                else 1.0
+            )
+            fit_meta["source_draw_length_mm"] = round(source_draw_length_mm, 3)
+            fit_meta["final_draw_length_mm"] = round(final_draw_length_mm, 3)
+            fit_meta["draw_length_retained_ratio"] = round(retained_ratio, 6)
+            if retained_ratio < 0.60:
+                raise RuntimeError(
+                    "Large-plotter preparation rejected incomplete geometry: "
+                    f"only {retained_ratio:.1%} of source draw length remains."
+                )
         outputs = _write_item_outputs(pack, item_name, final_polys, active_settings)
         row = {
             "package": pack.name,
@@ -4244,12 +4341,16 @@ def _prepare_one_pack(pack: Path, settings: Settings) -> list[dict[str, Any]]:
             "source_pdf": str(source_pdf),
             "old_nc_used_as_source": False,
             "source_algorithm": (
-                "clean source onepass + LibreCAD OpenGOST LFF dense text"
-                if source_build.preserve_source_frame
+                "small-plotter clean PDF vectors + exact A2 placement"
+                if source_build.exact_pdf_vectors
                 else (
-                    "PDF geometry + LibreCAD OpenGOST LFF dense onepass source text"
-                    if source_build.dense_onepass_source
-                    else "PDF geometry without text + LibreCAD OpenGOST LFF single-line source text"
+                    "clean source onepass + LibreCAD OpenGOST LFF dense text"
+                    if source_build.preserve_source_frame
+                    else (
+                        "PDF geometry + LibreCAD OpenGOST LFF dense onepass source text"
+                        if source_build.dense_onepass_source
+                        else "PDF geometry without text + LibreCAD OpenGOST LFF single-line source text"
+                    )
                 )
             ),
             "geometry_polylines": source_build.geometry_polylines,
@@ -4388,7 +4489,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Build source-driven new-algorithm plotter G-code and previews.")
     parser.add_argument("--variant-root", type=Path, default=DEFAULT_VARIANT_ROOT)
     parser.add_argument("--machine-profile", default="a4_desktop", help="Target profile: a4_desktop or a2_corexy.")
-    parser.add_argument("--drawing-mode", choices=["auto", "computer_graphics", "descriptive_geometry"], default="auto", help="Frame/layout profile: computer_graphics for KOMPAS drawing sheets, descriptive_geometry for РќР°С‡РµСЂС‚ tasks.")
+    parser.add_argument("--drawing-mode", choices=["auto", "computer_graphics", "descriptive_geometry"], default="auto", help="Frame/layout profile: computer_graphics for KOMPAS drawing sheets, descriptive_geometry for descriptive-geometry tasks.")
     parser.add_argument("--rebuild", action="store_true", help="Rebuild clean new-algorithm outputs from existing package metadata.")
     parser.add_argument("--rebuild-metadata", action="store_true", help="Run the legacy package splitter first when report.json metadata is missing or stale.")
     parser.add_argument("--x-compensation-mm", type=float, default=0.0)

@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+from src import plotter_pdf_drawer as backend
 from src.plotter_backend.errors import SerialTransportError, ToolDependencyError
 from src.plotter_backend.machine import grbl_sender
 
@@ -84,6 +85,20 @@ class GrblSenderModuleTests(unittest.TestCase):
             self.assertIn("; AUTO-RESUME from line 3 of source.nc", text)
             self.assertIn("G0 X1 Y1", text)
             self.assertIn("G1 X2 Y2", text)
+
+    def test_legacy_resume_wrapper_uses_current_sender_signature(self) -> None:
+        with mock.patch.object(backend.grbl_sender_mod, "write_resume_file") as write_resume:
+            backend._write_resume_file(Path("source.nc"), Path("resume.nc"), start_line=17)
+
+        write_resume.assert_called_once_with(
+            Path("source.nc"),
+            Path("resume.nc"),
+            start_line=17,
+            z_up=backend.Z_UP,
+            safe_lift_feed=backend.SAFE_LIFT_FEED,
+            z_delay_up=backend.Z_DELAY_UP,
+            controlled_motion=backend.CONTROLLED_G1_MOTION,
+        )
 
     def test_send_to_grbl_returns_sender_plot_time_from_stdout(self) -> None:
         with tempfile.TemporaryDirectory(prefix="plotter_grbl_sender_ok_") as td:

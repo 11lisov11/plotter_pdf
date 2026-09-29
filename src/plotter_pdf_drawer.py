@@ -217,6 +217,10 @@ HOME_Y = 0.0
 # NOTE: GRBL will still respect its $110/$111 max rate caps.
 FEED_TRAVEL = 15000.0
 FEED_DRAW = 12000.0
+# Maximum belt-equivalent feed for either physical CoreXY motor. A diagonal
+# Cartesian move can command one motor at |X + Y|, above the requested feed.
+# Zero disables the limiter for non-CoreXY profiles.
+COREXY_MOTOR_MAX_RATE = 0.0
 # Physical plotter safeguard: tiny KOMPAS/technical-text fragments can be too
 # short for reliable marking at the normal long-line drawing feed. Only draw
 # feed is limited by default; travel must stay fast to avoid very slow title
@@ -329,6 +333,11 @@ OUTER_FRAME_MIN_FILL_RATIO = 0.70
 OUTER_FRAME_COVER_RATIO = 0.97
 OUTER_FRAME_SIDE_RATIO = 0.80
 OUTER_FRAME_EDGE_EPS_MM = 0.5
+# Keep the source's inset frame, but align its drawable bounds to A2 home.
+A2_PAGE_EDGE_FRAME_EPS_MM = 1.5
+OMIT_TABLE_TEST = False
+A2_TEST_TABLE_X_MIN_MM = 185.0
+A2_TEST_TABLE_Y_MAX_MM = 140.0
 BACKGROUND_FILL_MIN_CHANNEL = 0.92
 BACKGROUND_FILL_MIN_OPACITY = 0.05
 FIT_TO_WORK_AREA = True
@@ -697,6 +706,7 @@ def apply_machine_profile(profile_name: str = "a4_desktop", logger=print) -> dic
     global WORK_AREA_MIN_X, WORK_AREA_MAX_X, WORK_AREA_MIN_Y, WORK_AREA_MAX_Y
     global WORK_OFFSET_X_MM, WORK_OFFSET_Y_MM, ACTIVE_WORK_AREA_BOUNDS
     global DEFAULT_BAUD, FEED_TRAVEL, FEED_DRAW, HOME_X, HOME_Y
+    global COREXY_MOTOR_MAX_RATE
     global CONTROLLED_G1_MOTION
     global GO_HOME_BEFORE_DRAW, GO_HOME_AFTER_DRAW
     global PEN_LIFT_MODE, Z_UP, Z_DOWN, Z_DELAY, Z_DELAY_DOWN, Z_DELAY_UP
@@ -734,6 +744,7 @@ def apply_machine_profile(profile_name: str = "a4_desktop", logger=print) -> dic
     DEFAULT_BAUD = str(connection.get("baud", DEFAULT_BAUD))
     FEED_TRAVEL = float(motion.get("feed_travel_mm_min", FEED_TRAVEL))
     FEED_DRAW = float(motion.get("feed_draw_mm_min", FEED_DRAW))
+    COREXY_MOTOR_MAX_RATE = max(0.0, float(motion.get("corexy_motor_max_rate_mm_min", 0.0)))
     CONTROLLED_G1_MOTION = bool(motion.get("controlled_g1_motion", False))
     HOME_X = float(motion.get("home_x_mm", HOME_X))
     HOME_Y = float(motion.get("home_y_mm", HOME_Y))
@@ -765,7 +776,8 @@ def apply_machine_profile(profile_name: str = "a4_desktop", logger=print) -> dic
             f"{MACHINE_PROFILE_NAME} ({MACHINE_PROFILE_LABEL}); "
             f"base work area {WORK_AREA_MAX_X - WORK_AREA_MIN_X:.1f}x{WORK_AREA_MAX_Y - WORK_AREA_MIN_Y:.1f} mm, "
             f"offset=({WORK_OFFSET_X_MM:.2f},{WORK_OFFSET_Y_MM:.2f}); "
-            f"XY feed={FEED_DRAW:.0f}/{FEED_TRAVEL:.0f} mm/min; Z={Z_UP:.2f}/{Z_DOWN:.2f}"
+            f"XY feed={FEED_DRAW:.0f}/{FEED_TRAVEL:.0f} mm/min; Z={Z_UP:.2f}/{Z_DOWN:.2f}; "
+            f"CoreXY motor cap={COREXY_MOTOR_MAX_RATE:.0f} mm/min"
         )
     return profile
 
@@ -6306,6 +6318,85 @@ def filter_outer_frame_path_items(
     )
 
 
+def _a2_single_sheet_layout() -> bool:
+    return (
+        str(MACHINE_PROFILE_NAME).strip().lower() == "a2_corexy"
+        and str(ACTIVE_SHEET_CONFIG.get("sheet_format") or "").strip().lower() == "a2"
+        and int(PASS_COLS) == 1
+        and int(PASS_ROWS) == 1
+    )
+
+
+def trim_a2_page_edge_frames(
+    items: List[PathItem], page_w: float, page_h: float, logger=print
+) -> Tuple[List[PathItem], List[PathItem]]:
+    """Remove only page-bleed rectangles, not the inset frame and title block."""
+    if page_w <= 0.0 or page_h <= 0.0:
+        return items, []
+    eps = float(A2_PAGE_EDGE_FRAME_EPS_MM)
+    kept: List[PathItem] = []
+    removed: List[PathItem] = []
+    for item in items:
+        points = list(item.points or [])
+        if not points or not item.is_stroke:
+            kept.append(item)
+            continue
+        x0, x1, y0, y1 = bounds_polylines([points])
+        whole_page_rectangle = (
+            item.closed
+            and is_axis_aligned_rectangle(points)
+            and abs(x0) <= eps
+            and abs(y0) <= eps
+            and abs(page_w - x1) <= eps
+            and abs(page_h - y1) <= eps
+            and (x1 - x0) >= 0.98 * page_w
+            and (y1 - y0) >= 0.98 * page_h
+        )
+        page_edge_line = (
+            not item.closed
+            and len(points) <= 3
+            and (
+                ((x1 - x0) <= eps and (y1 - y0) >= 0.95 * page_h and (abs(x0) <= eps or abs(page_w - x1) <= eps))
+                or ((y1 - y0) <= eps and (x1 - x0) >= 0.95 * page_w and (abs(y0) <= eps or abs(page_h - y1) <= eps))
+            )
+        )
+        (removed if whole_page_rectangle or page_edge_line else kept).append(item)
+    if logger:
+        logger(f"A2 page-edge frame removal: removed {len(removed)} stroke path(s); inset frame retained.")
+    return kept, removed
+
+
+def omit_a2_test_table(
+    items: List[PathItem], page_w: float, page_h: float, logger=print
+) -> List[PathItem]:
+    """Drop the table block only; keep the full-page inset frame and view text."""
+    if abs(page_w - 420.0) > 5.0 or abs(page_h - 594.0) > 5.0:
+        raise ValueError("--omit-table-test expects this portrait 420 x 594 mm A2 source layout.")
+    kept: List[PathItem] = []
+    removed = 0
+    for item in items:
+        points = list(item.points or [])
+        if not points:
+            kept.append(item)
+            continue
+        x0, x1, y0, y1 = bounds_polylines([points])
+        in_table = (
+            x0 >= A2_TEST_TABLE_X_MIN_MM
+            and x1 <= page_w + 1.0
+            and y0 >= -1.0
+            and y1 <= A2_TEST_TABLE_Y_MAX_MM
+        )
+        if in_table:
+            removed += 1
+        else:
+            kept.append(item)
+    if not removed:
+        raise ValueError("--omit-table-test found no table paths; refusing to silently prepare an unfiltered test.")
+    if logger:
+        logger(f"A2 test table omitted: {removed} path item(s); inset frame and drawing views kept.")
+    return kept
+
+
 def clip_path_items_to_rect(
     items: List[PathItem],
     min_x: float,
@@ -6558,6 +6649,13 @@ def transform_polylines_for_output_orientation(
     min_x, max_x, min_y, max_y = work_area_bounds()
     center_x = (min_x + max_x) * 0.5
     center_y = (min_y + max_y) * 0.5
+    source_bounds = bounds_polylines(polylines)
+    source_width = max(0.0, source_bounds[1] - source_bounds[0])
+    source_height = max(0.0, source_bounds[3] - source_bounds[2])
+    source_coverage = max(
+        source_width / max(1e-9, max_x - min_x),
+        source_height / max(1e-9, max_y - min_y),
+    )
     angle = math.radians(rotation_deg)
     cosine = round(math.cos(angle))
     sine = round(math.sin(angle))
@@ -6579,8 +6677,10 @@ def transform_polylines_for_output_orientation(
     transformed_bounds = bounds_polylines(transformed)
     width = max(1e-9, transformed_bounds[1] - transformed_bounds[0])
     height = max(1e-9, transformed_bounds[3] - transformed_bounds[2])
-    scale = min(1.0, (max_x - min_x) / width, (max_y - min_y) / height)
-    if scale < 1.0 - 1e-9:
+    fit_scale = min((max_x - min_x) / width, (max_y - min_y) / height)
+    can_restore_sheet_scale = bool(ALLOW_UPSCALE_TO_WORK_AREA) and source_coverage >= 0.90
+    scale = fit_scale if can_restore_sheet_scale else min(1.0, fit_scale)
+    if abs(scale - 1.0) > 1e-9:
         transformed = [
             [(center_x + (x - center_x) * scale, center_y + (y - center_y) * scale) for x, y in polyline]
             for polyline in transformed
@@ -8840,19 +8940,38 @@ def _build_corner_mark_polylines_for_bounds(
     if dx <= 0.0:
         return []
 
-    corners = [
-        (x_left, y_top),
-        (x_right, y_top),
-        (x_right, y_bottom),
-        (x_left, y_bottom),
+    # Each stroke finishes at its exact corner. The first stroke at every
+    # corner is aligned with the incoming perimeter leg, so pen-up travel
+    # between corners remains purely horizontal or vertical. This matters on
+    # CoreXY: even a tiny diagonal component makes one motor run faster than
+    # the requested Cartesian feed at the machine's maximum speed.
+    corner_strokes = [
+        (
+            (x_left, y_top),
+            (x_left + dx, y_top),
+            (x_left, y_top + dx),
+        ),
+        (
+            (x_right, y_top),
+            (x_right - dx, y_top),
+            (x_right, y_top + dx),
+        ),
+        (
+            (x_right, y_bottom),
+            (x_right, y_bottom - dx),
+            (x_right - dx, y_bottom),
+        ),
+        (
+            (x_left, y_bottom),
+            (x_left + dx, y_bottom),
+            (x_left, y_bottom - dx),
+        ),
     ]
 
     marks: List[List[Tuple[float, float]]] = []
-    for cx, cy in corners:
-        dir_x = 1.0 if abs(cx - x_left) < 1e-9 else -1.0
-        dir_y = 1.0 if abs(cy - y_top) < 1e-9 else -1.0
-        marks.append([(cx, cy), (cx + dir_x * dx, cy)])
-        marks.append([(cx, cy), (cx, cy + dir_y * dx)])
+    for corner, incoming_endpoint, other_endpoint in corner_strokes:
+        marks.append([incoming_endpoint, corner])
+        marks.append([other_endpoint, corner])
     return marks
 
 
@@ -9048,7 +9167,7 @@ def calibration_layout_zone_bounds(
         raise ValueError(f"Calibration layout {layout!r} is not a numbered zone.")
     grid_name, zone_number = zone
     cols, rows = CALIBRATION_LAYOUT_GRIDS[grid_name]
-    min_x, max_x, min_y, max_y = bounds or work_area_bounds()
+    min_x, max_x, min_y, max_y = bounds if bounds is not None else base_work_area_bounds()
     width = max_x - min_x
     height = max_y - min_y
     zone_index = int(zone_number) - 1
@@ -9153,8 +9272,18 @@ def calibration_layout_point_count(layout: str = "sheet") -> int:
     if normalised in CALIBRATION_LAYOUT_ZONES:
         return 4
     if normalised in CALIBRATION_LAYOUT_GROUPS:
-        marks = build_calibration_layout_corner_mark_polylines(normalised)
-        return len({(round(line[0][0], 4), round(line[0][1], 4)) for line in marks if line})
+        points = set()
+        for zone in CALIBRATION_LAYOUT_GROUPS[normalised]:
+            min_x, max_x, min_y, max_y = calibration_layout_zone_bounds(zone)
+            points.update(
+                {
+                    (round(min_x, 4), round(min_y, 4)),
+                    (round(max_x, 4), round(min_y, 4)),
+                    (round(max_x, 4), round(max_y, 4)),
+                    (round(min_x, 4), round(max_y, 4)),
+                }
+            )
+        return len(points)
     grid = CALIBRATION_LAYOUT_GRIDS.get(normalised)
     if grid is None:
         raise ValueError(
@@ -9163,6 +9292,27 @@ def calibration_layout_point_count(layout: str = "sheet") -> int:
         )
     cols, rows = grid
     return (cols + 1) * (rows + 1)
+
+
+def _clip_calibration_layout_polylines(
+    polylines: List[List[Tuple[float, float]]],
+    layout: str,
+    *,
+    logger=print,
+) -> List[List[Tuple[float, float]]]:
+    normalised = _normalise_calibration_layout(layout)
+    if normalised == "sheet":
+        return clip_polylines_to_work_area(polylines, logger=logger)
+    min_x, max_x, min_y, max_y = base_work_area_bounds()
+    return geometry_clipping_mod.clip_polylines_to_rect(
+        polylines,
+        min_x,
+        max_x,
+        min_y,
+        max_y,
+        continuity_eps_mm=float(CLIP_CONTINUITY_EPS_MM),
+        logger=logger,
+    )
 
 
 def active_calibration_profile_name() -> str:
@@ -9587,12 +9737,29 @@ def quality_state() -> str:
 def pdf_to_svg(pdf_path: Path, svg_path: Path, logger) -> None:
     global HANDWRITING_STROKE_ACTIVE
     global HANDWRITING_CYRILLIC_ACTIVE
+    global DRAW_ORDER_MODE
     logger = _safe_logger(logger)
     logger("Converting PDF -> SVG ...")
     HANDWRITING_STROKE_ACTIVE = False
     HANDWRITING_CYRILLIC_ACTIVE = False
 
     svg_path.parent.mkdir(parents=True, exist_ok=True)
+
+    if MACHINE_PROFILE_NAME == "a2_corexy" and not HANDWRITING_TEXT_ENABLED:
+        import fitz
+        import xml.etree.ElementTree as ET
+
+        with fitz.open(pdf_path) as doc:
+            if len(doc) == 1 and doc[0].get_drawings():
+                page = doc[0]
+                svg_root = ET.fromstring(page.get_svg_image(text_as_path=True))
+                svg_root.set("width", f"{page.rect.width * 25.4 / 72.0:.3f}mm")
+                svg_root.set("height", f"{page.rect.height * 25.4 / 72.0:.3f}mm")
+                ET.ElementTree(svg_root).write(svg_path, encoding="utf-8", xml_declaration=True)
+                if DRAW_ORDER_MODE == "auto":
+                    DRAW_ORDER_MODE = "source"
+                logger("A2 vector source: direct PDF SVG export (text_as_path=True); source order preserved.")
+                return
 
     def postprocess_text(svg_target: Path) -> Tuple[bool, int]:
         global HANDWRITING_CYRILLIC_ACTIVE
@@ -9771,7 +9938,13 @@ def frw_to_pdf(frw_path: Path, pdf_path: Path, logger) -> None:
         wait_for_nonempty_file_fn=_wait_for_nonempty_file,
     )
 
-def make_final_with_preamble(prepared_gcode: Path, final_gcode: Path) -> None:
+def make_final_with_preamble(
+    prepared_gcode: Path,
+    final_gcode: Path,
+    *,
+    feed_travel: Optional[float] = None,
+) -> None:
+    effective_feed_travel = float(FEED_TRAVEL if feed_travel is None else feed_travel)
     gcode_finalize_mod.make_final_with_preamble(
         prepared_gcode,
         final_gcode,
@@ -9781,25 +9954,191 @@ def make_final_with_preamble(prepared_gcode: Path, final_gcode: Path) -> None:
         z_delay_up=float(Z_DELAY_UP),
         home_x=float(HOME_X),
         home_y=float(HOME_Y),
-        feed_travel=float(FEED_TRAVEL),
+        feed_travel=effective_feed_travel,
         go_home_before_draw=bool(GO_HOME_BEFORE_DRAW),
         go_home_after_draw=bool(GO_HOME_AFTER_DRAW),
         startup_force_z_lift_mm=float(STARTUP_FORCE_Z_LIFT_MM),
         hold_steppers_during_job=bool(MACHINE_PROFILE_NAME != "a2_corexy"),
+        home_clearance_y_mm=(float(work_area_bounds()[2]) if MACHINE_PROFILE_NAME == "a2_corexy" else None),
     )
-    rewrite_duplicate_draw_segments_as_penup_travel(final_gcode)
+    rewrite_duplicate_draw_segments_as_penup_travel(
+        final_gcode,
+        feed_travel=effective_feed_travel,
+    )
+    if MACHINE_PROFILE_NAME == "a2_corexy" and COREXY_MOTOR_MAX_RATE > 0.0:
+        rewrite_corexy_diagonal_rapid_moves_as_axis_aligned(final_gcode)
+        limit_corexy_motor_feed_rates(
+            final_gcode,
+            motor_max_rate=COREXY_MOTOR_MAX_RATE,
+        )
     if CONTROLLED_G1_MOTION:
-        rewrite_rapid_moves_as_controlled(final_gcode)
+        rewrite_rapid_moves_as_controlled(
+            final_gcode,
+            feed_travel=effective_feed_travel,
+            feed_z=SAFE_LIFT_FEED,
+        )
 
 
-def rewrite_rapid_moves_as_controlled(gcode_path: Path) -> int:
+def rewrite_rapid_moves_as_controlled(
+    gcode_path: Path,
+    *,
+    feed_travel: Optional[float] = None,
+    feed_z: Optional[float] = None,
+) -> int:
     lines = gcode_path.read_text(encoding="utf-8", errors="ignore").splitlines()
     changed = 0
     output: List[str] = []
     for line in lines:
         rewritten, count = re.subn(r"^(\s*)G0(?:0)?(?=\s|$)", r"\1G1", line, count=1, flags=re.IGNORECASE)
+        body = rewritten.partition(";")[0]
+        has_feed = bool(re.search(r"(?i)(?<![A-Za-z])F\s*[+-]?(?:\d+(?:\.\d*)?|\.\d+)", body))
+        has_z = bool(re.search(r"(?i)(?<![A-Za-z])Z\s*[+-]?(?:\d+(?:\.\d*)?|\.\d+)", body))
+        has_xy = bool(re.search(r"(?i)(?<![A-Za-z])[XY]\s*[+-]?(?:\d+(?:\.\d*)?|\.\d+)", body))
+        if count and not has_feed:
+            if has_z and feed_z is not None:
+                rewritten = _replace_or_append_gcode_feed(rewritten, feed_z)
+            elif has_xy and feed_travel is not None:
+                rewritten = _replace_or_append_gcode_feed(rewritten, feed_travel)
         output.append(rewritten)
         changed += count
+    gcode_path.write_text("\n".join(output) + "\n", encoding="utf-8")
+    return changed
+
+
+def _replace_or_append_gcode_feed(line: str, feed: float) -> str:
+    body, separator, comment = line.partition(";")
+    replacement = f"F{float(feed):.1f}"
+    if re.search(r"(?i)(?<![A-Za-z])F\s*[+-]?(?:\d+(?:\.\d*)?|\.\d+)", body):
+        body = re.sub(
+            r"(?i)(?<![A-Za-z])F\s*[+-]?(?:\d+(?:\.\d*)?|\.\d+)",
+            replacement,
+            body,
+            count=1,
+        )
+    else:
+        body = body.rstrip() + " " + replacement
+    return body + (separator + comment if separator else "")
+
+
+def rewrite_corexy_diagonal_rapid_moves_as_axis_aligned(gcode_path: Path) -> int:
+    """Split absolute diagonal G0 travel into X-then-Y legs for CoreXY safety."""
+
+    lines = gcode_path.read_text(encoding="utf-8", errors="ignore").splitlines()
+    output: List[str] = []
+    absolute = True
+    x = 0.0
+    y = 0.0
+    changed = 0
+
+    for line in lines:
+        clean = _gcode_line_without_comment(line).strip()
+        upper = clean.upper()
+        if re.match(r"^G90(?:\s|$)", upper):
+            absolute = True
+        elif re.match(r"^G91(?:\s|$)", upper) and not re.match(r"^G91\.1(?:\s|$)", upper):
+            absolute = False
+
+        if re.match(r"^G92(?:\s|$)", upper):
+            tokens = {letter.upper(): value for letter, value in _GCODE_TOKEN_RE.findall(clean)}
+            if "X" in tokens:
+                x = float(tokens["X"])
+            if "Y" in tokens:
+                y = float(tokens["Y"])
+            output.append(line)
+            continue
+
+        is_rapid = bool(re.match(r"^G0(?:0)?(?:\s|$)", upper))
+        tokens = {letter.upper(): value for letter, value in _GCODE_TOKEN_RE.findall(clean)}
+        has_xy = "X" in tokens or "Y" in tokens
+        if is_rapid and absolute and has_xy and "Z" not in tokens:
+            target_x = float(tokens.get("X", x))
+            target_y = float(tokens.get("Y", y))
+            if abs(target_x - x) > 1e-9 and abs(target_y - y) > 1e-9:
+                feed = float(tokens["F"]) if "F" in tokens else None
+                first = f"G0 X{target_x:.4f} Y{y:.4f}"
+                if feed is not None:
+                    first += f" F{feed:.1f}"
+                output.append(first)
+                output.append(line)
+                x, y = target_x, target_y
+                changed += 1
+                continue
+
+        if has_xy:
+            if absolute:
+                x = float(tokens.get("X", x))
+                y = float(tokens.get("Y", y))
+            else:
+                x += float(tokens.get("X", 0.0))
+                y += float(tokens.get("Y", 0.0))
+        output.append(line)
+
+    gcode_path.write_text("\n".join(output) + "\n", encoding="utf-8")
+    return changed
+
+
+def limit_corexy_motor_feed_rates(gcode_path: Path, *, motor_max_rate: float) -> int:
+    """Cap XY feed so neither physical CoreXY motor exceeds its rate limit."""
+
+    limit = float(motor_max_rate)
+    if limit <= 0.0:
+        return 0
+
+    lines = gcode_path.read_text(encoding="utf-8", errors="ignore").splitlines()
+    output: List[str] = []
+    absolute = True
+    x = 0.0
+    y = 0.0
+    requested_feed: Optional[float] = None
+    changed = 0
+
+    for line in lines:
+        clean = _gcode_line_without_comment(line).strip()
+        upper = clean.upper()
+        if re.match(r"^G90(?:\s|$)", upper):
+            absolute = True
+        elif re.match(r"^G91(?:\s|$)", upper) and not re.match(r"^G91\.1(?:\s|$)", upper):
+            absolute = False
+
+        tokens = {letter.upper(): value for letter, value in _GCODE_TOKEN_RE.findall(clean)}
+        if "F" in tokens:
+            requested_feed = float(tokens["F"])
+
+        if re.match(r"^G92(?:\s|$)", upper):
+            if "X" in tokens:
+                x = float(tokens["X"])
+            if "Y" in tokens:
+                y = float(tokens["Y"])
+            output.append(line)
+            continue
+
+        motion = re.match(r"^G(0|1|2|3)(?:0)?(?:\s|$)", upper)
+        has_xy = "X" in tokens or "Y" in tokens
+        if motion and has_xy:
+            if absolute:
+                target_x = float(tokens.get("X", x))
+                target_y = float(tokens.get("Y", y))
+            else:
+                target_x = x + float(tokens.get("X", 0.0))
+                target_y = y + float(tokens.get("Y", 0.0))
+            dx = target_x - x
+            dy = target_y - y
+            distance = math.hypot(dx, dy)
+            if requested_feed is not None and distance > 1e-12:
+                if motion.group(1) in {"2", "3"}:
+                    safe_feed = min(requested_feed, limit / math.sqrt(2.0))
+                else:
+                    motor_a = abs(requested_feed * (dx + dy) / distance)
+                    motor_b = abs(requested_feed * (dx - dy) / distance)
+                    peak = max(motor_a, motor_b)
+                    safe_feed = requested_feed if peak <= limit else requested_feed * limit / peak
+                rewritten = _replace_or_append_gcode_feed(line, safe_feed)
+                if abs(safe_feed - requested_feed) > 0.05:
+                    changed += 1
+                line = rewritten
+            x, y = target_x, target_y
+        output.append(line)
+
     gcode_path.write_text("\n".join(output) + "\n", encoding="utf-8")
     return changed
 
@@ -10029,14 +10368,9 @@ def _write_resume_file(src_gcode: Path, dst_gcode: Path, *, start_line: int) -> 
         dst_gcode,
         start_line=start_line,
         z_up=Z_UP,
-        z_down=Z_DOWN,
         safe_lift_feed=SAFE_LIFT_FEED,
         z_delay_up=Z_DELAY_UP,
         controlled_motion=CONTROLLED_G1_MOTION,
-        startup_force_lift_mm=STARTUP_FORCE_Z_LIFT_MM,
-        home_x=HOME_X,
-        home_y=HOME_Y,
-        travel_feed=FEED_TRAVEL,
     )
 
 
@@ -10050,28 +10384,65 @@ def send_to_grbl(
     auto_resume: bool = False,
     max_resume_attempts: int = 1,
 ) -> float:
-    return grbl_sender_mod.send_to_grbl(
-        gcode_file,
-        com,
-        baud,
-        logger,
-        sleep_after=sleep_after,
-        auto_resume=auto_resume,
-        max_resume_attempts=max_resume_attempts,
-        root_dir=ROOT_DIR,
-        ensure_local_tmp_root=ensure_local_tmp_root,
-        grbl_wait_for_idle=grbl_wait_for_idle,
-        grbl_get_wpos_xyz=grbl_get_wpos_xyz,
-        z_up=Z_UP,
-        safe_lift_feed=SAFE_LIFT_FEED,
-        z_delay_up=Z_DELAY_UP,
-        z_down=Z_DOWN,
-        startup_force_lift_mm=STARTUP_FORCE_Z_LIFT_MM,
-        home_x=HOME_X,
-        home_y=HOME_Y,
-        travel_feed=FEED_TRAVEL,
-        controlled_motion=CONTROLLED_G1_MOTION,
-    )
+    def _send(path: Path) -> float:
+        return grbl_sender_mod.send_to_grbl(
+            path,
+            com,
+            baud,
+            logger,
+            sleep_after=sleep_after,
+            auto_resume=auto_resume,
+            max_resume_attempts=max_resume_attempts,
+            root_dir=ROOT_DIR,
+            ensure_local_tmp_root=ensure_local_tmp_root,
+            grbl_wait_for_idle=grbl_wait_for_idle,
+            grbl_get_wpos_xyz=grbl_get_wpos_xyz,
+            z_up=Z_UP,
+            safe_lift_feed=SAFE_LIFT_FEED,
+            z_delay_up=Z_DELAY_UP,
+            z_down=Z_DOWN,
+            startup_force_lift_mm=STARTUP_FORCE_Z_LIFT_MM,
+            home_x=HOME_X,
+            home_y=HOME_Y,
+            travel_feed=FEED_TRAVEL,
+            controlled_motion=CONTROLLED_G1_MOTION,
+        )
+
+    source = Path(gcode_file)
+    if MACHINE_PROFILE_NAME != "a2_corexy" or COREXY_MOTOR_MAX_RATE <= 0.0:
+        return _send(source)
+
+    # Ready packages and hand-authored NC files can bypass the normal finalizer.
+    # Enforce CoreXY motor-space safety once more at the COM boundary without
+    # modifying the user's source file.
+    with tempfile.TemporaryDirectory(dir=str(ensure_local_tmp_root()), ignore_cleanup_errors=True) as td:
+        safe_path = Path(td) / source.name
+        safe_path.write_text(source.read_text(encoding="utf-8", errors="ignore"), encoding="utf-8")
+        split_count = rewrite_corexy_diagonal_rapid_moves_as_axis_aligned(safe_path)
+        controlled_count = 0
+        if CONTROLLED_G1_MOTION:
+            controlled_count = rewrite_rapid_moves_as_controlled(
+                safe_path,
+                feed_travel=FEED_TRAVEL,
+                feed_z=SAFE_LIFT_FEED,
+            )
+        limited_count = limit_corexy_motor_feed_rates(
+            safe_path,
+            motor_max_rate=COREXY_MOTOR_MAX_RATE,
+        )
+        if logger and (split_count or controlled_count or limited_count):
+            logger(
+                "CoreXY send guard: "
+                f"split rapid diagonals={split_count}, controlled rapid moves={controlled_count}, "
+                f"limited moves={limited_count}, "
+                f"motor cap={COREXY_MOTOR_MAX_RATE:.0f} mm/min."
+            )
+        preflight_ok, preflight_msg = preflight_check_gcode(safe_path, logger=logger)
+        if logger:
+            logger(f"CoreXY send preflight: {preflight_msg}")
+        if not preflight_ok:
+            raise ValueError(f"CoreXY send blocked: {preflight_msg}")
+        return _send(safe_path)
 
 
 def _prepared_pack_gcode_for_clean_source(input_path: Path) -> Optional[Path]:
@@ -10301,9 +10672,15 @@ def run_pipeline(
                     trim_debug_target = input_path.with_name(preview_name)
 
             if EXACT_GEOMETRY_MODE:
-                trimmed_items = path_items
-                trimmed_candidates: List[PathItem] = []
-                log("Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).")
+                if _a2_single_sheet_layout():
+                    trimmed_items, trimmed_candidates = trim_a2_page_edge_frames(
+                        path_items, page_w, page_h, logger=log
+                    )
+                    log("Exact geometry mode: preserving inset frame and content without page-margin crop.")
+                else:
+                    trimmed_items = path_items
+                    trimmed_candidates: List[PathItem] = []
+                    log("Exact geometry mode: keeping full source geometry (no outer-frame trim, no page-margin crop).")
             else:
                 trimmed_items, trimmed_candidates = filter_outer_frame_path_items(path_items, log)
                 if trimmed_candidates:
@@ -10345,6 +10722,10 @@ def run_pipeline(
                             )
 
             path_items = trimmed_items
+            if OMIT_TABLE_TEST:
+                if not _a2_single_sheet_layout():
+                    raise ValueError("--omit-table-test requires one A2 sheet on the a2_corexy profile.")
+                path_items = omit_a2_test_table(path_items, page_w, page_h, logger=log)
             polylines = to_drawing_polylines(path_items)
             if not polylines:
                 return False, "No drawable geometry found after fill/stroke analysis."
@@ -10364,6 +10745,17 @@ def run_pipeline(
             polylines = fit_polylines_to_area(polylines, fit_min_x, fit_max_x, fit_min_y, fit_max_y, logger=log)
             polylines = transform_polylines_for_active_sheet_pass(polylines, logger=log)
             polylines = transform_polylines_for_output_orientation(polylines, logger=log)
+            if _a2_single_sheet_layout():
+                home_x, _max_x, home_y, _max_y = work_area_bounds()
+                artwork_x, _artwork_max_x, artwork_y, _artwork_max_y = bounds_polylines(polylines)
+                shift_x = home_x - artwork_x
+                shift_y = home_y - artwork_y
+                if abs(shift_x) > 1e-9 or abs(shift_y) > 1e-9:
+                    polylines = [
+                        [(x + shift_x, y + shift_y) for x, y in polyline]
+                        for polyline in polylines
+                    ]
+                    log(f"A2 inset frame aligned to home: shift=({shift_x:.3f},{shift_y:.3f}) mm.")
             fit_segments = sum(max(0, len(p) - 1) for p in polylines)
             polylines = clip_polylines_to_work_area(polylines, logger=log)
             if not polylines:
@@ -10626,12 +11018,14 @@ def run_pipeline_with_corner_calibration(
             send_to_plotter=send_to_plotter,
             mark_size=corner_mark_size,
             calibration_layout=CALIBRATION_LAYOUT,
+            feed_travel=feed_travel,
+            feed_draw=feed_draw,
         )
         if not ok:
             return False, msg
 
         if not skip_confirmation:
-            if not _ask_confirmation_in_console("РљР°Р»РёР±СЂРѕРІРєР° 4-С… СѓРіР»РѕРІ РІС‹РїРѕР»РЅРµРЅР°. Р’СЃС‘ Р»Рё РїСЂР°РІРёР»СЊРЅРѕ? РџСЂРѕРґРѕР»Р¶Р°С‚СЊ СЂРёСЃРѕРІР°РЅРёРµ?"):
+            if not _ask_confirmation_in_console("Калибровка четырёх углов выполнена. Всё правильно? Продолжать рисование?"):
                 return False, "Canceled by user before drawing."
 
     return run_pipeline(
@@ -10690,6 +11084,8 @@ def run_corner_calibration_pipeline(
     output_path: Optional[Path] = None,
     mark_size: float = 2.0,
     calibration_layout: str = "sheet",
+    feed_travel: float = FEED_TRAVEL,
+    feed_draw: float = FEED_DRAW,
 ) -> Tuple[bool, str]:
     try:
         global CALIBRATION_LAYOUT
@@ -10703,7 +11099,8 @@ def run_corner_calibration_pipeline(
             f"anchor={ACTIVE_SHEET_CONFIG.get('anchor')}, "
             f"offset=({float(ACTIVE_SHEET_CONFIG.get('offset_x_mm') or 0.0):.2f},"
             f"{float(ACTIVE_SHEET_CONFIG.get('offset_y_mm') or 0.0):.2f}), "
-            f"pass={int(PASS_COL)}/{int(PASS_COLS)} x {int(PASS_ROW)}/{int(PASS_ROWS)}"
+            f"pass={int(PASS_COL)}/{int(PASS_COLS)} x {int(PASS_ROW)}/{int(PASS_ROWS)}, "
+            f"feed=travel:{float(feed_travel):.1f}/draw:{float(feed_draw):.1f} mm/min"
         )
         marks = build_calibration_layout_corner_mark_polylines(CALIBRATION_LAYOUT, mark_size=mark_size)
         if not marks:
@@ -10719,14 +11116,22 @@ def run_corner_calibration_pipeline(
             all_paths: List[List[Tuple[float, float]]] = []
             all_paths.extend(marks)
 
-            all_paths = clip_polylines_to_work_area(all_paths, logger=log)
+            all_paths = _clip_calibration_layout_polylines(
+                all_paths,
+                CALIBRATION_LAYOUT,
+                logger=log,
+            )
             if not all_paths:
                 return False, "No geometry after clipping work area."
 
-            write_xy_gcode(xy_path, all_paths, FEED_TRAVEL, FEED_DRAW)
+            write_xy_gcode(xy_path, all_paths, feed_travel, feed_draw)
             log("Applying pen-up / pen-down ...")
             apply_penlift(xy_path, pen_path, z_down=Z_DOWN, force_full_lift=True)
-            make_final_with_preamble(pen_path, final_path)
+            make_final_with_preamble(
+                pen_path,
+                final_path,
+                feed_travel=feed_travel,
+            )
 
             if send_to_plotter:
                 send_to_grbl(final_path, com, baud, log, sleep_after=True)
@@ -10950,15 +11355,23 @@ def preflight_check_gcode(
     *,
     bounds: Optional[Tuple[float, float, float, float]] = None,
 ) -> Tuple[bool, str]:
+    machine_min_x, machine_max_x, machine_min_y, machine_max_y = base_work_area_bounds()
+    machine_travel_bounds = (
+        min(machine_min_x, float(HOME_X)),
+        max(machine_max_x, float(HOME_X)),
+        min(machine_min_y, float(HOME_Y)),
+        max(machine_max_y, float(HOME_Y)),
+    )
     return gcode_preflight_mod.preflight_check_gcode(
         gcode_path,
         logger,
         preflight_enabled=bool(PREFLIGHT_ENABLED),
         preflight_max_gcode_lines=int(PREFLIGHT_MAX_GCODE_LINES),
         preflight_max_travel_to_draw_ratio=float(PREFLIGHT_MAX_TRAVEL_TO_DRAW_RATIO),
-        preflight_bounds_margin_mm=float(PREFLIGHT_BOUNDS_MARGIN_MM),
+        preflight_bounds_margin_mm=(0.0 if MACHINE_PROFILE_NAME == "a2_corexy" else float(PREFLIGHT_BOUNDS_MARGIN_MM)),
         z_up=float(Z_UP),
         z_down=float(Z_DOWN),
+        home_corridor_y_mm=(float(work_area_bounds()[2]) if MACHINE_PROFILE_NAME == "a2_corexy" else None),
         bounds=bounds,
         work_area_bounds=work_area_bounds,
         summarize_gcode_file=summarize_gcode_file,
@@ -10967,6 +11380,7 @@ def preflight_check_gcode(
             z_up=float(z_up_val),
             z_down=float(z_down_val),
         ),
+        travel_bounds=machine_travel_bounds,
     )
 
 

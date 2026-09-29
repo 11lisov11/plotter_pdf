@@ -146,7 +146,7 @@ def test_specification_long_name_keeps_internal_numbers_and_splits_trailing_quan
     assert split[1]["bbox_mm"][0] >= 170.0
 
 
-def test_specification_fit_uses_physical_page_when_geometry_has_missing_gutter(tmp_path: Path) -> None:
+def test_specification_fit_uses_clean_bbox_when_geometry_has_missing_gutter(tmp_path: Path) -> None:
     source = tmp_path / "Спецификация_pack" / "source.pdf"
     build = algorithm.SourceBuild(
         source_pdf=source,
@@ -169,10 +169,12 @@ def test_specification_fit_uses_physical_page_when_geometry_has_missing_gutter(t
 
     final_polylines, fit_meta = algorithm._prepare_a4_page(build, algorithm.Settings(), [])
 
-    assert fit_meta["content_scale"] <= round(180.0 / 210.0, 6)
-    assert fit_meta["source_page_fit_bbox"] == [0.0, 0.0, 210.0, 297.0]
+    assert fit_meta["mode"] == "a4_specification_lff_safe_clean_bbox_fit"
+    assert fit_meta["content_scale"] == round(min(180.0 / 185.0, 280.0 / 297.0), 6)
+    assert "source_page_fit_bbox" not in fit_meta
     bounds = algorithm._bounds(final_polylines)
-    assert bounds[2] - bounds[0] < 180.0
+    assert bounds[2] - bounds[0] <= 180.0
+    assert bounds[3] - bounds[1] <= 280.0
 
 
 def test_specification_preview_is_drawn_from_final_nc_in_paper_orientation(tmp_path: Path) -> None:

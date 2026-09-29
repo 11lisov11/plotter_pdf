@@ -65,6 +65,7 @@ def build_cli_parser(backend: Any) -> argparse.ArgumentParser:
         help="Send $SLP after --draw-ready sender completes.",
     )
     parser.add_argument("--frame", action="store_true", help="Draw work area frame")
+    parser.add_argument("--omit-table-test", action="store_true", help="A2 test: omit the specification table while retaining the drawing frame and view labels")
     parser.add_argument("--calibrate-corners", action="store_true", help="Draw 4 corner marks for calibration")
     parser.add_argument("--com", default=None, help="COM port (default detect)")
     parser.add_argument("--baud", default=backend.DEFAULT_BAUD, help="Baud rate")
@@ -196,12 +197,12 @@ def build_cli_parser(backend: Any) -> argparse.ArgumentParser:
     parser.add_argument("--sheet-height-mm", type=float, default=None, help="Sheet height override (mm).")
     parser.add_argument(
         "--sheet-anchor",
-        default="center",
+        default=None,
         choices=["center", "lower_left", "upper_left", "lower_right", "upper_right"],
         help="How to place smaller sheet area inside machine workspace.",
     )
-    parser.add_argument("--sheet-offset-x-mm", type=float, default=0.0, help="Shift active sheet area in X (mm).")
-    parser.add_argument("--sheet-offset-y-mm", type=float, default=0.0, help="Shift active sheet area in Y (mm).")
+    parser.add_argument("--sheet-offset-x-mm", type=float, default=None, help="Shift active sheet area in X (mm).")
+    parser.add_argument("--sheet-offset-y-mm", type=float, default=None, help="Shift active sheet area in Y (mm).")
     parser.add_argument(
         "--output-rotation",
         type=int,
@@ -309,6 +310,7 @@ def apply_cli_runtime_overrides(backend: Any, args) -> None:
         args.feed_draw = float(backend.FEED_DRAW)
 
     backend.MIN_FIT_SCALE_FOR_DIMENSIONAL_DRAW = 0.98 if args.strict_1to1 else 0.0
+    backend.OMIT_TABLE_TEST = bool(args.omit_table_test)
     backend.TOOL_MODE = (args.tool or "pen").strip().lower()
     backend.DRAW_ORDER_MODE = (args.draw_order or backend.DRAW_ORDER_MODE).strip().lower()
     backend.DRAW_ORDER_LINE_TOL_MM = max(0.2, float(args.draw_order_line_tol_mm))
@@ -429,6 +431,26 @@ def run_cli_pencil_maintenance(backend: Any, args) -> Tuple[bool, Optional[int]]
 
 def configure_cli_sheet_state(backend: Any, args) -> Tuple[Optional[int], Optional[Tuple[float, float]]]:
     try:
+        from .machine import profiles as machine_profiles_mod
+
+        profile_paths = tuple(
+            path
+            for path in (
+                getattr(backend, "MACHINE_PROFILE_PATH", None),
+                getattr(backend, "MACHINE_PROFILE_FALLBACK_PATH", None),
+            )
+            if path is not None
+        )
+        profile = machine_profiles_mod.resolve_machine_profile(args.machine_profile, *profile_paths)
+        args.sheet_anchor, args.sheet_offset_x_mm, args.sheet_offset_y_mm = (
+            machine_profiles_mod.profile_sheet_placement(
+                profile,
+                args.sheet_format,
+                anchor=args.sheet_anchor,
+                offset_x_mm=args.sheet_offset_x_mm,
+                offset_y_mm=args.sheet_offset_y_mm,
+            )
+        )
         backend.configure_active_work_area(
             sheet_format=args.sheet_format,
             sheet_width_mm=args.sheet_width_mm,
@@ -438,6 +460,14 @@ def configure_cli_sheet_state(backend: Any, args) -> Tuple[Optional[int], Option
             offset_y_mm=args.sheet_offset_y_mm,
             logger=print,
         )
+        safe_draw_y = (profile.get("paper") or {}).get("safe_draw_y_min_mm")
+        if safe_draw_y is not None:
+            x0, x1, y0, y1 = backend.work_area_bounds()
+            y0 = max(y0, float(safe_draw_y))
+            if y0 >= y1:
+                raise ValueError("Sheet has no drawable area beyond the home clamp corridor.")
+            backend.ACTIVE_WORK_AREA_BOUNDS = (x0, x1, y0, y1)
+            print(f"Safe drawing area: x({x0:.3f},{x1:.3f}) y({y0:.3f},{y1:.3f})")
     except ValueError as exc:
         print(backend._format_internal_exception("Invalid sheet configuration", exc))
         return 1, None
@@ -586,6 +616,8 @@ def run_cli_action(backend: Any, args, parser: argparse.ArgumentParser, *, com: 
             output_path=output_path,
             mark_size=args.corner_mark_size,
             calibration_layout=args.calibration_layout,
+            feed_travel=args.feed_travel,
+            feed_draw=args.feed_draw,
         )
         print(msg)
         return 0 if ok else 1

@@ -41,6 +41,13 @@ class GcodeToSvgPreviewModuleTests(unittest.TestCase):
 
         self.assertEqual(polylines, [[(0.0, 0.0), (10.0, 0.0), (10.0, 5.0)]])
 
+    def test_gcode_to_polylines_handles_compact_numbered_blocks(self) -> None:
+        lines = ["N10G90", "N20G0X0Y0", "N30M3", "N40G1X10Y5", "N50M5"]
+
+        polylines = preview.gcode_to_polylines(lines, z_up=0.0, z_down=11.9)
+
+        self.assertEqual(polylines, [[(0.0, 0.0), (10.0, 5.0)]])
+
     def test_gcode_to_polylines_keeps_coordinates_after_parenthetical_comment(self) -> None:
         lines = [
             "G90",
@@ -114,7 +121,23 @@ class GcodeToSvgPreviewModuleTests(unittest.TestCase):
 
         polylines = preview.gcode_to_polylines(lines, z_up=0.0, z_down=11.9)
 
-        self.assertEqual(polylines, [[(10.0, 0.0), (20.0, 0.0)], [(0.0, 0.0), (5.0, 0.0)]])
+        self.assertEqual(polylines, [[(10.0, 0.0), (20.0, 0.0)], [(20.0, 0.0), (25.0, 0.0)]])
+
+    def test_gcode_to_polylines_applies_inch_units(self) -> None:
+        lines = [
+            "G21",
+            "G90",
+            "G0 X10 Y10",
+            "G92 X0 Y0",
+            "M3",
+            "G20",
+            "G1 X1 Y0",
+            "M5",
+        ]
+
+        polylines = preview.gcode_to_polylines(lines, z_up=0.0, z_down=11.9)
+
+        self.assertEqual(polylines, [[(10.0, 10.0), (35.4, 10.0)]])
 
     def test_main_writes_svg_for_compact_gcode(self) -> None:
         with tempfile.TemporaryDirectory(prefix="plotter_preview_compact_") as td:

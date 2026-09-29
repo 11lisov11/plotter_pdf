@@ -5,6 +5,8 @@ import re
 from pathlib import Path
 from typing import Callable, Optional, Tuple
 
+from ..geometry.arc_fit import arc_center_from_radius
+
 
 _TOKEN_RE = re.compile(r"([A-Za-z])\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)")
 
@@ -60,6 +62,9 @@ def gcode_draw_bounds(
     cur_z = float(z_up)
     abs_mode = True
     ijk_abs = False
+    unit_scale = 1.0
+    work_offset_x = 0.0
+    work_offset_y = 0.0
     pen_down = pen_down_from_z_level(cur_z, z_up, z_down)
     last_motion: Optional[int] = None
 
@@ -82,9 +87,14 @@ def gcode_draw_bounds(
                 continue
 
             motion: Optional[int] = None
+            coordinate_reset = False
             tokens = _TOKEN_RE.findall(body)
             for gval in _values(tokens, "G"):
-                if abs(gval - 90.0) <= 1e-9:
+                if abs(gval - 20.0) <= 1e-9:
+                    unit_scale = 25.4
+                elif abs(gval - 21.0) <= 1e-9:
+                    unit_scale = 1.0
+                elif abs(gval - 90.0) <= 1e-9:
                     abs_mode = True
                 elif abs(gval - 91.0) <= 1e-9:
                     abs_mode = False
@@ -100,6 +110,8 @@ def gcode_draw_bounds(
                     motion = 2
                 elif abs(gval - 3.0) <= 1e-9:
                     motion = 3
+                elif abs(gval - 92.0) <= 1e-9:
+                    coordinate_reset = True
             if motion is None:
                 motion = last_motion
             else:
@@ -116,9 +128,12 @@ def gcode_draw_bounds(
 
             z_values = _values(tokens, "Z")
             if z_values:
-                z_val = z_values[-1]
-                cur_z = z_val if abs_mode else (cur_z + z_val)
-                pen_down = pen_down_from_z_level(cur_z, z_up, z_down)
+                z_val = z_values[-1] * unit_scale
+                if coordinate_reset:
+                    cur_z = z_val
+                else:
+                    cur_z = z_val if abs_mode else (cur_z + z_val)
+                    pen_down = pen_down_from_z_level(cur_z, z_up, z_down)
 
             x_values = _values(tokens, "X")
             y_values = _values(tokens, "Y")
@@ -128,27 +143,48 @@ def gcode_draw_bounds(
             tx = cur_x
             ty = cur_y
             if x_values:
-                xv = x_values[-1]
-                tx = xv if abs_mode else (cur_x + xv)
+                xv = x_values[-1] * unit_scale
+                tx = (xv + work_offset_x) if abs_mode else (cur_x + xv)
             if y_values:
-                yv = y_values[-1]
-                ty = yv if abs_mode else (cur_y + yv)
+                yv = y_values[-1] * unit_scale
+                ty = (yv + work_offset_y) if abs_mode else (cur_y + yv)
+
+            if coordinate_reset:
+                if x_values:
+                    work_offset_x = cur_x - x_values[-1] * unit_scale
+                if y_values:
+                    work_offset_y = cur_y - y_values[-1] * unit_scale
+                continue
 
             if pen_down and has_xy and motion in {1, 2, 3}:
                 if motion in {2, 3}:
                     if i_values and j_values:
                         try:
-                            i_val = i_values[-1]
-                            j_val = j_values[-1]
-                            center = (i_val, j_val) if ijk_abs else (cur_x + i_val, cur_y + j_val)
+                            i_val = i_values[-1] * unit_scale
+                            j_val = j_values[-1] * unit_scale
+                            center = (
+                                (i_val + work_offset_x, j_val + work_offset_y)
+                                if ijk_abs
+                                else (cur_x + i_val, cur_y + j_val)
+                            )
                             if points_distance((cur_x, cur_y), (tx, ty)) <= 1e-6:
                                 r = math.hypot(cur_x - center[0], cur_y - center[1])
                                 _expand(center[0] - r, center[0] + r, center[1] - r, center[1] + r)
                             else:
-                                ex0, ex1, ey0, ey1 = arc_extents_xy((cur_x, cur_y), (tx, ty), center, cw=(motion == 2))
+                                ex0, ex1, ey0, ey1 = arc_extents_xy((cur_x, cur_y), (tx, ty), center, motion == 2)
                                 _expand(ex0, ex1, ey0, ey1)
                         except Exception:
                             _expand(min(cur_x, tx), max(cur_x, tx), min(cur_y, ty), max(cur_y, ty))
+                    elif _values(tokens, "R"):
+                        radius = _values(tokens, "R")[-1] * unit_scale
+                        center = arc_center_from_radius((cur_x, cur_y), (tx, ty), radius, cw=motion == 2)
+                        if center is None:
+                            _expand(min(cur_x, tx), max(cur_x, tx), min(cur_y, ty), max(cur_y, ty))
+                        else:
+                            ex0, ex1, ey0, ey1 = arc_extents_xy(
+                                (cur_x, cur_y), (tx, ty), center, motion == 2
+                            )
+                            _expand(ex0, ex1, ey0, ey1)
                     else:
                         _expand(min(cur_x, tx), max(cur_x, tx), min(cur_y, ty), max(cur_y, ty))
                 else:

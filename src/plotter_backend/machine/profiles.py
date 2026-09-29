@@ -72,6 +72,14 @@ BUILTIN_MACHINE_PROFILES: dict[str, dict[str, Any]] = {
             "a2_mm": [420.0, 594.0],
             "inactive_short_side_mm": 30.0,
             "inactive_long_side_mm": 14.0,
+            "safe_draw_y_min_mm": 0.0,
+            "sheet_placements": {
+                "a2": {
+                    "anchor": "lower_left",
+                    "offset_x_mm": 0.0,
+                    "offset_y_mm": 0.0,
+                },
+            },
         },
         "connection": {
             "protocol": "grbl_1_1",
@@ -82,6 +90,7 @@ BUILTIN_MACHINE_PROFILES: dict[str, dict[str, Any]] = {
         "motion": {
             "feed_travel_mm_min": 3200.0,
             "feed_draw_mm_min": 1500.0,
+            "corexy_motor_max_rate_mm_min": 4000.0,
             "controlled_g1_motion": True,
             "home_x_mm": 0.0,
             "home_y_mm": 0.0,
@@ -90,7 +99,7 @@ BUILTIN_MACHINE_PROFILES: dict[str, dict[str, Any]] = {
         },
         "pen": {
             "lift_mode": "z",
-            "z_up_mm": 1.0,
+            "z_up_mm": 5.0,
             "z_down_mm": -5.0,
             "z_feed_down_approach_mm_min": 2000.0,
             "z_feed_down_touch_mm_min": 2000.0,
@@ -181,3 +190,21 @@ def profile_work_area(profile: dict[str, Any]) -> dict[str, float]:
         "offset_x_mm": float(work.get("offset_x_mm", 0.0)),
         "offset_y_mm": float(work.get("offset_y_mm", 0.0)),
     }
+
+
+def profile_sheet_placement(
+    profile: dict[str, Any],
+    sheet_format: str,
+    *,
+    anchor: str | None = None,
+    offset_x_mm: float | None = None,
+    offset_y_mm: float | None = None,
+) -> tuple[str, float, float]:
+    paper = profile.get("paper") or {}
+    placements = paper.get("sheet_placements") or {}
+    placement = placements.get(str(sheet_format or "").strip().lower()) or {}
+    return (
+        str(anchor if anchor is not None else placement.get("anchor", "center")),
+        float(offset_x_mm if offset_x_mm is not None else placement.get("offset_x_mm", 0.0)),
+        float(offset_y_mm if offset_y_mm is not None else placement.get("offset_y_mm", 0.0)),
+    )

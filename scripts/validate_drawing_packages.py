@@ -15,6 +15,7 @@ from typing import Iterable
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_WORK_AREA = (0.0, 180.0, -285.0, -5.0)
 A3_TWO_PASS_WORK_AREA = (0.0, 180.0, -285.0, -2.0)
+A2_COREXY_WORK_AREA = (0.0, 390.0, 0.0, 580.0)
 DEFAULT_Z_UP = 0.0
 DEFAULT_Z_DOWN = 11.9
 _TOKEN_RE = re.compile(r"([A-Za-z])\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))")
@@ -235,6 +236,25 @@ def validate_gcode_file(
         raw_lines = gcode_path.read_text(encoding="utf-8", errors="replace").splitlines()
     except OSError as exc:
         return GcodeValidation(ok=False, problems=[f"cannot read gcode: {exc}"])
+
+    # Minimal packages do not carry a report.json with the machine profile.
+    # Detect the known A2 CoreXY Z convention from the file instead of
+    # misclassifying every negative-Z drawing move as pen-up.
+    observed_z = [
+        values["Z"]
+        for raw_line in raw_lines
+        if (values := _tokens(_strip_comment(raw_line))) and "Z" in values
+    ]
+    if (
+        observed_z
+        and z_up == DEFAULT_Z_UP
+        and z_down == DEFAULT_Z_DOWN
+        and min(observed_z) < -1e-6
+    ):
+        z_up = max(observed_z)
+        z_down = min(observed_z)
+        if work_area == DEFAULT_WORK_AREA:
+            work_area = A2_COREXY_WORK_AREA
 
     for raw_line in raw_lines:
         line = _strip_comment(raw_line)

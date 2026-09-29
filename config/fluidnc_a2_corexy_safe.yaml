@@ -1,0 +1,65 @@
+name: plotter_a2_corexy_safe
+stepping:
+  engine: RMT
+  idle_ms: 255
+  pulse_us: 8
+  dir_delay_us: 8
+  disable_delay_us: 0
+board: 6 Pack
+start:
+  must_home: false
+  check_limits: false
+  deactivate_parking: false
+kinematics:
+  corexy:
+axes:
+  shared_stepper_disable_pin: gpio.12
+  shared_stepper_reset_pin: NO_PIN
+  x:
+    steps_per_mm: 80
+    max_rate_mm_per_min: 4000
+    acceleration_mm_per_sec2: 200
+    max_travel_mm: 390
+    soft_limits: false
+    motor0:
+      limit_all_pin: NO_PIN
+      limit_neg_pin: NO_PIN
+      limit_pos_pin: NO_PIN
+      hard_limits: false
+      pulloff_mm: 1
+      standard_stepper:
+        step_pin: gpio.26
+        direction_pin: gpio.16
+        disable_pin: NO_PIN
+  y:
+    steps_per_mm: 80
+    max_rate_mm_per_min: 4000
+    acceleration_mm_per_sec2: 200
+    max_travel_mm: 580
+    soft_limits: false
+    motor0:
+      limit_all_pin: NO_PIN
+      limit_neg_pin: NO_PIN
+      limit_pos_pin: NO_PIN
+      hard_limits: false
+      pulloff_mm: 1
+      standard_stepper:
+        step_pin: gpio.25
+        direction_pin: gpio.27
+        disable_pin: NO_PIN
+  z:
+    steps_per_mm: 80
+    max_rate_mm_per_min: 4000
+    acceleration_mm_per_sec2: 2000
+    max_travel_mm: 200
+    soft_limits: false
+    motor0:
+      limit_all_pin: NO_PIN
+      limit_neg_pin: NO_PIN
+      limit_pos_pin: NO_PIN
+      hard_limits: false
+      pulloff_mm: 1
+      standard_stepper:
+        step_pin: gpio.17
+        direction_pin: gpio.14
+        disable_pin: NO_PIN

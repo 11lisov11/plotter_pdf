@@ -119,6 +119,7 @@ def analyze_gcode_file(
     last_motion: int | None = None
     abs_mode = True
     ijk_abs = False
+    unit_scale = 1.0
     pen_down = False
     ever_saw_z = False
     ever_saw_spindle = False
@@ -142,8 +143,23 @@ def analyze_gcode_file(
             return float(z_value) > float(z_down_threshold)
         return pen_down_from_z_level(float(z_value), float(z_up), float(z_down))
 
-    with Path(path).open("r", encoding="utf-8", errors="ignore") as fh:
-        for raw in fh:
+    raw_lines = Path(path).read_text(encoding="utf-8", errors="ignore").splitlines()
+    if z_down_threshold is None and z_up == 0.0 and z_down == 11.9:
+        observed_z: list[float] = []
+        observed_scale = 1.0
+        for raw in raw_lines:
+            observed_tokens = TOKEN_RE.findall(strip_comments(raw))
+            for gval in values(observed_tokens, "G"):
+                if abs(gval - 20.0) <= 1e-9:
+                    observed_scale = 25.4
+                elif abs(gval - 21.0) <= 1e-9:
+                    observed_scale = 1.0
+            observed_z.extend(z_value * observed_scale for z_value in values(observed_tokens, "Z"))
+        if observed_z and min(observed_z) < -1e-6:
+            z_up = max(observed_z)
+            z_down = min(observed_z)
+
+    for raw in raw_lines:
             line = strip_comments(raw)
             if not line:
                 continue
@@ -153,6 +169,12 @@ def analyze_gcode_file(
                 continue
 
             for gval in values(tokens, "G"):
+                if abs(gval - 20.0) <= 1e-9:
+                    unit_scale = 25.4
+                    continue
+                if abs(gval - 21.0) <= 1e-9:
+                    unit_scale = 1.0
+                    continue
                 if abs(gval - 90.0) <= 1e-9:
                     abs_mode = True
                     continue
@@ -196,12 +218,12 @@ def analyze_gcode_file(
 
             if has_g92:
                 if x_vals:
-                    cur_x = x_vals[-1]
+                    cur_x = x_vals[-1] * unit_scale
                 if y_vals:
-                    cur_y = y_vals[-1]
+                    cur_y = y_vals[-1] * unit_scale
                 if z_vals:
                     ever_saw_z = True
-                    cur_z = z_vals[-1]
+                    cur_z = z_vals[-1] * unit_scale
                     next_pen_down = is_pen_down_z(cur_z)
                     if pen_down and not next_pen_down:
                         close_stroke()
@@ -212,7 +234,7 @@ def analyze_gcode_file(
 
             if z_vals:
                 ever_saw_z = True
-                z_raw = z_vals[-1]
+                z_raw = z_vals[-1] * unit_scale
                 next_z = z_raw if (abs_mode or cur_z is None) else cur_z + z_raw
                 next_pen_down = is_pen_down_z(next_z)
                 if next_pen_down and not pen_down:
@@ -228,8 +250,8 @@ def analyze_gcode_file(
                 continue
 
             motion_counts[code] += 1
-            x_raw = x_vals[-1] if x_vals else None
-            y_raw = y_vals[-1] if y_vals else None
+            x_raw = x_vals[-1] * unit_scale if x_vals else None
+            y_raw = y_vals[-1] * unit_scale if y_vals else None
             next_x = cur_x if x_raw is None else (x_raw if (abs_mode or cur_x is None) else cur_x + x_raw)
             next_y = cur_y if y_raw is None else (y_raw if (abs_mode or cur_y is None) else cur_y + y_raw)
 
@@ -238,13 +260,18 @@ def analyze_gcode_file(
                 continue
 
             if code in {2, 3} and (i_vals or j_vals):
-                arc_i_raw = i_vals[-1] if i_vals else 0.0
-                arc_j_raw = j_vals[-1] if j_vals else 0.0
+                arc_i_raw = i_vals[-1] * unit_scale if i_vals else 0.0
+                arc_j_raw = j_vals[-1] * unit_scale if j_vals else 0.0
                 arc_i = arc_i_raw - cur_x if ijk_abs else arc_i_raw
                 arc_j = arc_j_raw - cur_y if ijk_abs else arc_j_raw
                 seg_len = _arc_length(cur_x, cur_y, next_x, next_y, arc_i, arc_j, cw=(code == 2))
             elif code in {2, 3} and r_vals:
-                center = arc_center_from_radius((cur_x, cur_y), (next_x, next_y), r_vals[-1], cw=(code == 2))
+                center = arc_center_from_radius(
+                    (cur_x, cur_y),
+                    (next_x, next_y),
+                    r_vals[-1] * unit_scale,
+                    cw=(code == 2),
+                )
                 if center is None:
                     seg_len = math.hypot(next_x - cur_x, next_y - cur_y)
                 else:
@@ -374,14 +401,26 @@ def _ready_package_dir(variant_dir: Path, raw: object, task: object = "") -> Pat
 
 
 def _variant_dirs_from_root(root: Path) -> list[Path]:
-    if (root / "_audit.json").exists() or (root / "_prepared_summary.csv").exists():
+    has_minimal_packages = root.is_dir() and any(
+        child.is_dir() and child.name.endswith("_pack") for child in root.iterdir()
+    )
+    if (
+        (root / "_audit.json").exists()
+        or (root / "_prepared_summary.csv").exists()
+        or (root / "_ready_to_plot_audit.json").exists()
+        or has_minimal_packages
+    ):
         return [root]
     if not root.exists() or not root.is_dir():
         return []
     variants: dict[str, Path] = {}
-    for marker in ("_prepared_summary.csv", "_audit.json"):
+    for marker in ("_prepared_summary.csv", "_audit.json", "_ready_to_plot_audit.json"):
         for marker_path in root.rglob(marker):
             variant_dir = marker_path.parent
+            variants[str(variant_dir.resolve(strict=False)).casefold()] = variant_dir
+    for package_dir in root.rglob("*_pack"):
+        if package_dir.is_dir():
+            variant_dir = package_dir.parent
             variants[str(variant_dir.resolve(strict=False)).casefold()] = variant_dir
     return sorted(variants.values(), key=lambda p: str(p).casefold())
 
@@ -408,6 +447,7 @@ def collect_ready_package_roots(roots: Iterable[Path]) -> list[Path]:
         for variant_dir in _variant_dirs_from_root(root):
             if not _ready_audit_allows_variant(variant_dir):
                 continue
+            added_before = len(found)
             audit = clean_report_value(_load_json_dict(variant_dir / "_audit.json"))
             items = audit.get("items") if isinstance(audit, dict) else None
             if isinstance(items, list):
@@ -422,6 +462,10 @@ def collect_ready_package_roots(roots: Iterable[Path]) -> list[Path]:
                 package_dir = _ready_package_dir(variant_dir, row.get("package_dir"), row.get("task"))
                 if package_dir is not None:
                     add(package_dir)
+            if len(found) == added_before:
+                for package_dir in sorted(variant_dir.glob("*_pack"), key=lambda path: path.name.casefold()):
+                    if package_dir.is_dir() and any(package_dir.glob("*.nc")):
+                        add(package_dir)
 
     return sorted(found, key=lambda p: str(p).casefold())
 

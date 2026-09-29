@@ -8957,12 +8957,26 @@ def _prepare_drawing_package(
         a3_selected_variant = "custom_tiled_clean_source" if ok_clean else "custom_tiled_direct"
         a3_selection_reason = "literal_one_to_one_tiled" if literal_one_to_one_tiled else "custom_tiled_large_sheet"
         a3_route_class = "A3 tiled drawing"
-        tiling = literal_tiling if literal_tiling is not None else plan_tiled_passes_for_sheet(
-            page_w_mm,
-            page_h_mm,
-            area_w_mm=180.0,
-            area_h_mm=280.0,
-        )
+        large_single_page = str(globals().get("ACTIVE_MACHINE_PROFILE", "")).casefold() == "a2_corexy"
+        if large_single_page:
+            # The large machine receives one physical A2 sheet, not the legacy
+            # 2 x 4 desktop-A4 tiling. Re-apply the profile here because older
+            # preparation helpers can temporarily switch backend globals.
+            backend.apply_machine_profile("a2_corexy", logger=None)
+            work_min_x, work_max_x, work_min_y, work_max_y = backend.base_work_area_bounds()
+            tiling = plan_tiled_passes_for_sheet(
+                page_w_mm,
+                page_h_mm,
+                area_w_mm=float(work_max_x - work_min_x),
+                area_h_mm=float(work_max_y - work_min_y),
+            )
+        else:
+            tiling = literal_tiling if literal_tiling is not None else plan_tiled_passes_for_sheet(
+                page_w_mm,
+                page_h_mm,
+                area_w_mm=180.0,
+                area_h_mm=280.0,
+            )
         report["sheet_tiling"] = dict(tiling)
         pass_cols = int(tiling.get("nx", 1) or 1)
         pass_rows = int(tiling.get("ny", 1) or 1)
@@ -9326,6 +9340,7 @@ def main() -> int:
     machine_profile = str(args.machine_profile or "a4_desktop").strip() or "a4_desktop"
     backend.apply_machine_profile(machine_profile, logger=None)
     force_large_single_page = machine_profile.casefold() == "a2_corexy"
+    globals()["ACTIVE_MACHINE_PROFILE"] = machine_profile.casefold()
 
     pdfs = _iter_source_pdfs(folder, list(args.only or []))
     if not pdfs:
@@ -9351,12 +9366,14 @@ def main() -> int:
         print(f"[{idx}/{len(pdfs)}] processing: {pdf_path.name}")
         if pdf_path.name.startswith("TOE_"):
             report, rows = _prepare_toe_package(pdf_path, package_dir)
-        else:
+        elif force_large_single_page:
             report, rows = _prepare_drawing_package(
                 pdf_path,
                 package_dir,
-                force_large_single_page=force_large_single_page,
+                force_large_single_page=True,
             )
+        else:
+            report, rows = _prepare_drawing_package(pdf_path, package_dir)
 
         report["package_dir"] = str(package_dir)
         compare_meta = _generate_package_compare_artifacts(package_dir, report, rows)

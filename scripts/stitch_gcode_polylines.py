@@ -45,7 +45,18 @@ def read_draw_polylines(
                 polylines.append(cleaned)
         current = []
 
-    for raw in path.read_text(encoding="utf-8", errors="ignore").splitlines():
+    raw_lines = path.read_text(encoding="utf-8", errors="ignore").splitlines()
+    if z_up == 0.0 and z_down == 11.9:
+        observed_z = [
+            values["Z"]
+            for raw in raw_lines
+            if (values := _words(_clean_line(raw))) and "Z" in values
+        ]
+        if observed_z and min(observed_z) < -1e-6:
+            z_up = max(observed_z)
+            z_down = min(observed_z)
+
+    for raw in raw_lines:
         line = _clean_line(raw)
         if not line:
             continue
@@ -169,6 +180,7 @@ def write_gcode(
     home_y: float = 0.0,
     home_feed: float = 15000.0,
     legacy_z_reference: bool = True,
+    safe_start_y: float | None = None,
 ) -> None:
     lines = ["$X", "$1=255", "G21", "G90"]
     if legacy_z_reference:
@@ -184,6 +196,9 @@ def write_gcode(
     else:
         lines.extend([f"G0 Z{z_up:.4f} F{z_feed:.1f}", "G4 P0.06"])
     lines.extend(["G21", "G90", "G17", "G91.1", f"G0 Z{z_up:.4f}"])
+    if safe_start_y is not None:
+        # Leave HOME vertically before any X motion near the bed fixtures.
+        lines.append(f"G0 Y{safe_start_y:.3f} F{min(feed_travel, home_feed):.1f}")
     for polyline in polylines:
         sx, sy = polyline[0]
         lines.append(f"G0 X{sx:.3f} Y{sy:.3f} F{feed_travel:.1f}")
@@ -198,12 +213,18 @@ def write_gcode(
                 lines.append(f"G1 X{x:.3f} Y{y:.3f}")
         lines.append(f"G0 Z{z_up:.4f} F{z_feed:.1f}")
         lines.append("G4 P0.02")
-    lines.extend(
-        [
-            f"G0 X{home_x:.3f} Y{home_y:.3f} F{home_feed:.1f}",
-            f"G0 Z{z_up:.4f} F{z_feed:.1f}",
-        ]
-    )
+    if safe_start_y is not None:
+        # Return along the same clear corridor, never diagonally into HOME.
+        lines.extend(
+            [
+                f"G0 Y{safe_start_y:.3f} F{home_feed:.1f}",
+                f"G0 X{home_x:.3f} F{home_feed:.1f}",
+                f"G0 Y{home_y:.3f} F{home_feed:.1f}",
+            ]
+        )
+    else:
+        lines.append(f"G0 X{home_x:.3f} Y{home_y:.3f} F{home_feed:.1f}")
+    lines.append(f"G0 Z{z_up:.4f} F{z_feed:.1f}")
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 

@@ -70,6 +70,32 @@ def test_validate_gcode_accepts_safe_start_and_bounds(tmp_path: Path) -> None:
     assert result.motor_release_seen
 
 
+def test_validate_gcode_detects_a2_corexy_negative_z_profile(tmp_path: Path) -> None:
+    gcode_path = tmp_path / "a2_corexy.gcode"
+    gcode_path.write_text(
+        """$X
+G21
+G90
+G92 Z1
+G1 Z1 F2000
+G1 X10 Y20 F3200
+G1 Z-5 F2000
+G1 X380 Y560 F1500
+G1 Z1 F2000
+G1 X0 Y0 F3200
+M5
+$1=0
+""",
+        encoding="utf-8",
+    )
+
+    result = mod.validate_gcode_file(gcode_path)
+
+    assert result.ok
+    assert result.draw_moves == 1
+    assert result.bounds == (10.0, 380.0, 20.0, 560.0)
+
+
 def test_validate_gcode_rejects_missing_home_and_motor_release(tmp_path: Path) -> None:
     gcode_path = tmp_path / "no_home_no_release.gcode"
     gcode_path.write_text(

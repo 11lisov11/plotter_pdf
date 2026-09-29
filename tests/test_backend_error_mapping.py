@@ -44,7 +44,7 @@ class BackendErrorMappingTests(unittest.TestCase):
                 captured.update(kwargs)
                 Path(pen).write_text("G0 Z0\nG0 X0 Y0\n", encoding="utf-8")
 
-            def _fake_finalize(_prepared, final):
+            def _fake_finalize(_prepared, final, **_kwargs):
                 Path(final).write_text("G0 Z0\n", encoding="utf-8")
 
             with (

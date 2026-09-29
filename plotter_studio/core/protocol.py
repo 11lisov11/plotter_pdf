@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import inspect
 import math
 import re
 import shutil
@@ -124,6 +125,27 @@ def _append_serial_open_hint(message: str, *, com_port: str) -> str:
     if hint in base:
         return base
     return f"{base}\n{hint}" if base else hint
+
+
+def _run_pipeline_with_optional_calibration_layout(
+    backend,
+    input_path: Path,
+    log: LogFn,
+    *,
+    calibration_layout: str,
+    **kwargs,
+):
+    run_pipeline = backend.run_pipeline_with_corner_calibration
+    try:
+        parameters = inspect.signature(run_pipeline).parameters.values()
+        supports_layout = "calibration_layout" in inspect.signature(run_pipeline).parameters or any(
+            parameter.kind == inspect.Parameter.VAR_KEYWORD for parameter in parameters
+        )
+    except (TypeError, ValueError):
+        supports_layout = True
+    if supports_layout:
+        kwargs["calibration_layout"] = calibration_layout
+    return run_pipeline(input_path, log, **kwargs)
 
 
 def normalize_render_mode(mode: Optional[str]) -> str:
@@ -3910,9 +3932,11 @@ class BackendBridge:
                 )
 
         with self._track_backend_subprocess(ctx):
-            ok, msg = backend.run_pipeline_with_corner_calibration(
+            ok, msg = _run_pipeline_with_optional_calibration_layout(
+                backend,
                 input_path,
                 log,
+                calibration_layout=sheet.calibration_layout,
                 com=com_port,
                 baud=baud,
                 send_to_plotter=True,
@@ -3923,7 +3947,6 @@ class BackendBridge:
                 feed_travel=backend.FEED_TRAVEL,
                 feed_draw=backend.FEED_DRAW,
                 auto_resume=False,
-                calibration_layout=sheet.calibration_layout,
             )
         if not ok:
             return False, msg
@@ -4093,9 +4116,11 @@ class BackendBridge:
                 return True, f"Preview ready: {svg_path} | G-code: {nc_path}{suffix}"
 
         with self._track_backend_subprocess(ctx):
-            ok, msg = backend.run_pipeline_with_corner_calibration(
+            ok, msg = _run_pipeline_with_optional_calibration_layout(
+                backend,
                 input_path,
                 log,
+                calibration_layout=sheet.calibration_layout,
                 com=backend.detect_com_port(None),
                 baud=backend.DEFAULT_BAUD,
                 send_to_plotter=False,
@@ -4106,7 +4131,6 @@ class BackendBridge:
                 feed_travel=backend.FEED_TRAVEL,
                 feed_draw=backend.FEED_DRAW,
                 auto_resume=False,
-                calibration_layout=sheet.calibration_layout,
             )
         if not ok:
             return False, msg

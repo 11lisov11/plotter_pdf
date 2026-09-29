@@ -110,7 +110,7 @@ def normalize_handwriting_text_token(
 ) -> str:
     if not text:
         return text
-    normalized = strip_unpaired_surrogates(text, replacement=" ")
+    normalized = strip_unpaired_surrogates(text, " ")
     normalized = normalized.translate(_HANDWRITING_TEXT_NORMALIZE_TRANSLATIONS)
     out_chars: List[str] = []
     for ch in normalized:
@@ -221,7 +221,7 @@ def text_prefers_native_vector(
     *,
     strip_unpaired_surrogates: Callable[[str, str], str],
 ) -> bool:
-    src = strip_unpaired_surrogates(text or "", replacement=" ")
+    src = strip_unpaired_surrogates(text or "", " ")
     if not src:
         return False
     letters = sum(1 for ch in src if ch.isalpha())
@@ -361,7 +361,7 @@ def svg_text_node_is_visible(
     if visibility in {"hidden", "collapse"}:
         return False
 
-    opacity = parse_svg_number(_pick_style_val("opacity"), default=1.0)
+    opacity = parse_svg_number(_pick_style_val("opacity"), 1.0)
     if opacity <= 1e-6:
         return False
 
@@ -370,8 +370,8 @@ def svg_text_node_is_visible(
     fill_none = fill in {"", "none", "transparent"}
     stroke_none = stroke in {"", "none", "transparent"}
 
-    fill_opacity = parse_svg_number(_pick_style_val("fill-opacity"), default=1.0)
-    stroke_opacity = parse_svg_number(_pick_style_val("stroke-opacity"), default=1.0)
+    fill_opacity = parse_svg_number(_pick_style_val("fill-opacity"), 1.0)
+    stroke_opacity = parse_svg_number(_pick_style_val("stroke-opacity"), 1.0)
 
     if fill_none and stroke_none:
         if "fill" not in st and "stroke" not in st and (node is None or ("fill" not in node.attrib and "stroke" not in node.attrib)):

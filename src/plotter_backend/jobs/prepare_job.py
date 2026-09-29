@@ -58,9 +58,12 @@ def _append_sheet_args(args: list[str], settings: JobSettings) -> None:
         args.extend(["--sheet-width-mm", str(settings.sheet_width_mm)])
     if settings.sheet_height_mm is not None:
         args.extend(["--sheet-height-mm", str(settings.sheet_height_mm)])
-    args.extend(["--sheet-anchor", settings.sheet_anchor])
-    args.extend(["--sheet-offset-x-mm", str(settings.sheet_offset_x_mm)])
-    args.extend(["--sheet-offset-y-mm", str(settings.sheet_offset_y_mm)])
+    if settings.sheet_anchor is not None:
+        args.extend(["--sheet-anchor", settings.sheet_anchor])
+    if settings.sheet_offset_x_mm is not None:
+        args.extend(["--sheet-offset-x-mm", str(settings.sheet_offset_x_mm)])
+    if settings.sheet_offset_y_mm is not None:
+        args.extend(["--sheet-offset-y-mm", str(settings.sheet_offset_y_mm)])
     cols = max(1, int(settings.pass_cols))
     rows = max(1, int(settings.pass_rows))
     args.extend(["--pass-cols", str(cols)])
@@ -114,6 +117,19 @@ def prepare_gcode_job(settings: JobSettings) -> JobResult:
 
     nc_path = output_dir / f"{input_path.stem}_prepared.nc"
     gcode_path = output_dir / f"{input_path.stem}_prepared.gcode"
+    try:
+        nc_path.unlink(missing_ok=True)
+        gcode_path.unlink(missing_ok=True)
+    except OSError as exc:
+        return write_job_report(
+            JobResult(
+                False,
+                f"Не удалось очистить предыдущие выходные файлы: {exc}",
+                output_dir=output_dir,
+                errors=[str(exc)],
+            ),
+            output_dir,
+        )
     cmd = [
         *_plotter_cli_command(),
         str(input_path),
@@ -128,16 +144,27 @@ def prepare_gcode_job(settings: JobSettings) -> JobResult:
     if settings.com:
         cmd.extend(["--com", str(settings.com)])
     _append_sheet_args(cmd, settings)
-    proc = subprocess.run(
-        cmd,
-        cwd=str(_runtime_root()),
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        check=False,
-    )
+    try:
+        proc = subprocess.run(
+            cmd,
+            cwd=str(_runtime_root()),
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=False,
+        )
+    except Exception as exc:
+        return write_job_report(
+            JobResult(
+                False,
+                f"Не удалось запустить подготовку: {exc}",
+                output_dir=output_dir,
+                errors=[str(exc)],
+            ),
+            output_dir,
+        )
     if proc.returncode != 0:
         return write_job_report(
             JobResult(
@@ -147,6 +174,23 @@ def prepare_gcode_job(settings: JobSettings) -> JobResult:
                 nc_path=nc_path,
                 gcode_path=gcode_path,
                 errors=[proc.stdout.strip()],
+                layout_pdf_path=layout_build.output_pdf if layout_build else None,
+                layout_preview_pdf_path=layout_build.preview_pdf if layout_build else None,
+                layout_manifest_path=layout_build.manifest_path if layout_build else None,
+                layout_page_paths=layout_build.page_pdf_paths if layout_build else [],
+                layout_page_count=layout_build.page_count if layout_build else 0,
+            ),
+            output_dir,
+        )
+    if not nc_path.is_file() or nc_path.stat().st_size <= 0:
+        return write_job_report(
+            JobResult(
+                False,
+                "Подготовка завершилась без выходного NC-файла.",
+                output_dir=output_dir,
+                nc_path=nc_path if nc_path.exists() else None,
+                gcode_path=gcode_path if gcode_path.exists() else None,
+                errors=["missing_or_empty_nc_output"],
                 layout_pdf_path=layout_build.output_pdf if layout_build else None,
                 layout_preview_pdf_path=layout_build.preview_pdf if layout_build else None,
                 layout_manifest_path=layout_build.manifest_path if layout_build else None,

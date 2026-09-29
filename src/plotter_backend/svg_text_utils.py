@@ -137,7 +137,7 @@ def parse_svg_number_list(value: Optional[str]) -> List[float]:
 
 
 def extract_svg_text_plain(node: ET.Element, *, strip_unpaired_surrogates: Callable[[str, str], str]) -> str:
-    raw = strip_unpaired_surrogates("".join(node.itertext()), replacement=" ")
+    raw = strip_unpaired_surrogates("".join(node.itertext()), " ")
     if not raw:
         return ""
 

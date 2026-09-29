@@ -27,7 +27,7 @@ def _split_comment(line: str) -> str:
     return "".join(out).strip()
 
 
-_G_RE = re.compile(r"\bG\d+(?:\.\d+)?\b", re.IGNORECASE)
+_G_RE = re.compile(r"G\s*\d+(?:\.\d+)?", re.IGNORECASE)
 _WORD_RE = re.compile(r"([A-Za-z])\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)")
 
 
@@ -81,6 +81,9 @@ def gcode_to_polylines(lines: list[str], *, z_down: float | None = None, z_up: f
     cur_z = 0.0
     abs_mode = True  # assume G90, but accept G91
     ijk_abs = False  # GRBL default is incremental IJK; we accept G90.1/G91.1
+    unit_scale = 1.0
+    work_offset_x = 0.0
+    work_offset_y = 0.0
     # Motion is modal in G-code: persist last G0/G1/G2/G3 if not repeated.
     motion_mode = 0
 
@@ -127,13 +130,17 @@ def gcode_to_polylines(lines: list[str], *, z_down: float | None = None, z_up: f
         coordinate_reset = False
         for gtok in _G_RE.findall(body):
             try:
-                gval = float(gtok[1:])
+                gval = float(gtok[1:].strip())
             except Exception:
                 continue
             if abs(gval - 90.0) <= 1e-6:
                 abs_mode = True
             elif abs(gval - 91.0) <= 1e-6:
                 abs_mode = False
+            elif abs(gval - 20.0) <= 1e-6:
+                unit_scale = 25.4
+            elif abs(gval - 21.0) <= 1e-6:
+                unit_scale = 1.0
             elif abs(gval - 90.1) <= 1e-6:
                 ijk_abs = True
             elif abs(gval - 91.1) <= 1e-6:
@@ -153,7 +160,7 @@ def gcode_to_polylines(lines: list[str], *, z_down: float | None = None, z_up: f
 
         # Track Z even on non-draw.
         if "Z" in words:
-            z = float(words["Z"])
+            z = float(words["Z"]) * unit_scale
             cur_z = z if abs_mode else (cur_z + z)
             if z_down is not None and z_up is not None:
                 pen_down = pen_down_from_z_level(cur_z, float(z_up), float(z_down))
@@ -163,11 +170,11 @@ def gcode_to_polylines(lines: list[str], *, z_down: float | None = None, z_up: f
                 out.append(cur_poly)
             cur_poly = []
             if "X" in words:
-                cur_x = float(words["X"])
+                work_offset_x = cur_x - float(words["X"]) * unit_scale
             if "Y" in words:
-                cur_y = float(words["Y"])
+                work_offset_y = cur_y - float(words["Y"]) * unit_scale
             if "Z" in words:
-                cur_z = float(words["Z"])
+                cur_z = float(words["Z"]) * unit_scale
                 if z_down is not None and z_up is not None:
                     pen_down = pen_down_from_z_level(cur_z, float(z_up), float(z_down))
             continue
@@ -180,11 +187,11 @@ def gcode_to_polylines(lines: list[str], *, z_down: float | None = None, z_up: f
         tx = cur_x
         ty = cur_y
         if "X" in words:
-            x = float(words["X"])
-            tx = x if abs_mode else (cur_x + x)
+            x = float(words["X"]) * unit_scale
+            tx = (x + work_offset_x) if abs_mode else (cur_x + x)
         if "Y" in words:
-            y = float(words["Y"])
-            ty = y if abs_mode else (cur_y + y)
+            y = float(words["Y"]) * unit_scale
+            ty = (y + work_offset_y) if abs_mode else (cur_y + y)
 
         start = (cur_x, cur_y)
         end = (tx, ty)
@@ -201,13 +208,19 @@ def gcode_to_polylines(lines: list[str], *, z_down: float | None = None, z_up: f
             if not cur_poly:
                 cur_poly = [start]
             if g in (2, 3) and (("I" in words) or ("J" in words)):
-                i = float(words.get("I", 0.0))
-                j = float(words.get("J", 0.0))
-                center = (i, j) if ijk_abs else (cur_x + i, cur_y + j)
+                i = float(words.get("I", 0.0)) * unit_scale
+                j = float(words.get("J", 0.0)) * unit_scale
+                center = (
+                    (i + work_offset_x, j + work_offset_y)
+                    if ijk_abs
+                    else (cur_x + i, cur_y + j)
+                )
                 pts = _arc_points(start, end, center, cw=(g == 2))
                 cur_poly.extend(pts)
             elif g in (2, 3) and "R" in words:
-                center = arc_center_from_radius(start, end, float(words["R"]), cw=(g == 2))
+                center = arc_center_from_radius(
+                    start, end, float(words["R"]) * unit_scale, cw=(g == 2)
+                )
                 if center is None:
                     cur_poly.append(end)
                 else:

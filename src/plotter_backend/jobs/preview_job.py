@@ -41,6 +41,9 @@ def _workspace_bounds(settings: JobSettings) -> tuple[float, float, float, float
             work["max_y_mm"] + work["offset_y_mm"],
         )
     except Exception:
+        profile_name = str(settings.machine_profile or "").strip().lower().replace("-", "_")
+        if profile_name not in {"", "a4", "a4_desktop", "current", "legacy", "desktop"}:
+            raise
         return _WORKSPACE_BOUNDS
 
 
@@ -48,17 +51,23 @@ def _detect_pen_z(
     lines: list[str],
     settings: JobSettings | None = None,
 ) -> tuple[float | None, float | None]:
+    profile_values: tuple[float, float] | None = None
     if settings is not None:
         try:
             profile = machine_profiles_mod.resolve_machine_profile(settings.machine_profile, _MACHINE_PROFILE_PATH)
             pen = profile.get("pen", {})
             if pen.get("lift_mode", "z") == "z":
-                return float(pen["z_up_mm"]), float(pen["z_down_mm"])
+                profile_values = float(pen["z_up_mm"]), float(pen["z_down_mm"])
         except (KeyError, TypeError, ValueError):
             pass
     values = [float(value) for line in lines for letter, value in _WORD_RE.findall(line) if letter.upper() == "Z"]
     rounded = sorted({round(value, 4) for value in values})
-    return (min(rounded), max(rounded)) if len(rounded) >= 2 else (None, None)
+    if len(rounded) >= 2:
+        low, high = min(rounded), max(rounded)
+        if profile_values is not None and profile_values[0] > profile_values[1]:
+            return high, low
+        return low, high
+    return profile_values if profile_values is not None else (None, None)
 
 
 def _strip_gcode_comment(line: str) -> str:
@@ -184,14 +193,20 @@ def _sheet_size(settings: JobSettings) -> tuple[float, float]:
 def _sheet_bounds(settings: JobSettings) -> tuple[float, float, float, float]:
     wx0, wx1, wy0, wy1 = _workspace_bounds(settings)
     sw, sh = _sheet_size(settings)
-    anchor = str(settings.sheet_anchor or "center").lower()
-    ox = float(settings.sheet_offset_x_mm)
-    oy = float(settings.sheet_offset_y_mm)
+    profile = machine_profiles_mod.resolve_machine_profile(settings.machine_profile, _MACHINE_PROFILE_PATH)
+    anchor, ox, oy = machine_profiles_mod.profile_sheet_placement(
+        profile,
+        settings.sheet_format,
+        anchor=settings.sheet_anchor,
+        offset_x_mm=settings.sheet_offset_x_mm,
+        offset_y_mm=settings.sheet_offset_y_mm,
+    )
+    anchor = anchor.lower()
     x0 = wx0 + ox if "left" in anchor else wx1 - sw + ox if "right" in anchor else wx0 + ((wx1 - wx0) - sw) * 0.5 + ox
-    if "top" in anchor:
+    if anchor.startswith("upper_"):
         y1 = wy1 + oy
         y0 = y1 - sh
-    elif "bottom" in anchor:
+    elif anchor.startswith("lower_"):
         y0 = wy0 + oy
         y1 = y0 + sh
     else:
@@ -235,6 +250,25 @@ def _write_preview_files(
     sheet_x, sheet_y, sheet_w, sheet_h = _display_rect(sheet)
     work_x, work_y, work_w, work_h = _display_rect(workspace)
     draw_x, draw_y, draw_w, draw_h = _display_rect(drawing)
+    profile_name = str(settings.machine_profile or "").strip().lower().replace("-", "_")
+    show_guides = profile_name != "a2_corexy"
+    sheet_stroke = "#2563eb" if show_guides else "none"
+    selected_fill = "#dbeafe" if show_guides else "none"
+    selected_stroke = "#1d4ed8" if show_guides else "none"
+    workspace_stroke = "#f97316" if show_guides else "none"
+    drawing_stroke = "#16a34a" if show_guides else "none"
+    home_marker = ""
+    if profile_name == "a2_corexy" and show_guides:
+        home_x, home_y = 0.0, 0.0
+        home_marker = f'''<g fill="none" stroke="#dc2626" stroke-width="0.9" stroke-linecap="round">
+      <path d="M {home_x:.4f} {home_y:.4f} L {home_x + 14:.4f} {home_y:.4f} M {home_x:.4f} {home_y:.4f} L {home_x:.4f} {home_y - 14:.4f}" />
+      <circle cx="{home_x:.4f}" cy="{home_y:.4f}" r="2" fill="#dc2626" stroke="none" />
+    </g>
+    <g fill="#dc2626" font-family="Segoe UI, Arial" font-size="4">
+      <text x="{home_x + 5:.4f}" y="{home_y - 5:.4f}">HOME X0 Y0</text>
+      <text x="{home_x + 15:.4f}" y="{home_y - 1:.4f}">X+</text>
+      <text x="{home_x + 2:.4f}" y="{home_y - 15:.4f}">Y+</text>
+    </g>'''
     cols = max(1, int(settings.pass_cols))
     rows = max(1, int(settings.pass_rows))
     col = min(max(1, int(settings.pass_col)), cols)
@@ -250,6 +284,8 @@ def _write_preview_files(
         f'<line x1="{sheet_x:.4f}" y1="{sheet_y + cell_h * index:.4f}" x2="{sheet_x + sheet_w:.4f}" y2="{sheet_y + cell_h * index:.4f}" />'
         for index in range(1, rows)
     ]
+    if not show_guides:
+        split_lines = []
     paths = "\n".join(f'<path d="{_path_d(polyline)}" />' for polyline in polylines if len(polyline) >= 2)
     title = html.escape(
         f"{Path(settings.input_path or 'чертёж').name} • {settings.sheet_format.upper()} • "
@@ -260,13 +296,14 @@ def _write_preview_files(
   <rect x="{view_x:.3f}" y="{view_y:.3f}" width="{view_w:.3f}" height="{view_h:.3f}" fill="#eef2f7" />
   <text x="{view_x + 4:.3f}" y="{view_y + 7:.3f}" fill="#102a43" font-family="Segoe UI, Arial" font-size="4.2">{title}</text>
   <g fill="none" vector-effect="non-scaling-stroke">
-    <rect x="{sheet_x:.4f}" y="{sheet_y:.4f}" width="{sheet_w:.4f}" height="{sheet_h:.4f}" fill="#fff" stroke="#2563eb" stroke-width="0.7" />
-    <rect x="{selected_x:.4f}" y="{selected_y:.4f}" width="{cell_w:.4f}" height="{cell_h:.4f}" fill="#dbeafe" fill-opacity="0.42" stroke="#1d4ed8" stroke-width="0.45" />
+    <rect x="{sheet_x:.4f}" y="{sheet_y:.4f}" width="{sheet_w:.4f}" height="{sheet_h:.4f}" fill="#fff" stroke="{sheet_stroke}" stroke-width="0.7" />
+    <rect x="{selected_x:.4f}" y="{selected_y:.4f}" width="{cell_w:.4f}" height="{cell_h:.4f}" fill="{selected_fill}" fill-opacity="0.42" stroke="{selected_stroke}" stroke-width="0.45" />
     <g stroke="#2563eb" stroke-width="0.35" stroke-dasharray="3 2">{''.join(split_lines)}</g>
-    <rect x="{work_x:.4f}" y="{work_y:.4f}" width="{work_w:.4f}" height="{work_h:.4f}" stroke="#f97316" stroke-width="0.5" stroke-dasharray="4 3" />
-    <rect x="{draw_x:.4f}" y="{draw_y:.4f}" width="{draw_w:.4f}" height="{draw_h:.4f}" stroke="#16a34a" stroke-width="0.35" />
+    <rect x="{work_x:.4f}" y="{work_y:.4f}" width="{work_w:.4f}" height="{work_h:.4f}" stroke="{workspace_stroke}" stroke-width="0.5" stroke-dasharray="4 3" />
+    <rect x="{draw_x:.4f}" y="{draw_y:.4f}" width="{draw_w:.4f}" height="{draw_h:.4f}" stroke="{drawing_stroke}" stroke-width="0.35" />
     <g stroke="#111827" stroke-width="0.24" stroke-linecap="round" stroke-linejoin="round">{paths}</g>
   </g>
+  {home_marker}
 </svg>'''
     svg_path.write_text(svg, encoding="utf-8")
     embedded = svg.split("\n", 1)[1]
@@ -328,6 +365,8 @@ def preview_job(settings: JobSettings) -> JobResult:
         result.message = f"Предпросмотр итогового G-code готов: {pdf_path}"
         _open_preview(pdf_path)
     except Exception as exc:
-        result.message = f"G-code подготовлен: {result.nc_path}"
-        result.warnings.append(f"Не удалось сформировать PDF предпросмотра: {exc}")
+        message = f"Не удалось сформировать PDF предпросмотра: {exc}"
+        result.ok = False
+        result.message = message
+        result.errors.append(message)
     return result

@@ -223,6 +223,9 @@ def send_to_grbl(
     if use_inline:
         try:
             rc, out_lines, sender_plot_time_s, elapsed = _run_sender_inline()
+        except KeyboardInterrupt:
+            _best_effort_safe_release_after_sender_failure("operator interrupt")
+            raise
         except ToolDependencyError:
             raise
         except Exception as exc:
@@ -267,6 +270,16 @@ def send_to_grbl(
                         pass
             rc = proc.wait()
             elapsed = time.perf_counter() - started
+        except KeyboardInterrupt:
+            if proc.poll() is None:
+                proc.terminate()
+                try:
+                    proc.wait(timeout=2.0)
+                except subprocess.TimeoutExpired:
+                    proc.kill()
+                    proc.wait(timeout=2.0)
+            _best_effort_safe_release_after_sender_failure("operator interrupt")
+            raise
         except Exception as exc:
             raise SerialTransportError(
                 f"Sender process I/O failed ({type(exc).__name__}: {exc})"
