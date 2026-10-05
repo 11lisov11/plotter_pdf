@@ -110,6 +110,11 @@ def send_to_grbl(
     travel_feed: float = 900.0,
     controlled_motion: bool = False,
 ) -> float:
+    # With no execution checkpoint, the nearest XY coordinate is not a
+    # progress marker: a drawing revisits the same place many times. Do not
+    # guess a resume point for the negative-Z large-plotter profile.
+    if float(z_down) < float(z_up):
+        auto_resume = False
     sender = root_dir / "src" / "send_grbl_file.py"
     if not sender.exists():
         raise ToolDependencyError("send_grbl_file.py not found")

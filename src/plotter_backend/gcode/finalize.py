@@ -112,10 +112,10 @@ def make_final_with_preamble(
         # The controller's remembered Z work coordinate can be stale after an
         # abort/reset. Force the current physical pen position to be below Z_UP,
         # then lift before any XY move.
-        f"G92 Z{startup_z:.4f}",
+        *([f"G92 Z{startup_z:.4f}"] if forced_lift > 0.0 else []),
         f"G0 Z{float(z_up):.4f} F{float(safe_lift_feed):.1f}",
         f"G4 P{float(z_delay_up):.2f}",
-        f"G92 Z{float(z_up):.4f}",
+        *([f"G92 Z{float(z_up):.4f}"] if forced_lift > 0.0 else []),
         f"G0 Z{float(z_up):.4f} F{float(safe_lift_feed):.1f}",
         (
             f"G0 X{float(home_x):.4f} Y{float(home_y):.4f} F{float(feed_travel):.1f}"

@@ -29,10 +29,12 @@ def build_safe_park_release_commands(
         commands.append("$X")
     if energize_before_motion:
         commands.append("$1=255")
+    commands.extend(["G21", "G90"])
     if z_down is not None:
         direction = 1.0 if float(z_down) >= float(z_up) else -1.0
         lift = min(abs(float(z_down) - float(z_up)), max(0.0, float(force_lift_mm)))
-        commands.append(f"G92 Z{float(z_up) + direction * lift:.4f}")
+        if lift > 0.0:
+            commands.append(f"G92 Z{float(z_up) + direction * lift:.4f}")
     commands.extend(
         [
             "G90",

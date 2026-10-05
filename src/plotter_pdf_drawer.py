@@ -393,6 +393,7 @@ HANDWRITING_COLLINEAR_EPS_MAX = 0.0015
 # Keep optional TTF centerline conversion strictly as last-resort debug fallback.
 HANDWRITING_ALLOW_TTF_FALLBACK = True
 HANDWRITING_STROKE_ACTIVE = False
+DIRECT_PDF_VECTOR_SOURCE_ACTIVE = False
 # Runtime flag for current job: Cyrillic text detected in handwriting mode.
 # For Cyrillic we prefer readability over aggressive one-stroke centerline fallback.
 HANDWRITING_CYRILLIC_ACTIVE = False
@@ -6246,6 +6247,8 @@ def simplify_polyline(
 ) -> List[Tuple[float, float]]:
     if not SIMPLIFY_ENABLED:
         return poly
+    if DIRECT_PDF_VECTOR_SOURCE_ACTIVE:
+        collinear_eps = min(float(POLYLINE_COLLINEAR_EPS if collinear_eps is None else collinear_eps), 0.001)
     return geometry_simplify_mod.simplify_polyline(
         poly,
         eps=eps,
@@ -6680,6 +6683,9 @@ def transform_polylines_for_output_orientation(
     fit_scale = min((max_x - min_x) / width, (max_y - min_y) / height)
     can_restore_sheet_scale = bool(ALLOW_UPSCALE_TO_WORK_AREA) and source_coverage >= 0.90
     scale = fit_scale if can_restore_sheet_scale else min(1.0, fit_scale)
+    if MIN_FIT_SCALE_FOR_DIMENSIONAL_DRAW > 0.0:
+        # Orientation is not a second fit operation in strict 1:1 mode.
+        scale = 1.0
     if abs(scale - 1.0) > 1e-9:
         transformed = [
             [(center_x + (x - center_x) * scale, center_y + (y - center_y) * scale) for x, y in polyline]
@@ -6727,7 +6733,7 @@ def clip_polylines_to_work_area(
     logger=print,
 ) -> List[List[Tuple[float, float]]]:
     min_x, max_x, min_y, max_y = work_area_bounds()
-    return geometry_clipping_mod.clip_polylines_to_rect(
+    clipped = geometry_clipping_mod.clip_polylines_to_rect(
         polylines,
         min_x,
         max_x,
@@ -6738,6 +6744,13 @@ def clip_polylines_to_work_area(
         clamp_fn=clamp_to_work_area,
         point_in_rect_fn=point_in_work_area,
     )
+    if DIRECT_PDF_VECTOR_SOURCE_ACTIVE and AUTO_TRIM_OUTER_FRAME:
+        try:
+            from .plotter_backend.geometry.path_processing import trim_to_inner_drawing_frame
+        except ImportError:
+            from plotter_backend.geometry.path_processing import trim_to_inner_drawing_frame
+        clipped = trim_to_inner_drawing_frame(clipped, logger=logger)
+    return clipped
 
 
 def fit_polylines_to_area(
@@ -7322,6 +7335,11 @@ def extract_polylines(svg_path: Path) -> List[PathItem]:
 
 
 def to_drawing_polylines(items: List[PathItem]) -> List[List[Tuple[float, float]]]:
+    if DIRECT_PDF_VECTOR_SOURCE_ACTIVE:
+        # Native PDF glyphs are already vectors. Raster skeletonization of
+        # small outlined letters loses real stems, counters and punctuation.
+        # Keep the source contours instead of inventing a different font.
+        return [item.points for item in items if len(item.points) >= 2 and (item.is_fill or item.is_stroke)]
     out: List[List[Tuple[float, float]]] = []
     consumed_idx: set[int] = set()
     handwriting = bool(HANDWRITING_TEXT_ENABLED)
@@ -7527,6 +7545,10 @@ def write_xy_gcode(
     join_eps_v = CONTINUOUS_JOIN_EPS if join_eps is None else max(0.0, float(join_eps))
     line_fit_tol = 0.0 if HANDWRITING_TEXT_ENABLED else float(LINE_FIT_TOL_MM)
     rdp_eps = 0.0 if HANDWRITING_TEXT_ENABLED else float(RDP_SIMPLIFY_EPS_MM)
+    if DIRECT_PDF_VECTOR_SOURCE_ACTIVE:
+        join_eps_v = min(join_eps_v, 0.0001)
+        line_fit_tol = min(line_fit_tol, 0.01)
+        rdp_eps = min(rdp_eps, 0.01)
     for poly in polylines:
         if len(poly) < 2:
             continue
@@ -7883,6 +7905,8 @@ def deduplicate_segments(
     # Remove exact (or near-exact) retraced segments globally to reduce overdraw/letter boldness.
     if not polylines or not SEGMENT_DEDUP_ENABLED:
         return polylines
+    if DIRECT_PDF_VECTOR_SOURCE_ACTIVE:
+        eps = min(float(eps), 0.001)
     seen = set()
     out: List[List[Tuple[float, float]]] = []
     dropped = 0
@@ -8076,6 +8100,11 @@ def deduplicate_collinear_overlaps(
     if not polylines or not COLLINEAR_OVERLAP_DEDUP_ENABLED:
         return polylines
 
+    if DIRECT_PDF_VECTOR_SOURCE_ACTIVE:
+        dist_mm = min(float(dist_mm), 0.001)
+        angle_deg = min(float(angle_deg), 0.01)
+        min_overlap_ratio = max(float(min_overlap_ratio), 0.9999)
+
     dist_tol = max(0.0, float(dist_mm))
     angle_tol = math.radians(max(0.01, float(angle_deg)))
     min_len = max(0.0, float(min_len_mm))
@@ -8153,6 +8182,8 @@ def final_cleanup_polylines_for_gcode(
     logger=print,
 ) -> List[List[Tuple[float, float]]]:
     line_fit_tol = 0.0 if HANDWRITING_TEXT_ENABLED else float(LINE_FIT_TOL_MM)
+    if DIRECT_PDF_VECTOR_SOURCE_ACTIVE:
+        line_fit_tol = min(line_fit_tol, 0.01)
 
     def _normalize_for_writer(src: List[List[Tuple[float, float]]]) -> List[List[Tuple[float, float]]]:
         normalized: List[List[Tuple[float, float]]] = []
@@ -9738,10 +9769,12 @@ def pdf_to_svg(pdf_path: Path, svg_path: Path, logger) -> None:
     global HANDWRITING_STROKE_ACTIVE
     global HANDWRITING_CYRILLIC_ACTIVE
     global DRAW_ORDER_MODE
+    global DIRECT_PDF_VECTOR_SOURCE_ACTIVE
     logger = _safe_logger(logger)
     logger("Converting PDF -> SVG ...")
     HANDWRITING_STROKE_ACTIVE = False
     HANDWRITING_CYRILLIC_ACTIVE = False
+    DIRECT_PDF_VECTOR_SOURCE_ACTIVE = False
 
     svg_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -9756,6 +9789,7 @@ def pdf_to_svg(pdf_path: Path, svg_path: Path, logger) -> None:
                 svg_root.set("width", f"{page.rect.width * 25.4 / 72.0:.3f}mm")
                 svg_root.set("height", f"{page.rect.height * 25.4 / 72.0:.3f}mm")
                 ET.ElementTree(svg_root).write(svg_path, encoding="utf-8", xml_declaration=True)
+                DIRECT_PDF_VECTOR_SOURCE_ACTIVE = True
                 if DRAW_ORDER_MODE == "auto":
                     DRAW_ORDER_MODE = "source"
                 logger("A2 vector source: direct PDF SVG export (text_as_path=True); source order preserved.")
@@ -9959,12 +9993,16 @@ def make_final_with_preamble(
         go_home_after_draw=bool(GO_HOME_AFTER_DRAW),
         startup_force_z_lift_mm=float(STARTUP_FORCE_Z_LIFT_MM),
         hold_steppers_during_job=bool(MACHINE_PROFILE_NAME != "a2_corexy"),
-        home_clearance_y_mm=(float(work_area_bounds()[2]) if MACHINE_PROFILE_NAME == "a2_corexy" else None),
+        home_clearance_y_mm=(float(work_area_bounds()[2]) if MACHINE_PROFILE_NAME == "a2_corexy" and work_area_bounds()[2] > float(HOME_Y) else None),
     )
-    rewrite_duplicate_draw_segments_as_penup_travel(
-        final_gcode,
-        feed_travel=effective_feed_travel,
-    )
+    if not DIRECT_PDF_VECTOR_SOURCE_ACTIVE:
+        rewrite_duplicate_draw_segments_as_penup_travel(
+            final_gcode,
+            z_up=float(Z_UP),
+            z_down=float(Z_DOWN),
+            z_feed=float(SAFE_LIFT_FEED),
+            feed_travel=effective_feed_travel,
+        )
     if MACHINE_PROFILE_NAME == "a2_corexy" and COREXY_MOTOR_MAX_RATE > 0.0:
         rewrite_corexy_diagonal_rapid_moves_as_axis_aligned(final_gcode)
         limit_corexy_motor_feed_rates(
@@ -10132,6 +10170,8 @@ def limit_corexy_motor_feed_rates(gcode_path: Path, *, motor_max_rate: float) ->
                     motor_b = abs(requested_feed * (dx - dy) / distance)
                     peak = max(motor_a, motor_b)
                     safe_feed = requested_feed if peak <= limit else requested_feed * limit / peak
+                # Decimal rounding must not push a capped motor back over its limit.
+                safe_feed = math.floor(safe_feed * 10.0) / 10.0
                 rewritten = _replace_or_append_gcode_feed(line, safe_feed)
                 if abs(safe_feed - requested_feed) > 0.05:
                     changed += 1
@@ -10527,6 +10567,8 @@ def run_pipeline(
     global HANDWRITING_STROKE_ACTIVE
     global HANDWRITING_CYRILLIC_ACTIVE
     try:
+        global DIRECT_PDF_VECTOR_SOURCE_ACTIVE
+        DIRECT_PDF_VECTOR_SOURCE_ACTIVE = False
         prepared_gcode = _prepared_pack_gcode_for_clean_source(input_path)
         if prepared_gcode is not None:
             return _run_prepared_pack_gcode(
@@ -10774,13 +10816,13 @@ def run_pipeline(
                 stitch_angle = STITCH_GAP_MAX_ANGLE_DEG
             polylines = stitch_polylines(
                 polylines,
-                stitch_eps,
+                min(stitch_eps, 0.0001) if DIRECT_PDF_VECTOR_SOURCE_ACTIVE else stitch_eps,
                 logger=log,
-                gap_eps=stitch_gap_eps,
+                gap_eps=0.0 if DIRECT_PDF_VECTOR_SOURCE_ACTIVE else stitch_gap_eps,
                 angle_tol_deg=stitch_angle,
             )
             polylines = reorder_polylines(polylines, logger=log)
-            if not HANDWRITING_TEXT_ENABLED:
+            if not HANDWRITING_TEXT_ENABLED and not DIRECT_PDF_VECTOR_SOURCE_ACTIVE:
                 polylines = merge_technical_text_strokes(
                     polylines,
                     logger=log,
@@ -10870,7 +10912,10 @@ def run_pipeline(
                 feed_draw,
                 join_eps=(HANDWRITING_CONTINUOUS_JOIN_EPS if HANDWRITING_TEXT_ENABLED else CONTINUOUS_JOIN_EPS),
             )
-            cleanup_xy_gcode_overlaps(xy_path, logger=log)
+            if not DIRECT_PDF_VECTOR_SOURCE_ACTIVE:
+                cleanup_xy_gcode_overlaps(xy_path, logger=log)
+            else:
+                log("Native PDF vectors: retaining glyph contours; only precise pre-export deduplication is used.")
             log("Applying pen-up / pen-down ...")
             apply_penlift(
                 xy_path,

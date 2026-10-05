@@ -80,6 +80,96 @@ def poly_inside_bbox(
     )
 
 
+def trim_to_inner_drawing_frame(
+    polylines: List[List[Point]],
+    *,
+    logger=print,
+) -> List[List[Point]]:
+    """Remove sheet furniture only when two complete nested frames exist.
+
+    Operate after fitting/orientation so deleting the paper border cannot
+    change the drawing's scale or placement. A frame can be four independent
+    lines, a closed rectangle, or retraced A-B-A paths.
+    """
+    from .clipping import clip_polylines_to_rect
+
+    points = [point for poly in polylines for point in poly]
+    if not points:
+        return polylines
+    x0 = min(point[0] for point in points)
+    x1 = max(point[0] for point in points)
+    y0 = min(point[1] for point in points)
+    y1 = max(point[1] for point in points)
+    width, height = x1 - x0, y1 - y0
+    if width <= 0.0 or height <= 0.0:
+        return polylines
+
+    tolerance = 0.02
+    horizontal = set()
+    vertical = set()
+    for poly in polylines:
+        for a, b in zip(poly, poly[1:]):
+            if abs(a[1] - b[1]) <= tolerance and abs(a[0] - b[0]) >= width * 0.85:
+                horizontal.add((min(a[0], b[0]), max(a[0], b[0]), (a[1] + b[1]) * 0.5))
+            if abs(a[0] - b[0]) <= tolerance and abs(a[1] - b[1]) >= height * 0.85:
+                vertical.add(((a[0] + b[0]) * 0.5, min(a[1], b[1]), max(a[1], b[1])))
+
+    def close(a: float, b: float) -> bool:
+        return abs(a - b) <= tolerance
+
+    rectangles = set()
+    rows = sorted(horizontal, key=lambda row: row[2])
+    for index, bottom in enumerate(rows):
+        for top in rows[index + 1:]:
+            left, right, low = bottom
+            high = top[2]
+            if high - low < height * 0.85 or not (close(left, top[0]) and close(right, top[1])):
+                continue
+            has_left = any(close(x, left) and close(lo, low) and close(hi, high) for x, lo, hi in vertical)
+            has_right = any(close(x, right) and close(lo, low) and close(hi, high) for x, lo, hi in vertical)
+            if has_left and has_right:
+                rectangles.add((left, right, low, high))
+    if len(rectangles) < 2:
+        return polylines
+
+    area = lambda box: (box[1] - box[0]) * (box[3] - box[2])
+    outer = max(rectangles, key=area)
+    inner_candidates = [box for box in rectangles if
+                        box[0] > outer[0] + tolerance and box[1] < outer[1] - tolerance and
+                        box[2] > outer[2] + tolerance and box[3] < outer[3] - tolerance]
+    if not inner_candidates:
+        return polylines
+    left, right, bottom, top = max(inner_candidates, key=area)
+
+    retained = []
+    for poly in polylines:
+        if len(poly) < 2:
+            continue
+        bx0 = min(point[0] for point in poly)
+        bx1 = max(point[0] for point in poly)
+        by0 = min(point[1] for point in poly)
+        by1 = max(point[1] for point in poly)
+        closed = abs(poly[0][0] - poly[-1][0]) <= 1e-6 and abs(poly[0][1] - poly[-1][1]) <= 1e-6
+        small = max(bx1 - bx0, by1 - by0) <= min(width, height) * 0.05
+        center_inside = left <= (bx0 + bx1) * 0.5 <= right and bottom <= (by0 + by1) * 0.5 <= top
+        # Outside lettering can overlap the border by a fraction of a mm.
+        # Drop its whole glyph, not a sliver left by geometric clipping.
+        if closed and small and not center_inside:
+            continue
+        retained.append(poly)
+    clipped = clip_polylines_to_rect(
+        retained, left, right, bottom, top,
+        continuity_eps_mm=0.0001,
+        logger=None,
+    )
+    if logger:
+        logger(
+            f"Inner drawing frame: x({left:.3f},{right:.3f}) y({bottom:.3f},{top:.3f}); "
+            f"removed outside sheet furniture, paths {len(polylines)} -> {len(clipped)}; scale unchanged."
+        )
+    return clipped
+
+
 def filter_outer_frame_path_items(
     items: List[Any],
     *,

@@ -1,0 +1,18 @@
+{
+  "variant_dir": "C:\\plotter_pdf\\_plotter_jobs\\ED4M_A2_big",
+  "items": [
+    {
+      "task": "ED4M_A2_pack",
+      "package_dir": "C:\\plotter_pdf\\_plotter_jobs\\ED4M_A2_big\\ED4M_A2_pack",
+      "kind": "a3_two_pass",
+      "layout_similarity": 0.960628,
+      "selected_variant": "custom_tiled_clean_source",
+      "selection_reason": "custom_tiled_large_sheet",
+      "source_fidelity_score": 0.960628,
+      "fragmentation_score": 0.910817,
+      "quality_score": 0.955647,
+      "compare_png": "",
+      "compare_pdf": ""
+    }
+  ]
+}

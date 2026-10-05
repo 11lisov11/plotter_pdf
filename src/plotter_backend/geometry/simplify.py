@@ -69,32 +69,16 @@ def rdp_simplify_polyline(poly: Polyline, eps: float) -> List[Point]:
     if len(ring) < 4:
         return list(poly)
 
-    best_i = 0
-    best_score = -1.0
-    n = len(ring)
-    for i in range(n):
-        x0, y0 = ring[(i - 1) % n]
-        x1, y1 = ring[i]
-        x2, y2 = ring[(i + 1) % n]
-        ux, uy = (x0 - x1), (y0 - y1)
-        vx, vy = (x2 - x1), (y2 - y1)
-        un = math.hypot(ux, uy)
-        vn = math.hypot(vx, vy)
-        if un <= 1e-9 or vn <= 1e-9:
-            continue
-        dot = max(-1.0, min(1.0, (ux * vx + uy * vy) / (un * vn)))
-        score = -dot
-        if score > best_score:
-            best_score = score
-            best_i = i
-
-    rotated = ring[best_i:] + ring[:best_i]
-    simplified = rdp_simplify_open(rotated, eps)
-    if len(simplified) < 3:
+    # The writer may already have travelled to poly[0]. Never rotate that
+    # start, and simplify BOTH sides of the ring rather than replacing its
+    # final curved section by an unchecked closing chord.
+    split = max(range(1, len(ring)), key=lambda i: points_distance(ring[0], ring[i]))
+    first = rdp_simplify_open(ring[:split + 1], eps)
+    second = rdp_simplify_open(ring[split:] + [ring[0]], eps)
+    simplified = first + second[1:]
+    if len(simplified) < 4:
         return list(poly)
-    if points_distance(simplified[0], simplified[-1]) <= 1e-6:
-        return simplified
-    return simplified + [simplified[0]]
+    return simplified
 
 
 def simplify_polyline(
