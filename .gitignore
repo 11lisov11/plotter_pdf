@@ -2,6 +2,47 @@ __pycache__/
 *.py[cod]
 *.log
 *.tmp
+
+# Local diagnostics and historical generation experiments, not deliverables.
+/tmp/
+/_debug/
+/scripts/legacy_generation_experiments/
+/_plotter_jobs/*.py
+**/_candidates/
+**/logs/
+**/report.json
+**/summary.csv
+**/*_report.json
+**/*_summary.csv
+**/*_audit.json
+**/_audit.json
+**/_audit.txt
+**/_audit_contact.png
+**/_prepared_reports.json
+**/_prepared_summary.csv
+**/*.log.txt
+
+# These readiness markers are runtime inputs, not disposable diagnostics.
+!**/_ready_to_plot_audit.json
+!tests/fixtures/**
+
+# Comparison renders are disposable; final G-code, sources and previews stay.
+/_plotter_jobs/*_compare/*.pdf
+/_plotter_jobs/*_compare/*.png
+/_plotter_jobs/*_compare/*.svg
+/_plotter_jobs/*_comparison/*.pdf
+/_plotter_jobs/*_comparison/*.png
+/_plotter_jobs/*_comparison/*.svg
+/_plotter_jobs/**/*_compare.pdf
+/_plotter_jobs/**/*_compare.png
+/_plotter_jobs/**/*_compare.svg
+/_plotter_jobs/**/*_diff.png
+/_plotter_jobs/patches/**/*.pdf
+/_plotter_jobs/patches/**/*.png
+/_plotter_jobs/patches/**/*.svg
+/_plotter_jobs/patches/**/*.json
+/_plotter_jobs/patches/**/*.txt
+/_plotter_jobs/patches/**/*.py
 *.lnk
 .codex_*.md
 .coverage

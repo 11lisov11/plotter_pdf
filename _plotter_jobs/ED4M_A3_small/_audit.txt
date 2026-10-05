@@ -1,2 +1,0 @@
-ED4M_A3_small
-ED4M_ressornoe_podveshivanie_A3_pack: quality=0.979170; layout=0.986198; fidelity=0.986198
