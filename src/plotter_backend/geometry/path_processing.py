@@ -170,6 +170,62 @@ def trim_to_inner_drawing_frame(
     return clipped
 
 
+def remove_rectangular_border(
+    polylines: List[List[Point]],
+    frame_bounds: Tuple[float, float, float, float],
+    *,
+    preserve_regions: Sequence[Tuple[float, float, float, float]] = (),
+    tolerance_mm: float = 0.002,
+) -> List[List[Point]]:
+    """Remove border strokes, retaining shared edges of protected tables.
+
+    Bounds use (min_x, max_x, min_y, max_y). Split strokes rather than joining
+    disconnected pieces, and leave all non-border drawing geometry untouched.
+    """
+    from .clipping import clip_segment_to_rect
+
+    left, right, bottom, top = frame_bounds
+    eps = max(0.0, float(tolerance_mm))
+    output: List[List[Point]] = []
+    for poly in polylines:
+        current: List[Point] = []
+
+        def finish() -> None:
+            nonlocal current
+            if len(current) >= 2:
+                output.append(current)
+            current = []
+
+        for a, b in zip(poly, poly[1:]):
+            vertical = any(abs(a[0] - edge) <= eps and abs(b[0] - edge) <= eps
+                           for edge in (left, right))
+            horizontal = any(abs(a[1] - edge) <= eps and abs(b[1] - edge) <= eps
+                             for edge in (bottom, top))
+            inside = all(left - eps <= p[0] <= right + eps and
+                         bottom - eps <= p[1] <= top + eps for p in (a, b))
+            pieces = [(a, b)]
+            if inside and (vertical or horizontal):
+                pieces = []
+                for region in preserve_regions:
+                    kept = clip_segment_to_rect(a[0], a[1], b[0], b[1],
+                                                region[0], region[1], region[2], region[3])
+                    if kept is not None and kept[0] != kept[1] and kept not in pieces:
+                        pieces.append(kept)
+                dx, dy = b[0] - a[0], b[1] - a[1]
+                pieces.sort(key=lambda pair: (pair[0][0] - a[0]) * dx + (pair[0][1] - a[1]) * dy)
+            if not pieces:
+                finish()
+                continue
+            for start, end in pieces:
+                if current and abs(current[-1][0] - start[0]) <= 1e-8 and abs(current[-1][1] - start[1]) <= 1e-8:
+                    current.append(end)
+                else:
+                    finish()
+                    current = [start, end]
+        finish()
+    return output
+
+
 def filter_outer_frame_path_items(
     items: List[Any],
     *,
