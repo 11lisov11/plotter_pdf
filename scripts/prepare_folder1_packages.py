@@ -5046,7 +5046,7 @@ def _extract_small_condition_image_polylines_from_pdf(
                             extracted_image = Image.open(io.BytesIO(meta["image"])).convert("L")
                     except Exception:
                         extracted_image = None
-                    for rect_idx, rect in enumerate(page.get_image_rects(xref)):
+                    for rect_idx, (rect, image_transform) in enumerate(page.get_image_rects(xref, transform=True)):
                         x0_mm = float(rect.x0) * 25.4 / 72.0
                         y0_mm = float(rect.y0) * 25.4 / 72.0
                         x1_mm = float(rect.x1) * 25.4 / 72.0
@@ -5085,7 +5085,13 @@ def _extract_small_condition_image_polylines_from_pdf(
 
                         png_path = td_path / f"condimg_{img_idx}_{rect_idx}.png"
                         svg_path = td_path / f"condimg_{img_idx}_{rect_idx}.svg"
-                        source_img = extracted_image
+                        transformed_image = (
+                            image_transform.a < 0 or image_transform.d < 0
+                            or abs(image_transform.b) > 1e-9 or abs(image_transform.c) > 1e-9
+                        )
+                        # Raw embedded pixels do not include the placement matrix.
+                        # Render transformed images in page coordinates exactly once.
+                        source_img = None if transformed_image else extracted_image
                         if source_img is None:
                             pix_scale = 6.0 if is_header_band else 4.0
                             pix = page.get_pixmap(matrix=fitz.Matrix(pix_scale, pix_scale), clip=rect, alpha=False)
@@ -5104,8 +5110,6 @@ def _extract_small_condition_image_polylines_from_pdf(
                                     full_width_px = max(1, int(source_img.size[0]))
                                     full_height_px = max(1, int(source_img.size[1]))
                                     source_img = source_img.crop(crop_box)
-                                    full_width_px = max(1, int(extracted_image.size[0] if extracted_image is not None else source_img.size[0]))
-                                    full_height_px = max(1, int(extracted_image.size[1] if extracted_image is not None else source_img.size[1]))
                                     rect_w_mm = max(0.0, float(x1_mm) - float(x0_mm))
                                     rect_h_mm = max(0.0, float(y1_mm) - float(y0_mm))
                                     image_x0_mm = float(x0_mm) + rect_w_mm * (float(crop_x0) / float(full_width_px))
@@ -5139,7 +5143,7 @@ def _extract_small_condition_image_polylines_from_pdf(
                             pts = list(getattr(item, "points", []) or [])
                             if len(pts) >= 2:
                                 poly = [(float(x), float(y)) for x, y in pts]
-                                if is_nachert_a4_header:
+                                if is_nachert_a4_header and not transformed_image:
                                     poly = [
                                         (float(x), float(image_y0_mm) + float(image_y1_mm) - float(y))
                                         for x, y in poly
@@ -5154,7 +5158,7 @@ def _extract_small_condition_image_polylines_from_pdf(
                                         continue
                                 out.append(poly)
                                 added += 1
-                        if is_nachert_a4_header:
+                        if is_nachert_a4_header and not transformed_image:
                             for poly in _nachert_a4_header_badge_polylines(
                                 image_x0_mm=float(image_x0_mm),
                                 image_y0_mm=float(image_y0_mm),

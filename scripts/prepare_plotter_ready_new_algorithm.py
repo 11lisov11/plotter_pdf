@@ -2406,6 +2406,81 @@ def _apply_a4_left_stamp_person_alignment(line: dict[str, Any]) -> dict[str, Any
     return patched
 
 
+def _recover_source_symbol_glyphs(font, source_pdf: Path, text_lines, logger) -> None:
+    """Recover unsupported CAD symbols as centerlines, never outline fallbacks."""
+    import numpy as np
+
+    needed = {char for line in text_lines for char in _lff_line_text(line)
+              if not char.isspace() and lff_text._glyph_for(font, char) is None}
+    if not needed:
+        return
+    with fitz.open(source_pdf) as doc:
+        page = doc[0]
+        for block in page.get_text('rawdict').get('blocks', []):
+            for line in block.get('lines', []):
+                for span in line.get('spans', []):
+                    for item in span.get('chars', []):
+                        char = item.get('c', '')
+                        if char not in needed:
+                            continue
+                        font_name = str(span.get('font', ''))
+                        source_font = None
+                        if font_name.casefold() == 'symbol':
+                            source_font = fitz.Font('symbol')
+                        elif font_name.casefold() == 'zapfdingbats':
+                            source_font = fitz.Font('zapfdingbats')
+                        else:
+                            key = re.sub(r'[^a-z0-9]', '', font_name.casefold())
+                            for info in page.get_fonts():
+                                embedded_name = str(info[3]).split('+')[-1]
+                                if re.sub(r'[^a-z0-9]', '', embedded_name.casefold()) != key:
+                                    continue
+                                buffer = doc.extract_font(int(info[0]))[3]
+                                if buffer:
+                                    source_font = fitz.Font(fontbuffer=buffer)
+                                    break
+                        if source_font is None or not source_font.has_glyph(ord(char)):
+                            continue
+                        # A character's PDF bbox can overlap its neighbours. Render
+                        # the glyph alone in its original font rather than cropping
+                        # that bbox and accidentally tracing adjacent characters.
+                        isolated = fitz.open()
+                        try:
+                            glyph_page = isolated.new_page(width=256, height=256)
+                            glyph_page.insert_font(fontname='SourceSymbol', fontbuffer=source_font.buffer)
+                            glyph_page.insert_text((64, 160), char, fontsize=64, fontname='SourceSymbol')
+                            pix = glyph_page.get_pixmap(matrix=fitz.Matrix(2, 2), alpha=False)
+                        finally:
+                            isolated.close()
+                        pixels = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.height, pix.width, pix.n)
+                        mask = (pixels[:, :, :3].min(axis=2) < 180).astype(np.uint8) * 255
+                        skeleton = backend._skeletonize_binary(mask)
+                        traces = backend._trace_skeleton_paths_greedy(skeleton)
+                        traces = [trace for trace in traces if len(trace) >= 2]
+                        points = [point for trace in traces for point in trace]
+                        if not points:
+                            continue
+                        x0 = min(x for x, y in points)
+                        y0 = min(y for x, y in points)
+                        y1 = max(y for x, y in points)
+                        unit = (lff_text.FONT_EM_MAX - lff_text.FONT_EM_MIN) / max(1, y1 - y0)
+                        polys = []
+                        for trace in traces:
+                            poly = []
+                            for x, y in trace:
+                                fy = lff_text.FONT_EM_MAX - (y - y0) * unit
+                                # Undo the source italic shear before the LFF renderer adds it.
+                                fx = (x - x0) * unit - (fy - lff_text.FONT_EM_MIN) * LFF_SHEAR
+                                poly.append((fx, fy))
+                            polys.append(poly)
+                        xs = [x for poly in polys for x, y in poly]
+                        font.glyphs[char] = lff_text.Glyph(char, polys, min(xs), max(xs))
+                        needed.remove(char)
+                        logger(f'Source symbol recovered as single-line strokes: {char!r}.')
+                        if not needed:
+                            return
+
+
 def _make_lff_opengost_text_strokes(
     text_lines: list[dict[str, Any]],
     page_w_mm: float,
@@ -2416,12 +2491,15 @@ def _make_lff_opengost_text_strokes(
     center_a3_top_left_title: bool = False,
     normalize_dimension_text: bool = False,
     table_rules: list[HorizontalRule] | None = None,
+    source_pdf: Path | None = None,
 ) -> tuple[list[Polyline], list[dict[str, Any]], set[str]]:
     if use_stamp_overrides:
         _install_stamp_role_cell_overrides()
     if not LFF_FONT_PATH.exists():
         return [], [], {"LFF_FONT_UNAVAILABLE"}
     font = lff_text.load_lff_font(LFF_FONT_PATH)
+    if source_pdf is not None:
+        _recover_source_symbol_glyphs(font, source_pdf, text_lines, logger)
     strokes: list[Polyline] = []
     accepted: list[dict[str, Any]] = []
     missing: set[str] = set()
@@ -2927,7 +3005,7 @@ def _build_clean_source_opengost_source(
     text_lines_for_cleanup, _cleanup_lines_found, _cleanup_lines_skipped = _text_lines_for_source(source_pdf)
     geometry = _remove_existing_text_geometry(geometry, text_lines_for_cleanup, logs.append)
     is_specification = _is_new_algorithm_specification(source_pdf, geometry)
-    if not is_specification:
+    if not is_specification and _is_computer_graphics_mode(settings):
         geometry = _strip_top_service_designation_geometry(geometry, logs)
     if is_specification and text_lines_for_cleanup:
         geometry = _snap_specification_table_grid_polylines(geometry, logs)
@@ -2951,8 +3029,10 @@ def _build_clean_source_opengost_source(
         page_w_mm,
         page_h_mm,
         logs.append,
+        use_stamp_overrides=_is_computer_graphics_mode(settings),
         normalize_dimension_text=(_is_computer_graphics_mode(settings) and not is_specification),
-        table_rules=table_rules,
+        table_rules=table_rules if _is_computer_graphics_mode(settings) else None,
+        source_pdf=source_pdf,
     )
     text_lines_found = _cleanup_lines_found
     text_lines_skipped = _cleanup_lines_skipped
@@ -3102,7 +3182,7 @@ def _build_source(pack: Path, source_pdf: Path, report: dict[str, Any], settings
         geometry = _snap_specification_table_grid_polylines(geometry, logs)
     else:
         geometry = _remove_existing_text_geometry(geometry, text_lines, logs.append)
-    if not is_specification:
+    if not is_specification and _is_computer_graphics_mode(settings):
         geometry = _strip_top_service_designation_geometry(geometry, logs)
     table_rules = _horizontal_table_rules_from_polylines(geometry)
     if is_specification:
@@ -3113,10 +3193,11 @@ def _build_source(pack: Path, source_pdf: Path, report: dict[str, Any], settings
         page_w_mm,
         page_h_mm,
         logs.append,
-        use_stamp_overrides=not dense_onepass_source,
+        use_stamp_overrides=not dense_onepass_source and _is_computer_graphics_mode(settings),
         center_a3_top_left_title=bool(dense_onepass_source and _is_computer_graphics_mode(settings)),
         normalize_dimension_text=(_is_computer_graphics_mode(settings) and not is_specification),
-        table_rules=table_rules,
+        table_rules=table_rules if _is_computer_graphics_mode(settings) else None,
+        source_pdf=source_pdf,
     )
     if dense_onepass_source:
         logs.append("A3 dense text placement: A4 stamp cell overrides disabled; using real PDF text bbox coordinates.")
