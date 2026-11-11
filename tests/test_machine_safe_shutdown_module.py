@@ -13,7 +13,8 @@ def test_safe_park_release_lifts_homes_then_releases() -> None:
     )
     release = commands.index("$1=0")
 
-    assert commands[:3] == ["$X", "$1=255", "G90"]
+    assert commands[:4] == ["$X", "$1=255", "G21", "G90"]
+    assert commands.index("G21") < lift_before_home
     assert lift_before_home < home < lift_after_home < release
     assert commands[-1] == "$1=0"
 

@@ -1,0 +1,139 @@
+{
+  "schema": "small-sheet-stitch/v1",
+  "machine_profile": "a4_desktop",
+  "paper_registration": "a4_top_at_y_min_v1",
+  "sheet_format": "A2",
+  "sheet_size_mm": [
+    594.0,
+    420.0
+  ],
+  "scale": 1.0,
+  "config": {
+    "work_width": 180.0,
+    "work_height": 280.0,
+    "work_min_y": -285.0,
+    "overlap_mm": 5.0,
+    "stroke_overlap_mm": 0.3,
+    "mark_radius_mm": 1.2,
+    "mark_clearance_mm": 0.8,
+    "z_up": 0.0,
+    "z_down": 11.9,
+    "z_feed": 2500.0,
+    "feed_draw": 2200.0,
+    "feed_travel": 15000.0
+  },
+  "grid_columns_rows": [
+    4,
+    2
+  ],
+  "full_pass_count": 8,
+  "source_grid_pass_count": 8,
+  "empty_grid_slots_skipped": 0,
+  "trial_first_two": true,
+  "initialize": {
+    "file": "initialize.nc",
+    "sha256": "67906ba7b15020c5a5f21824d4c2c39492c4fc2aefa95b56ad4821a42b1674da"
+  },
+  "tiles": [
+    {
+      "number": 1,
+      "row": 1,
+      "column": 1,
+      "origin_mm": [
+        0.0,
+        0.0
+      ],
+      "window_mm": [
+        0.0,
+        0.0,
+        180.0,
+        280.0
+      ],
+      "draw_rect_mm": [
+        0.0,
+        0.0,
+        177.65,
+        277.65
+      ],
+      "file": "pass_01.nc",
+      "sha256": "d303913aa5c9c5ab9098f92ce43eeb0c44ddc7c248647f6daab1455af47c7ae8",
+      "end_park_mm": [
+        2.5,
+        -273.0
+      ],
+      "pen_down_paths": 28
+    },
+    {
+      "number": 2,
+      "row": 1,
+      "column": 2,
+      "origin_mm": [
+        175.0,
+        0.0
+      ],
+      "window_mm": [
+        175.0,
+        0.0,
+        355.0,
+        280.0
+      ],
+      "draw_rect_mm": [
+        177.35,
+        0.0,
+        352.65,
+        277.65
+      ],
+      "file": "pass_02.nc",
+      "sha256": "18992c2e0cd1a3978d2e7a2cde93736e049560bae52f0e8ce2fb68c5ea7e6736",
+      "end_park_mm": [
+        0.0,
+        0.0
+      ],
+      "pen_down_paths": 26
+    }
+  ],
+  "transitions": [
+    {
+      "from_pass": 1,
+      "to_pass": 2,
+      "marks_paper_mm": [
+        [
+          177.5,
+          12.0
+        ],
+        [
+          177.5,
+          268.0
+        ]
+      ],
+      "previous_machine_mm": [
+        [
+          177.5,
+          -273.0
+        ],
+        [
+          177.5,
+          -17.0
+        ]
+      ],
+      "next_machine_mm": [
+        [
+          2.5,
+          -273.0
+        ],
+        [
+          2.5,
+          -17.0
+        ]
+      ],
+      "check_secondary": {
+        "file": "align_02_B.nc",
+        "sha256": "461ff614009c4a4adce9c05188d96fefe023c6d2496ffb0b8cf83b950cdf2efa"
+      },
+      "return_primary": {
+        "file": "align_02_A.nc",
+        "sha256": "6ef89ad2061fc54da63e90f2abec2349310311a2f27171e1ce79e8604594b011"
+      }
+    }
+  ]
+}

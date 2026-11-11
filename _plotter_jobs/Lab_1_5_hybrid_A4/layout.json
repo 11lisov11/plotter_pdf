@@ -1,0 +1,551 @@
+{
+  "source": "C:\\Users\\USER\\Downloads\\Telegram Desktop\\Пример лабораторных работ 1-5..docx",
+  "template": "C:\\plotter_pdf\\_plotter_jobs\\Lab_1_5_hybrid_A4\\Печатный шаблон ЛР 1-5.docx",
+  "page_count": 22,
+  "machine": "a4_desktop",
+  "scale": 1.0,
+  "paper_mm": [
+    210,
+    297
+  ],
+  "calibrated_paper_bounds_mm": [
+    15,
+    8.5,
+    195,
+    288.5
+  ],
+  "figures": [
+    {
+      "id": 1,
+      "lab": 1,
+      "page": 2,
+      "title": "Схема дизель-генераторной установки",
+      "rect_mm": [
+        77.04666451348199,
+        36.56568366156684,
+        147.97264319525823,
+        105.3573503282335
+      ],
+      "roi": [
+        30,
+        22,
+        255,
+        259
+      ],
+      "nc": "C:\\plotter_pdf\\_plotter_jobs\\Lab_1_5_hybrid_A4\\Рисунки\\figure_01\\plotter.nc",
+      "path_count": 31,
+      "skeleton_coverage": 1.0,
+      "unexpected_draw_ratio": 0.0,
+      "reconstruction": "pencil_structural_v4",
+      "drawing_style": "neat_single_pen_v1"
+    },
+    {
+      "id": 2,
+      "lab": 1,
+      "page": 3,
+      "title": "Топливная система низкого давления",
+      "rect_mm": [
+        50.05916451348198,
+        31.25638241238064,
+        174.96013242933483,
+        109.30846574571396
+      ],
+      "roi": [
+        5,
+        2,
+        471,
+        220
+      ],
+      "nc": "C:\\plotter_pdf\\_plotter_jobs\\Lab_1_5_hybrid_A4\\Рисунки\\figure_02\\plotter.nc",
+      "path_count": 130,
+      "skeleton_coverage": 1.0,
+      "unexpected_draw_ratio": 0.0,
+      "reconstruction": "pencil_structural_v4",
+      "drawing_style": "neat_single_pen_v1"
+    },
+    {
+      "id": 3,
+      "lab": 1,
+      "page": 3,
+      "title": "Топливный насос высокого давления",
+      "rect_mm": [
+        30.003751076592337,
+        144.03944227430554,
+        134.00263027615017,
+        203.83527560763886
+      ],
+      "roi": [
+        8,
+        8,
+        145,
+        225
+      ],
+      "nc": "C:\\plotter_pdf\\_plotter_jobs\\Lab_1_5_hybrid_A4\\Рисунки\\figure_03\\plotter.nc",
+      "path_count": 440,
+      "skeleton_coverage": 1.0,
+      "unexpected_draw_ratio": 0.0,
+      "reconstruction": "pencil_structural_v4",
+      "drawing_style": "neat_single_pen_v1"
+    },
+    {
+      "id": 4,
+      "lab": 1,
+      "page": 4,
+      "title": "Масляная система",
+      "rect_mm": [
+        52.84611218770345,
+        93.8215126885308,
+        172.1908247205946,
+        209.72664727105033
+      ],
+      "roi": [
+        3,
+        2,
+        432,
+        332
+      ],
+      "nc": "C:\\plotter_pdf\\_plotter_jobs\\Lab_1_5_hybrid_A4\\Рисунки\\figure_04\\plotter.nc",
+      "path_count": 69,
+      "skeleton_coverage": 1.0,
+      "unexpected_draw_ratio": 0.0,
+      "reconstruction": "pencil_structural_v4",
+      "drawing_style": "neat_single_pen_v1"
+    },
+    {
+      "id": 5,
+      "lab": 1,
+      "page": 5,
+      "title": "Водяная система",
+      "rect_mm": [
+        54.55708118014865,
+        82.46208546956379,
+        170.46221576266817,
+        183.81513671874998
+      ],
+      "roi": [
+        2,
+        2,
+        420,
+        270
+      ],
+      "nc": "C:\\plotter_pdf\\_plotter_jobs\\Lab_1_5_hybrid_A4\\Рисунки\\figure_05\\plotter.nc",
+      "path_count": 73,
+      "skeleton_coverage": 1.0,
+      "unexpected_draw_ratio": 0.0,
+      "reconstruction": "pencil_structural_v4",
+      "drawing_style": "neat_single_pen_v1"
+    },
+    {
+      "id": 6,
+      "lab": 1,
+      "page": 6,
+      "title": "Газотурбинный наддув",
+      "rect_mm": [
+        53.63986218770344,
+        85.24902237786186,
+        171.3970747205946,
+        175.2249956766764
+      ],
+      "roi": [
+        3,
+        2,
+        420,
+        327
+      ],
+      "nc": "C:\\plotter_pdf\\_plotter_jobs\\Lab_1_5_hybrid_A4\\Рисунки\\figure_06\\plotter.nc",
+      "path_count": 129,
+      "skeleton_coverage": 1.0,
+      "unexpected_draw_ratio": 0.0,
+      "reconstruction": "pencil_structural_v4",
+      "drawing_style": "neat_single_pen_v1"
+    },
+    {
+      "id": 7,
+      "lab": 2,
+      "page": 8,
+      "title": "Генератор постоянного тока",
+      "rect_mm": [
+        65.01694552103677,
+        189.07153422037757,
+        160.01999138726126,
+        262.9079188028971
+      ],
+      "roi": [
+        20,
+        2,
+        358,
+        194
+      ],
+      "nc": "C:\\plotter_pdf\\_plotter_jobs\\Lab_1_5_hybrid_A4\\Рисунки\\figure_07\\plotter.nc",
+      "path_count": 100,
+      "skeleton_coverage": 1.0,
+      "unexpected_draw_ratio": 0.0,
+      "reconstruction": "pencil_structural_v4",
+      "drawing_style": "neat_single_pen_v1"
+    },
+    {
+      "id": 8,
+      "lab": 2,
+      "page": 10,
+      "title": "Тяговый электродвигатель постоянного тока",
+      "rect_mm": [
+        42.509722222222216,
+        169.421807691786,
+        139.1002734714084,
+        269.9811089409722
+      ],
+      "roi": [
+        2,
+        2,
+        364,
+        205
+      ],
+      "nc": "C:\\plotter_pdf\\_plotter_jobs\\Lab_1_5_hybrid_A4\\Рисунки\\figure_08\\plotter.nc",
+      "path_count": 282,
+      "skeleton_coverage": 1.0,
+      "unexpected_draw_ratio": 0.0,
+      "reconstruction": "pencil_structural_v4",
+      "drawing_style": "neat_single_pen_v1"
+    },
+    {
+      "id": 9,
+      "lab": 2,
+      "page": 11,
+      "title": "Тяговый электродвигатель переменного тока",
+      "rect_mm": [
+        61.048195521036774,
+        105.1809829711914,
+        163.98874138726126,
+        192.24653422037758
+      ],
+      "roi": [
+        2,
+        2,
+        388,
+        215
+      ],
+      "nc": "C:\\plotter_pdf\\_plotter_jobs\\Lab_1_5_hybrid_A4\\Рисунки\\figure_09\\plotter.nc",
+      "path_count": 364,
+      "skeleton_coverage": 1.0,
+      "unexpected_draw_ratio": 0.0,
+      "reconstruction": "pencil_structural_v4",
+      "drawing_style": "neat_single_pen_v1"
+    },
+    {
+      "id": 10,
+      "lab": 3,
+      "page": 14,
+      "title": "Главная рама тепловоза",
+      "rect_mm": [
+        61.96541451348198,
+        26.51151699490017,
+        163.05388242933483,
+        77.5761003282335
+      ],
+      "roi": [
+        20,
+        2,
+        381,
+        141
+      ],
+      "nc": "C:\\plotter_pdf\\_plotter_jobs\\Lab_1_5_hybrid_A4\\Рисунки\\figure_10\\plotter.nc",
+      "path_count": 54,
+      "skeleton_coverage": 1.0,
+      "unexpected_draw_ratio": 0.0,
+      "reconstruction": "pencil_structural_v4",
+      "drawing_style": "neat_single_pen_v1"
+    },
+    {
+      "id": 11,
+      "lab": 3,
+      "page": 14,
+      "title": "Кузов капотного типа",
+      "rect_mm": [
+        52.44041451348198,
+        97.87846789889865,
+        172.57888242933484,
+        161.11388456556531
+      ],
+      "roi": [
+        35,
+        7,
+        340,
+        113
+      ],
+      "nc": "C:\\plotter_pdf\\_plotter_jobs\\Lab_1_5_hybrid_A4\\Рисунки\\figure_11\\plotter.nc",
+      "path_count": 316,
+      "skeleton_coverage": 1.0,
+      "unexpected_draw_ratio": 0.0,
+      "reconstruction": "pencil_structural_v4",
+      "drawing_style": "neat_single_pen_v1"
+    },
+    {
+      "id": 12,
+      "lab": 3,
+      "page": 14,
+      "title": "Кузов закрытого типа",
+      "rect_mm": [
+        51.523195521036776,
+        181.41625213623044,
+        173.51374138726126,
+        254.45888671874997
+      ],
+      "roi": [
+        3,
+        13,
+        420,
+        195
+      ],
+      "nc": "C:\\plotter_pdf\\_plotter_jobs\\Lab_1_5_hybrid_A4\\Рисунки\\figure_12\\plotter.nc",
+      "path_count": 251,
+      "skeleton_coverage": 1.0,
+      "unexpected_draw_ratio": 0.0,
+      "reconstruction": "pencil_structural_v4",
+      "drawing_style": "neat_single_pen_v1"
+    },
+    {
+      "id": 13,
+      "lab": 3,
+      "page": 15,
+      "title": "Тележка тепловоза",
+      "rect_mm": [
+        72.16069552103677,
+        26.511511611938474,
+        152.87625215318465,
+        97.43748491075303
+      ],
+      "roi": [
+        2,
+        2,
+        304,
+        157
+      ],
+      "nc": "C:\\plotter_pdf\\_plotter_jobs\\Lab_1_5_hybrid_A4\\Рисунки\\figure_13\\plotter.nc",
+      "path_count": 127,
+      "skeleton_coverage": 1.0,
+      "unexpected_draw_ratio": 0.0,
+      "reconstruction": "pencil_structural_v4",
+      "drawing_style": "neat_single_pen_v1"
+    },
+    {
+      "id": 14,
+      "page": 15,
+      "lab": 3,
+      "title": "Ударно-тяговое устройство",
+      "rect_mm": [
+        30.003751076592337,
+        111.21345282660589,
+        194.83916236029728,
+        197.9967861599392
+      ],
+      "roi": [
+        0,
+        0,
+        654,
+        344
+      ],
+      "nc": "C:\\plotter_pdf\\_plotter_jobs\\Lab_1_5_hybrid_A4\\Рисунки\\figure_14\\plotter.nc",
+      "kind": "technical_reference",
+      "reference_pdf": "C:\\Users\\USER\\Downloads\\Telegram Desktop\\Пример лабораторных работ 1-5..pdf",
+      "path_count": 2452,
+      "skeleton_coverage": 1.0,
+      "unexpected_draw_ratio": 0.0,
+      "reconstruction": "pencil_structural_v4",
+      "drawing_style": "neat_single_pen_v1"
+    },
+    {
+      "id": 15,
+      "page": 17,
+      "lab": 4,
+      "title": "Кислотная аккумуляторная батарея",
+      "rect_mm": [
+        91.7751367357042,
+        172.8437456766764,
+        133.26180555555555,
+        245.65707685682506
+      ],
+      "roi": [
+        0,
+        0,
+        327,
+        573
+      ],
+      "nc": "C:\\plotter_pdf\\_plotter_jobs\\Lab_1_5_hybrid_A4\\Рисунки\\figure_15\\plotter.nc",
+      "kind": "technical_reference",
+      "reference_pdf": "C:\\Users\\USER\\Downloads\\Telegram Desktop\\Пример лабораторных работ 1-5..pdf",
+      "path_count": 1665,
+      "skeleton_coverage": 1.0,
+      "unexpected_draw_ratio": 0.0,
+      "reconstruction": "pencil_structural_v4",
+      "drawing_style": "neat_single_pen_v1"
+    },
+    {
+      "id": 16,
+      "page": 18,
+      "lab": 4,
+      "title": "Электромагнитный контактор",
+      "rect_mm": [
+        72.83097114562987,
+        142.5401151869032,
+        152.20597652859158,
+        222.4266472710503
+      ],
+      "roi": [
+        0,
+        0,
+        408,
+        462
+      ],
+      "nc": "C:\\plotter_pdf\\_plotter_jobs\\Lab_1_5_hybrid_A4\\Рисунки\\figure_16\\plotter.nc",
+      "kind": "technical_reference",
+      "reference_pdf": "C:\\Users\\USER\\Downloads\\Telegram Desktop\\Пример лабораторных работ 1-5..pdf",
+      "path_count": 1147,
+      "skeleton_coverage": 1.0,
+      "unexpected_draw_ratio": 0.0,
+      "reconstruction": "pencil_structural_v4",
+      "drawing_style": "neat_single_pen_v1"
+    },
+    {
+      "id": 17,
+      "page": 19,
+      "lab": 4,
+      "title": "Электропневматический контактор",
+      "rect_mm": [
+        79.5690288543701,
+        124.40735032823349,
+        145.4502734714084,
+        194.25735032823349
+      ],
+      "roi": [
+        0,
+        0,
+        249,
+        264
+      ],
+      "nc": "C:\\plotter_pdf\\_plotter_jobs\\Lab_1_5_hybrid_A4\\Рисунки\\figure_17\\plotter.nc",
+      "kind": "technical_reference",
+      "reference_pdf": "C:\\Users\\USER\\Downloads\\Telegram Desktop\\Пример лабораторных работ 1-5..pdf",
+      "path_count": 1018,
+      "skeleton_coverage": 1.0,
+      "unexpected_draw_ratio": 0.0,
+      "reconstruction": "pencil_structural_v4",
+      "drawing_style": "neat_single_pen_v1"
+    }
+  ],
+  "jobs": [
+    {
+      "page": 2,
+      "figures": [
+        1
+      ],
+      "nc": "C:\\plotter_pdf\\_plotter_jobs\\Lab_1_5_hybrid_A4\\Страницы для плоттера\\page_02\\plotter.nc",
+      "path_count": 31
+    },
+    {
+      "page": 3,
+      "figures": [
+        2,
+        3
+      ],
+      "nc": "C:\\plotter_pdf\\_plotter_jobs\\Lab_1_5_hybrid_A4\\Страницы для плоттера\\page_03\\plotter.nc",
+      "path_count": 570
+    },
+    {
+      "page": 4,
+      "figures": [
+        4
+      ],
+      "nc": "C:\\plotter_pdf\\_plotter_jobs\\Lab_1_5_hybrid_A4\\Страницы для плоттера\\page_04\\plotter.nc",
+      "path_count": 69
+    },
+    {
+      "page": 5,
+      "figures": [
+        5
+      ],
+      "nc": "C:\\plotter_pdf\\_plotter_jobs\\Lab_1_5_hybrid_A4\\Страницы для плоттера\\page_05\\plotter.nc",
+      "path_count": 73
+    },
+    {
+      "page": 6,
+      "figures": [
+        6
+      ],
+      "nc": "C:\\plotter_pdf\\_plotter_jobs\\Lab_1_5_hybrid_A4\\Страницы для плоттера\\page_06\\plotter.nc",
+      "path_count": 129
+    },
+    {
+      "page": 8,
+      "figures": [
+        7
+      ],
+      "nc": "C:\\plotter_pdf\\_plotter_jobs\\Lab_1_5_hybrid_A4\\Страницы для плоттера\\page_08\\plotter.nc",
+      "path_count": 100
+    },
+    {
+      "page": 10,
+      "figures": [
+        8
+      ],
+      "nc": "C:\\plotter_pdf\\_plotter_jobs\\Lab_1_5_hybrid_A4\\Страницы для плоттера\\page_10\\plotter.nc",
+      "path_count": 282
+    },
+    {
+      "page": 11,
+      "figures": [
+        9
+      ],
+      "nc": "C:\\plotter_pdf\\_plotter_jobs\\Lab_1_5_hybrid_A4\\Страницы для плоттера\\page_11\\plotter.nc",
+      "path_count": 364
+    },
+    {
+      "page": 14,
+      "figures": [
+        10,
+        11,
+        12
+      ],
+      "nc": "C:\\plotter_pdf\\_plotter_jobs\\Lab_1_5_hybrid_A4\\Страницы для плоттера\\page_14\\plotter.nc",
+      "path_count": 621
+    },
+    {
+      "page": 15,
+      "figures": [
+        13,
+        14
+      ],
+      "nc": "C:\\plotter_pdf\\_plotter_jobs\\Lab_1_5_hybrid_A4\\Страницы для плоттера\\page_15\\plotter.nc",
+      "path_count": 2579
+    },
+    {
+      "page": 17,
+      "figures": [
+        15
+      ],
+      "nc": "C:\\plotter_pdf\\_plotter_jobs\\Lab_1_5_hybrid_A4\\Страницы для плоттера\\page_17\\plotter.nc",
+      "path_count": 1665
+    },
+    {
+      "page": 18,
+      "figures": [
+        16
+      ],
+      "nc": "C:\\plotter_pdf\\_plotter_jobs\\Lab_1_5_hybrid_A4\\Страницы для плоттера\\page_18\\plotter.nc",
+      "path_count": 1147
+    },
+    {
+      "page": 19,
+      "figures": [
+        17
+      ],
+      "nc": "C:\\plotter_pdf\\_plotter_jobs\\Lab_1_5_hybrid_A4\\Страницы для плоттера\\page_19\\plotter.nc",
+      "path_count": 1018
+    }
+  ],
+  "reconstruction": "pencil_structural_v4",
+  "approved": false,
+  "technical_reference_pdf": "C:\\Users\\USER\\Downloads\\Telegram Desktop\\Пример лабораторных работ 1-5..pdf",
+  "drawing_style": "neat_single_pen_v1",
+  "obsolete_description_removed": true,
+  "paper_registration": "a4_top_at_y_min_v1"
+}

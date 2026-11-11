@@ -1,0 +1,526 @@
+{
+  "schema": "small-sheet-stitch/v1",
+  "machine_profile": "a4_desktop",
+  "paper_registration": "a4_top_at_y_min_v1",
+  "sheet_format": "A1",
+  "sheet_size_mm": [
+    841.0222222222222,
+    594.0777777777778
+  ],
+  "scale": 1.0,
+  "config": {
+    "work_width": 180.0,
+    "work_height": 280.0,
+    "work_min_y": -285.0,
+    "overlap_mm": 5.0,
+    "stroke_overlap_mm": 0.3,
+    "mark_radius_mm": 0.75,
+    "mark_clearance_mm": 0.35,
+    "z_up": 0.0,
+    "z_down": 11.9,
+    "z_feed": 2500.0,
+    "feed_draw": 2200.0,
+    "feed_travel": 15000.0
+  },
+  "grid_columns_rows": [
+    5,
+    3
+  ],
+  "full_pass_count": 7,
+  "source_grid_pass_count": 15,
+  "empty_grid_slots_skipped": 9,
+  "trial_first_two": false,
+  "initialize": {
+    "file": "initialize.nc",
+    "sha256": "67906ba7b15020c5a5f21824d4c2c39492c4fc2aefa95b56ad4821a42b1674da"
+  },
+  "tiles": [
+    {
+      "number": 1,
+      "row": 1,
+      "column": 2,
+      "origin_mm": [
+        175.0,
+        0.0
+      ],
+      "window_mm": [
+        175.0,
+        0.0,
+        355.0,
+        280.0
+      ],
+      "draw_rect_mm": [
+        177.35,
+        0.0,
+        352.65,
+        277.65
+      ],
+      "file": "pass_01.nc",
+      "sha256": "53664f1ff454ea74c4342ca33e5906ad9dc670c2f00233b388ffeb7f3d1204ca",
+      "end_park_mm": [
+        12.0,
+        -282.5
+      ],
+      "pen_down_paths": 227
+    },
+    {
+      "number": 2,
+      "row": 2,
+      "column": 2,
+      "origin_mm": [
+        175.0,
+        275.0
+      ],
+      "window_mm": [
+        175.0,
+        275.0,
+        355.0,
+        555.0
+      ],
+      "draw_rect_mm": [
+        177.35,
+        277.35,
+        352.65,
+        552.65
+      ],
+      "file": "pass_02.nc",
+      "sha256": "b20f591511405bc4409d37d59875ac36a90eb41ace581d4a2693493815c71c72",
+      "end_park_mm": [
+        2.5,
+        -271.0
+      ],
+      "pen_down_paths": 181
+    },
+    {
+      "number": 3,
+      "row": 2,
+      "column": 3,
+      "origin_mm": [
+        350.0,
+        275.0
+      ],
+      "window_mm": [
+        350.0,
+        275.0,
+        530.0,
+        555.0
+      ],
+      "draw_rect_mm": [
+        352.35,
+        277.35,
+        527.65,
+        552.65
+      ],
+      "file": "pass_03.nc",
+      "sha256": "40155debaba04be4566c21fa29569536cec8c6e336e67beb3bc02fc85b84ca49",
+      "end_park_mm": [
+        16.0,
+        -7.5
+      ],
+      "pen_down_paths": 160
+    },
+    {
+      "number": 4,
+      "row": 1,
+      "column": 3,
+      "origin_mm": [
+        350.0,
+        0.0
+      ],
+      "window_mm": [
+        350.0,
+        0.0,
+        530.0,
+        280.0
+      ],
+      "draw_rect_mm": [
+        352.35,
+        0.0,
+        527.65,
+        277.65
+      ],
+      "file": "pass_04.nc",
+      "sha256": "c7ed0da9f186c7d92e8a103bc11a6e168d84a697d4da10baab3a5a799a41f395",
+      "end_park_mm": [
+        2.5,
+        -273.0
+      ],
+      "pen_down_paths": 246
+    },
+    {
+      "number": 5,
+      "row": 1,
+      "column": 4,
+      "origin_mm": [
+        525.0,
+        0.0
+      ],
+      "window_mm": [
+        525.0,
+        0.0,
+        705.0,
+        280.0
+      ],
+      "draw_rect_mm": [
+        527.35,
+        0.0,
+        702.65,
+        277.65
+      ],
+      "file": "pass_05.nc",
+      "sha256": "d54913d920a2e3f6971c9a9ce9829292f8dd54cbb4ad415d2ba0c1fdc2438e6c",
+      "end_park_mm": [
+        12.0,
+        -282.5
+      ],
+      "pen_down_paths": 13
+    },
+    {
+      "number": 6,
+      "row": 2,
+      "column": 4,
+      "origin_mm": [
+        525.0,
+        275.0
+      ],
+      "window_mm": [
+        525.0,
+        275.0,
+        705.0,
+        555.0
+      ],
+      "draw_rect_mm": [
+        527.35,
+        277.35,
+        702.65,
+        552.65
+      ],
+      "file": "pass_06.nc",
+      "sha256": "5b21fb51436583b96caf71aef754403414555661c0b5618406e0fe0de57eae30",
+      "end_park_mm": [
+        1.9617481825086998,
+        -64.6777777777778
+      ],
+      "pen_down_paths": 26
+    },
+    {
+      "number": 7,
+      "row": 0,
+      "column": 0,
+      "origin_mm": [
+        655.956295437283,
+        314.0777777777778
+      ],
+      "window_mm": [
+        655.956295437283,
+        314.0777777777778,
+        835.956295437283,
+        594.0777777777778
+      ],
+      "draw_rect_mm": [
+        655.956295437283,
+        535.5766999226983,
+        835.956295437283,
+        589.0824323866102
+      ],
+      "file": "pass_07.nc",
+      "sha256": "905cbc67e79e19c5b1e2eb7ea2d97db8c7ba21fc2622d8f3085a67c7047426a8",
+      "role": "title_block",
+      "stamp_bbox_mm": [
+        655.956295437283,
+        535.5766999226983,
+        835.956295437283,
+        589.0824323866102
+      ],
+      "stamp_scale": 0.9729906855283417,
+      "end_park_mm": [
+        0,
+        0
+      ],
+      "pen_down_paths": 622
+    }
+  ],
+  "transitions": [
+    {
+      "from_pass": 1,
+      "to_pass": 2,
+      "marks_paper_mm": [
+        [
+          187.0,
+          277.5
+        ],
+        [
+          343.0,
+          277.5
+        ]
+      ],
+      "previous_machine_mm": [
+        [
+          12.0,
+          -7.5
+        ],
+        [
+          168.0,
+          -7.5
+        ]
+      ],
+      "next_machine_mm": [
+        [
+          12.0,
+          -282.5
+        ],
+        [
+          168.0,
+          -282.5
+        ]
+      ],
+      "check_secondary": {
+        "file": "align_02_B.nc",
+        "sha256": "b767e74f77864d6ff18bb6176acb608ea005b80ad940f8d2eb0463c2a150179b"
+      },
+      "return_primary": {
+        "file": "align_02_A.nc",
+        "sha256": "e58fa4d6b47b80de26559405ee4ddfede2c82dc26f3ce325df30e8db5411d9bf"
+      }
+    },
+    {
+      "from_pass": 2,
+      "to_pass": 3,
+      "marks_paper_mm": [
+        [
+          352.5,
+          289.0
+        ],
+        [
+          352.5,
+          543.0
+        ]
+      ],
+      "previous_machine_mm": [
+        [
+          177.5,
+          -271.0
+        ],
+        [
+          177.5,
+          -17.0
+        ]
+      ],
+      "next_machine_mm": [
+        [
+          2.5,
+          -271.0
+        ],
+        [
+          2.5,
+          -17.0
+        ]
+      ],
+      "check_secondary": {
+        "file": "align_03_B.nc",
+        "sha256": "461ff614009c4a4adce9c05188d96fefe023c6d2496ffb0b8cf83b950cdf2efa"
+      },
+      "return_primary": {
+        "file": "align_03_A.nc",
+        "sha256": "4d7fdeb23ff7cfff80333ff81358f697686380538ee51251caa9da23643beede"
+      }
+    },
+    {
+      "from_pass": 3,
+      "to_pass": 4,
+      "marks_paper_mm": [
+        [
+          366.0,
+          277.5
+        ],
+        [
+          518.0,
+          277.5
+        ]
+      ],
+      "previous_machine_mm": [
+        [
+          16.0,
+          -282.5
+        ],
+        [
+          168.0,
+          -282.5
+        ]
+      ],
+      "next_machine_mm": [
+        [
+          16.0,
+          -7.5
+        ],
+        [
+          168.0,
+          -7.5
+        ]
+      ],
+      "check_secondary": {
+        "file": "align_04_B.nc",
+        "sha256": "936bd083b2d234a76135766d4ff09f21019bcb21c176b7c04493761e59373a16"
+      },
+      "return_primary": {
+        "file": "align_04_A.nc",
+        "sha256": "e94053b123a92ede4fd6be22f8a4028292a1da285c8d8c6e4b2a83e576c8f381"
+      }
+    },
+    {
+      "from_pass": 4,
+      "to_pass": 5,
+      "marks_paper_mm": [
+        [
+          527.5,
+          12.0
+        ],
+        [
+          527.5,
+          268.0
+        ]
+      ],
+      "previous_machine_mm": [
+        [
+          177.5,
+          -273.0
+        ],
+        [
+          177.5,
+          -17.0
+        ]
+      ],
+      "next_machine_mm": [
+        [
+          2.5,
+          -273.0
+        ],
+        [
+          2.5,
+          -17.0
+        ]
+      ],
+      "check_secondary": {
+        "file": "align_05_B.nc",
+        "sha256": "461ff614009c4a4adce9c05188d96fefe023c6d2496ffb0b8cf83b950cdf2efa"
+      },
+      "return_primary": {
+        "file": "align_05_A.nc",
+        "sha256": "6ef89ad2061fc54da63e90f2abec2349310311a2f27171e1ce79e8604594b011"
+      }
+    },
+    {
+      "from_pass": 5,
+      "to_pass": 6,
+      "marks_paper_mm": [
+        [
+          537.0,
+          277.5
+        ],
+        [
+          693.0,
+          277.5
+        ]
+      ],
+      "previous_machine_mm": [
+        [
+          12.0,
+          -7.5
+        ],
+        [
+          168.0,
+          -7.5
+        ]
+      ],
+      "next_machine_mm": [
+        [
+          12.0,
+          -282.5
+        ],
+        [
+          168.0,
+          -282.5
+        ]
+      ],
+      "check_secondary": {
+        "file": "align_06_B.nc",
+        "sha256": "b767e74f77864d6ff18bb6176acb608ea005b80ad940f8d2eb0463c2a150179b"
+      },
+      "return_primary": {
+        "file": "align_06_A.nc",
+        "sha256": "e58fa4d6b47b80de26559405ee4ddfede2c82dc26f3ce325df30e8db5411d9bf"
+      }
+    },
+    {
+      "from_pass": 6,
+      "to_pass": 7,
+      "marks_paper_mm": [
+        [
+          657.9180436197917,
+          534.4
+        ],
+        [
+          703.0382518174913,
+          534.4
+        ]
+      ],
+      "previous_machine_mm": [
+        [
+          132.91804361979166,
+          -25.600000000000023
+        ],
+        [
+          178.0382518174913,
+          -25.600000000000023
+        ]
+      ],
+      "next_machine_mm": [
+        [
+          1.9617481825086998,
+          -64.6777777777778
+        ],
+        [
+          47.08195638020834,
+          -64.6777777777778
+        ]
+      ],
+      "check_secondary": {
+        "file": "align_07_B.nc",
+        "sha256": "6d58e4445eb626ec04bfa389ce88ae7e1b5e557c15f8688b8640283e6656382d"
+      },
+      "return_primary": {
+        "file": "align_07_A.nc",
+        "sha256": "ce0000abb4cef0aa0baa07b73b1b39aaa1a683ee969cd5598459df1194e6afa2"
+      }
+    }
+  ],
+  "grid_pass_count": 6,
+  "start_window_mm": [
+    175.0,
+    0.0,
+    355.0,
+    280.0
+  ],
+  "empty_passes_removed": true,
+  "frame_removed": true,
+  "title_block": {
+    "original_bbox_mm": [
+      650.9596632215711,
+      534.0914306640625,
+      835.956295437283,
+      589.0824323866102
+    ],
+    "target_bbox_mm": [
+      655.956295437283,
+      535.5766999226983,
+      835.956295437283,
+      589.0824323866102
+    ],
+    "scale": 0.9729906855283417,
+    "width_mm": 180.0,
+    "pass_number": 7,
+    "dedicated_pass": true,
+    "anchor": "original_bottom_right",
+    "drawing_scale": 1.0
+  }
+}

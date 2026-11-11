@@ -1,0 +1,4 @@
+# Registered jobs contain SHA-256 hashes of the exact machine-file bytes.
+# Do not change NC line endings when adding, cloning, or checking out jobs.
+*.nc -text whitespace=cr-at-eol
+*.gcode -text whitespace=cr-at-eol
