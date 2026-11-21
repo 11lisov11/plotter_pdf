@@ -1,0 +1,85 @@
+{
+  "style": "stipple-spirals",
+  "title": "Stipples - spirals",
+  "machine_profile": "a4_desktop",
+  "sheet_format": "A4",
+  "work_area_mm": [
+    0.0,
+    180.0,
+    -285.0,
+    -5.0
+  ],
+  "source_size_px": [
+    736,
+    981
+  ],
+  "processed_size_px": [
+    579,
+    900
+  ],
+  "target_size_mm": [
+    180.0,
+    280.0
+  ],
+  "placement_bounds": [
+    0.0,
+    180.0,
+    -285.0,
+    -5.0
+  ],
+  "feed_draw": 2200,
+  "feed_travel": 15000,
+  "stats": {
+    "polyline_count": 2500,
+    "point_count": 105575,
+    "draw_length_mm": 36480.602,
+    "bounds": [
+      2.3982651233673096,
+      177.95204162597656,
+      -283.30377197265625,
+      -7.269700050354004
+    ],
+    "engine": "plotterfun",
+    "upstream_commit": "faf67d4dadc359a9d5703b0c4e501ea3bbad84d9",
+    "config": {
+      "width": 579,
+      "height": 900,
+      "Inverted": false,
+      "Brightness": 0,
+      "Contrast": 0,
+      "Min brightness": 0,
+      "Max brightness": 255,
+      "Max Stipples": 2500,
+      "Max Iterations": 24,
+      "Min dot size": 1.1,
+      "Dot size range": 3.5,
+      "TSP Art": false,
+      "Stipple type": "Spirals"
+    },
+    "quality": "normal",
+    "seed": 12345,
+    "fit": "cover",
+    "crop_box_source_px": [
+      52.67857142857139,
+      0.0,
+      683.3214285714287,
+      981.0
+    ],
+    "margin_mm": 0.0,
+    "contrast": 1.0,
+    "gamma": 1.0,
+    "local_contrast_blend": 0.0,
+    "worker_canvas_px": [
+      579,
+      900
+    ],
+    "worker_overscan_offset_px": [
+      0,
+      0
+    ],
+    "discarded_nonfinite_segments": 0
+  },
+  "nc_sha256": "5ca90e47cf377f1c0edad9f1476544c949ec50880f4f1c614152e8dc925a15f7",
+  "preview_source": "final_nc_pen_down_paths",
+  "hardware_started": false
+}

@@ -265,12 +265,11 @@ def prepare_sheet_job(paths: list[Polyline], width: float, height: float, sheet_
     previous_machine = [[to_machine(p, previous, config) for p in poly] for poly in previous_ink]
     prefix[-1].update(_write_nc(output / prefix[-1]["file"], previous_machine, next_points[0], config))
     prefix[-1]["end_park_mm"] = next_points[0]
-    prefix[-1]["pen_down_paths"] = len(previous_machine)
     stamp_machine = [[to_machine(p, stamp_tile, config) for p in poly] for poly in scaled]
     stamp_record = {**asdict(stamp_tile),
                     **_write_nc(output / f"pass_{number:02d}.nc", stamp_machine, (0, 0), config),
                     "role": "title_block", "stamp_bbox_mm": target, "stamp_scale": factor,
-                    "end_park_mm": (0, 0), "pen_down_paths": len(stamp_machine)}
+                    "end_park_mm": (0, 0)}
     transition = {"from_pass": previous.number, "to_pass": number,
                   "marks_paper_mm": marks, "previous_machine_mm": old_points, "next_machine_mm": next_points,
                   "check_secondary": _write_nc(output / f"align_{number:02d}_B.nc", [], next_points[1], config),

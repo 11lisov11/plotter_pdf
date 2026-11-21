@@ -36,6 +36,20 @@ context so the project has one clear source of truth.
 
 ## Machine Rules
 
+## Offline Photo Styles
+
+- `scripts/prepare_plotterfun_photo.py` adds 29 local Plotterfun photo styles
+  for the small A4 plotter; see `docs/PHOTO_PLOTTERFUN.md`.
+- The original MIT workers are pinned under `third_party/plotterfun` and run
+  through the local Node.js adapter `tools/plotterfun_runner.cjs`.
+- Default photo placement covers the full 180 x 280 mm active field with
+  proportional cropping, not stretching. Physical A4 paper margins remain.
+- Final photo previews must be reconstructed from final NC pen-down paths.
+- Preparation never connects to hardware. Do not replace existing technical
+  drawing, A3 split, or registered A1/A2 engines with these artistic styles.
+
+## Machine Rules (continued)
+
 Two machine profiles are production inputs and must remain separate.
 
 ### A4 desktop plotter

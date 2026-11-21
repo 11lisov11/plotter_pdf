@@ -61,7 +61,9 @@
         12.0,
         -282.5
       ],
-      "pen_down_paths": 75
+      "pen_down_paths": 75,
+      "single_stroke_source_segments": 207,
+      "single_stroke_segments": 207
     },
     {
       "number": 2,
@@ -89,7 +91,9 @@
         2.5,
         -273.0
       ],
-      "pen_down_paths": 58
+      "pen_down_paths": 58,
+      "single_stroke_source_segments": 65,
+      "single_stroke_segments": 65
     },
     {
       "number": 3,
@@ -112,12 +116,14 @@
         420.0
       ],
       "file": "pass_03.nc",
-      "sha256": "38c9950bcde820018f6cf9acc888342de6a674a93b31a523e57b5a125b88d182",
+      "sha256": "79e637c11d587e592a7ea356cd9828a248adad05a048bdd674516eb39cd754bb",
       "end_park_mm": [
         12.0,
         -7.5
       ],
-      "pen_down_paths": 91
+      "pen_down_paths": 91,
+      "single_stroke_source_segments": 286,
+      "single_stroke_segments": 286
     },
     {
       "number": 4,
@@ -140,12 +146,14 @@
         277.65
       ],
       "file": "pass_04.nc",
-      "sha256": "0977191371baf2be1f6e922309cfbc33878cd00977f89b431bf94881b351e501",
+      "sha256": "25c02243013c7032a13caed9371776f037545aed3ba7eaa23839e34dcf8b2b90",
       "end_park_mm": [
         2.5,
         -273.0
       ],
-      "pen_down_paths": 555
+      "pen_down_paths": 554,
+      "single_stroke_source_segments": 2692,
+      "single_stroke_segments": 2691
     },
     {
       "number": 5,
@@ -173,7 +181,9 @@
         12.0,
         -282.5
       ],
-      "pen_down_paths": 29
+      "pen_down_paths": 29,
+      "single_stroke_source_segments": 644,
+      "single_stroke_segments": 644
     },
     {
       "number": 6,
@@ -196,12 +206,14 @@
         420.0
       ],
       "file": "pass_06.nc",
-      "sha256": "d5eba375b92ae3fcf32bb4dfab6be02327a2e02a4b0a67861c61d1a785d100f4",
+      "sha256": "9f54947666eba9cb8ddf6c078bc80c35b6a908b20a7fb58e28c7a259fbe7d80f",
       "end_park_mm": [
         4.839999999999975,
         -6.600000000000023
       ],
-      "pen_down_paths": 27
+      "pen_down_paths": 26,
+      "single_stroke_source_segments": 62,
+      "single_stroke_segments": 61
     },
     {
       "number": 7,
@@ -224,7 +236,7 @@
         415.0
       ],
       "file": "pass_07.nc",
-      "sha256": "28c9a7965fd88d3999c5f7d1729cc3ecb130ca1b747559651437f81c60dae188",
+      "sha256": "a7c2fa7b10104f67c205b5144dd68ef79bb71fcdc34ecb41bc4d2d9c41f24fb3",
       "role": "title_block",
       "stamp_bbox_mm": [
         409.0,
@@ -237,7 +249,9 @@
         0,
         0
       ],
-      "pen_down_paths": 622
+      "pen_down_paths": 211,
+      "single_stroke_source_segments": 7880,
+      "single_stroke_segments": 2954
     }
   ],
   "transitions": [
@@ -536,5 +550,132 @@
     "uniform_drawing_scale": 0.7062833588754426,
     "title_block_scaled_independently": true,
     "title_block_edge_margin_mm": 5.0
+  },
+  "single_stroke_output": {
+    "version": "integer-interval-union/v1",
+    "precision_mm": 0.001,
+    "geometry_source": "previous_serialized_nc_no_text_recognition",
+    "previous_files": "C:\\plotter_pdf\\backups\\single_stroke\\20261114_150331_UTC_bbeb96\\VB-6_A2_small_stitch",
+    "passes": [
+      {
+        "file": "pass_01.nc",
+        "before": {
+          "segments": 207,
+          "draw_length_mm": 551.580433,
+          "exact_repeated_segments": 0,
+          "overdraw_mm": 0.0
+        },
+        "after": {
+          "segments": 207,
+          "draw_length_mm": 551.580433,
+          "exact_repeated_segments": 0,
+          "overdraw_mm": 0.0
+        },
+        "geometry_coverage_unchanged": true,
+        "parking_unchanged": true
+      },
+      {
+        "file": "pass_02.nc",
+        "before": {
+          "segments": 65,
+          "draw_length_mm": 187.587994,
+          "exact_repeated_segments": 0,
+          "overdraw_mm": 0.0
+        },
+        "after": {
+          "segments": 65,
+          "draw_length_mm": 187.587994,
+          "exact_repeated_segments": 0,
+          "overdraw_mm": 0.0
+        },
+        "geometry_coverage_unchanged": true,
+        "parking_unchanged": true
+      },
+      {
+        "file": "pass_03.nc",
+        "before": {
+          "segments": 286,
+          "draw_length_mm": 1589.332702,
+          "exact_repeated_segments": 0,
+          "overdraw_mm": 142.876
+        },
+        "after": {
+          "segments": 286,
+          "draw_length_mm": 1446.456702,
+          "exact_repeated_segments": 0,
+          "overdraw_mm": 0.0
+        },
+        "geometry_coverage_unchanged": true,
+        "parking_unchanged": true
+      },
+      {
+        "file": "pass_04.nc",
+        "before": {
+          "segments": 2692,
+          "draw_length_mm": 6421.345546,
+          "exact_repeated_segments": 1,
+          "overdraw_mm": 4.576044
+        },
+        "after": {
+          "segments": 2691,
+          "draw_length_mm": 6416.769502,
+          "exact_repeated_segments": 0,
+          "overdraw_mm": 0.0
+        },
+        "geometry_coverage_unchanged": true,
+        "parking_unchanged": true
+      },
+      {
+        "file": "pass_05.nc",
+        "before": {
+          "segments": 644,
+          "draw_length_mm": 1574.294555,
+          "exact_repeated_segments": 0,
+          "overdraw_mm": 0.0
+        },
+        "after": {
+          "segments": 644,
+          "draw_length_mm": 1574.294555,
+          "exact_repeated_segments": 0,
+          "overdraw_mm": 0.0
+        },
+        "geometry_coverage_unchanged": true,
+        "parking_unchanged": true
+      },
+      {
+        "file": "pass_06.nc",
+        "before": {
+          "segments": 62,
+          "draw_length_mm": 287.971191,
+          "exact_repeated_segments": 1,
+          "overdraw_mm": 0.821
+        },
+        "after": {
+          "segments": 61,
+          "draw_length_mm": 287.150191,
+          "exact_repeated_segments": 0,
+          "overdraw_mm": 0.0
+        },
+        "geometry_coverage_unchanged": true,
+        "parking_unchanged": true
+      },
+      {
+        "file": "pass_07.nc",
+        "before": {
+          "segments": 7880,
+          "draw_length_mm": 9616.743691,
+          "exact_repeated_segments": 4920,
+          "overdraw_mm": 7280.860147
+        },
+        "after": {
+          "segments": 2954,
+          "draw_length_mm": 2335.883544,
+          "exact_repeated_segments": 0,
+          "overdraw_mm": 0.0
+        },
+        "geometry_coverage_unchanged": true,
+        "parking_unchanged": true
+      }
+    ]
   }
 }

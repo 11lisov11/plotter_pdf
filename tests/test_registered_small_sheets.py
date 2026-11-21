@@ -163,6 +163,11 @@ class FakeSession:
         self.busy = busy
         self.fail_initialize = fail_initialize
         self.commands = []
+        self.files = []
+        self.events = []
+
+    def record(self, event, **fields):
+        self.events.append((event, fields))
 
     def command(self, line):
         self.commands.append(line)
@@ -179,13 +184,22 @@ class FakeSession:
         return {"wco": (0, 0, 0), "position": (0, 0, 0)}
 
     def send_file(self, path):
+        self.files.append(path.name)
         if self.fail_initialize:
             raise RuntimeError("Initialization failed after motion ownership")
 
 
-def _mock_sender(monkeypatch, folder, session, response="START"):
+def _mock_sender(monkeypatch, folder, session, response="CANCEL", confirm_home=True):
     monkeypatch.setattr(sender, "Session", lambda *args: session)
-    monkeypatch.setattr("builtins.input", lambda *args: response)
+
+    def answer(prompt):
+        if prompt.startswith("Type START"):
+            return "START"
+        if prompt.startswith(f"Type {sender.HOME_CONFIRMATION}"):
+            return sender.HOME_CONFIRMATION if confirm_home else "CANCEL"
+        return response
+
+    monkeypatch.setattr("builtins.input", answer)
     monkeypatch.setattr(sys, "argv", ["sender", str(folder / "job.json"), "--port", "FAKE"])
     monkeypatch.setattr(sender.time, "sleep", lambda *args: None)
 
@@ -199,6 +213,29 @@ def test_rejected_board_never_receives_hold_or_reset(monkeypatch, trial_job):
     assert session.commands == ["$I"]
     assert session.serial.writes == []
     assert session.serial.closed
+
+
+def test_reported_zero_without_physical_home_confirmation_never_initializes(monkeypatch, trial_job):
+    folder, _ = trial_job
+    session = FakeSession()
+    _mock_sender(monkeypatch, folder, session, confirm_home=False)
+    assert sender.main() == 0
+    assert session.commands == ["$I", "$$"]
+    assert session.files == []
+    assert session.serial.writes == []
+    assert session.serial.closed
+    assert any(event == "reference_declined" for event, _ in session.events)
+
+
+def test_confirmed_physical_home_binds_xy_once_before_initialization(monkeypatch, trial_job):
+    folder, _ = trial_job
+    session = FakeSession(fail_initialize=True)
+    _mock_sender(monkeypatch, folder, session)
+    with pytest.raises(RuntimeError, match="Initialization failed"):
+        sender.main()
+    assert session.commands == ["$I", "$$", "G21", "G90", "G92 X0.0000 Y0.0000"]
+    assert session.files == ["initialize.nc"]
+    assert [event for event, _ in session.events].count("xy_reference") == 1
 
 
 def test_initially_busy_controller_is_not_interrupted(monkeypatch, trial_job):

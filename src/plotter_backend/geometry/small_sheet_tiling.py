@@ -13,6 +13,8 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Iterable
 
+from .unique_strokes import unique_strokes
+
 Point = tuple[float, float]
 Polyline = list[Point]
 Rect = tuple[float, float, float, float]
@@ -185,6 +187,8 @@ def _cross(center: Point, radius: float) -> list[Polyline]:
 
 
 def _write_nc(path: Path, paths: list[Polyline], park: Point, config: StitchConfig) -> dict:
+    source_segments = sum(max(0, len(poly) - 1) for poly in paths)
+    paths = unique_strokes(paths, precision=3)
     lines = ["; STITCH-ONLY: send_small_sheet_tiles.py; keep this session open between passes",
              "; No XY zero reset, no reflection, no automatic continuation",
              "G21", "G90", "G94", "G17", f"G0 Z{config.z_up:.4f} F{config.z_feed:.1f}", "G4 P0.06"]
@@ -203,7 +207,9 @@ def _write_nc(path: Path, paths: list[Polyline], park: Point, config: StitchConf
               f"G0 X{park[0]:.3f} Y{park[1]:.3f} F{config.feed_travel:.1f}", "G4 P0.05",
               "; STOP: pen up, motors remain held; do not re-zero or move the carriage by hand"]
     path.write_text("\n".join(lines) + "\n", encoding="ascii")
-    return file_record(path)
+    return {**file_record(path), "pen_down_paths": len(paths),
+            "single_stroke_source_segments": source_segments,
+            "single_stroke_segments": sum(len(poly) - 1 for poly in paths)}
 
 
 def file_record(path: Path) -> dict:
@@ -264,7 +270,7 @@ def prepare_stitched_job(source: Iterable[Polyline], width: float, height: float
             park = (0.0, 0.0)
         machine_paths = [[to_machine(p, tile, config) for p in poly] for poly in ink]
         record = {**asdict(tile), **_write_nc(output / f"pass_{tile.number:02d}.nc", machine_paths, park, config),
-                  "end_park_mm": park, "pen_down_paths": len(machine_paths)}
+                  "end_park_mm": park}
         records.append(record)
     for transition in transitions:
         number = transition["to_pass"]

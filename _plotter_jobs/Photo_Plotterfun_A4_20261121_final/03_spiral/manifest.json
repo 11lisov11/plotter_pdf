@@ -1,0 +1,82 @@
+{
+  "style": "spiral",
+  "title": "Spiral",
+  "machine_profile": "a4_desktop",
+  "sheet_format": "A4",
+  "work_area_mm": [
+    0.0,
+    180.0,
+    -285.0,
+    -5.0
+  ],
+  "source_size_px": [
+    736,
+    981
+  ],
+  "processed_size_px": [
+    579,
+    900
+  ],
+  "target_size_mm": [
+    180.0,
+    280.0
+  ],
+  "placement_bounds": [
+    0.0,
+    180.0,
+    -285.0,
+    -5.0
+  ],
+  "feed_draw": 2200,
+  "feed_travel": 15000,
+  "stats": {
+    "polyline_count": 47,
+    "point_count": 77984,
+    "draw_length_mm": 115081.088,
+    "bounds": [
+      0.0,
+      180.0,
+      -236.62342834472656,
+      -54.33931350708008
+    ],
+    "engine": "plotterfun",
+    "upstream_commit": "faf67d4dadc359a9d5703b0c4e501ea3bbad84d9",
+    "config": {
+      "width": 579,
+      "height": 900,
+      "Inverted": false,
+      "Brightness": 0,
+      "Contrast": 10,
+      "Min brightness": 0,
+      "Max brightness": 255,
+      "Frequency": 100,
+      "Amplitude": 3,
+      "Spacing": 0.5
+    },
+    "quality": "normal",
+    "seed": 12345,
+    "fit": "cover",
+    "crop_box_source_px": [
+      52.67857142857139,
+      0.0,
+      683.3214285714287,
+      981.0
+    ],
+    "margin_mm": 0.0,
+    "contrast": 1.0,
+    "gamma": 1.0,
+    "local_contrast_blend": 0.0,
+    "worker_canvas_px": [
+      579,
+      900
+    ],
+    "worker_overscan_offset_px": [
+      0,
+      0
+    ],
+    "discarded_nonfinite_segments": 0
+  },
+  "nc_sha256": "4491719c900f6adc93cb00ff1b2d7a83fcbf98f9c2a7e858f3151e41045fb1fe",
+  "preview_source": "final_nc_pen_down_paths",
+  "hardware_started": false
+}

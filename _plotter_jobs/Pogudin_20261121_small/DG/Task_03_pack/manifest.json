@@ -1,0 +1,105 @@
+{
+  "source": "C:\\Users\\USER\\Desktop\\Начертательная_геометрия_Погудин.pdf",
+  "source_page": 3,
+  "task": "Task_03",
+  "mode": "descriptive_geometry",
+  "source_size_mm": [
+    421.04734022352426,
+    298.11132558186847
+  ],
+  "scale": 0.9114625003651151,
+  "frame_mm": [
+    20.489313767791117,
+    415.4589366055827,
+    5.503328078125714,
+    292.52305399883596
+  ],
+  "specification": false,
+  "single_line_text_count": 40,
+  "missing_characters": [],
+  "settings": {
+    "drawing_mode": "descriptive_geometry",
+    "machine_profile": "a4_desktop",
+    "x_compensation_mm": 0.0,
+    "a3_pass_01_x_offset_mm": 0.0,
+    "a3_pass_01_y_offset_mm": 3.0,
+    "a3_pass_02_x_offset_mm": 0.0,
+    "a3_pass_02_y_offset_mm": 0.0,
+    "stitch_eps_mm": 0.08,
+    "feed_travel": 15000.0,
+    "feed_draw": 2200.0,
+    "z_down": 11.9,
+    "z_up": 0.0,
+    "z_feed": 2500.0,
+    "home_x": 0.0,
+    "home_y": 0.0,
+    "home_feed": 15000.0,
+    "legacy_z_reference": true,
+    "work_width": 180.0,
+    "work_height": 280.0,
+    "work_min_y": -285.0,
+    "paper_transform": "plotter_y_mirror",
+    "keep_debug_artifacts": false,
+    "safe_start_y_mm": null
+  },
+  "passes": [
+    {
+      "number": 17,
+      "document": "DG",
+      "source_pdf": "C:\\Users\\USER\\Desktop\\Начертательная_геометрия_Погудин.pdf",
+      "source_page": 3,
+      "task": "Task_03",
+      "part": 1,
+      "parts": 2,
+      "format": "A3",
+      "file": "C:\\plotter_pdf\\_plotter_jobs\\Pogudin_20261121_small\\DG\\Task_03_pack\\plotter_pass_01.nc",
+      "sha256": "f357343ac9d17fc32e72bffaf1c634cd9677be7ee5fd146d50353cc42aa95b00",
+      "paper_rotation_deg": 0,
+      "offset_mm": [
+        0.0,
+        3.0
+      ]
+    },
+    {
+      "number": 18,
+      "document": "DG",
+      "source_pdf": "C:\\Users\\USER\\Desktop\\Начертательная_геометрия_Погудин.pdf",
+      "source_page": 3,
+      "task": "Task_03",
+      "part": 2,
+      "parts": 2,
+      "format": "A3",
+      "file": "C:\\plotter_pdf\\_plotter_jobs\\Pogudin_20261121_small\\DG\\Task_03_pack\\plotter_pass_02.nc",
+      "sha256": "5f02b932333cc8251953234e366b9b96a9023a21c637d804591a829f16e21fa1",
+      "paper_rotation_deg": 180,
+      "offset_mm": [
+        0.0,
+        0.0
+      ]
+    }
+  ],
+  "preview_source": "literal_final_gcode",
+  "hardware_accessed": false,
+  "a3_outer_frame_removed": true,
+  "a3_frame_rule_log": [
+    "A3 DG outer frame removed; bottom-right table protected=[(191.383, 360.0, 223.421, 270.8038585209003)]; original fit unchanged."
+  ],
+  "a3_frame_backup": "C:\\plotter_pdf\\backups\\dg_a3_frame\\20261121_130813_UTC\\Task_03_pack",
+  "end_idle_barrier": "G4 P0.10 before $1=0; geometry unchanged",
+  "condition_images": [
+    {
+      "bbox_mm": [
+        231.47865719265405,
+        243.75531955295136,
+        273.04999999999995,
+        280.2466537475586
+      ],
+      "stroke_count": 1286,
+      "render_scale": 6.0,
+      "method": "page-oriented centerline paths, not image contours",
+      "outer_border_removed": true
+    }
+  ],
+  "condition_images_restored": true,
+  "condition_images_backup": "C:\\plotter_pdf\\backups\\dg_condition_images\\20261121_142348_UTC\\Task_03_pack"
+}

@@ -351,6 +351,7 @@ def _safe_trailer_text(settings: Settings) -> str:
             f"G0 Z{settings.z_up:.4f} F{settings.z_feed:.1f}",
             f"G0 X{settings.home_x:.3f} Y{settings.home_y:.3f} F{settings.home_feed:.1f}",
             "M5",
+            "G4 P0.10",
             "$1=0",
             "",
         ]
@@ -3142,7 +3143,7 @@ def _build_large_direct_vector_source(pack: Path, source_pdf: Path) -> SourceBui
     )
 
 
-def _build_source(pack: Path, source_pdf: Path, report: dict[str, Any], settings: Settings) -> SourceBuild:
+def _build_source_without_condition_images(pack: Path, source_pdf: Path, report: dict[str, Any], settings: Settings) -> SourceBuild:
     if (
         str(settings.machine_profile).casefold() == "a2_corexy"
         and str(report.get("kind", "drawing")).casefold() == "drawing"
@@ -3353,7 +3354,25 @@ def _transform_point(point: Point, transform: Transform) -> Point:
     return x + transform.post_translate_x, y + transform.post_translate_y
 
 
+def _build_source(pack: Path, source_pdf: Path, report: dict[str, Any], settings: Settings) -> SourceBuild:
+    built = _build_source_without_condition_images(pack, source_pdf, report, settings)
+    if str(settings.drawing_mode).casefold() == 'descriptive_geometry':
+        from src.plotter_backend.geometry.condition_images import extract_condition_miniatures
+        miniatures, records = extract_condition_miniatures(source_pdf, logger=built.logs.append)
+        if miniatures:
+            # Preserve the geometry-prefix/text-suffix contract used by tilers.
+            cut = len(built.polylines) - built.text_polylines
+            built.polylines = [*built.polylines[:cut], *miniatures, *built.polylines[cut:]]
+            built.geometry_polylines += len(miniatures)
+            built.logs.append(f'Condition miniatures included in final source paths: {len(records)}')
+    return built
+
+
 def _map_to_item(source_polys: list[Polyline], transform: Transform, settings: Settings, logs: list[str]) -> list[Polyline]:
+    if not _is_computer_graphics_mode(settings):
+        from src.plotter_backend.geometry.path_processing import remove_sheet_border_keep_corner_table
+        x0, y0, x1, y1 = _source_frame_bbox(source_polys)
+        source_polys = remove_sheet_border_keep_corner_table(source_polys, (x0, x1, y0, y1), logger=logs.append)
     mapped = [[_transform_point(point, transform) for point in poly] for poly in source_polys if len(poly) >= 2]
     mapped = _translate(mapped, settings.x_compensation_mm, 0.0)
     clipped = backend.clip_polylines_to_work_area(mapped, logger=logs.append)
@@ -3685,6 +3704,10 @@ def _map_to_item_dense_onepass(
     logs: list[str],
 ) -> list[Polyline]:
     computer_graphics_frame_rules = _is_computer_graphics_mode(settings)
+    if not computer_graphics_frame_rules:
+        from src.plotter_backend.geometry.path_processing import remove_sheet_border_keep_corner_table
+        x0, y0, x1, y1 = _source_frame_bbox(source_polys)
+        source_polys = remove_sheet_border_keep_corner_table(source_polys, (x0, x1, y0, y1), logger=logs.append)
     mapped_tagged: list[tuple[Polyline, bool]] = []
     for poly in source_polys:
         if len(poly) < 2:
@@ -3730,7 +3753,7 @@ def _map_to_item_dense_onepass(
     if computer_graphics_frame_rules:
         clipped = _strip_work_area_outer_border_segments(clipped, logs)
     else:
-        logs.append("A3 descriptive-geometry frame profile: work-area outer-border strip disabled; standard task frame kept.")
+        logs.append("A3 descriptive-geometry frame profile: source outer frame removed where detected; internal table kept; fit unchanged.")
     clipped_segments = sum(max(0, len(poly) - 1) for poly in clipped)
     deduped = _dedup_segments(clipped)
     final = _stitch_touching_polylines(

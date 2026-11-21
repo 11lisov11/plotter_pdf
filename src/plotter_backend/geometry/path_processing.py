@@ -226,6 +226,68 @@ def remove_rectangular_border(
     return output
 
 
+def remove_sheet_border_keep_corner_table(
+    polylines: List[List[Point]],
+    frame_bounds: Tuple[float, float, float, float],
+    *,
+    logger=print,
+) -> List[List[Point]]:
+    """A3 task sheets: remove a proven page frame, not the bottom-right table.
+
+    Call after choosing the original fit bounds: removing the frame must not
+    change scale or placement. Coordinates use source-page Y down.
+    """
+    left, right, top, bottom = frame_bounds
+    width, height = right - left, bottom - top
+    if width <= 0 or height <= 0:
+        return polylines
+    eps = 0.005
+    edges = {name: [] for name in ("left", "right", "top", "bottom")}
+    table_rows = []
+    for poly in polylines:
+        for a, b in zip(poly, poly[1:]):
+            if abs(a[0] - b[0]) <= eps:
+                for name, edge in (("left", left), ("right", right)):
+                    if abs(a[0] - edge) <= eps and abs(b[0] - edge) <= eps:
+                        edges[name].append(tuple(sorted((a[1], b[1]))))
+            if abs(a[1] - b[1]) <= eps:
+                lo, hi = sorted((a[0], b[0])); y = (a[1] + b[1]) / 2
+                for name, edge in (("top", top), ("bottom", bottom)):
+                    if abs(y - edge) <= eps:
+                        edges[name].append((lo, hi))
+                if (abs(hi - right) <= eps and lo > left + width * .45
+                        and hi - lo > width * .10 and top + height * .65 < y < bottom - eps):
+                    table_rows.append((lo, y))
+
+    def covered(intervals, lo, hi):
+        merged = []
+        for a, b in sorted(intervals):
+            a, b = max(a, lo), min(b, hi)
+            if a >= b:
+                continue
+            if merged and a <= merged[-1][1] + eps:
+                merged[-1] = (merged[-1][0], max(b, merged[-1][1]))
+            else:
+                merged.append((a, b))
+        return sum(b - a for a, b in merged)
+
+    complete = (covered(edges["left"], top, bottom) >= height * .95
+                and covered(edges["right"], top, bottom) >= height * .95
+                and covered(edges["top"], left, right) >= width * .95
+                and covered(edges["bottom"], left, right) >= width * .95)
+    if not complete:
+        if logger:
+            logger("A3 DG: no complete outer page frame found; non-border geometry left unchanged.")
+        return polylines
+    protected = []
+    if table_rows:
+        protected.append((min(x for x, _ in table_rows), right, min(y for _, y in table_rows), bottom))
+    result = remove_rectangular_border(polylines, frame_bounds, preserve_regions=protected, tolerance_mm=eps)
+    if logger:
+        logger(f"A3 DG outer frame removed; bottom-right table protected={protected}; original fit unchanged.")
+    return result
+
+
 def filter_outer_frame_path_items(
     items: List[Any],
     *,

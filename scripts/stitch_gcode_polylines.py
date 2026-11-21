@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import math
 import re
+import sys
 from pathlib import Path
 
 
@@ -182,6 +183,12 @@ def write_gcode(
     legacy_z_reference: bool = True,
     safe_start_y: float | None = None,
 ) -> None:
+    # This writer is shared by the established A4/A3 preparation routes.
+    root = str(Path(__file__).resolve().parents[1])
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    from src.plotter_backend.geometry.unique_strokes import unique_strokes
+    polylines = unique_strokes(polylines, precision=3)
     lines = ["$X", "$1=255", "G21", "G90"]
     if legacy_z_reference:
         lines.extend(

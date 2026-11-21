@@ -1,0 +1,444 @@
+[
+  {
+    "number": 1,
+    "document": "LR2",
+    "source_pdf": "C:\\Users\\USER\\Desktop\\ЛР-2 (Э).Вариант 12-1.pdf",
+    "source_page": 1,
+    "task": "01_Eskiz",
+    "part": 1,
+    "parts": 2,
+    "format": "A3",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Pogudin_20261121_small\\LR2\\01_Eskiz_pack\\plotter_pass_01.nc",
+    "sha256": "10e6fd96f72be1d9444c4a675e7c7da2c33fdcb397eb7f19aace4e4954b23bb4",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      3.0
+    ]
+  },
+  {
+    "number": 2,
+    "document": "LR2",
+    "source_pdf": "C:\\Users\\USER\\Desktop\\ЛР-2 (Э).Вариант 12-1.pdf",
+    "source_page": 1,
+    "task": "01_Eskiz",
+    "part": 2,
+    "parts": 2,
+    "format": "A3",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Pogudin_20261121_small\\LR2\\01_Eskiz_pack\\plotter_pass_02.nc",
+    "sha256": "be86570553577b44cdc957ccad8cdb3c71c104b6c5ddeffc0fbd584998a2e27d",
+    "paper_rotation_deg": 180,
+    "offset_mm": [
+      0.0,
+      0.0
+    ]
+  },
+  {
+    "number": 3,
+    "document": "LR4",
+    "source_pdf": "C:\\Users\\USER\\Desktop\\Лабораторная работа 4.Вариант 12-1.pdf",
+    "source_page": 1,
+    "task": "01_Specification",
+    "part": 1,
+    "parts": 1,
+    "format": "A4",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Pogudin_20261121_small\\LR4\\01_Specification_pack\\plotter.nc",
+    "sha256": "e48e4f439cc4034c27c27b99341f1925a6cdf79741f0824c3583fa7822765142",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      0.0
+    ]
+  },
+  {
+    "number": 4,
+    "document": "LR4",
+    "source_pdf": "C:\\Users\\USER\\Desktop\\Лабораторная работа 4.Вариант 12-1.pdf",
+    "source_page": 2,
+    "task": "02_Klapan_SB",
+    "part": 1,
+    "parts": 2,
+    "format": "A3",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Pogudin_20261121_small\\LR4\\02_Klapan_SB_pack\\plotter_pass_01.nc",
+    "sha256": "f8c7e26346b179ad16f6d94a6452cca3bc9b3355b6c7b9356d975a6727e4ceff",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      3.0
+    ]
+  },
+  {
+    "number": 5,
+    "document": "LR4",
+    "source_pdf": "C:\\Users\\USER\\Desktop\\Лабораторная работа 4.Вариант 12-1.pdf",
+    "source_page": 2,
+    "task": "02_Klapan_SB",
+    "part": 2,
+    "parts": 2,
+    "format": "A3",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Pogudin_20261121_small\\LR4\\02_Klapan_SB_pack\\plotter_pass_02.nc",
+    "sha256": "e1f40fb2bcb63e81e48655a5024273722d0a0385bc4559766769bb386b36239a",
+    "paper_rotation_deg": 180,
+    "offset_mm": [
+      0.0,
+      0.0
+    ]
+  },
+  {
+    "number": 6,
+    "document": "LR4",
+    "source_pdf": "C:\\Users\\USER\\Desktop\\Лабораторная работа 4.Вариант 12-1.pdf",
+    "source_page": 3,
+    "task": "03_Korpus",
+    "part": 1,
+    "parts": 2,
+    "format": "A3",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Pogudin_20261121_small\\LR4\\03_Korpus_pack\\plotter_pass_01.nc",
+    "sha256": "a958d688bd45f8ee885d6e08a97263f2434dc6e0405d317c87e2c83003569bc6",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      3.0
+    ]
+  },
+  {
+    "number": 7,
+    "document": "LR4",
+    "source_pdf": "C:\\Users\\USER\\Desktop\\Лабораторная работа 4.Вариант 12-1.pdf",
+    "source_page": 3,
+    "task": "03_Korpus",
+    "part": 2,
+    "parts": 2,
+    "format": "A3",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Pogudin_20261121_small\\LR4\\03_Korpus_pack\\plotter_pass_02.nc",
+    "sha256": "31cea05183e2c9f9309a7af4684788f029383cf97cd6c7355e3d0c5a4e7d8992",
+    "paper_rotation_deg": 180,
+    "offset_mm": [
+      0.0,
+      0.0
+    ]
+  },
+  {
+    "number": 8,
+    "document": "LR4",
+    "source_pdf": "C:\\Users\\USER\\Desktop\\Лабораторная работа 4.Вариант 12-1.pdf",
+    "source_page": 4,
+    "task": "04_Kryshka",
+    "part": 1,
+    "parts": 1,
+    "format": "A4",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Pogudin_20261121_small\\LR4\\04_Kryshka_pack\\plotter.nc",
+    "sha256": "8b62758d9af62f20d5b6d0dc7696d03fa29e7b434d7e5c1681de58789480092a",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      0.0
+    ]
+  },
+  {
+    "number": 9,
+    "document": "LR4",
+    "source_pdf": "C:\\Users\\USER\\Desktop\\Лабораторная работа 4.Вариант 12-1.pdf",
+    "source_page": 5,
+    "task": "05_Flanets",
+    "part": 1,
+    "parts": 1,
+    "format": "A4",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Pogudin_20261121_small\\LR4\\05_Flanets_pack\\plotter.nc",
+    "sha256": "218b7df521080a0e95c0b98cad2d77707787248bb8ed7ed7a44039c78683a52d",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      0.0
+    ]
+  },
+  {
+    "number": 10,
+    "document": "LR4",
+    "source_pdf": "C:\\Users\\USER\\Desktop\\Лабораторная работа 4.Вариант 12-1.pdf",
+    "source_page": 6,
+    "task": "06_Makhovichok",
+    "part": 1,
+    "parts": 1,
+    "format": "A4",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Pogudin_20261121_small\\LR4\\06_Makhovichok_pack\\plotter.nc",
+    "sha256": "17a8ae1215dd43209d84ed01be84bc6cf2a0052654296d14d2e838aa0449ba47",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      0.0
+    ]
+  },
+  {
+    "number": 11,
+    "document": "LR4",
+    "source_pdf": "C:\\Users\\USER\\Desktop\\Лабораторная работа 4.Вариант 12-1.pdf",
+    "source_page": 7,
+    "task": "07_Shpindel",
+    "part": 1,
+    "parts": 1,
+    "format": "A4",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Pogudin_20261121_small\\LR4\\07_Shpindel_pack\\plotter.nc",
+    "sha256": "812f9256b366f5ca0ae7d5b2c6e66196ad626cf253d49c08122c494ecca70ce8",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      0.0
+    ]
+  },
+  {
+    "number": 12,
+    "document": "LR4",
+    "source_pdf": "C:\\Users\\USER\\Desktop\\Лабораторная работа 4.Вариант 12-1.pdf",
+    "source_page": 8,
+    "task": "08_Klapan",
+    "part": 1,
+    "parts": 1,
+    "format": "A4",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Pogudin_20261121_small\\LR4\\08_Klapan_pack\\plotter.nc",
+    "sha256": "148052b60df4cbdd78e4c17707f7642337ec27d0cc599b7864c2ac51be02b39f",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      0.0
+    ]
+  },
+  {
+    "number": 13,
+    "document": "LR4",
+    "source_pdf": "C:\\Users\\USER\\Desktop\\Лабораторная работа 4.Вариант 12-1.pdf",
+    "source_page": 9,
+    "task": "09_Probka",
+    "part": 1,
+    "parts": 2,
+    "format": "A3",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Pogudin_20261121_small\\LR4\\09_Probka_pack\\plotter_pass_01.nc",
+    "sha256": "08b85c228a6501007a5800ec11f8110cedd172dad57d944b3ca5a25fed15cf6d",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      3.0
+    ]
+  },
+  {
+    "number": 14,
+    "document": "LR4",
+    "source_pdf": "C:\\Users\\USER\\Desktop\\Лабораторная работа 4.Вариант 12-1.pdf",
+    "source_page": 9,
+    "task": "09_Probka",
+    "part": 2,
+    "parts": 2,
+    "format": "A3",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Pogudin_20261121_small\\LR4\\09_Probka_pack\\plotter_pass_02.nc",
+    "sha256": "cee4a00401eb22ebb5ae60baa7df21168ac3251b7e7638eba2153c6f4b5cbbf5",
+    "paper_rotation_deg": 180,
+    "offset_mm": [
+      0.0,
+      0.0
+    ]
+  },
+  {
+    "number": 15,
+    "document": "DG",
+    "source_pdf": "C:\\Users\\USER\\Desktop\\Начертательная_геометрия_Погудин.pdf",
+    "source_page": 1,
+    "task": "Task_01",
+    "part": 1,
+    "parts": 1,
+    "format": "A4",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Pogudin_20261121_small\\DG\\Task_01_pack\\plotter.nc",
+    "sha256": "af5f22e15ae6016a396b05455e2874a21da63f774b093a072428b45baeffde90",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      0.0
+    ]
+  },
+  {
+    "number": 16,
+    "document": "DG",
+    "source_pdf": "C:\\Users\\USER\\Desktop\\Начертательная_геометрия_Погудин.pdf",
+    "source_page": 2,
+    "task": "Task_02",
+    "part": 1,
+    "parts": 1,
+    "format": "A4",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Pogudin_20261121_small\\DG\\Task_02_pack\\plotter.nc",
+    "sha256": "8918d5069cfbab796cff13f6f89f5441b1d532bd3df1214db8369efe90881c72",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      0.0
+    ]
+  },
+  {
+    "number": 17,
+    "document": "DG",
+    "source_pdf": "C:\\Users\\USER\\Desktop\\Начертательная_геометрия_Погудин.pdf",
+    "source_page": 3,
+    "task": "Task_03",
+    "part": 1,
+    "parts": 2,
+    "format": "A3",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Pogudin_20261121_small\\DG\\Task_03_pack\\plotter_pass_01.nc",
+    "sha256": "f357343ac9d17fc32e72bffaf1c634cd9677be7ee5fd146d50353cc42aa95b00",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      3.0
+    ]
+  },
+  {
+    "number": 18,
+    "document": "DG",
+    "source_pdf": "C:\\Users\\USER\\Desktop\\Начертательная_геометрия_Погудин.pdf",
+    "source_page": 3,
+    "task": "Task_03",
+    "part": 2,
+    "parts": 2,
+    "format": "A3",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Pogudin_20261121_small\\DG\\Task_03_pack\\plotter_pass_02.nc",
+    "sha256": "5f02b932333cc8251953234e366b9b96a9023a21c637d804591a829f16e21fa1",
+    "paper_rotation_deg": 180,
+    "offset_mm": [
+      0.0,
+      0.0
+    ]
+  },
+  {
+    "number": 19,
+    "document": "DG",
+    "source_pdf": "C:\\Users\\USER\\Desktop\\Начертательная_геометрия_Погудин.pdf",
+    "source_page": 4,
+    "task": "Task_04",
+    "part": 1,
+    "parts": 1,
+    "format": "A4",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Pogudin_20261121_small\\DG\\Task_04_pack\\plotter.nc",
+    "sha256": "da940298d0b2a9ccc1e02d9845ef59ca4172e4f5cfa2d8de3962cca3359d4bec",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      0.0
+    ]
+  },
+  {
+    "number": 20,
+    "document": "DG",
+    "source_pdf": "C:\\Users\\USER\\Desktop\\Начертательная_геометрия_Погудин.pdf",
+    "source_page": 5,
+    "task": "Task_05",
+    "part": 1,
+    "parts": 1,
+    "format": "A4",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Pogudin_20261121_small\\DG\\Task_05_pack\\plotter.nc",
+    "sha256": "270e50892247f316103b8bc061202fcd138fb4394d2d3b91bfe29433a035fa33",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      0.0
+    ]
+  },
+  {
+    "number": 21,
+    "document": "DG",
+    "source_pdf": "C:\\Users\\USER\\Desktop\\Начертательная_геометрия_Погудин.pdf",
+    "source_page": 6,
+    "task": "Task_06",
+    "part": 1,
+    "parts": 1,
+    "format": "A4",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Pogudin_20261121_small\\DG\\Task_06_pack\\plotter.nc",
+    "sha256": "ffe4d9b039464c59c4ddaaefc51b64c568da17e70a2d60b882b4217b8baf5737",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      0.0
+    ]
+  },
+  {
+    "number": 22,
+    "document": "DG",
+    "source_pdf": "C:\\Users\\USER\\Desktop\\Начертательная_геометрия_Погудин.pdf",
+    "source_page": 7,
+    "task": "Task_07",
+    "part": 1,
+    "parts": 1,
+    "format": "A4",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Pogudin_20261121_small\\DG\\Task_07_pack\\plotter.nc",
+    "sha256": "3dae1d4b3edf4f193094bd8cc1e9ef1f8d0aff839e1e93100f22c463bde08f11",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      0.0
+    ]
+  },
+  {
+    "number": 23,
+    "document": "DG",
+    "source_pdf": "C:\\Users\\USER\\Desktop\\Начертательная_геометрия_Погудин.pdf",
+    "source_page": 8,
+    "task": "Task_08",
+    "part": 1,
+    "parts": 1,
+    "format": "A4",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Pogudin_20261121_small\\DG\\Task_08_pack\\plotter.nc",
+    "sha256": "44fea7d6562fcbf38a21a0877e5d9e304a00e19b296944b277cf3304b5e01119",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      0.0
+    ]
+  },
+  {
+    "number": 24,
+    "document": "DG",
+    "source_pdf": "C:\\Users\\USER\\Desktop\\Начертательная_геометрия_Погудин.pdf",
+    "source_page": 9,
+    "task": "Task_09",
+    "part": 1,
+    "parts": 1,
+    "format": "A4",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Pogudin_20261121_small\\DG\\Task_09_pack\\plotter.nc",
+    "sha256": "ae93f2334bb5d36b9a4a9981591e88206abc72d2f55c66ae996bfddb60c70f52",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      0.0
+    ]
+  },
+  {
+    "number": 25,
+    "document": "DG",
+    "source_pdf": "C:\\Users\\USER\\Desktop\\Начертательная_геометрия_Погудин.pdf",
+    "source_page": 10,
+    "task": "Task_10",
+    "part": 1,
+    "parts": 2,
+    "format": "A3",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Pogudin_20261121_small\\DG\\Task_10_pack\\plotter_pass_01.nc",
+    "sha256": "595e30b638d22f7eb7dfa339acb1a8549d77139fa6295cb7952d6e453fbc2d2c",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      3.0
+    ]
+  },
+  {
+    "number": 26,
+    "document": "DG",
+    "source_pdf": "C:\\Users\\USER\\Desktop\\Начертательная_геометрия_Погудин.pdf",
+    "source_page": 10,
+    "task": "Task_10",
+    "part": 2,
+    "parts": 2,
+    "format": "A3",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Pogudin_20261121_small\\DG\\Task_10_pack\\plotter_pass_02.nc",
+    "sha256": "51f80db6ec9ef8ce3c2de37e99cd541509aceb73588e58d64556e16182ae41f2",
+    "paper_rotation_deg": 180,
+    "offset_mm": [
+      0.0,
+      0.0
+    ]
+  }
+]

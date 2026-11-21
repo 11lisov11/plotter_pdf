@@ -1,0 +1,52 @@
+﻿1. ЛР-2 / 01_Eskiz / часть 1 из 2
+   C:\plotter_pdf\_plotter_jobs\Pogudin_20261121_small\LR2\01_Eskiz_pack\plotter_pass_01.nc
+2. ЛР-2 / 01_Eskiz / часть 2 из 2
+   C:\plotter_pdf\_plotter_jobs\Pogudin_20261121_small\LR2\01_Eskiz_pack\plotter_pass_02.nc
+3. ЛР-4 / 01_Specification / целый лист A4
+   C:\plotter_pdf\_plotter_jobs\Pogudin_20261121_small\LR4\01_Specification_pack\plotter.nc
+4. ЛР-4 / 02_Klapan_SB / часть 1 из 2
+   C:\plotter_pdf\_plotter_jobs\Pogudin_20261121_small\LR4\02_Klapan_SB_pack\plotter_pass_01.nc
+5. ЛР-4 / 02_Klapan_SB / часть 2 из 2
+   C:\plotter_pdf\_plotter_jobs\Pogudin_20261121_small\LR4\02_Klapan_SB_pack\plotter_pass_02.nc
+6. ЛР-4 / 03_Korpus / часть 1 из 2
+   C:\plotter_pdf\_plotter_jobs\Pogudin_20261121_small\LR4\03_Korpus_pack\plotter_pass_01.nc
+7. ЛР-4 / 03_Korpus / часть 2 из 2
+   C:\plotter_pdf\_plotter_jobs\Pogudin_20261121_small\LR4\03_Korpus_pack\plotter_pass_02.nc
+8. ЛР-4 / 04_Kryshka / целый лист A4
+   C:\plotter_pdf\_plotter_jobs\Pogudin_20261121_small\LR4\04_Kryshka_pack\plotter.nc
+9. ЛР-4 / 05_Flanets / целый лист A4
+   C:\plotter_pdf\_plotter_jobs\Pogudin_20261121_small\LR4\05_Flanets_pack\plotter.nc
+10. ЛР-4 / 06_Makhovichok / целый лист A4
+   C:\plotter_pdf\_plotter_jobs\Pogudin_20261121_small\LR4\06_Makhovichok_pack\plotter.nc
+11. ЛР-4 / 07_Shpindel / целый лист A4
+   C:\plotter_pdf\_plotter_jobs\Pogudin_20261121_small\LR4\07_Shpindel_pack\plotter.nc
+12. ЛР-4 / 08_Klapan / целый лист A4
+   C:\plotter_pdf\_plotter_jobs\Pogudin_20261121_small\LR4\08_Klapan_pack\plotter.nc
+13. ЛР-4 / 09_Probka / часть 1 из 2
+   C:\plotter_pdf\_plotter_jobs\Pogudin_20261121_small\LR4\09_Probka_pack\plotter_pass_01.nc
+14. ЛР-4 / 09_Probka / часть 2 из 2
+   C:\plotter_pdf\_plotter_jobs\Pogudin_20261121_small\LR4\09_Probka_pack\plotter_pass_02.nc
+15. Начертательная геометрия / Task_01 / целый лист A4
+   C:\plotter_pdf\_plotter_jobs\Pogudin_20261121_small\DG\Task_01_pack\plotter.nc
+16. Начертательная геометрия / Task_02 / целый лист A4
+   C:\plotter_pdf\_plotter_jobs\Pogudin_20261121_small\DG\Task_02_pack\plotter.nc
+17. Начертательная геометрия / Task_03 / часть 1 из 2
+   C:\plotter_pdf\_plotter_jobs\Pogudin_20261121_small\DG\Task_03_pack\plotter_pass_01.nc
+18. Начертательная геометрия / Task_03 / часть 2 из 2
+   C:\plotter_pdf\_plotter_jobs\Pogudin_20261121_small\DG\Task_03_pack\plotter_pass_02.nc
+19. Начертательная геометрия / Task_04 / целый лист A4
+   C:\plotter_pdf\_plotter_jobs\Pogudin_20261121_small\DG\Task_04_pack\plotter.nc
+20. Начертательная геометрия / Task_05 / целый лист A4
+   C:\plotter_pdf\_plotter_jobs\Pogudin_20261121_small\DG\Task_05_pack\plotter.nc
+21. Начертательная геометрия / Task_06 / целый лист A4
+   C:\plotter_pdf\_plotter_jobs\Pogudin_20261121_small\DG\Task_06_pack\plotter.nc
+22. Начертательная геометрия / Task_07 / целый лист A4
+   C:\plotter_pdf\_plotter_jobs\Pogudin_20261121_small\DG\Task_07_pack\plotter.nc
+23. Начертательная геометрия / Task_08 / целый лист A4
+   C:\plotter_pdf\_plotter_jobs\Pogudin_20261121_small\DG\Task_08_pack\plotter.nc
+24. Начертательная геометрия / Task_09 / целый лист A4
+   C:\plotter_pdf\_plotter_jobs\Pogudin_20261121_small\DG\Task_09_pack\plotter.nc
+25. Начертательная геометрия / Task_10 / часть 1 из 2
+   C:\plotter_pdf\_plotter_jobs\Pogudin_20261121_small\DG\Task_10_pack\plotter_pass_01.nc
+26. Начертательная геометрия / Task_10 / часть 2 из 2
+   C:\plotter_pdf\_plotter_jobs\Pogudin_20261121_small\DG\Task_10_pack\plotter_pass_02.nc

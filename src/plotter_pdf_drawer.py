@@ -7534,6 +7534,12 @@ def write_xy_gcode(
     join_eps: Optional[float] = None,
     micro_stroke_feed: bool = True,
 ) -> None:
+    # Final shared guard, independent of recognition/source-specific cleanup.
+    try:
+        from .plotter_backend.geometry.unique_strokes import unique_strokes
+    except ImportError:
+        from plotter_backend.geometry.unique_strokes import unique_strokes
+    polylines = unique_strokes(polylines, precision=4)
     lines = [
         "G21",
         "G90",

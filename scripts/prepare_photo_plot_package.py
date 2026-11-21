@@ -383,6 +383,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("image", type=Path, help="Input photo/image file.")
     parser.add_argument("--out-dir", type=Path, default=None, help="Output package directory.")
+    parser.add_argument("--plotterfun-style", default=None, help="Use the local Plotterfun engine: all, or comma-separated style IDs. Existing photo modes are unchanged.")
     parser.add_argument("--mode", choices=["sketch", "classic", "hatch", "scribble", "portrait"], default=PhotoPlotConfig().mode)
     parser.add_argument(
         "--photo-quality",
@@ -444,6 +445,16 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    if args.plotterfun_style:
+        from scripts.prepare_plotterfun_photo import main as plotterfun_main
+        forwarded = [str(args.image), "--styles", args.plotterfun_style,
+                     "--quality", args.photo_quality, "--feed-draw", str(args.feed_draw),
+                     "--feed-travel", str(args.feed_travel)]
+        if args.out_dir is not None:
+            forwarded += ["--out-dir", str(args.out_dir)]
+        if args.max_side_px is not None:
+            forwarded += ["--max-side-px", str(args.max_side_px)]
+        return plotterfun_main(forwarded)
     image = args.image.resolve()
     if not image.exists() or not image.is_file():
         parser.error(f"image file not found: {image}")
