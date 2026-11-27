@@ -18,7 +18,7 @@ from PIL import Image, ImageDraw, ImageOps
 
 from scripts import prepare_pogudin_small as prep
 from src.plotter_backend.geometry.clipping import clip_polylines_to_rect
-from src.plotter_backend.geometry.path_processing import remove_sheet_border_keep_corner_table
+from src.plotter_backend.geometry.path_processing import remove_rectangular_border
 
 
 def main():
@@ -59,7 +59,11 @@ def main():
         mx, my = (ww - (right - left) * scale) / 2, (wh - (bottom - top) * scale) / 2
         fitted_frame = (mx, mx + (right - left) * scale, my, my + (bottom - top) * scale)
         logs = []
-        cleaned = remove_sheet_border_keep_corner_table(logical, fitted_frame, logger=logs.append)
+        # These prepared pages already had their full frame removed. Use the
+        # original manifest bounds rather than requiring that frame to still
+        # exist: its remaining bottom/right portions are the stamp edges.
+        cleaned = remove_rectangular_border(logical, fitted_frame, tolerance_mm=.005)
+        logs.append('A3 DG: remaining bottom/right stamp frame edges removed; internal table lines, text and original fit retained.')
         assembled = []
         for record in meta['passes']:
             slot = record['part'] - 1; dx, dy = record['offset_mm']
@@ -77,7 +81,7 @@ def main():
                 z_up=settings.z_up, z_down=settings.z_down, z_feed=settings.z_feed,
                 home_x=settings.home_x, home_y=settings.home_y, home_feed=settings.home_feed,
                 legacy_z_reference=settings.legacy_z_reference)
-            payload = (original_headers[str(nc)] + '; A3 DG: outer sheet border removed; original fit retained.\n'
+            payload = (original_headers[str(nc)] + '; A3 DG: sheet border and bottom/right stamp edges removed; original fit retained.\n'
                        + nc.read_text(encoding='utf-8') + prep.pipeline._safe_trailer_text(settings))
             nc.write_text(payload, encoding='utf-8', newline='\n')
             record['sha256'] = hashlib.sha256(payload.encode('utf-8')).hexdigest()
@@ -89,6 +93,7 @@ def main():
         (root / 'DG' / (meta['task'] + '.pdf')).write_bytes(preview.tobytes(garbage=4, deflate=True))
         preview.close()
         meta['a3_outer_frame_removed'] = True
+        meta['a3_stamp_bottom_right_edges_removed'] = True
         meta['a3_frame_rule_log'] = logs
         meta['a3_frame_backup'] = str(save)
         mp.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding='utf-8')

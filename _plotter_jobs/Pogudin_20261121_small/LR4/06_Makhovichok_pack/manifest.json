@@ -53,7 +53,7 @@
       "parts": 1,
       "format": "A4",
       "file": "C:\\plotter_pdf\\_plotter_jobs\\Pogudin_20261121_small\\LR4\\06_Makhovichok_pack\\plotter.nc",
-      "sha256": "17a8ae1215dd43209d84ed01be84bc6cf2a0052654296d14d2e838aa0449ba47",
+      "sha256": "9648a2a7a75f66d77bb7e0f63aeb93564992a385516e7d5c33a44c2fc1260c73",
       "paper_rotation_deg": 0,
       "offset_mm": [
         0.0,
@@ -63,5 +63,10 @@
   ],
   "preview_source": "literal_final_gcode",
   "hardware_accessed": false,
-  "end_idle_barrier": "G4 P0.10 before $1=0; geometry unchanged"
+  "end_idle_barrier": "G4 P0.10 before $1=0; geometry unchanged",
+  "route_optimization": {
+    "algorithm": "exact-euler-trails-cost-guard/v1",
+    "geometry_source": "previous_final_nc",
+    "backup": "C:\\plotter_pdf\\backups\\route_optimization\\20261123_135850_UTC\\Pogudin_20261121_small\\LR4\\06_Makhovichok_pack"
+  }
 }

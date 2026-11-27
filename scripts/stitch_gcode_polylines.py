@@ -188,7 +188,13 @@ def write_gcode(
     if root not in sys.path:
         sys.path.insert(0, root)
     from src.plotter_backend.geometry.unique_strokes import unique_strokes
+    from src.plotter_backend.geometry.stroke_continuity import optimize_drawing_paths as optimize_pen_paths
     polylines = unique_strokes(polylines, precision=3)
+    # Deduplication can split formerly continuous paths. Reconnect only exact
+    # existing vertices AFTER deduplication, before generating any pen lifts.
+    polylines = optimize_pen_paths(polylines, precision=3, home=(home_x, home_y),
+                                  z_up=z_up, z_down=z_down, z_feed=z_feed,
+                                  feed_travel=feed_travel)
     lines = ["$X", "$1=255", "G21", "G90"]
     if legacy_z_reference:
         lines.extend(

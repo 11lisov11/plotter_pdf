@@ -56,14 +56,14 @@
         277.65
       ],
       "file": "pass_01.nc",
-      "sha256": "51bff82569eb485f9934c9ab259ebff20f41ba1fea5977cf9012561c77056ce7",
+      "sha256": "1942ce4ba479d392a48fc8184cbb35425e6546fccd49b358aa3abeb538af9e2d",
       "end_park_mm": [
         12.0,
         -282.5
       ],
-      "pen_down_paths": 75,
+      "pen_down_paths": 72,
       "single_stroke_source_segments": 207,
-      "single_stroke_segments": 207
+      "single_stroke_segments": 208
     },
     {
       "number": 2,
@@ -86,14 +86,14 @@
         420.0
       ],
       "file": "pass_02.nc",
-      "sha256": "2fd47bf9bb27c75bf8a89310c8dd3fbab0a4506612e58c7fc144de01c8b93c8f",
+      "sha256": "5edb1cd48b06b9e1e85d4d8f65f71127f90b5e0a0274f12bbe5c81a7eab9579b",
       "end_park_mm": [
         2.5,
         -273.0
       ],
-      "pen_down_paths": 58,
+      "pen_down_paths": 57,
       "single_stroke_source_segments": 65,
-      "single_stroke_segments": 65
+      "single_stroke_segments": 66
     },
     {
       "number": 3,
@@ -116,14 +116,14 @@
         420.0
       ],
       "file": "pass_03.nc",
-      "sha256": "79e637c11d587e592a7ea356cd9828a248adad05a048bdd674516eb39cd754bb",
+      "sha256": "2b4ff87c69a83a197ae5bebac4947d4a87666188abdb3597c03211d428b1be04",
       "end_park_mm": [
         12.0,
         -7.5
       ],
-      "pen_down_paths": 91,
+      "pen_down_paths": 79,
       "single_stroke_source_segments": 286,
-      "single_stroke_segments": 286
+      "single_stroke_segments": 303
     },
     {
       "number": 4,
@@ -146,14 +146,14 @@
         277.65
       ],
       "file": "pass_04.nc",
-      "sha256": "25c02243013c7032a13caed9371776f037545aed3ba7eaa23839e34dcf8b2b90",
+      "sha256": "807cfcfc68042bded310da750875e6be76a0bacf50d1cddf621f7c49d9fd430b",
       "end_park_mm": [
         2.5,
         -273.0
       ],
-      "pen_down_paths": 554,
-      "single_stroke_source_segments": 2692,
-      "single_stroke_segments": 2691
+      "pen_down_paths": 478,
+      "single_stroke_source_segments": 2691,
+      "single_stroke_segments": 2683
     },
     {
       "number": 5,
@@ -176,12 +176,12 @@
         277.65
       ],
       "file": "pass_05.nc",
-      "sha256": "74a2707715a28751ba439789b76021a9162d58cb033e08dc838f18feb96eb453",
+      "sha256": "a8c796aa39adfdc84bb32ee22861b830447bae1cc9236714983fb7f0bf2d72b7",
       "end_park_mm": [
         12.0,
         -282.5
       ],
-      "pen_down_paths": 29,
+      "pen_down_paths": 26,
       "single_stroke_source_segments": 644,
       "single_stroke_segments": 644
     },
@@ -206,14 +206,14 @@
         420.0
       ],
       "file": "pass_06.nc",
-      "sha256": "9f54947666eba9cb8ddf6c078bc80c35b6a908b20a7fb58e28c7a259fbe7d80f",
+      "sha256": "7e7ee8618685c6130c975d7054c48761257698b412263b8689744aa404239b9d",
       "end_park_mm": [
         4.839999999999975,
         -6.600000000000023
       ],
-      "pen_down_paths": 26,
-      "single_stroke_source_segments": 62,
-      "single_stroke_segments": 61
+      "pen_down_paths": 24,
+      "single_stroke_source_segments": 61,
+      "single_stroke_segments": 65
     },
     {
       "number": 7,
@@ -236,7 +236,7 @@
         415.0
       ],
       "file": "pass_07.nc",
-      "sha256": "a7c2fa7b10104f67c205b5144dd68ef79bb71fcdc34ecb41bc4d2d9c41f24fb3",
+      "sha256": "45fa58d47dd86d22dd50da1d88b2888c68284698a4f530494702241f1516328e",
       "role": "title_block",
       "stamp_bbox_mm": [
         409.0,
@@ -249,9 +249,9 @@
         0,
         0
       ],
-      "pen_down_paths": 211,
-      "single_stroke_source_segments": 7880,
-      "single_stroke_segments": 2954
+      "pen_down_paths": 206,
+      "single_stroke_source_segments": 2954,
+      "single_stroke_segments": 2994
     }
   ],
   "transitions": [
@@ -555,7 +555,7 @@
     "version": "integer-interval-union/v1",
     "precision_mm": 0.001,
     "geometry_source": "previous_serialized_nc_no_text_recognition",
-    "previous_files": "C:\\plotter_pdf\\backups\\single_stroke\\20261114_150331_UTC_bbeb96\\VB-6_A2_small_stitch",
+    "previous_files": "C:\\plotter_pdf\\backups\\single_stroke\\20261123_135904_UTC_657f29\\VB-6_A2_small_stitch",
     "passes": [
       {
         "file": "pass_01.nc",
@@ -566,7 +566,7 @@
           "overdraw_mm": 0.0
         },
         "after": {
-          "segments": 207,
+          "segments": 208,
           "draw_length_mm": 551.580433,
           "exact_repeated_segments": 0,
           "overdraw_mm": 0.0
@@ -583,7 +583,7 @@
           "overdraw_mm": 0.0
         },
         "after": {
-          "segments": 65,
+          "segments": 66,
           "draw_length_mm": 187.587994,
           "exact_repeated_segments": 0,
           "overdraw_mm": 0.0
@@ -595,12 +595,12 @@
         "file": "pass_03.nc",
         "before": {
           "segments": 286,
-          "draw_length_mm": 1589.332702,
+          "draw_length_mm": 1446.456702,
           "exact_repeated_segments": 0,
-          "overdraw_mm": 142.876
+          "overdraw_mm": 0.0
         },
         "after": {
-          "segments": 286,
+          "segments": 303,
           "draw_length_mm": 1446.456702,
           "exact_repeated_segments": 0,
           "overdraw_mm": 0.0
@@ -611,13 +611,13 @@
       {
         "file": "pass_04.nc",
         "before": {
-          "segments": 2692,
-          "draw_length_mm": 6421.345546,
-          "exact_repeated_segments": 1,
-          "overdraw_mm": 4.576044
+          "segments": 2691,
+          "draw_length_mm": 6416.769502,
+          "exact_repeated_segments": 0,
+          "overdraw_mm": 0.0
         },
         "after": {
-          "segments": 2691,
+          "segments": 2683,
           "draw_length_mm": 6416.769502,
           "exact_repeated_segments": 0,
           "overdraw_mm": 0.0
@@ -645,13 +645,13 @@
       {
         "file": "pass_06.nc",
         "before": {
-          "segments": 62,
-          "draw_length_mm": 287.971191,
-          "exact_repeated_segments": 1,
-          "overdraw_mm": 0.821
+          "segments": 61,
+          "draw_length_mm": 287.150191,
+          "exact_repeated_segments": 0,
+          "overdraw_mm": 0.0
         },
         "after": {
-          "segments": 61,
+          "segments": 65,
           "draw_length_mm": 287.150191,
           "exact_repeated_segments": 0,
           "overdraw_mm": 0.0
@@ -662,13 +662,13 @@
       {
         "file": "pass_07.nc",
         "before": {
-          "segments": 7880,
-          "draw_length_mm": 9616.743691,
-          "exact_repeated_segments": 4920,
-          "overdraw_mm": 7280.860147
+          "segments": 2954,
+          "draw_length_mm": 2335.883544,
+          "exact_repeated_segments": 0,
+          "overdraw_mm": 0.0
         },
         "after": {
-          "segments": 2954,
+          "segments": 2994,
           "draw_length_mm": 2335.883544,
           "exact_repeated_segments": 0,
           "overdraw_mm": 0.0

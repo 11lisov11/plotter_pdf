@@ -1,0 +1,30 @@
+﻿1. Спецификация - целый лист A4
+   C:\plotter_pdf\_plotter_jobs\Koltsov_Variant13_20261127_small\CG\01_Specification_pack\plotter.nc
+2. Вентиль в сборе - часть 1 из 2; A3; поворот листа 0 градусов
+   C:\plotter_pdf\_plotter_jobs\Koltsov_Variant13_20261127_small\CG\02_Ventil_SB_pack\plotter_pass_01.nc
+3. Вентиль в сборе - часть 2 из 2; A3; поворот листа 180 градусов
+   C:\plotter_pdf\_plotter_jobs\Koltsov_Variant13_20261127_small\CG\02_Ventil_SB_pack\plotter_pass_02.nc
+4. Корпус .01 - часть 1 из 2; A3; поворот листа 0 градусов
+   C:\plotter_pdf\_plotter_jobs\Koltsov_Variant13_20261127_small\CG\03_Korpus_pack\plotter_pass_01.nc
+5. Корпус .01 - часть 2 из 2; A3; поворот листа 180 градусов
+   C:\plotter_pdf\_plotter_jobs\Koltsov_Variant13_20261127_small\CG\03_Korpus_pack\plotter_pass_02.nc
+6. Гайка .02 - целый лист A4
+   C:\plotter_pdf\_plotter_jobs\Koltsov_Variant13_20261127_small\CG\04_Gayka_02_pack\plotter.nc
+7. Втулка .03 - целый лист A4
+   C:\plotter_pdf\_plotter_jobs\Koltsov_Variant13_20261127_small\CG\05_Vtulka_pack\plotter.nc
+8. Гайка .04 - часть 1 из 2; A3; поворот листа 0 градусов
+   C:\plotter_pdf\_plotter_jobs\Koltsov_Variant13_20261127_small\CG\06_Gayka_04_pack\plotter_pass_01.nc
+9. Гайка .04 - часть 2 из 2; A3; поворот листа 180 градусов
+   C:\plotter_pdf\_plotter_jobs\Koltsov_Variant13_20261127_small\CG\06_Gayka_04_pack\plotter_pass_02.nc
+10. Рукоятка .05 - целый лист A4
+   C:\plotter_pdf\_plotter_jobs\Koltsov_Variant13_20261127_small\CG\07_Rukoyatka_pack\plotter.nc
+11. Клапан .06 - целый лист A4
+   C:\plotter_pdf\_plotter_jobs\Koltsov_Variant13_20261127_small\CG\08_Klapan_pack\plotter.nc
+12. Гайка клапана .07 - целый лист A4
+   C:\plotter_pdf\_plotter_jobs\Koltsov_Variant13_20261127_small\CG\09_Gayka_klapana_pack\plotter.nc
+13. Шайба .08 - целый лист A4
+   C:\plotter_pdf\_plotter_jobs\Koltsov_Variant13_20261127_small\CG\10_Shayba_pack\plotter.nc
+14. Кольцо .09 - целый лист A4
+   C:\plotter_pdf\_plotter_jobs\Koltsov_Variant13_20261127_small\CG\11_Koltso_09_pack\plotter.nc
+15. Кольцо .10 - целый лист A4
+   C:\plotter_pdf\_plotter_jobs\Koltsov_Variant13_20261127_small\CG\12_Koltso_10_pack\plotter.nc

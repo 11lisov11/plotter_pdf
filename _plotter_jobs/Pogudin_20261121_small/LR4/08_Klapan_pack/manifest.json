@@ -53,7 +53,7 @@
       "parts": 1,
       "format": "A4",
       "file": "C:\\plotter_pdf\\_plotter_jobs\\Pogudin_20261121_small\\LR4\\08_Klapan_pack\\plotter.nc",
-      "sha256": "148052b60df4cbdd78e4c17707f7642337ec27d0cc599b7864c2ac51be02b39f",
+      "sha256": "93085d4238a6f156edb058107e471eef9dacc033a9ac1699aec2f31f0a3aee1e",
       "paper_rotation_deg": 0,
       "offset_mm": [
         0.0,
@@ -63,5 +63,10 @@
   ],
   "preview_source": "literal_final_gcode",
   "hardware_accessed": false,
-  "end_idle_barrier": "G4 P0.10 before $1=0; geometry unchanged"
+  "end_idle_barrier": "G4 P0.10 before $1=0; geometry unchanged",
+  "route_optimization": {
+    "algorithm": "exact-euler-trails-cost-guard/v1",
+    "geometry_source": "previous_final_nc",
+    "backup": "C:\\plotter_pdf\\backups\\route_optimization\\20261123_135850_UTC\\Pogudin_20261121_small\\LR4\\08_Klapan_pack"
+  }
 }

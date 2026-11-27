@@ -1,0 +1,67 @@
+{
+  "source": "C:\\Users\\USER\\Downloads\\Telegram Desktop\\Вариант 13.Кольцов В.С..pdf",
+  "source_page": 11,
+  "task": "11_Koltso_09",
+  "mode": "computer_graphics",
+  "source_size_mm": [
+    211.0740025838216,
+    298.11132558186847
+  ],
+  "scale": 0.9729910483086199,
+  "frame_mm": [
+    20.489321878254284,
+    205.48588511786426,
+    5.503330256555903,
+    292.52316979077915
+  ],
+  "specification": false,
+  "single_line_text_count": 29,
+  "missing_characters": [],
+  "settings": {
+    "drawing_mode": "computer_graphics",
+    "machine_profile": "a4_desktop",
+    "x_compensation_mm": 0.0,
+    "a3_pass_01_x_offset_mm": 0.0,
+    "a3_pass_01_y_offset_mm": 3.0,
+    "a3_pass_02_x_offset_mm": 0.0,
+    "a3_pass_02_y_offset_mm": 0.0,
+    "stitch_eps_mm": 0.08,
+    "feed_travel": 15000.0,
+    "feed_draw": 2200.0,
+    "z_down": 11.9,
+    "z_up": 0.0,
+    "z_feed": 2500.0,
+    "home_x": 0.0,
+    "home_y": 0.0,
+    "home_feed": 15000.0,
+    "legacy_z_reference": true,
+    "work_width": 180.0,
+    "work_height": 280.0,
+    "work_min_y": -285.0,
+    "paper_transform": "plotter_y_mirror",
+    "keep_debug_artifacts": false,
+    "safe_start_y_mm": null
+  },
+  "passes": [
+    {
+      "number": 14,
+      "document": "CG",
+      "source_pdf": "C:\\Users\\USER\\Downloads\\Telegram Desktop\\Вариант 13.Кольцов В.С..pdf",
+      "source_page": 11,
+      "task": "11_Koltso_09",
+      "part": 1,
+      "parts": 1,
+      "format": "A4",
+      "file": "C:\\plotter_pdf\\_plotter_jobs\\Koltsov_Variant13_20261127_small\\CG\\11_Koltso_09_pack\\plotter.nc",
+      "sha256": "4fa696b15001b13810fae8a03499079b8e5dcd1b397438b5dda934b801ffdc89",
+      "paper_rotation_deg": 0,
+      "offset_mm": [
+        0.0,
+        0.0
+      ]
+    }
+  ],
+  "preview_source": "literal_final_gcode",
+  "condition_images": [],
+  "hardware_accessed": false
+}

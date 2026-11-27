@@ -189,6 +189,10 @@ def _cross(center: Point, radius: float) -> list[Polyline]:
 def _write_nc(path: Path, paths: list[Polyline], park: Point, config: StitchConfig) -> dict:
     source_segments = sum(max(0, len(poly) - 1) for poly in paths)
     paths = unique_strokes(paths, precision=3)
+    from .stroke_continuity import optimize_drawing_paths as optimize_pen_paths
+    paths = optimize_pen_paths(paths, precision=3, park=park, z_up=config.z_up,
+                               z_down=config.z_down, z_feed=config.z_feed,
+                               feed_travel=config.feed_travel)
     lines = ["; STITCH-ONLY: send_small_sheet_tiles.py; keep this session open between passes",
              "; No XY zero reset, no reflection, no automatic continuation",
              "G21", "G90", "G94", "G17", f"G0 Z{config.z_up:.4f} F{config.z_feed:.1f}", "G4 P0.06"]

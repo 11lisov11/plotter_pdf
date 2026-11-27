@@ -53,7 +53,7 @@
       "parts": 1,
       "format": "A4",
       "file": "C:\\plotter_pdf\\_plotter_jobs\\Pogudin_20261121_small\\LR4\\07_Shpindel_pack\\plotter.nc",
-      "sha256": "812f9256b366f5ca0ae7d5b2c6e66196ad626cf253d49c08122c494ecca70ce8",
+      "sha256": "29f233bbe3e262e303a46fa72684b71d45a90565a2414b106466bc1f52989ba7",
       "paper_rotation_deg": 0,
       "offset_mm": [
         0.0,
@@ -63,5 +63,10 @@
   ],
   "preview_source": "literal_final_gcode",
   "hardware_accessed": false,
-  "end_idle_barrier": "G4 P0.10 before $1=0; geometry unchanged"
+  "end_idle_barrier": "G4 P0.10 before $1=0; geometry unchanged",
+  "route_optimization": {
+    "algorithm": "exact-euler-trails-cost-guard/v1",
+    "geometry_source": "previous_final_nc",
+    "backup": "C:\\plotter_pdf\\backups\\route_optimization\\20261123_135850_UTC\\Pogudin_20261121_small\\LR4\\07_Shpindel_pack"
+  }
 }

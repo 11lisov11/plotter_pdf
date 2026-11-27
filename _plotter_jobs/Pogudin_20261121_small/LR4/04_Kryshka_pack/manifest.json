@@ -53,7 +53,7 @@
       "parts": 1,
       "format": "A4",
       "file": "C:\\plotter_pdf\\_plotter_jobs\\Pogudin_20261121_small\\LR4\\04_Kryshka_pack\\plotter.nc",
-      "sha256": "8b62758d9af62f20d5b6d0dc7696d03fa29e7b434d7e5c1681de58789480092a",
+      "sha256": "9dacf8a9f4cb68b731f51557b8c3985ed61045e86f318e1601856a4d9878ea17",
       "paper_rotation_deg": 0,
       "offset_mm": [
         0.0,
@@ -63,5 +63,10 @@
   ],
   "preview_source": "literal_final_gcode",
   "hardware_accessed": false,
-  "end_idle_barrier": "G4 P0.10 before $1=0; geometry unchanged"
+  "end_idle_barrier": "G4 P0.10 before $1=0; geometry unchanged",
+  "route_optimization": {
+    "algorithm": "exact-euler-trails-cost-guard/v1",
+    "geometry_source": "previous_final_nc",
+    "backup": "C:\\plotter_pdf\\backups\\route_optimization\\20261123_135850_UTC\\Pogudin_20261121_small\\LR4\\04_Kryshka_pack"
+  }
 }

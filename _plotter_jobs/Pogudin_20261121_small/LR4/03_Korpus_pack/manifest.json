@@ -53,7 +53,7 @@
       "parts": 2,
       "format": "A3",
       "file": "C:\\plotter_pdf\\_plotter_jobs\\Pogudin_20261121_small\\LR4\\03_Korpus_pack\\plotter_pass_01.nc",
-      "sha256": "a958d688bd45f8ee885d6e08a97263f2434dc6e0405d317c87e2c83003569bc6",
+      "sha256": "2c3cc24ace5ad3f8deadc10175da4f77a08932838d0c1305fafd57db2f39b741",
       "paper_rotation_deg": 0,
       "offset_mm": [
         0.0,
@@ -70,7 +70,7 @@
       "parts": 2,
       "format": "A3",
       "file": "C:\\plotter_pdf\\_plotter_jobs\\Pogudin_20261121_small\\LR4\\03_Korpus_pack\\plotter_pass_02.nc",
-      "sha256": "31cea05183e2c9f9309a7af4684788f029383cf97cd6c7355e3d0c5a4e7d8992",
+      "sha256": "11cdef3bbff9e37f2911413cdf1bea3a02fa27a2fdebd3ae32cb824f04bcf454",
       "paper_rotation_deg": 180,
       "offset_mm": [
         0.0,
@@ -80,5 +80,10 @@
   ],
   "preview_source": "literal_final_gcode",
   "hardware_accessed": false,
-  "end_idle_barrier": "G4 P0.10 before $1=0; geometry unchanged"
+  "end_idle_barrier": "G4 P0.10 before $1=0; geometry unchanged",
+  "route_optimization": {
+    "algorithm": "exact-euler-trails-cost-guard/v1",
+    "geometry_source": "previous_final_nc",
+    "backup": "C:\\plotter_pdf\\backups\\route_optimization\\20261123_135850_UTC\\Pogudin_20261121_small\\LR4\\03_Korpus_pack"
+  }
 }

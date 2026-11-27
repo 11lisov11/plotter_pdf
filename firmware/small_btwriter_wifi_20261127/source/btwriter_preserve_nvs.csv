@@ -1,0 +1,7 @@
+# Keep the original NVS and OTA metadata offsets and sizes unchanged.
+# The original bootloader and the old unused 0xe000..0xffff area are preserved.
+# Name, Type, SubType, Offset, Size, Flags
+nvs, data, nvs, 0x9000, 0x3000,
+otadata, data, ota, 0xc000, 0x2000,
+app0, app, ota_0, 0x10000, 0x280000,
+spiffs, data, spiffs, 0x290000, 0x170000,

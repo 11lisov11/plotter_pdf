@@ -53,7 +53,7 @@
       "parts": 1,
       "format": "A4",
       "file": "C:\\plotter_pdf\\_plotter_jobs\\Pogudin_20261121_small\\LR4\\05_Flanets_pack\\plotter.nc",
-      "sha256": "218b7df521080a0e95c0b98cad2d77707787248bb8ed7ed7a44039c78683a52d",
+      "sha256": "2b8a0585a93efa818f6127c2287431f40870ae204234d2f24bbad8d4e0db958a",
       "paper_rotation_deg": 0,
       "offset_mm": [
         0.0,
@@ -63,5 +63,10 @@
   ],
   "preview_source": "literal_final_gcode",
   "hardware_accessed": false,
-  "end_idle_barrier": "G4 P0.10 before $1=0; geometry unchanged"
+  "end_idle_barrier": "G4 P0.10 before $1=0; geometry unchanged",
+  "route_optimization": {
+    "algorithm": "exact-euler-trails-cost-guard/v1",
+    "geometry_source": "previous_final_nc",
+    "backup": "C:\\plotter_pdf\\backups\\route_optimization\\20261123_135850_UTC\\Pogudin_20261121_small\\LR4\\05_Flanets_pack"
+  }
 }

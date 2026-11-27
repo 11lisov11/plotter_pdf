@@ -107,7 +107,9 @@ def cg_frame_and_tables(polylines, specification, logs, *, keep_frame):
     table = (min(row[0] for row in rows), right, min(row[1] for row in rows), bottom)
     result = remove_rectangular_border(clipped, frame, preserve_regions=[] if keep_frame else [table])
     excluded = []
-    for box in auxiliary:
+    # The inverted designation box belongs to the A4 drawing form. Only
+    # split A3 sheets omit it together with their surrounding frame.
+    for box in ([] if keep_frame else auxiliary):
         if not any(abs(x - box[1]) <= 0.005 and abs(lo - box[2]) <= 0.005 and abs(hi - box[3]) <= 0.005
                    for x, lo, hi in vertical):
             continue
@@ -222,6 +224,10 @@ def prepare_document(source, tag, names, mode, output, scratch, queue):
                 if any(a - .005 <= x0 and x1 <= b + .005 and c - .005 <= y0 and y1 <= d + .005 for a, b, c, d in excluded):
                     continue
                 retained.append(line)
+            if specification:
+                # Text-outline cleanup can cut a rule beneath a two-digit
+                # position. Repair it before detecting rows, not afterwards.
+                geometry = pipeline._restore_specification_position_column_grid_breaks(geometry, logs)
             rules = pipeline._horizontal_table_rules_from_polylines(geometry)
             if specification:
                 geometry, retained = pipeline._adjust_specification_underlined_heading_layout(geometry, retained, rules, logs)

@@ -53,7 +53,7 @@
       "parts": 1,
       "format": "A4",
       "file": "C:\\plotter_pdf\\_plotter_jobs\\Pogudin_20261121_small\\DG\\Task_05_pack\\plotter.nc",
-      "sha256": "270e50892247f316103b8bc061202fcd138fb4394d2d3b91bfe29433a035fa33",
+      "sha256": "42caec81a651862b325bb68b6f55180989fc4ee26c08c652e811c13880d599c1",
       "paper_rotation_deg": 0,
       "offset_mm": [
         0.0,
@@ -79,5 +79,10 @@
     }
   ],
   "condition_images_restored": true,
-  "condition_images_backup": "C:\\plotter_pdf\\backups\\dg_condition_images\\20261121_142348_UTC\\Task_05_pack"
+  "condition_images_backup": "C:\\plotter_pdf\\backups\\dg_condition_images\\20261121_142348_UTC\\Task_05_pack",
+  "route_optimization": {
+    "algorithm": "exact-euler-trails-cost-guard/v1",
+    "geometry_source": "previous_final_nc",
+    "backup": "C:\\plotter_pdf\\backups\\route_optimization\\20261123_135850_UTC\\Pogudin_20261121_small\\DG\\Task_05_pack"
+  }
 }

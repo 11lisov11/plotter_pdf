@@ -1,0 +1,108 @@
+{
+  "source": "C:\\Users\\USER\\Desktop\\Начертательная геометрия1.pdf",
+  "source_page": 10,
+  "task": "Task_10",
+  "mode": "descriptive_geometry",
+  "source_size_mm": [
+    421.04734022352426,
+    298.11132558186847
+  ],
+  "scale": 0.9114625003651151,
+  "frame_mm": [
+    20.489313767791117,
+    415.4589366055827,
+    5.503328078125714,
+    292.52305399883596
+  ],
+  "specification": false,
+  "single_line_text_count": 29,
+  "missing_characters": [],
+  "settings": {
+    "drawing_mode": "descriptive_geometry",
+    "machine_profile": "a4_desktop",
+    "x_compensation_mm": 0.0,
+    "a3_pass_01_x_offset_mm": 0.0,
+    "a3_pass_01_y_offset_mm": 3.0,
+    "a3_pass_02_x_offset_mm": 0.0,
+    "a3_pass_02_y_offset_mm": 0.0,
+    "stitch_eps_mm": 0.08,
+    "feed_travel": 15000.0,
+    "feed_draw": 2200.0,
+    "z_down": 11.9,
+    "z_up": 0.0,
+    "z_feed": 2500.0,
+    "home_x": 0.0,
+    "home_y": 0.0,
+    "home_feed": 15000.0,
+    "legacy_z_reference": true,
+    "work_width": 180.0,
+    "work_height": 280.0,
+    "work_min_y": -285.0,
+    "paper_transform": "plotter_y_mirror",
+    "keep_debug_artifacts": false,
+    "safe_start_y_mm": null
+  },
+  "passes": [
+    {
+      "number": 11,
+      "document": "DG",
+      "source_pdf": "C:\\Users\\USER\\Desktop\\Начертательная геометрия1.pdf",
+      "source_page": 10,
+      "task": "Task_10",
+      "part": 1,
+      "parts": 2,
+      "format": "A3",
+      "file": "C:\\plotter_pdf\\_plotter_jobs\\Proshunin_20261122_small\\DG\\Task_10_pack\\plotter_pass_01.nc",
+      "sha256": "8015d0c2060e567ca30b6c15ad5d364245726362baa6983c9d9d568710a545d4",
+      "paper_rotation_deg": 0,
+      "offset_mm": [
+        0.0,
+        3.0
+      ]
+    },
+    {
+      "number": 12,
+      "document": "DG",
+      "source_pdf": "C:\\Users\\USER\\Desktop\\Начертательная геометрия1.pdf",
+      "source_page": 10,
+      "task": "Task_10",
+      "part": 2,
+      "parts": 2,
+      "format": "A3",
+      "file": "C:\\plotter_pdf\\_plotter_jobs\\Proshunin_20261122_small\\DG\\Task_10_pack\\plotter_pass_02.nc",
+      "sha256": "ea3ff157247417dc072471ea51497c699e73dacc2b372fe80fe3423d7a354179",
+      "paper_rotation_deg": 180,
+      "offset_mm": [
+        0.0,
+        0.0
+      ]
+    }
+  ],
+  "preview_source": "literal_final_gcode",
+  "condition_images": [
+    {
+      "bbox_mm": [
+        233.51066063774954,
+        248.24268561469182,
+        269.7480051676432,
+        278.13000861273866
+      ],
+      "stroke_count": 945,
+      "render_scale": 6.0,
+      "method": "page-oriented centerline paths, not image contours",
+      "outer_border_removed": true
+    }
+  ],
+  "hardware_accessed": false,
+  "a3_outer_frame_removed": true,
+  "a3_stamp_bottom_right_edges_removed": true,
+  "a3_frame_rule_log": [
+    "A3 DG: remaining bottom/right stamp frame edges removed; internal table lines, text and original fit retained."
+  ],
+  "a3_frame_backup": "C:\\plotter_pdf\\backups\\dg_a3_frame\\20261122_134841_UTC\\Task_10_pack",
+  "route_optimization": {
+    "algorithm": "exact-euler-trails-cost-guard/v1",
+    "geometry_source": "previous_final_nc",
+    "backup": "C:\\plotter_pdf\\backups\\route_optimization\\20261123_135850_UTC\\Proshunin_20261122_small\\DG\\Task_10_pack"
+  }
+}

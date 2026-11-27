@@ -1,0 +1,24 @@
+﻿1. Задача 1 / целый лист A4
+   C:\plotter_pdf\_plotter_jobs\Proshunin_20261122_small\DG\Task_01_pack\plotter.nc
+2. Задача 2 / целый лист A4
+   C:\plotter_pdf\_plotter_jobs\Proshunin_20261122_small\DG\Task_02_pack\plotter.nc
+3. Задача 3 / часть 1 из 2
+   C:\plotter_pdf\_plotter_jobs\Proshunin_20261122_small\DG\Task_03_pack\plotter_pass_01.nc
+4. Задача 3 / часть 2 из 2
+   C:\plotter_pdf\_plotter_jobs\Proshunin_20261122_small\DG\Task_03_pack\plotter_pass_02.nc
+5. Задача 4 / целый лист A4
+   C:\plotter_pdf\_plotter_jobs\Proshunin_20261122_small\DG\Task_04_pack\plotter.nc
+6. Задача 5 / целый лист A4
+   C:\plotter_pdf\_plotter_jobs\Proshunin_20261122_small\DG\Task_05_pack\plotter.nc
+7. Задача 6 / целый лист A4
+   C:\plotter_pdf\_plotter_jobs\Proshunin_20261122_small\DG\Task_06_pack\plotter.nc
+8. Задача 7 / целый лист A4
+   C:\plotter_pdf\_plotter_jobs\Proshunin_20261122_small\DG\Task_07_pack\plotter.nc
+9. Задача 8 / целый лист A4
+   C:\plotter_pdf\_plotter_jobs\Proshunin_20261122_small\DG\Task_08_pack\plotter.nc
+10. Задача 9 / целый лист A4
+   C:\plotter_pdf\_plotter_jobs\Proshunin_20261122_small\DG\Task_09_pack\plotter.nc
+11. Задача 10 / часть 1 из 2
+   C:\plotter_pdf\_plotter_jobs\Proshunin_20261122_small\DG\Task_10_pack\plotter_pass_01.nc
+12. Задача 10 / часть 2 из 2
+   C:\plotter_pdf\_plotter_jobs\Proshunin_20261122_small\DG\Task_10_pack\plotter_pass_02.nc

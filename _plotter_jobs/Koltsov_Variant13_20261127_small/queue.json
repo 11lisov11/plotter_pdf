@@ -1,0 +1,272 @@
+[
+  {
+    "number": 1,
+    "document": "CG",
+    "source_pdf": "C:\\Users\\USER\\Downloads\\Telegram Desktop\\Вариант 13.Кольцов В.С..pdf",
+    "source_page": 1,
+    "task": "01_Specification",
+    "part": 1,
+    "parts": 1,
+    "format": "A4",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Koltsov_Variant13_20261127_small\\CG\\01_Specification_pack\\plotter.nc",
+    "sha256": "83c713255bdc51ab8485f1b89bd17ffe466a57896b5c275ef93c52dce457f2d8",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      0.0
+    ],
+    "title": "Спецификация"
+  },
+  {
+    "number": 2,
+    "document": "CG",
+    "source_pdf": "C:\\Users\\USER\\Downloads\\Telegram Desktop\\Вариант 13.Кольцов В.С..pdf",
+    "source_page": 2,
+    "task": "02_Ventil_SB",
+    "part": 1,
+    "parts": 2,
+    "format": "A3",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Koltsov_Variant13_20261127_small\\CG\\02_Ventil_SB_pack\\plotter_pass_01.nc",
+    "sha256": "a93e2719e71fe1b57a132835f7c3b1352439d6e9cb598db9e0be7f5f58a4dd48",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      3.0
+    ],
+    "title": "Вентиль в сборе"
+  },
+  {
+    "number": 3,
+    "document": "CG",
+    "source_pdf": "C:\\Users\\USER\\Downloads\\Telegram Desktop\\Вариант 13.Кольцов В.С..pdf",
+    "source_page": 2,
+    "task": "02_Ventil_SB",
+    "part": 2,
+    "parts": 2,
+    "format": "A3",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Koltsov_Variant13_20261127_small\\CG\\02_Ventil_SB_pack\\plotter_pass_02.nc",
+    "sha256": "539b17dcf4fd2f012e9abd24abd63ac0f3509384c124d4f98211fa2d97f81c9a",
+    "paper_rotation_deg": 180,
+    "offset_mm": [
+      0.0,
+      0.0
+    ],
+    "title": "Вентиль в сборе"
+  },
+  {
+    "number": 4,
+    "document": "CG",
+    "source_pdf": "C:\\Users\\USER\\Downloads\\Telegram Desktop\\Вариант 13.Кольцов В.С..pdf",
+    "source_page": 3,
+    "task": "03_Korpus",
+    "part": 1,
+    "parts": 2,
+    "format": "A3",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Koltsov_Variant13_20261127_small\\CG\\03_Korpus_pack\\plotter_pass_01.nc",
+    "sha256": "d94347579a5200bb8402603e4997d9d2d2e2b7374dc0ff6f82bfc58bd18dec7a",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      3.0
+    ],
+    "title": "Корпус .01"
+  },
+  {
+    "number": 5,
+    "document": "CG",
+    "source_pdf": "C:\\Users\\USER\\Downloads\\Telegram Desktop\\Вариант 13.Кольцов В.С..pdf",
+    "source_page": 3,
+    "task": "03_Korpus",
+    "part": 2,
+    "parts": 2,
+    "format": "A3",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Koltsov_Variant13_20261127_small\\CG\\03_Korpus_pack\\plotter_pass_02.nc",
+    "sha256": "6b0ed9934c5ddd68c3a1b6ce24c2059a25e69b254b51f6079eae1c07b978d979",
+    "paper_rotation_deg": 180,
+    "offset_mm": [
+      0.0,
+      0.0
+    ],
+    "title": "Корпус .01"
+  },
+  {
+    "number": 6,
+    "document": "CG",
+    "source_pdf": "C:\\Users\\USER\\Downloads\\Telegram Desktop\\Вариант 13.Кольцов В.С..pdf",
+    "source_page": 4,
+    "task": "04_Gayka_02",
+    "part": 1,
+    "parts": 1,
+    "format": "A4",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Koltsov_Variant13_20261127_small\\CG\\04_Gayka_02_pack\\plotter.nc",
+    "sha256": "0db608da3614acb81919a1e5ea23fb1a6dff248b3df0214816751deb700164c6",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      0.0
+    ],
+    "title": "Гайка .02"
+  },
+  {
+    "number": 7,
+    "document": "CG",
+    "source_pdf": "C:\\Users\\USER\\Downloads\\Telegram Desktop\\Вариант 13.Кольцов В.С..pdf",
+    "source_page": 5,
+    "task": "05_Vtulka",
+    "part": 1,
+    "parts": 1,
+    "format": "A4",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Koltsov_Variant13_20261127_small\\CG\\05_Vtulka_pack\\plotter.nc",
+    "sha256": "7b67af4d7ac6f1194103b4dc3684fba6eceff690e1b43612ddba2b3b5df2a7fd",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      0.0
+    ],
+    "title": "Втулка .03"
+  },
+  {
+    "number": 8,
+    "document": "CG",
+    "source_pdf": "C:\\Users\\USER\\Downloads\\Telegram Desktop\\Вариант 13.Кольцов В.С..pdf",
+    "source_page": 6,
+    "task": "06_Gayka_04",
+    "part": 1,
+    "parts": 2,
+    "format": "A3",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Koltsov_Variant13_20261127_small\\CG\\06_Gayka_04_pack\\plotter_pass_01.nc",
+    "sha256": "be8144568998213c07497b9fa63a1ea0cd3f24d0e5df1e73958b352d90ed093e",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      3.0
+    ],
+    "title": "Гайка .04"
+  },
+  {
+    "number": 9,
+    "document": "CG",
+    "source_pdf": "C:\\Users\\USER\\Downloads\\Telegram Desktop\\Вариант 13.Кольцов В.С..pdf",
+    "source_page": 6,
+    "task": "06_Gayka_04",
+    "part": 2,
+    "parts": 2,
+    "format": "A3",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Koltsov_Variant13_20261127_small\\CG\\06_Gayka_04_pack\\plotter_pass_02.nc",
+    "sha256": "a39d9c8fed78903453efab3a401cd81febc0bb6cb1a3da6fef67fb6f1a36df2a",
+    "paper_rotation_deg": 180,
+    "offset_mm": [
+      0.0,
+      0.0
+    ],
+    "title": "Гайка .04"
+  },
+  {
+    "number": 10,
+    "document": "CG",
+    "source_pdf": "C:\\Users\\USER\\Downloads\\Telegram Desktop\\Вариант 13.Кольцов В.С..pdf",
+    "source_page": 7,
+    "task": "07_Rukoyatka",
+    "part": 1,
+    "parts": 1,
+    "format": "A4",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Koltsov_Variant13_20261127_small\\CG\\07_Rukoyatka_pack\\plotter.nc",
+    "sha256": "f0d4f1de0e36238ac30e4c4120400e488ca24dd2370e455c34bf158fa151f2b0",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      0.0
+    ],
+    "title": "Рукоятка .05"
+  },
+  {
+    "number": 11,
+    "document": "CG",
+    "source_pdf": "C:\\Users\\USER\\Downloads\\Telegram Desktop\\Вариант 13.Кольцов В.С..pdf",
+    "source_page": 8,
+    "task": "08_Klapan",
+    "part": 1,
+    "parts": 1,
+    "format": "A4",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Koltsov_Variant13_20261127_small\\CG\\08_Klapan_pack\\plotter.nc",
+    "sha256": "601b756595aa90b9c0e0d75f0f42ae987cda4c3daae13130d16c2fdaf16d3b05",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      0.0
+    ],
+    "title": "Клапан .06"
+  },
+  {
+    "number": 12,
+    "document": "CG",
+    "source_pdf": "C:\\Users\\USER\\Downloads\\Telegram Desktop\\Вариант 13.Кольцов В.С..pdf",
+    "source_page": 9,
+    "task": "09_Gayka_klapana",
+    "part": 1,
+    "parts": 1,
+    "format": "A4",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Koltsov_Variant13_20261127_small\\CG\\09_Gayka_klapana_pack\\plotter.nc",
+    "sha256": "ae0c7453c6cf1bdacc64ab1c335ddd14ece4bdb190487772b3906731fbedfa12",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      0.0
+    ],
+    "title": "Гайка клапана .07"
+  },
+  {
+    "number": 13,
+    "document": "CG",
+    "source_pdf": "C:\\Users\\USER\\Downloads\\Telegram Desktop\\Вариант 13.Кольцов В.С..pdf",
+    "source_page": 10,
+    "task": "10_Shayba",
+    "part": 1,
+    "parts": 1,
+    "format": "A4",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Koltsov_Variant13_20261127_small\\CG\\10_Shayba_pack\\plotter.nc",
+    "sha256": "5edea8b62e4a80ac19cf1cfdcdcf16fa848f2a9e88940ce7a875b61237be1229",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      0.0
+    ],
+    "title": "Шайба .08"
+  },
+  {
+    "number": 14,
+    "document": "CG",
+    "source_pdf": "C:\\Users\\USER\\Downloads\\Telegram Desktop\\Вариант 13.Кольцов В.С..pdf",
+    "source_page": 11,
+    "task": "11_Koltso_09",
+    "part": 1,
+    "parts": 1,
+    "format": "A4",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Koltsov_Variant13_20261127_small\\CG\\11_Koltso_09_pack\\plotter.nc",
+    "sha256": "4fa696b15001b13810fae8a03499079b8e5dcd1b397438b5dda934b801ffdc89",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      0.0
+    ],
+    "title": "Кольцо .09"
+  },
+  {
+    "number": 15,
+    "document": "CG",
+    "source_pdf": "C:\\Users\\USER\\Downloads\\Telegram Desktop\\Вариант 13.Кольцов В.С..pdf",
+    "source_page": 12,
+    "task": "12_Koltso_10",
+    "part": 1,
+    "parts": 1,
+    "format": "A4",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Koltsov_Variant13_20261127_small\\CG\\12_Koltso_10_pack\\plotter.nc",
+    "sha256": "e94bbc325cb7ca59926caed235b1dc88226c2cf8ae86a78d5337fe1cd5fa1fa3",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      0.0
+    ],
+    "title": "Кольцо .10"
+  }
+]

@@ -232,10 +232,11 @@ def remove_sheet_border_keep_corner_table(
     *,
     logger=print,
 ) -> List[List[Point]]:
-    """A3 task sheets: remove a proven page frame, not the bottom-right table.
+    """A3 task sheets: remove the frame, retaining the table's internal lines.
 
     Call after choosing the original fit bounds: removing the frame must not
-    change scale or placement. Coordinates use source-page Y down.
+    change scale or placement. The table's bottom/right sides are shared with
+    the page frame and must also be omitted. Coordinates use source-page Y down.
     """
     left, right, top, bottom = frame_bounds
     width, height = right - left, bottom - top
@@ -279,12 +280,15 @@ def remove_sheet_border_keep_corner_table(
         if logger:
             logger("A3 DG: no complete outer page frame found; non-border geometry left unchanged.")
         return polylines
-    protected = []
+    table_bounds = None
     if table_rows:
-        protected.append((min(x for x, _ in table_rows), right, min(y for _, y in table_rows), bottom))
-    result = remove_rectangular_border(polylines, frame_bounds, preserve_regions=protected, tolerance_mm=eps)
+        table_bounds = (min(x for x, _ in table_rows), right, min(y for _, y in table_rows), bottom)
+    # Protecting the whole table rectangle restores the very bottom/right
+    # frame edges the A3 rule excludes. Non-frame table strokes are unaffected
+    # by this segment-level removal and need no protected region.
+    result = remove_rectangular_border(polylines, frame_bounds, tolerance_mm=eps)
     if logger:
-        logger(f"A3 DG outer frame removed; bottom-right table protected={protected}; original fit unchanged.")
+        logger(f"A3 DG frame and shared bottom/right table edges removed; table interior retained={table_bounds}; original fit unchanged.")
     return result
 
 

@@ -1,0 +1,206 @@
+[
+  {
+    "number": 1,
+    "document": "DG",
+    "source_pdf": "C:\\Users\\USER\\Desktop\\Начертательная геометрия1.pdf",
+    "source_page": 1,
+    "task": "Task_01",
+    "part": 1,
+    "parts": 1,
+    "format": "A4",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Proshunin_20261122_small\\DG\\Task_01_pack\\plotter.nc",
+    "sha256": "ec9a8d91e6bba02b3f70090a6a1c658b8e7cdcc1ef6f6556ee32c9f45b4ad7c9",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      0.0
+    ]
+  },
+  {
+    "number": 2,
+    "document": "DG",
+    "source_pdf": "C:\\Users\\USER\\Desktop\\Начертательная геометрия1.pdf",
+    "source_page": 2,
+    "task": "Task_02",
+    "part": 1,
+    "parts": 1,
+    "format": "A4",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Proshunin_20261122_small\\DG\\Task_02_pack\\plotter.nc",
+    "sha256": "ce42294476fd442acab9feb724f0d8adcc0cb37a8cd65a01f3a3a30e162b3bb2",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      0.0
+    ]
+  },
+  {
+    "number": 3,
+    "document": "DG",
+    "source_pdf": "C:\\Users\\USER\\Desktop\\Начертательная геометрия1.pdf",
+    "source_page": 3,
+    "task": "Task_03",
+    "part": 1,
+    "parts": 2,
+    "format": "A3",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Proshunin_20261122_small\\DG\\Task_03_pack\\plotter_pass_01.nc",
+    "sha256": "0c367bea4c4f5500b662e2689e302ee5aafa15d7017226a0d3113ee82cc38990",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      3.0
+    ]
+  },
+  {
+    "number": 4,
+    "document": "DG",
+    "source_pdf": "C:\\Users\\USER\\Desktop\\Начертательная геометрия1.pdf",
+    "source_page": 3,
+    "task": "Task_03",
+    "part": 2,
+    "parts": 2,
+    "format": "A3",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Proshunin_20261122_small\\DG\\Task_03_pack\\plotter_pass_02.nc",
+    "sha256": "80fd45ce9cbf1dc7e15865e217cc68c2c7b5967fc172fed92303151d240425ea",
+    "paper_rotation_deg": 180,
+    "offset_mm": [
+      0.0,
+      0.0
+    ]
+  },
+  {
+    "number": 5,
+    "document": "DG",
+    "source_pdf": "C:\\Users\\USER\\Desktop\\Начертательная геометрия1.pdf",
+    "source_page": 4,
+    "task": "Task_04",
+    "part": 1,
+    "parts": 1,
+    "format": "A4",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Proshunin_20261122_small\\DG\\Task_04_pack\\plotter.nc",
+    "sha256": "fd97276fae52d6b287a42476aaccaed39d5a8fbe5fa9c338721f7585bb83486b",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      0.0
+    ]
+  },
+  {
+    "number": 6,
+    "document": "DG",
+    "source_pdf": "C:\\Users\\USER\\Desktop\\Начертательная геометрия1.pdf",
+    "source_page": 5,
+    "task": "Task_05",
+    "part": 1,
+    "parts": 1,
+    "format": "A4",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Proshunin_20261122_small\\DG\\Task_05_pack\\plotter.nc",
+    "sha256": "735884866e72f1e661a40ca2ad8c4444ec941246c35a1f585d46ad969e7c84e1",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      0.0
+    ]
+  },
+  {
+    "number": 7,
+    "document": "DG",
+    "source_pdf": "C:\\Users\\USER\\Desktop\\Начертательная геометрия1.pdf",
+    "source_page": 6,
+    "task": "Task_06",
+    "part": 1,
+    "parts": 1,
+    "format": "A4",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Proshunin_20261122_small\\DG\\Task_06_pack\\plotter.nc",
+    "sha256": "5fbf5c50958f7d9049bfea775d2df36090522b52e2de9f3cd2a8667ea4d5a529",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      0.0
+    ]
+  },
+  {
+    "number": 8,
+    "document": "DG",
+    "source_pdf": "C:\\Users\\USER\\Desktop\\Начертательная геометрия1.pdf",
+    "source_page": 7,
+    "task": "Task_07",
+    "part": 1,
+    "parts": 1,
+    "format": "A4",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Proshunin_20261122_small\\DG\\Task_07_pack\\plotter.nc",
+    "sha256": "d800dfa426e3ee876f4d534e2921a5f3e898df7e58d59af72205bff7309ec90f",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      0.0
+    ]
+  },
+  {
+    "number": 9,
+    "document": "DG",
+    "source_pdf": "C:\\Users\\USER\\Desktop\\Начертательная геометрия1.pdf",
+    "source_page": 8,
+    "task": "Task_08",
+    "part": 1,
+    "parts": 1,
+    "format": "A4",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Proshunin_20261122_small\\DG\\Task_08_pack\\plotter.nc",
+    "sha256": "73c606c32f1d2fa2157fb30145e1040e2eda2e4460dd0f2d67ebf0467acec395",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      0.0
+    ]
+  },
+  {
+    "number": 10,
+    "document": "DG",
+    "source_pdf": "C:\\Users\\USER\\Desktop\\Начертательная геометрия1.pdf",
+    "source_page": 9,
+    "task": "Task_09",
+    "part": 1,
+    "parts": 1,
+    "format": "A4",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Proshunin_20261122_small\\DG\\Task_09_pack\\plotter.nc",
+    "sha256": "0bdf0b00525bcc533c2f8f6fa4432a94d3217c7bb8c1af753f5231f552d94e9e",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      0.0
+    ]
+  },
+  {
+    "number": 11,
+    "document": "DG",
+    "source_pdf": "C:\\Users\\USER\\Desktop\\Начертательная геометрия1.pdf",
+    "source_page": 10,
+    "task": "Task_10",
+    "part": 1,
+    "parts": 2,
+    "format": "A3",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Proshunin_20261122_small\\DG\\Task_10_pack\\plotter_pass_01.nc",
+    "sha256": "8015d0c2060e567ca30b6c15ad5d364245726362baa6983c9d9d568710a545d4",
+    "paper_rotation_deg": 0,
+    "offset_mm": [
+      0.0,
+      3.0
+    ]
+  },
+  {
+    "number": 12,
+    "document": "DG",
+    "source_pdf": "C:\\Users\\USER\\Desktop\\Начертательная геометрия1.pdf",
+    "source_page": 10,
+    "task": "Task_10",
+    "part": 2,
+    "parts": 2,
+    "format": "A3",
+    "file": "C:\\plotter_pdf\\_plotter_jobs\\Proshunin_20261122_small\\DG\\Task_10_pack\\plotter_pass_02.nc",
+    "sha256": "ea3ff157247417dc072471ea51497c699e73dacc2b372fe80fe3423d7a354179",
+    "paper_rotation_deg": 180,
+    "offset_mm": [
+      0.0,
+      0.0
+    ]
+  }
+]
